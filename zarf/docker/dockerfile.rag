@@ -1,0 +1,32 @@
+# Build the Python environment.
+FROM python:3.13-slim AS build_rag
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+RUN python -m venv ${VIRTUAL_ENV}
+
+COPY api/services/RAG /service/api/services/RAG
+WORKDIR /service/api/services/RAG
+RUN pip install --upgrade pip && pip install .
+
+
+# Run the Python service in slim runtime.
+FROM python:3.13-slim
+ARG BUILD_DATE
+ARG BUILD_TAG
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+RUN addgroup --gid 1000 rag && \
+    adduser --uid 1000 --home /service --ingroup rag --disabled-password rag
+COPY --from=build_rag /opt/venv /opt/venv
+COPY --from=build_rag --chown=rag:rag /service/api/services/RAG /service
+WORKDIR /service
+USER rag
+EXPOSE 7000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7000"]
+
+LABEL org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.title="rag-api" \
+      org.opencontainers.image.authors="Owen Adirah" \
+      org.opencontainers.image.source="https://github.com/owezzy/schoolCRM/tree/main/api/services/RAG" \
+      org.opencontainers.image.revision="${BUILD_TAG}" \
+      org.opencontainers.image.vendor="schoolCRM"

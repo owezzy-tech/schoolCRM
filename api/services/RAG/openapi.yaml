@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: schoolCRM RAG Service
+  version: 0.1.0
+  description: |
+    Document Intelligence service for ingestion and retrieval-backed answers.
+servers:
+  - url: http://localhost:7000
+paths:
+  /v1/liveness:
+    get:
+      operationId: getLiveness
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Service is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/readiness:
+    get:
+      operationId: getReadiness
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Service is ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/rag/documents:
+    post:
+      operationId: ingestDocument
+      summary: Upload and index a document.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, source, file]
+              properties:
+                title:
+                  type: string
+                source:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Document accepted and indexed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestDocumentResponse'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/rag/documents/{document_id}:
+    delete:
+      operationId: deleteDocument
+      summary: Delete a document and its indexed chunks.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDocumentResponse'
+        '404':
+          description: Document not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/rag/query:
+    post:
+      operationId: queryDocuments
+      summary: Query indexed documents.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Answer generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          examples: [ok]
+    IngestDocumentResponse:
+      type: object
+      required: [document_id, status, chunk_count]
+      properties:
+        document_id:
+          type: string
+        status:
+          type: string
+          examples: [indexed]
+        chunk_count:
+          type: integer
+          minimum: 0
+    DeleteDocumentResponse:
+      type: object
+      required: [document_id, deleted]
+      properties:
+        document_id:
+          type: string
+        deleted:
+          type: boolean
+    QueryRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+        top_k:
+          type: integer
+          default: 3
+          minimum: 1
+          maximum: 10
+    QueryResponse:
+      type: object
+      required: [answer, document_ids, snippets]
+      properties:
+        answer:
+          type: string
+        document_ids:
+          type: array
+          items:
+            type: string
+        snippets:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
