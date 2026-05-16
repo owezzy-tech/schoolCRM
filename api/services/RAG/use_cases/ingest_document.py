@@ -74,7 +74,11 @@ class IngestDocumentUseCase:
                 chunk_count=len(chunks),
             )
         )
-        return IngestDocumentResult(document_id=document_id, status="indexed", chunk_count=len(chunks))
+        return IngestDocumentResult(
+            document_id=document_id,
+            status="indexed",
+            chunk_count=len(chunks),
+        )
 
     def _split(self, *, document_id: str, source: str, text: str) -> list[DocumentChunk]:
         if not text.strip():

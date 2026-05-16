@@ -16,7 +16,10 @@ async def get_auth_context(authorization: str | None = Header(default=None)) -> 
     if not authorization:
         if settings.allow_anonymous:
             return AuthContext(subject="anonymous", token=None)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Authorization header",
+        )
 
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token:

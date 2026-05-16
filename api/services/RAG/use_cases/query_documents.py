@@ -14,7 +14,13 @@ class QueryDocumentsCommand:
 
 
 class QueryDocumentsUseCase:
-    def __init__(self, *, embedding_provider: IEmbeddingProvider, vector_store: IVectorStore, llm_provider: ILLMProvider) -> None:
+    def __init__(
+        self,
+        *,
+        embedding_provider: IEmbeddingProvider,
+        vector_store: IVectorStore,
+        llm_provider: ILLMProvider,
+    ) -> None:
         self._embedding_provider = embedding_provider
         self._vector_store = vector_store
         self._llm_provider = llm_provider

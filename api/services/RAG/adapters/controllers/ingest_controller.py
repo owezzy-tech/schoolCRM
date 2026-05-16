@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from infrastructure.auth import AuthContext, get_auth_context
-from infrastructure.dependencies import get_delete_document_use_case, get_ingest_document_use_case
+from infrastructure.dependencies import (
+    get_delete_document_use_case,
+    get_ingest_document_use_case,
+)
 from use_cases.delete_document import DeleteDocumentUseCase
 from use_cases.ingest_document import IngestDocumentCommand, IngestDocumentUseCase
-
 
 router = APIRouter(prefix="/v1/rag", tags=["rag-documents"])
 
