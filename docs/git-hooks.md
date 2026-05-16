@@ -178,7 +178,7 @@ Configured scopes include:
 - `rag`
 - `go`
 - `auth`
-- `sales`
+- `schoolcrm`
 - `metrics`
 - `docs`
 - `config`

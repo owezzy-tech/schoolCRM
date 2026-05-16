@@ -9,7 +9,7 @@ import (
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
 
-// Routes binds the reporting routes for the sales service.
+// Routes binds the reporting routes for the SchoolCRM service.
 func Routes() rpt {
 	return rpt{}
 }
@@ -27,6 +27,6 @@ func (rpt) Add(app *web.App, cfg mux.Config) {
 	vproductapp.Routes(app, vproductapp.Config{
 		UserBus:     cfg.BusConfig.UserBus,
 		VProductBus: cfg.BusConfig.VProductBus,
-		AuthClient:  cfg.SalesConfig.AuthClient,
+		AuthClient:  cfg.SchoolCRMConfig.AuthClient,
 	})
 }

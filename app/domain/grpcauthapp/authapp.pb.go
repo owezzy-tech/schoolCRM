@@ -890,7 +890,7 @@ const file_authapp_proto_rawDesc = "" +
 	"\x04Auth\x12>\n" +
 	"\x05Token\x12\x19.grpcauthapp.TokenRequest\x1a\x1a.grpcauthapp.TokenResponse\x12S\n" +
 	"\fAuthenticate\x12 .grpcauthapp.AuthenticateRequest\x1a!.grpcauthapp.AuthenticateResponse\x12J\n" +
-	"\tAuthorize\x12\x1d.grpcauthapp.AuthorizeRequest\x1a\x1e.grpcauthapp.AuthorizeResponseB5Z3github.com/ardanlabs/service/app/domain/grpcauthappb\beditionsp\xe9\a"
+	"\tAuthorize\x12\x1d.grpcauthapp.AuthorizeRequest\x1a\x1e.grpcauthapp.AuthorizeResponseB4Z2github.com/owezzy/schoolCRM/app/domain/grpcauthappb\beditionsp\xe9\a"
 
 var file_authapp_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_authapp_proto_goTypes = []any{

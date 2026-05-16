@@ -9,10 +9,10 @@ import (
 	"os"
 
 	"github.com/ardanlabs/conf/v3"
+	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/api/tooling/admin/commands"
 	"github.com/owezzy/schoolCRM/business/sdk/sqldb"
 	"github.com/owezzy/schoolCRM/foundation/logger"
-	"github.com/google/uuid"
 )
 
 var build = "develop"
@@ -54,7 +54,7 @@ func run(log *logger.Logger) error {
 		},
 	}
 
-	const prefix = "SALES"
+	const prefix = "SCHOOLCRM"
 	help, err := conf.Parse(prefix, &cfg)
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {

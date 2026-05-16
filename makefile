@@ -119,14 +119,14 @@ TEMPO           := grafana/tempo:2.10.0
 LOKI            := grafana/loki:3.6.0
 PROMTAIL        := grafana/promtail:3.6.0
 
-KIND_CLUSTER    := ardan-starter-cluster
-NAMESPACE       := sales-system
-SALES_APP       := sales
+KIND_CLUSTER    := schoolcrm-cluster
+NAMESPACE       := schoolcrm-system
+SCHOOLCRM_APP       := schoolcrm
 AUTH_APP        := auth
 WEB_ADMIN_APP   := web-admin
-BASE_IMAGE_NAME := localhost/ardanlabs
+BASE_IMAGE_NAME := localhost/schoolcrm
 VERSION         := 0.0.1
-SALES_IMAGE     := $(BASE_IMAGE_NAME)/$(SALES_APP):$(VERSION)
+SCHOOLCRM_IMAGE     := $(BASE_IMAGE_NAME)/$(SCHOOLCRM_APP):$(VERSION)
 METRICS_IMAGE   := $(BASE_IMAGE_NAME)/metrics:$(VERSION)
 AUTH_IMAGE      := $(BASE_IMAGE_NAME)/$(AUTH_APP):$(VERSION)
 WEB_ADMIN_IMAGE := $(BASE_IMAGE_NAME)/$(WEB_ADMIN_APP):$(VERSION)
@@ -180,12 +180,12 @@ dev-docker:
 # ==============================================================================
 # Building containers
 
-build: sales metrics auth web-admin
+build: schoolcrm metrics auth web-admin
 
-sales:
+schoolcrm:
 	docker build \
-		-f zarf/docker/dockerfile.sales \
-		-t $(SALES_IMAGE) \
+		-f zarf/docker/dockerfile.schoolcrm \
+		-t $(SCHOOLCRM_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
 		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.
@@ -259,7 +259,7 @@ dev-status:
 # ------------------------------------------------------------------------------
 
 dev-load:
-	kind load docker-image $(SALES_IMAGE) --name $(KIND_CLUSTER) & \
+	kind load docker-image $(SCHOOLCRM_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(AUTH_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
@@ -277,12 +277,12 @@ dev-apply:
 	kustomize build zarf/k8s/dev/auth | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/sales | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SALES_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
+	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
 dev-restart:
 	kubectl rollout restart deployment $(AUTH_APP) --namespace=$(NAMESPACE)
-	kubectl rollout restart deployment $(SALES_APP) --namespace=$(NAMESPACE)
+	kubectl rollout restart deployment $(SCHOOLCRM_APP) --namespace=$(NAMESPACE)
 
 dev-run: build dev-up dev-load dev-apply
 
@@ -291,7 +291,7 @@ dev-update: build dev-load dev-restart
 dev-update-apply: build dev-load dev-apply
 
 dev-logs:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SALES_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | go run api/tooling/logfmt/main.go -service=$(SALES_APP)
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | go run api/tooling/logfmt/main.go -service=$(SCHOOLCRM_APP)
 
 dev-logs-auth:
 	kubectl logs --namespace=$(NAMESPACE) -l app=$(AUTH_APP) --all-containers=true -f --tail=100 | go run api/tooling/logfmt/main.go
@@ -299,16 +299,16 @@ dev-logs-auth:
 # ------------------------------------------------------------------------------
 
 dev-logs-init:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SALES_APP) -f --tail=100 -c init-migrate-seed
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) -f --tail=100 -c init-migrate-seed
 
 dev-describe-node:
 	kubectl describe node
 
 dev-describe-deployment:
-	kubectl describe deployment --namespace=$(NAMESPACE) $(SALES_APP)
+	kubectl describe deployment --namespace=$(NAMESPACE) $(SCHOOLCRM_APP)
 
-dev-describe-sales:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SALES_APP)
+dev-describe-schoolcrm:
+	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 dev-describe-auth:
 	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(AUTH_APP)
@@ -339,7 +339,7 @@ dev-logs-promtail:
 # ------------------------------------------------------------------------------
 
 dev-services-delete:
-	kustomize build zarf/k8s/dev/sales | kubectl delete -f -
+	kustomize build zarf/k8s/dev/schoolcrm | kubectl delete -f -
 	kustomize build zarf/k8s/dev/grafana | kubectl delete -f -
 	kustomize build zarf/k8s/dev/tempo | kubectl delete -f -
 	kustomize build zarf/k8s/dev/loki | kubectl delete -f -
@@ -348,7 +348,7 @@ dev-services-delete:
 
 dev-describe-replicaset:
 	kubectl get rs
-	kubectl describe rs --namespace=$(NAMESPACE) -l app=$(SALES_APP)
+	kubectl describe rs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 dev-events:
 	kubectl get ev --sort-by metadata.creationTimestamp
@@ -357,7 +357,7 @@ dev-events-warn:
 	kubectl get ev --field-selector type=Warning --sort-by metadata.creationTimestamp
 
 dev-shell:
-	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep sales | cut -c1-26) --container $(SALES_APP) -- /bin/sh
+	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep schoolcrm | cut -c1-26) --container $(SCHOOLCRM_APP) -- /bin/sh
 
 dev-auth-shell:
 	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep auth | cut -c1-26) --container $(AUTH_APP) -- /bin/sh
@@ -386,10 +386,10 @@ compose-logs:
 # Administration
 
 migrate:
-	export SALES_DB_HOST=localhost; go run api/tooling/admin/main.go migrate
+	export SCHOOLCRM_DB_HOST=localhost; go run api/tooling/admin/main.go migrate
 
 seed: migrate
-	export SALES_DB_HOST=localhost; go run api/tooling/admin/main.go seed
+	export SCHOOLCRM_DB_HOST=localhost; go run api/tooling/admin/main.go seed
 
 pgcli:
 	pgcli postgresql://postgres:postgres@localhost
@@ -401,7 +401,7 @@ readiness:
 	curl -i http://localhost:3000/v1/readiness
 
 token-gen:
-	export SALES_DB_HOST=localhost; go run api/tooling/admin/main.go gentoken 5cf37266-3473-4006-984f-9325122678b7 54bb2165-71e1-41a6-af3e-7da4a0e1e2c1
+	export SCHOOLCRM_DB_HOST=localhost; go run api/tooling/admin/main.go gentoken 5cf37266-3473-4006-984f-9325122678b7 54bb2165-71e1-41a6-af3e-7da4a0e1e2c1
 
 # ==============================================================================
 # Metrics and Tracing
@@ -524,10 +524,10 @@ run-auth:
 	go run api/services/auth/main.go | go run api/tooling/logfmt/main.go
 
 run:
-	go run api/services/sales/main.go | go run api/tooling/logfmt/main.go
+	go run api/services/schoolcrm/main.go | go run api/tooling/logfmt/main.go
 
 run-help:
-	go run api/services/sales/main.go --help | go run api/tooling/logfmt/main.go
+	go run api/services/schoolcrm/main.go --help | go run api/tooling/logfmt/main.go
 
 curl:
 	curl -i http://localhost:3000/v1/hack
@@ -568,7 +568,7 @@ talk-up:
 	docker save $(POSTGRES) | docker exec -i $(KIND_CLUSTER)-control-plane ctr --namespace=k8s.io images import -
 
 talk-load:
-	kind load docker-image $(SALES_IMAGE) --name $(KIND_CLUSTER) & \
+	kind load docker-image $(SCHOOLCRM_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(AUTH_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
@@ -580,8 +580,8 @@ talk-apply:
 	kustomize build zarf/k8s/dev/auth | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/sales | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SALES_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
+	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
 talk-run: build talk-up talk-load talk-apply
 
@@ -589,19 +589,19 @@ talk-run-load:
 	hey -m GET -c 10 -n 1000 -H "Authorization: Bearer ${TOKEN}" "http://localhost:3000/v1/users?page=1&rows=2"
 
 talk-logs:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SALES_APP) --all-containers=true -f --tail=100 --max-log-requests=6
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6
 
 talk-logs-cpu:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SALES_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep SCHED
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep SCHED
 
 talk-logs-mem:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SALES_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep "ms clock"
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep "ms clock"
 
 talk-describe:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SALES_APP)
+	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 talk-describe-min:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SALES_APP) | grep -i -A 21 '  sales:' | sed -n '1p;3p;11,16p;18,22p'
+	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) | grep -i -A 21 '  schoolcrm:' | sed -n '1p;3p;11,16p;18,22p'
 
 talk-metrics:
 	expvarmon -ports="localhost:4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
@@ -642,7 +642,7 @@ help:
 	@echo "  dev-brew                Install brew dependencies"
 	@echo "  dev-docker              Pull Docker images"
 	@echo "  build                   Build all the containers"
-	@echo "  sales                   Build the sales container"
+	@echo "  schoolcrm                   Build the SchoolCRM container"
 	@echo "  metrics                 Build the metrics container"
 	@echo "  auth                    Build the auth container"
 	@echo "  dev-up                  Start the KIND cluster"
@@ -655,12 +655,12 @@ help:
 	@echo "  dev-run              	 Build, up, load, and apply the deployments"
 	@echo "  dev-update              Build, load, and restart the deployments"
 	@echo "  dev-update-apply        Build, load, and apply the deployments"
-	@echo "  dev-logs                Show the logs for the sales service"
+	@echo "  dev-logs                Show the logs for the SchoolCRM service"
 	@echo "  dev-logs-auth           Show the logs for the auth service"
 	@echo "  dev-logs-init           Show the logs for the init container"
 	@echo "  dev-describe-node       Show the node details"
 	@echo "  dev-describe-deployment Show the deployment details"
-	@echo "  dev-describe-sales      Show the sales pod details"
+	@echo "  dev-describe-schoolcrm      Show the SchoolCRM pod details"
 	@echo "  dev-describe-auth       Show the auth pod details"
 	@echo "  dev-describe-database   Show the database pod details"
 	@echo "  dev-describe-grafana    Show the grafana pod details"
@@ -706,10 +706,10 @@ tilt-clean:
 
 # View Tilt logs for a specific service
 tilt-logs:
-	@echo "Usage: make tilt-logs SERVICE=sales"
+	@echo "Usage: make tilt-logs SERVICE=schoolcrm"
 	@if [ -z "$(SERVICE)" ]; then \
 		echo "Error: SERVICE required"; \
-		echo "Example: make tilt-logs SERVICE=sales"; \
+		echo "Example: make tilt-logs SERVICE=schoolcrm"; \
 		exit 1; \
 	fi
 	tilt logs $(SERVICE)
@@ -719,11 +719,11 @@ tilt-logs:
 # ==============================================================================
 
 # Deploy individual chart
-# Usage: make chart-install CHART=sales ENV=prod
+# Usage: make chart-install CHART=schoolcrm ENV=prod
 chart-install:
 	@if [ -z "$(CHART)" ]; then \
 		echo "Error: CHART required"; \
-		echo "Example: make chart-install CHART=sales ENV=prod"; \
+		echo "Example: make chart-install CHART=schoolcrm ENV=prod"; \
 		exit 1; \
 	fi
 	helm install $(CHART) ./zarf/helm/charts/$(CHART) \
@@ -737,7 +737,7 @@ chart-install:
 chart-upgrade:
 	@if [ -z "$(CHART)" ]; then \
 		echo "Error: CHART required"; \
-		echo "Example: make chart-upgrade CHART=sales ENV=prod"; \
+		echo "Example: make chart-upgrade CHART=schoolcrm ENV=prod"; \
 		exit 1; \
 	fi
 	helm upgrade $(CHART) ./zarf/helm/charts/$(CHART) \
@@ -750,7 +750,7 @@ chart-upgrade:
 chart-uninstall:
 	@if [ -z "$(CHART)" ]; then \
 		echo "Error: CHART required"; \
-		echo "Example: make chart-uninstall CHART=sales"; \
+		echo "Example: make chart-uninstall CHART=schoolcrm"; \
 		exit 1; \
 	fi
 	helm uninstall $(CHART) --namespace $(NAMESPACE) --ignore-not-found
@@ -759,7 +759,7 @@ chart-uninstall:
 chart-template:
 	@if [ -z "$(CHART)" ]; then \
 		echo "Error: CHART required"; \
-		echo "Example: make chart-template CHART=sales ENV=dev"; \
+		echo "Example: make chart-template CHART=schoolcrm ENV=dev"; \
 		exit 1; \
 	fi
 	helm template $(CHART) ./zarf/helm/charts/$(CHART) \
@@ -770,7 +770,7 @@ chart-template:
 chart-lint:
 	@if [ -z "$(CHART)" ]; then \
 		echo "Error: CHART required"; \
-		echo "Example: make chart-lint CHART=sales"; \
+		echo "Example: make chart-lint CHART=schoolcrm"; \
 		exit 1; \
 	fi
 	helm lint ./zarf/helm/charts/$(CHART)

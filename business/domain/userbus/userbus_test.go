@@ -171,7 +171,7 @@ func query(busDomain dbtest.BusDomain, sd unittest.SeedData) []unittest.Table {
 }
 
 func create(busDomain dbtest.BusDomain) []unittest.Table {
-	email, _ := mail.ParseAddress("bill@ardanlabs.com")
+	email, _ := mail.ParseAddress("bill@schoolcrm.local")
 
 	table := []unittest.Table{
 		{
@@ -225,7 +225,7 @@ func create(busDomain dbtest.BusDomain) []unittest.Table {
 }
 
 func update(busDomain dbtest.BusDomain, sd unittest.SeedData) []unittest.Table {
-	email, _ := mail.ParseAddress("jack@ardanlabs.com")
+	email, _ := mail.ParseAddress("jack@schoolcrm.local")
 
 	table := []unittest.Table{
 		{

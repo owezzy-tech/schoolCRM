@@ -1,21 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: sales-service
+  name: schoolcrm-service
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "sales.labels" . | nindent 4 }}
+    {{- include "schoolcrm.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    {{- include "sales.selectorLabels" . | nindent 4 }}
+    {{- include "schoolcrm.selectorLabels" . | nindent 4 }}
   ports:
-    - name: sales
+    - name: schoolcrm
       port: {{ .Values.service.ports.http }}
-      targetPort: sales
-    - name: sales-debug
+      targetPort: schoolcrm
+    - name: schoolcrm-debug
       port: {{ .Values.service.ports.debug }}
-      targetPort: sales-debug
+      targetPort: schoolcrm-debug
     - name: metrics
       port: {{ .Values.service.ports.metricsHttp }}
       targetPort: metrics

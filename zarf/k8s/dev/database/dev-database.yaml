@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sales-system
+  name: schoolcrm-system
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: database-data
-  namespace: sales-system
+  namespace: schoolcrm-system
 spec:
   accessModes:
     - ReadWriteOnce
@@ -19,7 +19,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: database
-  namespace: sales-system
+  namespace: schoolcrm-system
 spec:
   selector:
     matchLabels:
@@ -93,7 +93,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: database-service
-  namespace: sales-system
+  namespace: schoolcrm-system
 spec:
   type: ClusterIP
   selector:
@@ -107,7 +107,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pghbaconf
-  namespace: sales-system
+  namespace: schoolcrm-system
 data:
   # file-like keys
   pg_hba.conf: |

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
-	"github.com/owezzy/schoolCRM/api/services/sales/build"
+	"github.com/owezzy/schoolCRM/api/services/schoolcrm/build"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient/grpc"
 	http2 "github.com/owezzy/schoolCRM/app/sdk/authclient/http"
@@ -61,7 +61,7 @@ func main() {
 		},
 	}
 
-	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SALES", otel.GetTraceID, events)
+	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SCHOOLCRM", otel.GetTraceID, events)
 
 	// -------------------------------------------------------------------------
 
@@ -112,7 +112,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		}
 		Tempo struct {
 			Host        string  `conf:"default:tempo:4317"`
-			ServiceName string  `conf:"default:sales"`
+			ServiceName string  `conf:"default:schoolcrm"`
 			Probability float64 `conf:"default:0.05"`
 			// Shouldn't use a high Probability value in non-developer systems.
 			// 0.05 should be enough for most systems. Some might want to have
@@ -121,11 +121,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}{
 		Version: conf.Version{
 			Build: tag,
-			Desc:  "Sales",
+			Desc:  "SchoolCRM",
 		},
 	}
 
-	const prefix = "SALES"
+	const prefix = "SCHOOLCRM"
 	help, err := conf.Parse(prefix, &cfg)
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
@@ -270,7 +270,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 			HomeBus:     homeBus,
 			VProductBus: vproductBus,
 		},
-		SalesConfig: mux.SalesConfig{
+		SchoolCRMConfig: mux.SchoolCRMConfig{
 			AuthClient: authClient,
 		},
 	}

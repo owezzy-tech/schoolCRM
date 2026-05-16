@@ -16,7 +16,7 @@ import (
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
 
-// Routes binds all the routes for the sales service.
+// Routes binds all the routes for the SchoolCRM service.
 func Routes() all {
 	return all{}
 }
@@ -34,13 +34,13 @@ func (all) Add(app *web.App, cfg mux.Config) {
 	homeapp.Routes(app, homeapp.Config{
 		Log:        cfg.Log,
 		HomeBus:    cfg.BusConfig.HomeBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	productapp.Routes(app, productapp.Config{
 		Log:        cfg.Log,
 		ProductBus: cfg.BusConfig.ProductBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	rawapp.Routes(app)
@@ -50,25 +50,25 @@ func (all) Add(app *web.App, cfg mux.Config) {
 		DB:         cfg.DB,
 		UserBus:    cfg.BusConfig.UserBus,
 		ProductBus: cfg.BusConfig.ProductBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	userapp.Routes(app, userapp.Config{
 		Log:        cfg.Log,
 		UserBus:    cfg.BusConfig.UserBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	auditapp.Routes(app, auditapp.Config{
 		Log:        cfg.Log,
 		AuditBus:   cfg.BusConfig.AuditBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	vproductapp.Routes(app, vproductapp.Config{
 		Log:         cfg.Log,
 		UserBus:     cfg.BusConfig.UserBus,
 		VProductBus: cfg.BusConfig.VProductBus,
-		AuthClient:  cfg.SalesConfig.AuthClient,
+		AuthClient:  cfg.SchoolCRMConfig.AuthClient,
 	})
 }

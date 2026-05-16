@@ -1,5 +1,5 @@
 # Build the Go Binary.
-FROM golang:1.26 AS build_sales
+FROM golang:1.26 AS build_schoolcrm
 ENV CGO_ENABLED=0
 ARG BUILD_TAG
 
@@ -19,7 +19,7 @@ WORKDIR /service/api/tooling/admin
 RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 # Build the service binary.
-WORKDIR /service/api/services/sales
+WORKDIR /service/api/services/schoolcrm
 RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
@@ -27,17 +27,16 @@ RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 FROM alpine:3.23
 ARG BUILD_DATE
 ARG BUILD_TAG
-RUN addgroup -g 1000 -S sales && \
-    adduser -u 1000 -h /service -G sales -S sales
-COPY --from=build_sales --chown=sales:sales /service/api/tooling/admin/admin /service/admin
-COPY --from=build_sales --chown=sales:sales /service/api/services/sales/sales /service/sales
+RUN addgroup -g 1000 -S schoolcrm && \
+    adduser -u 1000 -h /service -G schoolcrm -S schoolcrm
+COPY --from=build_schoolcrm --chown=schoolcrm:schoolcrm /service/api/tooling/admin/admin /service/admin
+COPY --from=build_schoolcrm --chown=schoolcrm:schoolcrm /service/api/services/schoolcrm/schoolcrm /service/schoolcrm
 WORKDIR /service
-USER sales
-CMD ["./sales"]
+USER schoolcrm
+CMD ["./schoolcrm"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.title="sales-api" \
-      org.opencontainers.image.authors="William Kennedy <bill@ardanlabs.com>" \
-      org.opencontainers.image.source="https://github.com/ardanlabs/service/tree/master/a/services/sales" \
+      org.opencontainers.image.title="schoolcrm-api" \
+      org.opencontainers.image.source="https://github.com/owezzy/schoolCRM/tree/main/api/services/schoolcrm" \
       org.opencontainers.image.revision="${BUILD_TAG}" \
-      org.opencontainers.image.vendor="Ardan Labs"
+      org.opencontainers.image.vendor="SchoolCRM"

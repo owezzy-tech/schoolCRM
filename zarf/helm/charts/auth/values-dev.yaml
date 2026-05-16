@@ -2,7 +2,7 @@
 # Use with: helm install -f values.yaml -f values-dev.yaml
 
 image:
-  repository: localhost:5001/ardanlabs/auth
+  repository: localhost:5001/schoolcrm/auth
   tag: "0.0.1"
 
 replicaCount: 1

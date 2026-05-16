@@ -1,9 +1,9 @@
 {{/*
 Common labels
 */}}
-{{- define "sales.labels" -}}
-app: sales
-app.kubernetes.io/name: sales
+{{- define "schoolcrm.labels" -}}
+app: schoolcrm
+app.kubernetes.io/name: schoolcrm
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -13,42 +13,42 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{/*
 Selector labels
 */}}
-{{- define "sales.selectorLabels" -}}
-app: sales
-app.kubernetes.io/name: sales
+{{- define "schoolcrm.selectorLabels" -}}
+app: schoolcrm
+app.kubernetes.io/name: schoolcrm
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Database environment variables for Sales service
+Database environment variables for SchoolCRM service
 */}}
-{{- define "sales.dbEnvVars" -}}
-- name: SALES_DB_USER
+{{- define "schoolcrm.dbEnvVars" -}}
+- name: SCHOOLCRM_DB_USER
   valueFrom:
     configMapKeyRef:
-      name: sales-config
+      name: schoolcrm-config
       key: db_user
-- name: SALES_DB_PASSWORD
+- name: SCHOOLCRM_DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: sales-secret
+      name: schoolcrm-secret
       key: db_password
-- name: SALES_DB_HOST_PORT
+- name: SCHOOLCRM_DB_HOST_PORT
   valueFrom:
     configMapKeyRef:
-      name: sales-config
+      name: schoolcrm-config
       key: db_hostport
-- name: SALES_DB_DISABLE_TLS
+- name: SCHOOLCRM_DB_DISABLE_TLS
   valueFrom:
     configMapKeyRef:
-      name: sales-config
+      name: schoolcrm-config
       key: db_disabletls
 {{- end -}}
 
 {{/*
 Kubernetes metadata environment variables
 */}}
-{{- define "sales.k8sEnvVars" -}}
+{{- define "schoolcrm.k8sEnvVars" -}}
 - name: KUBERNETES_NAMESPACE
   valueFrom:
     fieldRef:

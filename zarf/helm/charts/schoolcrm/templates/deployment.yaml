@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sales
+  name: schoolcrm
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "sales.labels" . | nindent 4 }}
+    {{- include "schoolcrm.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "sales.selectorLabels" . | nindent 6 }}
+      {{- include "schoolcrm.selectorLabels" . | nindent 6 }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: {{ .Values.strategy.type }}
   template:
     metadata:
       labels:
-        {{- include "sales.selectorLabels" . | nindent 8 }}
+        {{- include "schoolcrm.selectorLabels" . | nindent 8 }}
     spec:
       {{- if .Values.hostNetwork }}
       dnsPolicy: ClusterFirstWithHostNet
@@ -36,11 +36,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: {{- toYaml .Values.initContainer.command | nindent 12 }}
           env:
-            {{- include "sales.dbEnvVars" . | nindent 12 }}
+            {{- include "schoolcrm.dbEnvVars" . | nindent 12 }}
       {{- end }}
 
       containers:
-        - name: sales
+        - name: schoolcrm
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if not .Values.hostNetwork }}
@@ -52,9 +52,9 @@ spec:
                 - ALL
           {{- end }}
           ports:
-            - name: sales
+            - name: schoolcrm
               containerPort: {{ .Values.service.ports.http }}
-            - name: sales-debug
+            - name: schoolcrm-debug
               containerPort: {{ .Values.service.ports.debug }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
@@ -75,8 +75,8 @@ spec:
               valueFrom:
                 resourceFieldRef:
                   resource: limits.memory
-            {{- include "sales.dbEnvVars" . | nindent 12 }}
-            {{- include "sales.k8sEnvVars" . | nindent 12 }}
+            {{- include "schoolcrm.dbEnvVars" . | nindent 12 }}
+            {{- include "schoolcrm.k8sEnvVars" . | nindent 12 }}
 
         {{- if .Values.metrics.enabled }}
         - name: metrics

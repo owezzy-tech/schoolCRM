@@ -2,7 +2,7 @@
 # Use with: helm install -f values.yaml -f values-dev.yaml
 
 image:
-  repository: localhost:5001/ardanlabs/sales
+  repository: localhost:5001/schoolcrm/schoolcrm
   tag: "0.0.1"
 
 replicaCount: 1
@@ -20,7 +20,7 @@ resources:
 
 metrics:
   image:
-    repository: localhost:5001/ardanlabs/metrics
+    repository: localhost:5001/schoolcrm/metrics
     tag: "0.0.1"
   resources:
     requests:
@@ -30,7 +30,7 @@ metrics:
 
 hostNetwork: true  # Required for Kind cluster to access services
 
-# Disable initContainer in dev - Tilt handles migrations via sales-migrate resource
+# Disable initContainer in dev - Tilt handles migrations via schoolcrm-migrate resource
 initContainer:
   enabled: false
 

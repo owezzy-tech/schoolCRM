@@ -13,7 +13,7 @@ import (
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
 
-// Routes binds the crud routes for the sales service.
+// Routes binds the crud routes for the SchoolCRM service.
 func Routes() crud {
 	return crud{}
 }
@@ -30,30 +30,30 @@ func (crud) Add(app *web.App, cfg mux.Config) {
 
 	homeapp.Routes(app, homeapp.Config{
 		HomeBus:    cfg.BusConfig.HomeBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	productapp.Routes(app, productapp.Config{
 		ProductBus: cfg.BusConfig.ProductBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	tranapp.Routes(app, tranapp.Config{
 		UserBus:    cfg.BusConfig.UserBus,
 		ProductBus: cfg.BusConfig.ProductBus,
 		Log:        cfg.Log,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 		DB:         cfg.DB,
 	})
 
 	userapp.Routes(app, userapp.Config{
 		UserBus:    cfg.BusConfig.UserBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	auditapp.Routes(app, auditapp.Config{
 		Log:        cfg.Log,
 		AuditBus:   cfg.BusConfig.AuditBus,
-		AuthClient: cfg.SalesConfig.AuthClient,
+		AuthClient: cfg.SchoolCRMConfig.AuthClient,
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"embed"
 	"net/http"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
@@ -16,7 +17,6 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/vproductbus"
 	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/owezzy/schoolCRM/foundation/web"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -53,8 +53,8 @@ func WithFileServer(react bool, static embed.FS, dir string, path string) func(o
 	}
 }
 
-// SalesConfig contains sales service specific config.
-type SalesConfig struct {
+// SchoolCRMConfig contains SchoolCRM service specific config.
+type SchoolCRMConfig struct {
 	AuthClient authclient.Authenticator
 }
 
@@ -73,13 +73,13 @@ type BusConfig struct {
 
 // Config contains all the mandatory systems required by handlers.
 type Config struct {
-	Build       string
-	Log         *logger.Logger
-	DB          *sqlx.DB
-	Tracer      trace.Tracer
-	BusConfig   BusConfig
-	SalesConfig SalesConfig
-	AuthConfig  AuthConfig
+	Build           string
+	Log             *logger.Logger
+	DB              *sqlx.DB
+	Tracer          trace.Tracer
+	BusConfig       BusConfig
+	SchoolCRMConfig SchoolCRMConfig
+	AuthConfig      AuthConfig
 }
 
 // RouteAdder defines behavior that sets the routes to bind for an instance

@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sales
-  namespace: sales-system
+  name: schoolcrm
+  namespace: schoolcrm-system
 
 spec:
   replicas: 1
@@ -16,7 +16,7 @@ spec:
       hostNetwork: true
 
       containers:
-        - name: sales
+        - name: schoolcrm
           resources:
             requests:
               cpu: "250m"
