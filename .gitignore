@@ -50,3 +50,7 @@ _testmain.go
 //*.test
 .vscode/tasks.json
 zarf/compose/database-data/data
+node_modules/
+api/frontends/web-admin/dist/
+api/frontends/web-admin/.angular/
+api/frontends/web-admin/node_modules/

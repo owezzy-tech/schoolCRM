@@ -1,15 +1,14 @@
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Event, Router, NavigationStart, NavigationEnd } from '@angular/router';
 import { PageLoaderComponent } from './layout/page-loader/page-loader.component';
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [CommonModule, RouterModule, PageLoaderComponent],
-  providers: [],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+    selector: 'app-root',
+    imports: [RouterModule, PageLoaderComponent],
+    providers: [],
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
   currentUrl!: string;

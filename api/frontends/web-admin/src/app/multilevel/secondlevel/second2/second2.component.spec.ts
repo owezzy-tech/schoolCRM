@@ -2,13 +2,15 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { Second2Component } from './second2.component';
 
+import { testProviders } from '../../../testing/test-providers';
 describe('Second2Component', () => {
   let component: Second2Component;
   let fixture: ComponentFixture<Second2Component>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [Second2Component]
+      imports: [Second2Component],
+      providers: testProviders
     })
       .compileComponents();
   }));

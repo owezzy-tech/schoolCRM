@@ -5,7 +5,7 @@ import { FeatherIconsComponent } from '@shared/components/feather-icons/feather-
 import { MatButtonModule } from '@angular/material/button';
 import { NgScrollbar } from 'ngx-scrollbar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { NgChartsModule } from 'ng2-charts';
+import { BaseChartDirective } from 'ng2-charts';
 import { BreadcrumbComponent } from '@shared/components/breadcrumb/breadcrumb.component';
 
 export type barChartOptions = {
@@ -34,19 +34,18 @@ export type areaChartOptions = {
 };
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
-  standalone: true,
-  imports: [
-    BreadcrumbComponent,
-    NgChartsModule,
-    MatProgressBarModule,
-    NgApexchartsModule,
-    NgScrollbar,
-    MatButtonModule,
-    FeatherIconsComponent,
-  ],
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.scss'],
+    imports: [
+        BreadcrumbComponent,
+        BaseChartDirective,
+        MatProgressBarModule,
+        NgApexchartsModule,
+        NgScrollbar,
+        MatButtonModule,
+        FeatherIconsComponent,
+    ]
 })
 export class DashboardComponent implements OnInit {
   @ViewChild('chart') chart!: ChartComponent;

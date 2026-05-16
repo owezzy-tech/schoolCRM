@@ -1,11 +1,12 @@
 import { ConfigService } from '../../config/config.service';
-import { DOCUMENT, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
   Component,
   Inject,
   ElementRef,
   OnInit,
   Renderer2,
+  DOCUMENT
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { UnsubscribeOnDestroyAdapter } from '@shared';
@@ -30,18 +31,17 @@ interface Notifications {
 }
 
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss'],
-  standalone: true,
-  imports: [
-    RouterLink,
-    NgClass,
-    MatButtonModule,
-    MatMenuModule,
-    NgScrollbar,
-    FeatherIconsComponent,
-  ],
+    selector: 'app-header',
+    templateUrl: './header.component.html',
+    styleUrls: ['./header.component.scss'],
+    imports: [
+        RouterLink,
+        NgClass,
+        MatButtonModule,
+        MatMenuModule,
+        NgScrollbar,
+        FeatherIconsComponent,
+    ]
 })
 export class HeaderComponent
   extends UnsubscribeOnDestroyAdapter

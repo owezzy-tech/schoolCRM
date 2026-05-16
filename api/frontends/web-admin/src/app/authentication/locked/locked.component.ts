@@ -7,19 +7,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 @Component({
-  selector: 'app-locked',
-  templateUrl: './locked.component.html',
-  styleUrls: ['./locked.component.scss'],
-  standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatButtonModule,
-    RouterLink,
-  ],
+    selector: 'app-locked',
+    templateUrl: './locked.component.html',
+    styleUrls: ['./locked.component.scss'],
+    imports: [
+        FormsModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatButtonModule,
+        RouterLink,
+    ]
 })
 export class LockedComponent implements OnInit {
   authForm!: UntypedFormGroup;

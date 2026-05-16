@@ -1,11 +1,15 @@
-import { Page404Component } from '../authentication/page404/page404.component';
 import { Route } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { SmartDemoPageComponent } from '@shared/components/smart-demo-page/smart-demo-page.component';
 
 export const STUDENT_ROUTE: Route[] = [
   {
     path: 'dashboard',
     component: DashboardComponent,
   },
-  { path: '**', component: Page404Component },
+  {
+    path: '**',
+    component: SmartDemoPageComponent,
+    data: { section: 'Student', kind: 'workspace', icon: 'school' },
+  },
 ];

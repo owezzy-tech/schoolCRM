@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+sh scripts/git-hooks/pre-commit.sh

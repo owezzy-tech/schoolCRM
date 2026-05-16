@@ -1,11 +1,13 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { Page500Component } from './page500.component';
+import { testProviders } from '../../testing/test-providers';
 describe('Page500Component', () => {
   let component: Page500Component;
   let fixture: ComponentFixture<Page500Component>;
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [Page500Component]
+      imports: [Page500Component],
+      providers: testProviders
     }).compileComponents();
   }));
   beforeEach(() => {

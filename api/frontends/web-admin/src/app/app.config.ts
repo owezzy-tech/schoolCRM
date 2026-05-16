@@ -1,4 +1,4 @@
-import { HTTP_INTERCEPTORS, HttpClient, provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient } from '@angular/common/http';
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { APP_ROUTE } from './app.routes';
 import { provideRouter } from '@angular/router';
@@ -7,16 +7,12 @@ import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { JwtInterceptor } from '@core/interceptor/jwt.interceptor';
 import { ErrorInterceptor } from '@core/interceptor/error.interceptor';
 import { DirectionService, LanguageService } from '@core';
-import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MomentDateAdapter } from '@angular/material-moment-adapter';
 import { FeatherModule } from 'angular-feather';
 import { allIcons } from 'angular-feather/icons';
-
-export function createTranslateLoader(http: HttpClient): TranslateHttpLoader {
-    return new TranslateHttpLoader(http, './assets/i18n/', '.json');
-}
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -30,13 +26,12 @@ export const appConfig: ApplicationConfig = {
         importProvidersFrom(
             TranslateModule.forRoot({
                 defaultLanguage: 'en',
-                loader: {
-                    provide: TranslateLoader,
-                    useFactory: createTranslateLoader,
-                    deps: [HttpClient],
-                },
             })
         ),
+        ...provideTranslateHttpLoader({
+            prefix: './assets/i18n/',
+            suffix: '.json',
+        }),
         { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
         { provide: DateAdapter, useClass: MomentDateAdapter },
         {

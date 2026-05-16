@@ -1,11 +1,13 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { SigninComponent } from './signin.component';
+import { testProviders } from '../../testing/test-providers';
 describe('SigninComponent', () => {
   let component: SigninComponent;
   let fixture: ComponentFixture<SigninComponent>;
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [SigninComponent]
+      imports: [SigninComponent],
+      providers: testProviders
     }).compileComponents();
   }));
   beforeEach(() => {

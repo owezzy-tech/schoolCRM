@@ -1,0 +1,28 @@
+{
+  "name": "schoolcrm-git-hooks",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "prepare": "husky",
+    "commit": "git-cz",
+    "lint:frontend": "npm --prefix api/frontends/web-admin run lint",
+    "test:frontend": "npm --prefix api/frontends/web-admin run test -- --watch=false --browsers=ChromeHeadless",
+    "lint:go": "CGO_ENABLED=0 go vet ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/... && go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
+    "test:go": "CGO_ENABLED=0 go test -count=1 ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
+    "test:go:vuln": "go run golang.org/x/vuln/cmd/govulncheck@latest ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
+    "lint:rag": "python3 -m ruff check api/services/RAG && python3 -m compileall api/services/RAG",
+    "test:rag": "python3 -m pytest api/services/RAG/tests -v"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "commitizen": "^4.3.1",
+    "cz-git": "^1.12.0",
+    "husky": "^9.1.7"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-git"
+    }
+  }
+}

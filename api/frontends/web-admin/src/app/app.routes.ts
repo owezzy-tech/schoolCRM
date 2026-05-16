@@ -4,6 +4,7 @@ import { AuthGuard } from '@core/guard/auth.guard';
 import { AuthLayoutComponent } from './layout/app-layout/auth-layout/auth-layout.component';
 import { Page404Component } from './authentication/page404/page404.component';
 import { Role } from '@core';
+import { SmartDemoPageComponent } from '@shared/components/smart-demo-page/smart-demo-page.component';
 
 export const APP_ROUTE: Route[] = [
   {
@@ -54,6 +55,37 @@ export const APP_ROUTE: Route[] = [
             (m) => m.MULTILEVEL_ROUTE
           ),
       },
+      {
+        path: 'calendar',
+        component: SmartDemoPageComponent,
+        data: { title: 'Calendar', section: 'Apps', kind: 'calendar', icon: 'event_note' },
+      },
+      {
+        path: 'task',
+        component: SmartDemoPageComponent,
+        data: { title: 'Tasks', section: 'Apps', kind: 'list', icon: 'fact_check' },
+      },
+      {
+        path: 'contacts',
+        component: SmartDemoPageComponent,
+        data: { title: 'Contacts', section: 'Apps', kind: 'list', icon: 'contacts' },
+      },
+      ...['email', 'apps', 'widget', 'ui', 'forms', 'tables', 'charts', 'timeline', 'icons'].map(
+        (path) => ({
+          path,
+          children: [
+            {
+              path: '**',
+              component: SmartDemoPageComponent,
+              data: {
+                section: path.charAt(0).toUpperCase() + path.slice(1),
+                kind: 'workspace',
+                icon: 'dashboard_customize',
+              },
+            },
+          ],
+        })
+      ),
     ],
   },
   {

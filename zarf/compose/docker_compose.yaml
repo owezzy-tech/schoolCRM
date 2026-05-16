@@ -133,6 +133,29 @@ services:
     depends_on:
       - auth
 
+  web-admin:
+    image: localhost/ardanlabs/web-admin:0.0.1
+    pull_policy: never
+    container_name: web-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - GOOGLE_MAPS_API_KEY=
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+      start_period: 2s
+    networks:
+      sales-system-network:
+        ipv4_address: 10.5.0.30
+    depends_on:
+      - auth
+      - sales
+
   metrics:
     image: localhost/ardanlabs/metrics:0.0.1
     pull_policy: never

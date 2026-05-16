@@ -19,18 +19,17 @@ export type ChartOptions = {
   tooltip: ApexTooltip;
 };
 @Component({
-  selector: 'app-dashboard2',
-  templateUrl: './dashboard2.component.html',
-  styleUrls: ['./dashboard2.component.scss'],
-  standalone: true,
-  imports: [
-    BreadcrumbComponent,
-    MatButtonModule,
-    MatMenuModule,
-    MatIconModule,
-    NgApexchartsModule,
-    FeatherIconsComponent,
-  ],
+    selector: 'app-dashboard2',
+    templateUrl: './dashboard2.component.html',
+    styleUrls: ['./dashboard2.component.scss'],
+    imports: [
+        BreadcrumbComponent,
+        MatButtonModule,
+        MatMenuModule,
+        MatIconModule,
+        NgApexchartsModule,
+        FeatherIconsComponent,
+    ]
 })
 export class Dashboard2Component implements OnInit {
   public lineChartOptions!: Partial<ChartOptions>;

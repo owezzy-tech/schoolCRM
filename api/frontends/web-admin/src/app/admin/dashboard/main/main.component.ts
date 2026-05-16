@@ -28,19 +28,18 @@ export type chartOptions = {
 };
 
 @Component({
-  selector: 'app-main',
-  templateUrl: './main.component.html',
-  styleUrls: ['./main.component.scss'],
-  standalone: true,
-  imports: [
-    BreadcrumbComponent,
-    MatButtonModule,
-    MatMenuModule,
-    MatIconModule,
-    NgApexchartsModule,
-    NgScrollbar,
-    FeatherIconsComponent,
-  ],
+    selector: 'app-main',
+    templateUrl: './main.component.html',
+    styleUrls: ['./main.component.scss'],
+    imports: [
+        BreadcrumbComponent,
+        MatButtonModule,
+        MatMenuModule,
+        MatIconModule,
+        NgApexchartsModule,
+        NgScrollbar,
+        FeatherIconsComponent,
+    ]
 })
 export class MainComponent implements OnInit {
   @ViewChild('chart') chart!: ChartComponent;

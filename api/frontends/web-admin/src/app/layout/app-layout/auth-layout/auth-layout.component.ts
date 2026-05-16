@@ -1,17 +1,16 @@
 import { Direction, BidiModule } from '@angular/cdk/bidi';
-import { Component, Inject, Renderer2 } from '@angular/core';
+import { Component, Inject, Renderer2, DOCUMENT } from '@angular/core';
 import { DirectionService, InConfiguration } from '@core';
 import { ConfigService } from '@config';
-import { DOCUMENT } from '@angular/common';
+
 import { RouterOutlet } from '@angular/router';
 import { UnsubscribeOnDestroyAdapter } from '@shared';
 
 @Component({
-  selector: 'app-auth-layout',
-  templateUrl: './auth-layout.component.html',
-  styleUrls: [],
-  standalone: true,
-  imports: [BidiModule, RouterOutlet],
+    selector: 'app-auth-layout',
+    templateUrl: './auth-layout.component.html',
+    styleUrls: [],
+    imports: [BidiModule, RouterOutlet]
 })
 export class AuthLayoutComponent extends UnsubscribeOnDestroyAdapter {
   direction!: Direction;

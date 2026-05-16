@@ -1,24 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/ban-types */
-import { Component, ElementRef, HostListener, Input } from '@angular/core';
+import { Component, ElementRef, HostListener } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 @Component({
-  selector: 'app-file-upload',
-  templateUrl: './file-upload.component.html',
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: FileUploadComponent,
-      multi: true,
-    },
-  ],
-  styleUrls: ['./file-upload.component.scss'],
-  standalone: true,
-  imports: [MatButtonModule],
+    selector: 'app-file-upload',
+    templateUrl: './file-upload.component.html',
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: FileUploadComponent,
+            multi: true,
+        },
+    ],
+    styleUrls: ['./file-upload.component.scss'],
+    imports: [MatButtonModule]
 })
 export class FileUploadComponent implements ControlValueAccessor {
-  onChange!: Function;
+  private onChange: (file: File | null) => void = () => undefined;
   public file: File | null = null;
 
   @HostListener('change', ['$event.target.files']) emitFiles(event: FileList) {
@@ -29,17 +26,17 @@ export class FileUploadComponent implements ControlValueAccessor {
 
   constructor(private host: ElementRef<HTMLInputElement>) { }
 
-  writeValue(value: null) {
+  writeValue() {
     // clear file input
     this.host.nativeElement.value = '';
     this.file = null;
   }
 
-  registerOnChange(fn: Function) {
+  registerOnChange(fn: (file: File | null) => void) {
     this.onChange = fn;
   }
 
-  registerOnTouched(fn: Function) {
+  registerOnTouched() {
     // add code here
   }
 }

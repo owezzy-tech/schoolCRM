@@ -1,7 +1,5 @@
-import { CoreModule } from '../core.module';
-
 export function throwIfAlreadyLoaded(
-  parentModule: CoreModule,
+  parentModule: unknown,
   moduleName: string
 ) {
   if (parentModule) {

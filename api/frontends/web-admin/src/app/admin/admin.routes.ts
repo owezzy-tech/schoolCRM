@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { Page404Component } from 'app/authentication/page404/page404.component';
+import { SmartDemoPageComponent } from '@shared/components/smart-demo-page/smart-demo-page.component';
 
 export const ADMIN_ROUTE: Route[] = [
   {
@@ -7,5 +7,9 @@ export const ADMIN_ROUTE: Route[] = [
     loadChildren: () =>
       import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTE),
   },
-  { path: '**', component: Page404Component },
+  {
+    path: '**',
+    component: SmartDemoPageComponent,
+    data: { section: 'Admin', kind: 'workspace', icon: 'school' },
+  },
 ];

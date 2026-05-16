@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router, NavigationEnd, RouterLinkActive, RouterLink } from '@angular/router';
-import { DOCUMENT, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
   Component,
   Inject,
@@ -9,6 +9,7 @@ import {
   Renderer2,
   HostListener,
   OnDestroy,
+  DOCUMENT
 } from '@angular/core';
 import { ROUTES } from './sidebar-items';
 import { AuthService, Role } from '@core';
@@ -17,17 +18,16 @@ import { TranslateModule } from '@ngx-translate/core';
 import { NgScrollbar } from 'ngx-scrollbar';
 import { UnsubscribeOnDestroyAdapter } from '@shared';
 @Component({
-  selector: 'app-sidebar',
-  templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss'],
-  standalone: true,
-  imports: [
-    NgScrollbar,
-    RouterLinkActive,
-    RouterLink,
-    NgClass,
-    TranslateModule,
-  ],
+    selector: 'app-sidebar',
+    templateUrl: './sidebar.component.html',
+    styleUrls: ['./sidebar.component.scss'],
+    imports: [
+        NgScrollbar,
+        RouterLinkActive,
+        RouterLink,
+        NgClass,
+        TranslateModule,
+    ]
 })
 export class SidebarComponent extends UnsubscribeOnDestroyAdapter implements OnInit {
   public sidebarItems!: RouteInfo[];
@@ -56,7 +56,7 @@ export class SidebarComponent extends UnsubscribeOnDestroyAdapter implements OnI
       }
     });
   }
-  @HostListener('window:resize', ['$event'])
+  @HostListener('window:resize')
   windowResizecall() {
     this.setMenuHeight();
     this.checkStatuForResize(false);

@@ -11,3 +11,9 @@ LICENSE
 makefile
 README.md
 !zarf/compose/database-data
+node_modules/
+api/frontends/web-admin/node_modules/
+api/frontends/web-admin/dist/
+api/services/RAG/__pycache__/
+api/services/RAG/.pytest_cache/
+api/services/RAG/**/*.pyc

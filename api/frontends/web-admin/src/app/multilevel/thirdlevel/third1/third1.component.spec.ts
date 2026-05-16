@@ -2,13 +2,15 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { Third1Component } from './third1.component';
 
+import { testProviders } from '../../../testing/test-providers';
 describe('Third1Component', () => {
   let component: Third1Component;
   let fixture: ComponentFixture<Third1Component>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Third1Component]
+      imports: [Third1Component],
+      providers: testProviders
     })
       .compileComponents();
 

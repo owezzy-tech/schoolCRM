@@ -1,0 +1,31 @@
+# Build the Angular frontend.
+FROM node:20-alpine AS build_web_admin
+ARG BUILD_TAG
+WORKDIR /app
+COPY api/frontends/web-admin/package*.json ./
+COPY api/frontends/web-admin/.npmrc ./
+ENV npm_config_fund=false
+ENV npm_config_audit=false
+RUN npm ci --no-audit --no-fund
+COPY api/frontends/web-admin/ ./
+RUN npm run build
+
+
+# Serve the frontend with Caddy.
+FROM caddy:2.9-alpine
+ARG BUILD_DATE
+ARG BUILD_TAG
+COPY --from=build_web_admin /app/dist/smart /srv
+COPY api/frontends/web-admin/Caddyfile /etc/caddy/Caddyfile
+COPY api/frontends/web-admin/docker-entrypoint.sh /usr/bin/frontend-entrypoint.sh
+RUN chmod +x /usr/bin/frontend-entrypoint.sh
+EXPOSE 80
+ENTRYPOINT ["/usr/bin/frontend-entrypoint.sh"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+
+LABEL org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.title="web-admin" \
+      org.opencontainers.image.authors="Owen Adirah" \
+      org.opencontainers.image.source="https://github.com/owezzy/schoolCRM/tree/main/api/frontends/web-admin" \
+      org.opencontainers.image.revision="${BUILD_TAG}" \
+      org.opencontainers.image.vendor="schoolCRM"

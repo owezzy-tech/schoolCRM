@@ -30,16 +30,15 @@ export type pieChartOptions = {
 };
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
-  standalone: true,
-  imports: [
-    BreadcrumbComponent,
-    NgApexchartsModule,
-    MatButtonModule,
-    FeatherIconsComponent,
-  ],
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.scss'],
+    imports: [
+        BreadcrumbComponent,
+        NgApexchartsModule,
+        MatButtonModule,
+        FeatherIconsComponent,
+    ]
 })
 export class DashboardComponent implements OnInit {
   @ViewChild('chart') chart!: ChartComponent;

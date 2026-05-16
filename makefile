@@ -123,11 +123,13 @@ KIND_CLUSTER    := ardan-starter-cluster
 NAMESPACE       := sales-system
 SALES_APP       := sales
 AUTH_APP        := auth
+WEB_ADMIN_APP   := web-admin
 BASE_IMAGE_NAME := localhost/ardanlabs
 VERSION         := 0.0.1
 SALES_IMAGE     := $(BASE_IMAGE_NAME)/$(SALES_APP):$(VERSION)
 METRICS_IMAGE   := $(BASE_IMAGE_NAME)/metrics:$(VERSION)
 AUTH_IMAGE      := $(BASE_IMAGE_NAME)/$(AUTH_APP):$(VERSION)
+WEB_ADMIN_IMAGE := $(BASE_IMAGE_NAME)/$(WEB_ADMIN_APP):$(VERSION)
 
 # VERSION       := "0.0.1-$(shell git rev-parse --short HEAD)"
 
@@ -178,7 +180,7 @@ dev-docker:
 # ==============================================================================
 # Building containers
 
-build: sales metrics auth
+build: sales metrics auth web-admin
 
 sales:
 	docker build \
@@ -200,6 +202,14 @@ auth:
 	docker build \
 		-f zarf/docker/dockerfile.auth \
 		-t $(AUTH_IMAGE) \
+		--build-arg BUILD_TAG=$(VERSION) \
+		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		.
+
+web-admin:
+	docker build \
+		-f zarf/docker/dockerfile.web-admin \
+		-t $(WEB_ADMIN_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
 		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.

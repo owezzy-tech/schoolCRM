@@ -1,4 +1,4 @@
-import { DOCUMENT, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
   Component,
   Inject,
@@ -7,6 +7,7 @@ import {
   AfterViewInit,
   Renderer2,
   ChangeDetectionStrategy,
+  DOCUMENT
 } from '@angular/core';
 import { ConfigService } from '@config';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -17,18 +18,17 @@ import { NgScrollbar } from 'ngx-scrollbar';
 import { FeatherIconsComponent } from '@shared/components/feather-icons/feather-icons.component';
 
 @Component({
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  selector: 'app-right-sidebar',
-  templateUrl: './right-sidebar.component.html',
-  styleUrls: ['./right-sidebar.component.scss'],
-  standalone: true,
-  imports: [
-    NgClass,
-    FeatherIconsComponent,
-    NgScrollbar,
-    MatButtonToggleModule,
-    MatSlideToggleModule,
-  ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-right-sidebar',
+    templateUrl: './right-sidebar.component.html',
+    styleUrls: ['./right-sidebar.component.scss'],
+    imports: [
+        NgClass,
+        FeatherIconsComponent,
+        NgScrollbar,
+        MatButtonToggleModule,
+        MatSlideToggleModule,
+    ]
 })
 export class RightSidebarComponent
   extends UnsubscribeOnDestroyAdapter
