@@ -11,7 +11,7 @@ module.exports = defineConfig({
     'scope-enum': [
       2,
       'always',
-      ['frontend', 'rag', 'go', 'auth', 'sales', 'metrics', 'docs', 'config', 'deps', 'ci']
+      ['frontend', 'rag', 'go', 'auth', 'schoolcrm', 'metrics', 'docs', 'config', 'deps', 'ci']
     ]
   },
   prompt: {
@@ -49,7 +49,7 @@ module.exports = defineConfig({
       { value: 'rag', name: 'rag: Python RAG service under api/services/RAG' },
       { value: 'go', name: 'go: shared Go backend code' },
       { value: 'auth', name: 'auth: auth service and related packages' },
-      { value: 'sales', name: 'sales: sales service and related packages' },
+      { value: 'schoolcrm', name: 'schoolcrm: SchoolCRM service and related packages' },
       { value: 'metrics', name: 'metrics: metrics service and related packages' },
       { value: 'docs', name: 'docs: documentation' },
       { value: 'config', name: 'config: repo or runtime configuration' },
