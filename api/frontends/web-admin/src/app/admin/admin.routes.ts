@@ -8,6 +8,10 @@ export const ADMIN_ROUTE: Route[] = [
       import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTE),
   },
   {
+    path: 'rag',
+    loadChildren: () => import('./rag/rag.routes').then((m) => m.RAG_ROUTE),
+  },
+  {
     path: '**',
     component: SmartDemoPageComponent,
     data: { section: 'Admin', kind: 'workspace', icon: 'school' },

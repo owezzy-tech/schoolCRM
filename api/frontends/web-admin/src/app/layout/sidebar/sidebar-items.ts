@@ -189,6 +189,7 @@ export const ROUTES: RouteInfo[] = [
     '/admin/communication/announcements',
     '/admin/communication/sms-email',
   ]),
+  direct('/admin/rag/chat', 'RAG Chat', 'chat', ['Admin']),
   adminMenu('Fees', 'monetization_on', [
     '/admin/fees/all-fees',
     '/admin/fees/add-fees',
