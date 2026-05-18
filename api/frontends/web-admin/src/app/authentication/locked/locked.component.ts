@@ -52,7 +52,7 @@ export class LockedComponent implements OnInit {
       return;
     } else {
       const role = this.authService.currentUserValue.role;
-      if (role === Role.All || role === Role.Admin) {
+      if (role === Role.All || role === Role.SuperAdmin || role === Role.SchoolAdmin) {
         this.router.navigate(['/admin/dashboard/main']);
       } else if (role === Role.Teacher) {
         this.router.navigate(['/teacher/dashboard']);

@@ -82,6 +82,8 @@ export class SidebarComponent extends UnsubscribeOnDestroyAdapter implements OnI
   ngOnInit() {
     if (this.authService.currentUserValue) {
       const userRole = this.authService.currentUserValue.role;
+      const menuRole =
+        userRole === Role.SuperAdmin || userRole === Role.SchoolAdmin ? 'Admin' : userRole;
       this.userFullName =
         this.authService.currentUserValue.firstName +
         ' ' +
@@ -89,16 +91,16 @@ export class SidebarComponent extends UnsubscribeOnDestroyAdapter implements OnI
       this.userImg = this.authService.currentUserValue.img;
 
       this.sidebarItems = ROUTES.filter(
-        (x) => x.role.indexOf(userRole) !== -1 || x.role.indexOf('All') !== -1
+        (x) => x.role.indexOf(menuRole) !== -1 || x.role.indexOf('All') !== -1
       );
-      if (userRole === Role.Admin) {
-        this.userType = Role.Admin;
+      if (userRole === Role.SuperAdmin || userRole === Role.SchoolAdmin) {
+        this.userType = Role.SchoolAdmin;
       } else if (userRole === Role.Teacher) {
         this.userType = Role.Teacher;
       } else if (userRole === Role.Student) {
         this.userType = Role.Student;
       } else {
-        this.userType = Role.Admin;
+        this.userType = Role.SchoolAdmin;
       }
     }
 

@@ -1,52 +1,34 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, map, of } from 'rxjs';
 import { User } from '../models/user';
 import { Role } from '@core/models/role';
+import { environment } from 'environments/environment';
+
+interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresAt: string;
+  expiresIn: number;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    roles: Role[];
+  };
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly emptyUser = {} as User;
   private currentUserSubject: BehaviorSubject<User>;
   public currentUser: Observable<User>;
 
-  private users = [
-    {
-      id: 1,
-      img: 'assets/images/user/admin.jpg',
-      username: 'admin@school.org',
-      password: 'admin@123',
-      firstName: 'Sarah',
-      lastName: 'Smith',
-      role: Role.Admin,
-      token: 'admin-token',
-    },
-    {
-      id: 2,
-      img: 'assets/images/user/teacher.jpg',
-      username: 'teacher@school.org',
-      password: 'teacher@123',
-      firstName: 'Ashton',
-      lastName: 'Cox',
-      role: Role.Teacher,
-      token: 'teacher-token',
-    },
-    {
-      id: 3,
-      img: 'assets/images/user/student.jpg',
-      username: 'student@school.org',
-      password: 'student@123',
-      firstName: 'Ashton',
-      lastName: 'Cox',
-      role: Role.Student,
-      token: 'student-token',
-    },
-  ];
-
   constructor(private http: HttpClient) {
     this.currentUserSubject = new BehaviorSubject<User>(
-      JSON.parse(localStorage.getItem('currentUser') || '{}')
+      JSON.parse(localStorage.getItem('currentUser') || 'null') ?? this.emptyUser
     );
     this.currentUser = this.currentUserSubject.asObservable();
   }
@@ -55,43 +37,57 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  login(username: string, password: string) {
-
-    const user = this.users.find((u) => u.username === username && u.password === password);
-
-    if (!user) {
-      return this.error('Username or password is incorrect');
-    } else {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      this.currentUserSubject.next(user);
-      return this.ok({
-        id: user.id,
-        img: user.img,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        token: user.token,
-      });
-    }
-  }
-  ok(body?: {
-    id: number;
-    img: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-    token: string;
-  }) {
-    return of(new HttpResponse({ status: 200, body }));
-  }
-  error(message: string) {
-    return throwError(message);
+  login(username: string, password: string): Observable<User> {
+    return this.http
+      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
+        email: username,
+        password,
+      })
+      .pipe(
+        map((response) => {
+          const user = this.toUser(response);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+          return user;
+        })
+      );
   }
 
   logout() {
     // remove user from local storage to log user out
     localStorage.removeItem('currentUser');
-    this.currentUserSubject.next(this.currentUserValue);
+    this.currentUserSubject.next(this.emptyUser);
     return of({ success: false });
+  }
+
+  private toUser(response: LoginResponse): User {
+    const [firstName, ...rest] = response.user.name.split(' ');
+    const roles = response.user.roles ?? [];
+
+    return {
+      id: response.user.id,
+      img: this.imageForRole(roles[0]),
+      username: response.user.email,
+      firstName: firstName || response.user.name,
+      lastName: rest.join(' '),
+      role: roles[0] ?? Role.Student,
+      roles,
+      token: response.accessToken,
+      expiresAt: response.expiresAt,
+    };
+  }
+
+  private imageForRole(role: Role | undefined): string {
+    switch (role) {
+      case Role.SuperAdmin:
+      case Role.SchoolAdmin:
+        return 'assets/images/user/admin.jpg';
+      case Role.Teacher:
+        return 'assets/images/user/teacher.jpg';
+      case Role.Student:
+        return 'assets/images/user/student.jpg';
+      default:
+        return 'assets/images/user/user.jpg';
+    }
   }
 }

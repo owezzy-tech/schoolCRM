@@ -133,7 +133,7 @@ export class HeaderComponent
     this.userImg = this.authService.currentUserValue.img;
     this.docElement = document.documentElement;
 
-    if (userRole === Role.Admin) {
+    if (userRole === Role.SuperAdmin || userRole === Role.SchoolAdmin) {
       this.homePage = 'admin/dashboard/main';
     } else if (userRole === Role.Teacher) {
       this.homePage = 'teacher/dashboard';
