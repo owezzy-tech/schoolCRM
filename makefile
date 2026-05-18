@@ -124,12 +124,14 @@ NAMESPACE       := schoolcrm-system
 SCHOOLCRM_APP       := schoolcrm
 AUTH_APP        := auth
 WEB_ADMIN_APP   := web-admin
+RAG_APP         := rag
 BASE_IMAGE_NAME := localhost/schoolcrm
 VERSION         := 0.0.1
 SCHOOLCRM_IMAGE     := $(BASE_IMAGE_NAME)/$(SCHOOLCRM_APP):$(VERSION)
 METRICS_IMAGE   := $(BASE_IMAGE_NAME)/metrics:$(VERSION)
 AUTH_IMAGE      := $(BASE_IMAGE_NAME)/$(AUTH_APP):$(VERSION)
 WEB_ADMIN_IMAGE := $(BASE_IMAGE_NAME)/$(WEB_ADMIN_APP):$(VERSION)
+RAG_IMAGE       := $(BASE_IMAGE_NAME)/$(RAG_APP):$(VERSION)
 
 # VERSION       := "0.0.1-$(shell git rev-parse --short HEAD)"
 
@@ -180,14 +182,14 @@ dev-docker:
 # ==============================================================================
 # Building containers
 
-build: schoolcrm metrics auth web-admin
+build: schoolcrm metrics auth rag web-admin
 
 schoolcrm:
 	docker build \
 		-f zarf/docker/dockerfile.schoolcrm \
 		-t $(SCHOOLCRM_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
-		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.
 
 metrics:
@@ -195,7 +197,7 @@ metrics:
 		-f zarf/docker/dockerfile.metrics \
 		-t $(METRICS_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
-		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.
 
 auth:
@@ -203,7 +205,15 @@ auth:
 		-f zarf/docker/dockerfile.auth \
 		-t $(AUTH_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
-		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		.
+
+rag:
+	docker build \
+		-f zarf/docker/dockerfile.rag \
+		-t $(RAG_IMAGE) \
+		--build-arg BUILD_TAG=$(VERSION) \
+		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.
 
 web-admin:
@@ -211,7 +221,7 @@ web-admin:
 		-f zarf/docker/dockerfile.web-admin \
 		-t $(WEB_ADMIN_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
-		--build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 		.
 
 # ==============================================================================
@@ -262,6 +272,7 @@ dev-load:
 	kind load docker-image $(SCHOOLCRM_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(AUTH_IMAGE) --name $(KIND_CLUSTER) & \
+	kind load docker-image $(RAG_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
 
 dev-apply:
@@ -381,6 +392,70 @@ compose-down:
 
 compose-logs:
 	cd ./zarf/compose/ && docker compose -f docker_compose.yaml logs
+
+# ==============================================================================
+# Running locally without Docker or Kubernetes
+
+local-db-url:
+	@echo "PostgreSQL must be running on localhost:5454 with user/password postgres/postgres."
+	@echo "If you do want Docker for only the database: docker compose -f zarf/compose/docker_compose.yaml -p compose up -d database"
+
+local-migrate:
+	SCHOOLCRM_DB_HOST=localhost:5454 \
+	SCHOOLCRM_DB_DISABLE_TLS=true \
+	go run api/tooling/admin/main.go migrate
+
+local-seed: local-migrate
+	SCHOOLCRM_DB_HOST=localhost:5454 \
+	SCHOOLCRM_DB_DISABLE_TLS=true \
+	go run api/tooling/admin/main.go seed
+
+local-auth:
+	AUTH_DB_HOST=localhost:5454 \
+	AUTH_DB_DISABLE_TLS=true \
+	AUTH_WEB_API_HOST=0.0.0.0:6000 \
+	AUTH_WEB_GRPC_HOST=0.0.0.0:6001 \
+	AUTH_WEB_DEBUG_HOST=0.0.0.0:6010 \
+	go run api/services/auth/main.go | go run api/tooling/logfmt/main.go
+
+local-schoolcrm:
+	SCHOOLCRM_DB_HOST=localhost:5454 \
+	SCHOOLCRM_DB_DISABLE_TLS=true \
+	SCHOOLCRM_AUTH_HOST=http://localhost:6000 \
+	SCHOOLCRM_AUTH_GRPC_HOST=localhost:6001 \
+	SCHOOLCRM_WEB_API_HOST=0.0.0.0:3000 \
+	SCHOOLCRM_WEB_DEBUG_HOST=0.0.0.0:3010 \
+	go run api/services/schoolcrm/main.go | go run api/tooling/logfmt/main.go
+
+local-rag:
+	cd api/services/RAG && \
+	RAG_API_HOST=0.0.0.0 \
+	RAG_API_PORT=4545 \
+	RAG_AUTH_SERVICE_URL=http://localhost:6000 \
+	RAG_ALLOW_ANONYMOUS=false \
+	RAG_FILE_STORAGE_DIR=./var/files \
+	python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 4545
+
+local-rag-dev:
+	cd api/services/RAG && \
+	RAG_API_HOST=0.0.0.0 \
+	RAG_API_PORT=4545 \
+	RAG_ALLOW_ANONYMOUS=true \
+	RAG_FILE_STORAGE_DIR=./var/files \
+	python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 4545
+
+local-web-admin:
+	npm --prefix api/frontends/web-admin start
+
+local-run-help:
+	@echo "Run these targets in separate terminals:"
+	@echo "  make local-db-url       # explains localhost database requirement"
+	@echo "  make local-seed         # migrate and seed localhost database"
+	@echo "  make local-auth         # auth API on :6000, gRPC on :6001"
+	@echo "  make local-schoolcrm    # SchoolCRM API on :3000"
+	@echo "  make local-rag          # RAG API on :4545 using auth service"
+	@echo "  make local-rag-dev      # RAG API on :4545 with anonymous auth"
+	@echo "  make local-web-admin    # Angular admin app on :4200"
 
 # ==============================================================================
 # Administration
@@ -645,6 +720,13 @@ help:
 	@echo "  schoolcrm                   Build the SchoolCRM container"
 	@echo "  metrics                 Build the metrics container"
 	@echo "  auth                    Build the auth container"
+	@echo "  rag                     Build the RAG container"
+	@echo "  local-run-help          Show local non-Docker run commands"
+	@echo "  local-auth              Run auth locally without Docker/Kubernetes"
+	@echo "  local-schoolcrm         Run SchoolCRM API locally without Docker/Kubernetes"
+	@echo "  local-rag               Run RAG locally against local auth"
+	@echo "  local-rag-dev           Run RAG locally with anonymous auth"
+	@echo "  local-web-admin         Run Angular admin locally"
 	@echo "  dev-up                  Start the KIND cluster"
 	@echo "  dev-down                Stop the KIND cluster"
 	@echo "  dev-status-all          Show the status of the KIND cluster"
@@ -657,6 +739,7 @@ help:
 	@echo "  dev-update-apply        Build, load, and apply the deployments"
 	@echo "  dev-logs                Show the logs for the SchoolCRM service"
 	@echo "  dev-logs-auth           Show the logs for the auth service"
+	@echo "  dev-logs-rag            Show the logs for the RAG service"
 	@echo "  dev-logs-init           Show the logs for the init container"
 	@echo "  dev-describe-node       Show the node details"
 	@echo "  dev-describe-deployment Show the deployment details"

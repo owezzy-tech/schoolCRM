@@ -1,26 +1,31 @@
 # Build the Go Binary.
 FROM golang:1.26 AS build_schoolcrm
 ENV CGO_ENABLED=0
+ENV GOPROXY=https://proxy.golang.org|direct
 ARG BUILD_TAG
 
 # Create the service directory and the copy the module files first and then
 # download the dependencies. If this doesn't change, we won't need to do this
 # again in future builds.
-# RUN mkdir /service
-# COPY go.* /service/
-# WORKDIR /service
-# RUN go mod download
+COPY go.mod go.sum /service/
+WORKDIR /service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy the source code into the container.
 COPY . /service
 
 # Build the admin binary.
 WORKDIR /service/api/tooling/admin
-RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 # Build the service binary.
 WORKDIR /service/api/services/schoolcrm
-RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
 # Run the Go Binary in Alpine.

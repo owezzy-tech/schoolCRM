@@ -1,7 +1,15 @@
 # Build the Go Binary.
 FROM golang:1.26 AS build_auth
 ENV CGO_ENABLED=0
+ENV GOPROXY=https://proxy.golang.org|direct
 ARG BUILD_TAG
+
+# Copy module files first so dependency downloads are cached independently from
+# source changes.
+COPY go.mod go.sum /service/
+WORKDIR /service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy the source code into the container.
 COPY . /service
@@ -9,7 +17,9 @@ COPY . /service
 # Build the service binary. We are doing this last since this will be different
 # every time we run through this process.
 WORKDIR /service/api/services/auth
-RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
 # Run the Go Binary in Alpine.

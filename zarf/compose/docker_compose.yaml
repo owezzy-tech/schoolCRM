@@ -3,7 +3,7 @@ services:
     image: postgres:18.3-alpine3.22
     container_name: database
     ports:
-      - "5432:5432"
+      - "5454:5432"
     environment:
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -114,7 +114,7 @@ services:
     container_name: rag
     restart: unless-stopped
     ports:
-      - "7000:7000"
+      - "4545:7000"
     environment:
       - RAG_API_HOST=0.0.0.0
       - RAG_API_PORT=7000
