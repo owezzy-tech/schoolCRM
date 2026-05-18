@@ -33,7 +33,8 @@ func New(t *testing.T, testName string) *Test {
 			UserBus: db.BusDomain.User,
 		},
 		AuthConfig: mux.AuthConfig{
-			Auth: auth,
+			Auth:     auth,
+			TokenKey: kid,
 		},
 	}, authbuild.Routes()))
 

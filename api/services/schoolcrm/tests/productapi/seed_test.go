@@ -16,7 +16,7 @@ func insertSeedData(db *dbtest.Database, ath *auth.Auth) (apitest.SeedData, erro
 	ctx := context.Background()
 	busDomain := db.BusDomain
 
-	usrs, err := userbus.TestSeedUsers(ctx, 1, role.User, busDomain.User)
+	usrs, err := userbus.TestSeedUsers(ctx, 1, role.Student, busDomain.User)
 	if err != nil {
 		return apitest.SeedData{}, fmt.Errorf("seeding users : %w", err)
 	}
@@ -35,7 +35,7 @@ func insertSeedData(db *dbtest.Database, ath *auth.Auth) (apitest.SeedData, erro
 
 	// -------------------------------------------------------------------------
 
-	usrs, err = userbus.TestSeedUsers(ctx, 1, role.Admin, busDomain.User)
+	usrs, err = userbus.TestSeedUsers(ctx, 1, role.SchoolAdmin, busDomain.User)
 	if err != nil {
 		return apitest.SeedData{}, fmt.Errorf("seeding users : %w", err)
 	}

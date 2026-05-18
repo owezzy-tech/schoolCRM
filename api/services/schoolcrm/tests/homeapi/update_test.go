@@ -131,7 +131,7 @@ func update401(sd apitest.SeedData) []apitest.Table {
 				},
 			},
 			GotResp: &errs.Error{},
-			ExpResp: errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[USER]] rule[rule_admin_or_subject]"),
+			ExpResp: errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_or_subject]"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

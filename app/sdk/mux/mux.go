@@ -60,7 +60,8 @@ type SchoolCRMConfig struct {
 
 // AuthConfig contains auth service specific config.
 type AuthConfig struct {
-	Auth *auth.Auth
+	Auth     *auth.Auth
+	TokenKey string
 }
 
 type BusConfig struct {

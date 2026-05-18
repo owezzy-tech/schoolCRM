@@ -26,7 +26,7 @@ func create200(sd apitest.SeedData) []apitest.Table {
 				User: tranapp.NewUser{
 					Name:            "Bill Kennedy",
 		Email:           "bill@schoolcrm.local",
-					Roles:           []string{"ADMIN"},
+					Roles:           []string{"SCHOOL_ADMIN"},
 					Department:      "ITO",
 					Password:        "123",
 					PasswordConfirm: "123",
@@ -89,7 +89,7 @@ func create400(sd apitest.SeedData) []apitest.Table {
 				User: tranapp.NewUser{
 					Name:            "Bill Kennedy",
 		Email:           "bill@schoolcrm.local",
-					Roles:           []string{"ADMIN"},
+					Roles:           []string{"SCHOOL_ADMIN"},
 					Department:      "ITO",
 					Password:        "123",
 					PasswordConfirm: "123",

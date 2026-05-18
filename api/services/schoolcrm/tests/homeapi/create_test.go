@@ -146,7 +146,7 @@ func create401(sd apitest.SeedData) []apitest.Table {
 			Method:     http.MethodPost,
 			StatusCode: http.StatusUnauthorized,
 			GotResp:    &errs.Error{},
-			ExpResp:    errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[ADMIN]] rule[rule_user_only]"),
+			ExpResp:    errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[SCHOOL_ADMIN]] rule[rule_user_only]"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

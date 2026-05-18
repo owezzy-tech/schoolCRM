@@ -20,7 +20,7 @@ func create200(sd apitest.SeedData) []apitest.Table {
 			Input: &userapp.NewUser{
 				Name:            "Bill Kennedy",
 		Email:           "bill@schoolcrm.local",
-				Roles:           []string{"ADMIN"},
+				Roles:           []string{"SCHOOL_ADMIN"},
 				Department:      "ITO",
 				Password:        "123",
 				PasswordConfirm: "123",
@@ -29,7 +29,7 @@ func create200(sd apitest.SeedData) []apitest.Table {
 			ExpResp: &userapp.User{
 				Name:       "Bill Kennedy",
 		Email:      "bill@schoolcrm.local",
-				Roles:      []string{"ADMIN"},
+				Roles:      []string{"SCHOOL_ADMIN"},
 				Department: "ITO",
 				Enabled:    true,
 			},
@@ -97,7 +97,7 @@ func create400(sd apitest.SeedData) []apitest.Table {
 			Input: &userapp.NewUser{
 				Name:            "Bi",
 		Email:           "bill@schoolcrm.local",
-				Roles:           []string{"USER"},
+				Roles:           []string{"STUDENT"},
 				Department:      "ITO",
 				Password:        "123",
 				PasswordConfirm: "123",
@@ -158,7 +158,7 @@ func create401(sd apitest.SeedData) []apitest.Table {
 			Method:     http.MethodPost,
 			StatusCode: http.StatusUnauthorized,
 			GotResp:    &errs.Error{},
-			ExpResp:    errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[USER]] rule[rule_admin_only]"),
+			ExpResp:    errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_only]"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},
