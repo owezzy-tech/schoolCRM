@@ -11,8 +11,9 @@ import (
 
 // Config contains all the mandatory systems required by handlers.
 type Config struct {
-	UserBus userbus.ExtBusiness
-	Auth    *auth.Auth
+	UserBus  userbus.ExtBusiness
+	Auth     *auth.Auth
+	TokenKey string
 }
 
 // Routes adds specific routes for this group.
@@ -22,8 +23,9 @@ func Routes(app *web.App, cfg Config) {
 	bearer := mid.Bearer(cfg.Auth)
 	basic := mid.Basic(cfg.Auth, cfg.UserBus)
 
-	api := newApp(cfg.Auth)
+	api := newApp(cfg.Auth, cfg.UserBus, cfg.TokenKey)
 
+	app.HandlerFunc(http.MethodPost, version, "/auth/login", api.login)
 	app.HandlerFunc(http.MethodGet, version, "/auth/token/{kid}", api.token, basic)
 	app.HandlerFunc(http.MethodGet, version, "/auth/authenticate", api.authenticate, bearer)
 	app.HandlerFunc(http.MethodPost, version, "/auth/authorize", api.authorize)
