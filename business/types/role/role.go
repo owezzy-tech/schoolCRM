@@ -5,8 +5,11 @@ import "fmt"
 
 // The set of roles that can be used.
 var (
-	Admin = newRole("ADMIN")
-	User  = newRole("USER")
+	SuperAdmin  = newRole("SUPER_ADMIN")
+	SchoolAdmin = newRole("SCHOOL_ADMIN")
+	Teacher     = newRole("TEACHER")
+	Student     = newRole("STUDENT")
+	Parent      = newRole("PARENT")
 )
 
 // =============================================================================

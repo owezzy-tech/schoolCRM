@@ -41,7 +41,7 @@ func test1(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.Admin.String()},
+			Roles: []string{role.SchoolAdmin.String()},
 		}
 
 		token, err := ath.GenerateToken(kid, claims)
@@ -84,7 +84,7 @@ func test2(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.User.String()},
+			Roles: []string{role.Student.String()},
 		}
 
 		token, err := ath.GenerateToken(kid, claims)
@@ -132,7 +132,7 @@ func test3(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.User.String()},
+			Roles: []string{role.Student.String()},
 		}
 
 		token, err := ath.GenerateToken(kid, claims)
@@ -165,7 +165,7 @@ func test4(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.User.String(), role.Admin.String()},
+			Roles: []string{role.Student.String(), role.SchoolAdmin.String()},
 		}
 		userID := uuid.MustParse("9e979baa-61c9-4b50-81f2-f216d53f5c15")
 
@@ -197,7 +197,7 @@ func test5(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.User.String()},
+			Roles: []string{role.Student.String()},
 		}
 		userID := uuid.MustParse("9e979baa-61c9-4b50-81f2-f216d53f5c15")
 
@@ -229,7 +229,7 @@ func test6(ath *auth.Auth) func(t *testing.T) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			},
-			Roles: []string{role.Admin.String()},
+			Roles: []string{role.SchoolAdmin.String()},
 		}
 		userID := uuid.MustParse("9e979baa-61c9-4b50-81f2-f216d53f5c15")
 
