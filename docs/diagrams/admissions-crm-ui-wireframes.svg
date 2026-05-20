@@ -335,7 +335,7 @@
   </g>
 
   <!-- Frame 5: Online Applications List -->
-  <g id="frame-06-online-applications-list" transform="translate(1140 985)">
+  <g id="frame-05-applications-list" transform="translate(1140 985)">
     <text class="frame-label" x="0" y="-8">6. Online Applications List</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/online-applications</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -401,7 +401,7 @@
   </g>
 
   <!-- Frame 6: Application Detail / Review Workspace -->
-  <g id="frame-07-application-review-workspace" transform="translate(2220 985)">
+  <g id="frame-06-application-review-workspace" transform="translate(2220 985)">
     <text class="frame-label" x="0" y="-8">7. Application Review Workspace</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/applications/:id</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -497,7 +497,7 @@
   <text class="section-title" x="60" y="1775">Staff Admin — Engagement &amp; Outreach</text>
 
   <!-- Frame 7: Communications Center -->
-  <g id="frame-08-communications-center" transform="translate(60 1800)">
+  <g id="frame-07-communications-center" transform="translate(60 1800)">
     <text class="frame-label" x="0" y="-8">8. Communications Center</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/communications</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -541,7 +541,7 @@
   </g>
 
   <!-- Frame 8: Campaign Builder -->
-  <g id="frame-09-campaign-builder" transform="translate(1140 1800)">
+  <g id="frame-08-campaign-builder" transform="translate(1140 1800)">
     <text class="frame-label" x="0" y="-8">9. Campaign Builder</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/campaigns</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -601,7 +601,7 @@
   </g>
 
   <!-- Frame 9: Event Management -->
-  <g id="frame-10-event-management" transform="translate(2220 1800)">
+  <g id="frame-09-event-management" transform="translate(2220 1800)">
     <text class="frame-label" x="0" y="-8">10. Event Management</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/events</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -668,7 +668,7 @@
   <text class="section-title" x="60" y="2590">Staff Admin — Leads, Reports &amp; Settings</text>
 
   <!-- Frame 10: Lead Pipeline -->
-  <g id="frame-11-lead-pipeline" transform="translate(60 2615)">
+  <g id="frame-10-lead-pipeline" transform="translate(60 2615)">
     <text class="frame-label" x="0" y="-8">11. Lead Pipeline</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/leads</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -718,7 +718,7 @@
   </g>
 
   <!-- Frame 11: Reports Center -->
-  <g id="frame-13-reports-center" transform="translate(1140 2615)">
+  <g id="frame-11-reports-center" transform="translate(1140 2615)">
     <text class="frame-label" x="0" y="-8">13. Reports Center</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/reports</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -783,7 +783,7 @@
   </g>
 
   <!-- Frame 12: Settings and Configuration -->
-  <g id="frame-15-settings-configuration" transform="translate(2220 2615)">
+  <g id="frame-12-settings-configuration" transform="translate(2220 2615)">
     <text class="frame-label" x="0" y="-8">15. Settings &amp; Configuration</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/settings</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -850,7 +850,7 @@
   <text class="section-title" x="60" y="3405">Staff Admin — Audit, RAG &amp; Inquiries</text>
 
   <!-- Frame 13: Audit Log -->
-  <g id="frame-14-audit-log" transform="translate(60 3430)">
+  <g id="frame-13-audit-log" transform="translate(60 3430)">
     <text class="frame-label" x="0" y="-8">14. Audit Log</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/audit</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -904,7 +904,7 @@
   </g>
 
   <!-- Frame 14: RAG Staff Assistant -->
-  <g id="frame-16-rag-staff-assistant" transform="translate(1140 3430)">
+  <g id="frame-14-rag-staff-assistant" transform="translate(1140 3430)">
     <text class="frame-label" x="0" y="-8">16. RAG Staff Assistant</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/rag-assistant</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -952,7 +952,7 @@
   </g>
 
   <!-- Frame 15: Inquiry Management -->
-  <g id="frame-05-inquiry-management" transform="translate(2220 3430)">
+  <g id="frame-15-inquiry-management" transform="translate(2220 3430)">
     <text class="frame-label" x="0" y="-8">5. Inquiry Management</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/inquiries</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -1007,7 +1007,7 @@
   <text class="section-title" x="60" y="4220">Applicant Portal — Public &amp; Authenticated</text>
 
   <!-- Frame 16: Applicant Dashboard -->
-  <g id="frame-17-applicant-portal-dashboard" transform="translate(60 4245)">
+  <g id="frame-16-applicant-portal-dashboard" transform="translate(60 4245)">
     <text class="frame-label" x="0" y="-8">17. Applicant Portal — Dashboard</text>
     <text class="frame-route" x="0" y="10">/applicant/dashboard</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -1057,7 +1057,7 @@
   </g>
 
   <!-- Frame 17: Application Form -->
-  <g id="frame-18-application-form-multi-step" transform="translate(1140 4245)">
+  <g id="frame-17-application-form-multi-step" transform="translate(1140 4245)">
     <text class="frame-label" x="0" y="-8">18. Application Form (Multi-step)</text>
     <text class="frame-route" x="0" y="10">/applicant/applications/:id/edit</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -1109,7 +1109,7 @@
   </g>
 
   <!-- Frame 18: Applicant Status + Uploads -->
-  <g id="frame-19-applicant-status-uploads" transform="translate(2220 4245)">
+  <g id="frame-18-applicant-status-uploads" transform="translate(2220 4245)">
     <text class="frame-label" x="0" y="-8">19. Applicant Status &amp; Uploads</text>
     <text class="frame-route" x="0" y="10">/applicant/applications/:id/status</text>
     <rect class="frame" x="0" y="22" width="1040" height="720" />
@@ -1177,7 +1177,7 @@
   <text class="section-title" x="60" y="5035">Public Pages &amp; Additional Screens</text>
 
   <!-- Frame 19: Public Inquiry Form -->
-  <g id="frame-21-public-inquiry-form" transform="translate(60 5060)">
+  <g id="frame-19-public-inquiry-form" transform="translate(60 5060)">
     <text class="frame-label" x="0" y="-8">21. Public Inquiry Form</text>
     <text class="frame-route" x="0" y="10">/inquiry (anonymous)</text>
     <rect class="frame" x="0" y="22" width="1040" height="320" />
@@ -1242,7 +1242,7 @@
   </g>
 
   <!-- Frame 21: Lead Assignment Rules -->
-  <g id="frame-12-lead-assignment-rules" transform="translate(2220 5060)">
+  <g id="frame-21-lead-assignment-rules" transform="translate(2220 5060)">
     <text class="frame-label" x="0" y="-8">12. Lead Assignment Rules</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/settings/lead-rules</text>
     <rect class="frame" x="0" y="22" width="1040" height="320" />
