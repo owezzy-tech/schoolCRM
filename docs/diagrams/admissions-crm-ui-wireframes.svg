@@ -284,9 +284,9 @@
   </g>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- ROW 2: Applications & Review (3 frames) -->
+  <!-- ROW 2: Applications and Review (3 frames) -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <text class="section-title" x="60" y="960">Staff Admin — Applications & Review</text>
+  <text class="section-title" x="60" y="960">Staff Admin — Applications &amp; Review</text>
 
   <!-- Frame 4: Duplicate Review Queue -->
   <g transform="translate(60 985)">
@@ -782,7 +782,7 @@
     <text class="purple badge-text" x="772" y="651">↓ PDF</text>
   </g>
 
-  <!-- Frame 12: Settings & Configuration -->
+  <!-- Frame 12: Settings and Configuration -->
   <g transform="translate(2220 2615)">
     <text class="frame-label" x="0" y="-8">15. Settings &amp; Configuration</text>
     <text class="frame-route" x="0" y="10">/admin/admissions/settings</text>
