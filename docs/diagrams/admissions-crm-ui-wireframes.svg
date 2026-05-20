@@ -1,0 +1,1290 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="5400" viewBox="0 0 3400 5400" role="img" aria-labelledby="title desc">
+  <title id="title">Admissions CRM v1 Wireframes — Full Workflow Coverage</title>
+  <desc id="desc">Comprehensive wireframe board for all 21 Admissions CRM screens. Staff admin screens (Dashboard, Constituents, Duplicates, Inquiries, Applications List, Application Review, Communications, Campaigns, Events, Leads, Reports, Audit, Settings, RAG Assistant) and Applicant Portal screens (Landing, Application Form, Status, Events, Public Inquiry).</desc>
+  <defs>
+    <style>
+      .board { fill: #f6f7fb; }
+      .frame { fill: #ffffff; stroke: #dfe3ef; stroke-width: 2; rx: 18; }
+      .sidebar { fill: #263044; }
+      .header { fill: #ffffff; stroke: #edf0f7; stroke-width: 1; }
+      .content-bg { fill: #f7f8fc; }
+      .card { fill: #ffffff; stroke: #f2f4f9; stroke-width: 1.5; rx: 10; filter: url(#shadow); }
+      .card-soft { fill: #ffffff; stroke: #eceef6; stroke-width: 1.5; rx: 18; }
+      .hero { fill: url(#heroGradient); rx: 18; }
+      .table-head { fill: #f5f5f5; }
+      .table-row { fill: #ffffff; }
+      .table-row-alt { fill: #fafbfd; }
+      .line { stroke: #e9edf6; stroke-width: 1; }
+      .muted-line { stroke: #cfd5e6; stroke-width: 1.5; stroke-dasharray: 8 8; }
+      .text { fill: #34395e; font-family: Roboto, Arial, sans-serif; }
+      .muted { fill: #6b7280; font-family: Roboto, Arial, sans-serif; }
+      .white { fill: #ffffff; font-family: Roboto, Arial, sans-serif; }
+      .tiny { font-size: 14px; }
+      .small { font-size: 16px; }
+      .body { font-size: 18px; }
+      .h3 { font-size: 24px; font-weight: 700; }
+      .h2 { font-size: 30px; font-weight: 700; }
+      .h1 { font-size: 36px; font-weight: 700; }
+      .metric { font-size: 34px; font-weight: 700; }
+      .sidebar-text { fill: #cbd3e5; font-family: Roboto, Arial, sans-serif; font-size: 13px; }
+      .nav-active { fill: #6259ca; rx: 8; }
+      .purple { fill: #6259ca; }
+      .cyan { fill: #00bcd4; }
+      .green { fill: #4caf50; }
+      .orange { fill: #ff9800; }
+      .red { fill: #f44336; }
+      .blue { fill: #2196f3; }
+      .purple-soft { fill: #edeafd; }
+      .cyan-soft { fill: #e8faff; }
+      .green-soft { fill: #eaf7ed; }
+      .orange-soft { fill: #fff4e3; }
+      .red-soft { fill: #fdecec; }
+      .blue-soft { fill: #eaf4ff; }
+      .badge-text { font-family: Roboto, Arial, sans-serif; font-size: 12px; font-weight: 700; }
+      .field { fill: #ffffff; stroke: #d6dceb; stroke-width: 1.5; rx: 8; }
+      .button-primary { fill: #6259ca; rx: 8; }
+      .button-outline { fill: #ffffff; stroke: #6259ca; stroke-width: 1.5; rx: 8; }
+      .button-green { fill: #4caf50; rx: 8; }
+      .button-red { fill: #f44336; rx: 8; }
+      .button-orange { fill: #ff9800; rx: 8; }
+      .avatar { fill: #eef0f8; stroke: #d9deec; stroke-width: 1; }
+      .stepper-active { fill: #6259ca; }
+      .stepper-done { fill: #4caf50; }
+      .stepper-pending { fill: #d6dceb; }
+      .frame-label { fill: #34395e; font-family: Roboto, Arial, sans-serif; font-size: 16px; font-weight: 700; }
+      .frame-route { fill: #6b7280; font-family: Roboto, Arial, sans-serif; font-size: 13px; }
+      .section-title { fill: #34395e; font-family: Roboto, Arial, sans-serif; font-size: 22px; font-weight: 700; }
+    </style>
+    <linearGradient id="heroGradient" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#6259ca" />
+      <stop offset="100%" stop-color="#00bcd4" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#b7c0ce" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Board background -->
+  <rect class="board" x="0" y="0" width="3400" height="5400" />
+  <text class="text h1" x="60" y="60">Admissions CRM v1 — Complete Wireframe Board</text>
+  <text class="muted body" x="60" y="95">21 screens covering all PRD workflows. Angular admin design language: sidebar + breadcrumb + Material forms + statistic cards + hover tables.</text>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 1: Staff Admin Core (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="145">Staff Admin — Core Screens</text>
+
+  <!-- Frame 1: Admissions Dashboard -->
+  <g transform="translate(60 170)">
+    <text class="frame-label" x="0" y="-8">1. Admissions Dashboard</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/dashboard</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <!-- Sidebar -->
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <text class="sidebar-text" x="18" y="90">ADMISSIONS</text>
+    <rect class="nav-active" x="12" y="100" width="156" height="30" />
+    <text class="white tiny" x="28" y="120">Dashboard</text>
+    <text class="sidebar-text" x="28" y="152">Constituents</text>
+    <text class="sidebar-text" x="28" y="174">Inquiries</text>
+    <text class="sidebar-text" x="28" y="196">Applications</text>
+    <text class="sidebar-text" x="28" y="218">Duplicates</text>
+    <text class="sidebar-text" x="28" y="240">Communications</text>
+    <text class="sidebar-text" x="28" y="262">Campaigns</text>
+    <text class="sidebar-text" x="28" y="284">Events</text>
+    <text class="sidebar-text" x="28" y="306">Leads</text>
+    <text class="sidebar-text" x="28" y="328">Reports</text>
+    <text class="sidebar-text" x="28" y="350">Audit Log</text>
+    <text class="sidebar-text" x="28" y="372">RAG Assistant</text>
+    <text class="sidebar-text" x="28" y="394">Settings</text>
+    <!-- Header -->
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <text class="muted tiny" x="800" y="52">Admin Gopher</text>
+    <circle class="avatar" cx="1000" cy="47" r="16" />
+    <!-- Content -->
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Dashboard</text>
+    <!-- Hero -->
+    <rect class="hero" x="205" y="108" width="810" height="100" />
+    <text class="white small" x="230" y="145" style="font-weight:700;letter-spacing:2px">ADMISSIONS COMMAND CENTER</text>
+    <text class="white tiny" x="230" y="170">Fall 2026 Enrollment Cycle</text>
+    <!-- Stat cards -->
+    <rect class="card" x="205" y="228" width="190" height="80" />
+    <text class="muted tiny" x="220" y="252">New Inquiries</text>
+    <text class="text metric" x="220" y="290">142</text>
+    <rect class="card" x="410" y="228" width="190" height="80" />
+    <text class="muted tiny" x="425" y="252">Submitted Apps</text>
+    <text class="text metric" x="425" y="290">87</text>
+    <rect class="card" x="615" y="228" width="190" height="80" />
+    <text class="muted tiny" x="630" y="252">Ready for Review</text>
+    <text class="cyan metric" x="630" y="290">34</text>
+    <rect class="card" x="820" y="228" width="190" height="80" />
+    <text class="muted tiny" x="835" y="252">Admitted</text>
+    <text class="green metric" x="835" y="290">56</text>
+    <!-- Funnel chart placeholder -->
+    <rect class="card" x="205" y="328" width="400" height="180" />
+    <text class="text small" x="220" y="352" style="font-weight:600">Enrollment Funnel</text>
+    <rect class="purple-soft" x="230" y="370" width="350" height="20" rx="4" />
+    <rect class="purple" x="230" y="370" width="280" height="20" rx="4" opacity="0.7" />
+    <rect class="cyan-soft" x="230" y="398" width="300" height="20" rx="4" />
+    <rect class="cyan" x="230" y="398" width="200" height="20" rx="4" opacity="0.7" />
+    <rect class="green-soft" x="230" y="426" width="220" height="20" rx="4" />
+    <rect class="green" x="230" y="426" width="120" height="20" rx="4" opacity="0.7" />
+    <text class="muted tiny" x="230" y="478">Prospects → Inquiries → Applicants → Admitted → Enrolled</text>
+    <!-- Recruiter workload -->
+    <rect class="card" x="620" y="328" width="395" height="180" />
+    <text class="text small" x="635" y="352" style="font-weight:600">Recruiter Workload</text>
+    <rect class="purple" x="650" y="370" width="120" height="14" rx="3" />
+    <text class="muted tiny" x="780" y="382">J. Smith (24)</text>
+    <rect class="cyan" x="650" y="392" width="95" height="14" rx="3" />
+    <text class="muted tiny" x="755" y="404">M. Lee (19)</text>
+    <rect class="green" x="650" y="414" width="80" height="14" rx="3" />
+    <text class="muted tiny" x="740" y="426">A. Patel (16)</text>
+    <!-- Recent apps table -->
+    <rect class="card" x="205" y="528" width="810" height="180" />
+    <text class="text small" x="220" y="552" style="font-weight:600">Recent Applications</text>
+    <rect class="table-head" x="220" y="564" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="583">Applicant</text>
+    <text class="muted tiny" x="380" y="583">Program</text>
+    <text class="muted tiny" x="530" y="583">Status</text>
+    <text class="muted tiny" x="680" y="583">Date</text>
+    <text class="muted tiny" x="800" y="583">Actions</text>
+    <text class="text tiny" x="230" y="612">Jane Doe</text>
+    <text class="text tiny" x="380" y="612">CS B.S.</text>
+    <rect class="green-soft" x="530" y="600" width="70" height="18" rx="9" />
+    <text class="green badge-text" x="540" y="613">Submitted</text>
+    <text class="muted tiny" x="680" y="612">May 15</text>
+    <rect class="button-outline" x="800" y="598" width="50" height="22" />
+    <text class="purple tiny" x="810" y="613">View</text>
+  </g>
+
+  <!-- Frame 2: Constituent List -->
+  <g transform="translate(1140 170)">
+    <text class="frame-label" x="0" y="-8">2. Constituent List</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/constituents</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="nav-active" x="12" y="138" width="156" height="30" />
+    <text class="white tiny" x="28" y="158">Constituents</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Constituents</text>
+    <text class="text h3" x="205" y="130">Constituents</text>
+    <!-- Search + filters -->
+    <rect class="card" x="205" y="148" width="810" height="80" />
+    <rect class="field" x="220" y="163" width="300" height="36" />
+    <text class="muted tiny" x="235" y="186">Search name, email, phone...</text>
+    <!-- Filter chips -->
+    <rect class="purple-soft" x="540" y="168" width="80" height="26" rx="13" />
+    <text class="purple badge-text" x="552" y="185">Prospect</text>
+    <rect class="cyan-soft" x="628" y="168" width="70" height="26" rx="13" />
+    <text class="cyan badge-text" x="640" y="185">Inquiry</text>
+    <rect class="orange-soft" x="706" y="168" width="80" height="26" rx="13" />
+    <text class="orange badge-text" x="716" y="185">Applicant</text>
+    <rect class="green-soft" x="794" y="168" width="72" height="26" rx="13" />
+    <text class="green badge-text" x="805" y="185">Admitted</text>
+    <rect class="button-outline" x="880" y="163" width="110" height="36" />
+    <text class="purple tiny" x="895" y="186">Advanced Filters</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="248" width="810" height="420" />
+    <rect class="table-head" x="220" y="260" width="780" height="30" rx="4" />
+    <text class="muted tiny" x="230" y="280">Name</text>
+    <text class="muted tiny" x="350" y="280">Email</text>
+    <text class="muted tiny" x="500" y="280">Stage</text>
+    <text class="muted tiny" x="590" y="280">Lead Score</text>
+    <text class="muted tiny" x="690" y="280">Assigned To</text>
+    <text class="muted tiny" x="810" y="280">Actions</text>
+    <!-- Rows -->
+    <text class="text tiny" x="230" y="312">Alice Johnson</text>
+    <text class="muted tiny" x="350" y="312">alice@email.com</text>
+    <rect class="green-soft" x="500" y="300" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="508" y="313">Applicant</text>
+    <rect class="red-soft" x="590" y="300" width="40" height="18" rx="9" />
+    <text class="red badge-text" x="601" y="313">HOT</text>
+    <text class="muted tiny" x="690" y="312">J. Smith</text>
+    <rect class="button-outline" x="810" y="298" width="45" height="20" />
+    <text class="purple tiny" x="818" y="312">View</text>
+    <line class="line" x1="220" y1="324" x2="1000" y2="324" />
+    <text class="text tiny" x="230" y="346">Bob Williams</text>
+    <text class="muted tiny" x="350" y="346">bob@test.org</text>
+    <rect class="purple-soft" x="500" y="334" width="62" height="18" rx="9" />
+    <text class="purple badge-text" x="508" y="347">Prospect</text>
+    <rect class="orange-soft" x="590" y="334" width="50" height="18" rx="9" />
+    <text class="orange badge-text" x="598" y="347">WARM</text>
+    <text class="muted tiny" x="690" y="346">M. Lee</text>
+    <!-- Bulk actions -->
+    <rect class="button-primary" x="205" y="688" width="120" height="32" />
+    <text class="white tiny" x="225" y="709">Assign Recruiter</text>
+    <rect class="button-outline" x="340" y="688" width="110" height="32" />
+    <text class="purple tiny" x="358" y="709">Add to Campaign</text>
+    <rect class="button-outline" x="465" y="688" width="70" height="32" />
+    <text class="purple tiny" x="480" y="709">Export</text>
+  </g>
+
+  <!-- Frame 3: Constituent Detail -->
+  <g transform="translate(2220 170)">
+    <text class="frame-label" x="0" y="-8">3. Constituent Detail</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/constituents/:id</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Constituents / Alice Johnson</text>
+    <!-- Identity card -->
+    <rect class="card" x="205" y="110" width="810" height="120" />
+    <circle class="avatar" cx="260" cy="170" r="30" />
+    <text class="text h3" x="305" y="158">Alice Johnson</text>
+    <text class="muted tiny" x="305" y="178">alice@email.com • (555) 123-4567</text>
+    <text class="muted tiny" x="305" y="196">DOB: 1998-03-15 • SIS ID: PS-2024-1234</text>
+    <rect class="green-soft" x="700" y="148" width="80" height="26" rx="13" />
+    <text class="green badge-text" x="714" y="165">APPLICANT</text>
+    <rect class="orange-soft" x="790" y="148" width="38" height="26" rx="13" />
+    <text class="orange badge-text" x="797" y="165">HOT</text>
+    <!-- Tabs -->
+    <text class="purple small" x="205" y="258" style="font-weight:600;text-decoration:underline">Applications</text>
+    <text class="muted small" x="320" y="258">Communications</text>
+    <text class="muted small" x="470" y="258">Events</text>
+    <text class="muted small" x="560" y="258">Activity</text>
+    <text class="muted small" x="650" y="258">Custom Fields</text>
+    <!-- Applications tab content -->
+    <rect class="card" x="205" y="272" width="810" height="200" />
+    <rect class="table-head" x="220" y="284" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="303">Program</text>
+    <text class="muted tiny" x="380" y="303">Term</text>
+    <text class="muted tiny" x="500" y="303">Type</text>
+    <text class="muted tiny" x="600" y="303">Status</text>
+    <text class="muted tiny" x="740" y="303">Actions</text>
+    <text class="text tiny" x="230" y="332">Computer Science B.S.</text>
+    <text class="text tiny" x="380" y="332">Fall 2026</text>
+    <text class="text tiny" x="500" y="332">Freshman</text>
+    <rect class="cyan-soft" x="600" y="320" width="90" height="18" rx="9" />
+    <text class="cyan badge-text" x="610" y="333">In Review</text>
+    <rect class="button-outline" x="740" y="318" width="50" height="20" />
+    <text class="purple tiny" x="750" y="332">Open</text>
+    <!-- Activity timeline -->
+    <rect class="card" x="205" y="492" width="810" height="200" />
+    <text class="text small" x="220" y="518" style="font-weight:600">Activity Timeline</text>
+    <circle class="stepper-done" cx="235" cy="545" r="6" />
+    <text class="muted tiny" x="252" y="549">May 1 — Application submitted</text>
+    <circle class="stepper-done" cx="235" cy="572" r="6" />
+    <text class="muted tiny" x="252" y="576">Apr 28 — Documents uploaded (3/4)</text>
+    <circle class="stepper-done" cx="235" cy="599" r="6" />
+    <text class="muted tiny" x="252" y="603">Apr 15 — Account created</text>
+    <circle class="stepper-done" cx="235" cy="626" r="6" />
+    <text class="muted tiny" x="252" y="630">Apr 10 — Inquiry from Open House event</text>
+    <!-- Action buttons -->
+    <rect class="button-primary" x="205" y="710" width="100" height="30" />
+    <text class="white tiny" x="228" y="729">Edit</text>
+    <rect class="button-outline" x="320" y="710" width="140" height="30" />
+    <text class="purple tiny" x="340" y="729">Create Application</text>
+    <rect class="button-outline" x="475" y="710" width="140" height="30" />
+    <text class="purple tiny" x="490" y="729">Log Communication</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 2: Applications & Review (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="960">Staff Admin — Applications & Review</text>
+
+  <!-- Frame 4: Duplicate Review Queue -->
+  <g transform="translate(60 985)">
+    <text class="frame-label" x="0" y="-8">4. Duplicate Review Queue</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/duplicates</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Duplicate Review</text>
+    <text class="text h3" x="205" y="130">Duplicate Review Queue</text>
+    <rect class="red-soft" x="480" y="112" width="50" height="24" rx="12" />
+    <text class="red badge-text" x="494" y="128">7</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="150" width="810" height="300" />
+    <rect class="table-head" x="220" y="162" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="181">Candidate A</text>
+    <text class="muted tiny" x="380" y="181">Candidate B</text>
+    <text class="muted tiny" x="530" y="181">Score</text>
+    <text class="muted tiny" x="600" y="181">Match Reason</text>
+    <text class="muted tiny" x="770" y="181">Actions</text>
+    <text class="text tiny" x="230" y="214">Alice Johnson</text>
+    <text class="text tiny" x="380" y="214">Alyce Johnsen</text>
+    <rect class="orange-soft" x="530" y="202" width="42" height="18" rx="9" />
+    <text class="orange badge-text" x="538" y="215">87%</text>
+    <text class="muted tiny" x="600" y="214">Name + DOB + Phone</text>
+    <rect class="button-primary" x="770" y="200" width="55" height="22" />
+    <text class="white badge-text" x="779" y="215">Merge</text>
+    <rect class="button-outline" x="835" y="200" width="70" height="22" />
+    <text class="purple badge-text" x="845" y="215">Dismiss</text>
+    <!-- Side-by-side comparison (expanded row) -->
+    <rect class="card-soft" x="220" y="240" width="780" height="180" />
+    <text class="text small" x="240" y="268" style="font-weight:600">Field Comparison</text>
+    <line class="line" x1="600" y1="280" x2="600" y2="405" />
+    <text class="muted tiny" x="240" y="296">Candidate A</text>
+    <text class="muted tiny" x="620" y="296">Candidate B</text>
+    <text class="text tiny" x="240" y="320">Name: Alice Johnson</text>
+    <text class="text tiny" x="620" y="320">Name: Alyce Johnsen</text>
+    <text class="text tiny" x="240" y="344">DOB: 1998-03-15</text>
+    <text class="text tiny" x="620" y="344">DOB: 1998-03-15</text>
+    <text class="text tiny" x="240" y="368">Email: alice@email.com</text>
+    <text class="text tiny" x="620" y="368">Email: a.johnsen@mail.org</text>
+    <text class="text tiny" x="240" y="392">Phone: (555) 123-4567</text>
+    <text class="text tiny" x="620" y="392">Phone: (555) 123-4567</text>
+  </g>
+
+  <!-- Frame 5: Online Applications List -->
+  <g transform="translate(1140 985)">
+    <text class="frame-label" x="0" y="-8">6. Online Applications List</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/online-applications</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Applications</text>
+    <text class="text h3" x="205" y="130">Online Applications</text>
+    <!-- Filters -->
+    <rect class="card" x="205" y="148" width="810" height="70" />
+    <rect class="field" x="220" y="162" width="200" height="34" />
+    <text class="muted tiny" x="232" y="184">Search applicant...</text>
+    <rect class="field" x="432" y="162" width="120" height="34" />
+    <text class="muted tiny" x="444" y="184">Status ▾</text>
+    <rect class="field" x="564" y="162" width="120" height="34" />
+    <text class="muted tiny" x="576" y="184">Program ▾</text>
+    <rect class="field" x="696" y="162" width="100" height="34" />
+    <text class="muted tiny" x="708" y="184">Term ▾</text>
+    <rect class="field" x="808" y="162" width="100" height="34" />
+    <text class="muted tiny" x="820" y="184">Type ▾</text>
+    <!-- Status chips -->
+    <rect class="purple-soft" x="220" y="202" width="55" height="20" rx="10" />
+    <text class="purple badge-text" x="229" y="216">Draft</text>
+    <rect class="green-soft" x="282" y="202" width="72" height="20" rx="10" />
+    <text class="green badge-text" x="291" y="216">Submitted</text>
+    <rect class="orange-soft" x="362" y="202" width="90" height="20" rx="10" />
+    <text class="orange badge-text" x="371" y="216">Awaiting Docs</text>
+    <rect class="cyan-soft" x="460" y="202" width="86" height="20" rx="10" />
+    <text class="cyan badge-text" x="469" y="216">Ready Review</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="238" width="810" height="480" />
+    <rect class="table-head" x="220" y="250" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="269">Applicant</text>
+    <text class="muted tiny" x="340" y="269">Program</text>
+    <text class="muted tiny" x="460" y="269">Term</text>
+    <text class="muted tiny" x="540" y="269">Type</text>
+    <text class="muted tiny" x="620" y="269">Status</text>
+    <text class="muted tiny" x="730" y="269">Checklist</text>
+    <text class="muted tiny" x="820" y="269">Reviewer</text>
+    <text class="muted tiny" x="920" y="269">Actions</text>
+    <!-- Row 1 -->
+    <text class="text tiny" x="230" y="300">Jane Doe</text>
+    <text class="text tiny" x="340" y="300">CS B.S.</text>
+    <text class="text tiny" x="460" y="300">Fall 26</text>
+    <text class="text tiny" x="540" y="300">Freshman</text>
+    <rect class="cyan-soft" x="620" y="288" width="78" height="18" rx="9" />
+    <text class="cyan badge-text" x="630" y="301">In Review</text>
+    <text class="text tiny" x="730" y="300">4/4</text>
+    <text class="muted tiny" x="820" y="300">Dr. Park</text>
+    <rect class="button-outline" x="920" y="286" width="45" height="20" />
+    <text class="purple tiny" x="928" y="300">View</text>
+    <line class="line" x1="220" y1="312" x2="1000" y2="312" />
+    <!-- Row 2 -->
+    <text class="text tiny" x="230" y="334">Bob Smith</text>
+    <text class="text tiny" x="340" y="334">MBA</text>
+    <text class="text tiny" x="460" y="334">Fall 26</text>
+    <text class="text tiny" x="540" y="334">Graduate</text>
+    <rect class="orange-soft" x="620" y="322" width="90" height="18" rx="9" />
+    <text class="orange badge-text" x="628" y="335">Awaiting Docs</text>
+    <text class="text tiny" x="730" y="334">2/5</text>
+    <text class="muted tiny" x="820" y="334">—</text>
+  </g>
+
+  <!-- Frame 6: Application Detail / Review Workspace -->
+  <g transform="translate(2220 985)">
+    <text class="frame-label" x="0" y="-8">7. Application Review Workspace</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/applications/:id</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Applications / Jane Doe — CS B.S.</text>
+    <!-- Applicant header -->
+    <rect class="card" x="205" y="110" width="620" height="80" />
+    <circle class="avatar" cx="245" cy="150" r="22" />
+    <text class="text h3" x="278" y="142">Jane Doe</text>
+    <text class="muted tiny" x="278" y="162">Computer Science B.S. • Fall 2026 • Freshman</text>
+    <rect class="cyan-soft" x="278" y="170" width="75" height="20" rx="10" />
+    <text class="cyan badge-text" x="289" y="184">In Review</text>
+    <text class="muted tiny" x="365" y="184">Reviewer: Dr. Park</text>
+    <!-- State stepper -->
+    <rect class="card" x="205" y="200" width="620" height="50" />
+    <circle class="stepper-done" cx="240" cy="225" r="8" />
+    <text class="muted tiny" x="253" y="229">Draft</text>
+    <line class="line" x1="290" y1="225" x2="320" y2="225" />
+    <circle class="stepper-done" cx="335" cy="225" r="8" />
+    <text class="muted tiny" x="348" y="229">Submitted</text>
+    <line class="line" x1="405" y1="225" x2="435" y2="225" />
+    <circle class="stepper-done" cx="450" cy="225" r="8" />
+    <text class="muted tiny" x="463" y="229">Docs</text>
+    <line class="line" x1="490" y1="225" x2="520" y2="225" />
+    <circle class="stepper-active" cx="535" cy="225" r="8" />
+    <text class="purple tiny" x="548" y="229">In Review</text>
+    <line class="muted-line" x1="600" y1="225" x2="630" y2="225" />
+    <circle class="stepper-pending" cx="645" cy="225" r="8" />
+    <text class="muted tiny" x="658" y="229">Decision</text>
+    <!-- Tabs -->
+    <text class="purple small" x="205" y="282" style="font-weight:600;text-decoration:underline">Documents</text>
+    <text class="muted small" x="305" y="282">Applicant Info</text>
+    <text class="muted small" x="420" y="282">Notes</text>
+    <text class="muted small" x="490" y="282">Communications</text>
+    <text class="muted small" x="625" y="282">Audit</text>
+    <!-- Document checklist -->
+    <rect class="card" x="205" y="295" width="620" height="250" />
+    <rect class="table-head" x="220" y="307" width="590" height="26" rx="4" />
+    <text class="muted tiny" x="230" y="324">Document</text>
+    <text class="muted tiny" x="420" y="324">Required</text>
+    <text class="muted tiny" x="500" y="324">Status</text>
+    <text class="muted tiny" x="620" y="324">Actions</text>
+    <text class="text tiny" x="230" y="352">Transcript</text>
+    <text class="text tiny" x="435" y="352">Yes</text>
+    <rect class="green-soft" x="500" y="340" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="508" y="353">Accepted</text>
+    <text class="text tiny" x="230" y="378">SAT Scores</text>
+    <text class="text tiny" x="435" y="378">Yes</text>
+    <rect class="green-soft" x="500" y="366" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="508" y="379">Accepted</text>
+    <text class="text tiny" x="230" y="404">Essay</text>
+    <text class="text tiny" x="435" y="404">Yes</text>
+    <rect class="cyan-soft" x="500" y="392" width="90" height="18" rx="9" />
+    <text class="cyan badge-text" x="508" y="405">Pending Review</text>
+    <rect class="button-primary" x="620" y="390" width="55" height="20" />
+    <text class="white badge-text" x="627" y="404">Accept</text>
+    <rect class="button-red" x="683" y="390" width="52" height="20" />
+    <text class="white badge-text" x="690" y="404">Reject</text>
+    <text class="text tiny" x="230" y="430">Recommendation</text>
+    <text class="text tiny" x="435" y="430">Yes</text>
+    <rect class="green-soft" x="500" y="418" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="508" y="431">Accepted</text>
+    <!-- RAG panel (right side) -->
+    <rect class="card-soft" x="840" y="110" width="175" height="530" />
+    <text class="purple small" x="855" y="138" style="font-weight:600">RAG Assistant</text>
+    <text class="muted tiny" x="855" y="158">Reviewer AI</text>
+    <rect class="field" x="852" y="170" width="150" height="30" />
+    <text class="muted tiny" x="862" y="190">Ask about docs...</text>
+    <rect class="purple-soft" x="852" y="210" width="150" height="60" rx="8" />
+    <text class="muted tiny" x="862" y="235">Essay shows strong</text>
+    <text class="muted tiny" x="862" y="252">motivation for CS...</text>
+    <!-- Decision panel (sticky bottom) -->
+    <rect class="card" x="205" y="560" width="620" height="70" />
+    <text class="text small" x="220" y="583" style="font-weight:600">Decision</text>
+    <rect class="button-green" x="220" y="596" width="70" height="28" />
+    <text class="white tiny" x="236" y="614">Admit</text>
+    <rect class="button-red" x="300" y="596" width="60" height="28" />
+    <text class="white tiny" x="315" y="614">Deny</text>
+    <rect class="button-orange" x="370" y="596" width="72" height="28" />
+    <text class="white tiny" x="381" y="614">Waitlist</text>
+    <rect class="button-outline" x="452" y="596" width="60" height="28" />
+    <text class="purple tiny" x="463" y="614">Defer</text>
+    <rect class="button-outline" x="522" y="596" width="80" height="28" />
+    <text class="purple tiny" x="533" y="614">Withdraw</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 3: Engagement (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="1775">Staff Admin — Engagement &amp; Outreach</text>
+
+  <!-- Frame 7: Communications Center -->
+  <g transform="translate(60 1800)">
+    <text class="frame-label" x="0" y="-8">8. Communications Center</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/communications</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Communications</text>
+    <text class="text h3" x="205" y="130">Communications</text>
+    <rect class="button-primary" x="870" y="108" width="120" height="32" />
+    <text class="white tiny" x="893" y="129">+ Compose</text>
+    <!-- Tabs -->
+    <text class="purple small" x="205" y="164" style="font-weight:600;text-decoration:underline">All</text>
+    <text class="muted small" x="240" y="164">Email</text>
+    <text class="muted small" x="290" y="164">SMS</text>
+    <text class="muted small" x="335" y="164">Phone</text>
+    <text class="muted small" x="395" y="164">Notifications</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="180" width="810" height="400" />
+    <rect class="table-head" x="220" y="192" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="211">Recipient</text>
+    <text class="muted tiny" x="360" y="211">Channel</text>
+    <text class="muted tiny" x="440" y="211">Subject/Preview</text>
+    <text class="muted tiny" x="660" y="211">Status</text>
+    <text class="muted tiny" x="760" y="211">Date</text>
+    <text class="muted tiny" x="870" y="211">Actions</text>
+    <text class="text tiny" x="230" y="242">Alice Johnson</text>
+    <rect class="blue-soft" x="360" y="230" width="45" height="18" rx="9" />
+    <text class="blue badge-text" x="368" y="243">Email</text>
+    <text class="muted tiny" x="440" y="242">Application received — thank you!</text>
+    <rect class="green-soft" x="660" y="230" width="55" height="18" rx="9" />
+    <text class="green badge-text" x="668" y="243">Opened</text>
+    <text class="muted tiny" x="760" y="242">May 15</text>
+    <text class="text tiny" x="230" y="272">Bob Smith</text>
+    <rect class="orange-soft" x="360" y="260" width="40" height="18" rx="9" />
+    <text class="orange badge-text" x="368" y="273">SMS</text>
+    <text class="muted tiny" x="440" y="272">Missing transcript reminder</text>
+    <rect class="green-soft" x="660" y="260" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="668" y="273">Delivered</text>
+    <text class="muted tiny" x="760" y="272">May 14</text>
+  </g>
+
+  <!-- Frame 8: Campaign Builder -->
+  <g transform="translate(1140 1800)">
+    <text class="frame-label" x="0" y="-8">9. Campaign Builder</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/campaigns</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Campaigns</text>
+    <text class="text h3" x="205" y="130">Campaigns</text>
+    <rect class="button-primary" x="870" y="108" width="120" height="32" />
+    <text class="white tiny" x="882" y="129">+ New Campaign</text>
+    <!-- Campaign list -->
+    <rect class="card" x="205" y="148" width="810" height="200" />
+    <rect class="table-head" x="220" y="160" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="179">Campaign</text>
+    <text class="muted tiny" x="400" y="179">Status</text>
+    <text class="muted tiny" x="490" y="179">Channel</text>
+    <text class="muted tiny" x="570" y="179">Audience</text>
+    <text class="muted tiny" x="650" y="179">Sent</text>
+    <text class="muted tiny" x="720" y="179">Opened</text>
+    <text class="muted tiny" x="800" y="179">Actions</text>
+    <text class="text tiny" x="230" y="210">Fall Welcome Series</text>
+    <rect class="green-soft" x="400" y="198" width="52" height="18" rx="9" />
+    <text class="green badge-text" x="408" y="211">Active</text>
+    <text class="text tiny" x="490" y="210">Email</text>
+    <text class="text tiny" x="570" y="210">1,240</text>
+    <text class="text tiny" x="650" y="210">980</text>
+    <text class="text tiny" x="720" y="210">645</text>
+    <!-- Campaign stepper (create flow) -->
+    <rect class="card" x="205" y="380" width="810" height="280" />
+    <text class="text small" x="220" y="406" style="font-weight:600">Create Campaign — Step 2: Audience</text>
+    <!-- Stepper -->
+    <circle class="stepper-done" cx="240" cy="435" r="8" />
+    <text class="muted tiny" x="255" y="439">Details</text>
+    <line class="line" x1="295" y1="435" x2="340" y2="435" />
+    <circle class="stepper-active" cx="355" cy="435" r="8" />
+    <text class="purple tiny" x="370" y="439">Audience</text>
+    <line class="muted-line" x1="420" y1="435" x2="465" y2="435" />
+    <circle class="stepper-pending" cx="480" cy="435" r="8" />
+    <text class="muted tiny" x="495" y="439">Message</text>
+    <line class="muted-line" x1="540" y1="435" x2="585" y2="435" />
+    <circle class="stepper-pending" cx="600" cy="435" r="8" />
+    <text class="muted tiny" x="615" y="439">Review</text>
+    <!-- Segment builder -->
+    <text class="text tiny" x="230" y="475">Segment Filters:</text>
+    <rect class="field" x="230" y="485" width="150" height="30" />
+    <text class="muted tiny" x="242" y="505">App Status ▾</text>
+    <rect class="field" x="395" y="485" width="120" height="30" />
+    <text class="muted tiny" x="407" y="505">Program ▾</text>
+    <rect class="field" x="530" y="485" width="120" height="30" />
+    <text class="muted tiny" x="542" y="505">Lead Score ▾</text>
+    <rect class="field" x="665" y="485" width="120" height="30" />
+    <text class="muted tiny" x="677" y="505">Territory ▾</text>
+    <text class="muted tiny" x="230" y="545">Estimated audience: 342 constituents</text>
+    <rect class="button-primary" x="880" y="620" width="100" height="30" />
+    <text class="white tiny" x="908" y="639">Next →</text>
+  </g>
+
+  <!-- Frame 9: Event Management -->
+  <g transform="translate(2220 1800)">
+    <text class="frame-label" x="0" y="-8">10. Event Management</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/events</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Events</text>
+    <text class="text h3" x="205" y="130">Events</text>
+    <rect class="button-primary" x="870" y="108" width="120" height="32" />
+    <text class="white tiny" x="892" y="129">+ Create Event</text>
+    <!-- Event list -->
+    <rect class="card" x="205" y="148" width="810" height="250" />
+    <rect class="table-head" x="220" y="160" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="179">Event</text>
+    <text class="muted tiny" x="400" y="179">Date</text>
+    <text class="muted tiny" x="500" y="179">Capacity</text>
+    <text class="muted tiny" x="590" y="179">Registered</text>
+    <text class="muted tiny" x="690" y="179">Checked In</text>
+    <text class="muted tiny" x="790" y="179">Status</text>
+    <text class="muted tiny" x="890" y="179">Actions</text>
+    <text class="text tiny" x="230" y="210">Fall Open House</text>
+    <text class="text tiny" x="400" y="210">Jun 1, 2026</text>
+    <text class="text tiny" x="515" y="210">200</text>
+    <text class="text tiny" x="610" y="210">156</text>
+    <text class="text tiny" x="710" y="210">—</text>
+    <rect class="cyan-soft" x="790" y="198" width="72" height="18" rx="9" />
+    <text class="cyan badge-text" x="798" y="211">Upcoming</text>
+    <text class="text tiny" x="230" y="240">Virtual Info Session</text>
+    <text class="text tiny" x="400" y="240">May 20, 2026</text>
+    <text class="text tiny" x="515" y="240">50</text>
+    <text class="text tiny" x="610" y="240">50</text>
+    <text class="text tiny" x="710" y="240">42</text>
+    <rect class="green-soft" x="790" y="228" width="75" height="18" rx="9" />
+    <text class="green badge-text" x="798" y="241">Completed</text>
+    <!-- Event detail / check-in mode -->
+    <rect class="card" x="205" y="420" width="810" height="280" />
+    <text class="text small" x="220" y="446" style="font-weight:600">Event Check-In Mode — Fall Open House</text>
+    <rect class="card-soft" x="220" y="460" width="780" height="50" />
+    <rect class="field" x="235" y="470" width="350" height="32" />
+    <text class="muted tiny" x="250" y="491">Search registrant name or email...</text>
+    <rect class="button-green" x="600" y="470" width="100" height="32" />
+    <text class="white tiny" x="620" y="491">✓ Check In</text>
+    <!-- Capacity meter -->
+    <text class="muted tiny" x="220" y="540">Capacity: 156/200 registered • 0 checked in</text>
+    <rect class="purple-soft" x="220" y="550" width="780" height="12" rx="6" />
+    <rect class="purple" x="220" y="550" width="608" height="12" rx="6" opacity="0.7" />
+    <!-- Registrant list -->
+    <rect class="table-head" x="220" y="580" width="780" height="24" rx="4" />
+    <text class="muted tiny" x="230" y="596">Name</text>
+    <text class="muted tiny" x="400" y="596">Email</text>
+    <text class="muted tiny" x="600" y="596">Checked In</text>
+    <text class="muted tiny" x="740" y="596">Actions</text>
+    <text class="text tiny" x="230" y="622">Alice Johnson</text>
+    <text class="muted tiny" x="400" y="622">alice@email.com</text>
+    <text class="muted tiny" x="620" y="622">—</text>
+    <rect class="button-green" x="740" y="608" width="70" height="22" />
+    <text class="white badge-text" x="752" y="623">Check In</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 4: Leads, Reports, Settings (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="2590">Staff Admin — Leads, Reports &amp; Settings</text>
+
+  <!-- Frame 10: Lead Pipeline -->
+  <g transform="translate(60 2615)">
+    <text class="frame-label" x="0" y="-8">11. Lead Pipeline</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/leads</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Leads</text>
+    <text class="text h3" x="205" y="130">Lead Pipeline</text>
+    <!-- View toggle -->
+    <rect class="button-primary" x="800" y="108" width="80" height="28" />
+    <text class="white tiny" x="815" y="127">Kanban</text>
+    <rect class="button-outline" x="890" y="108" width="60" height="28" />
+    <text class="purple tiny" x="905" y="127">Table</text>
+    <!-- Kanban columns -->
+    <rect class="card-soft" x="205" y="155" width="195" height="520" />
+    <text class="muted small" x="220" y="180" style="font-weight:600">COLD (45)</text>
+    <rect class="card" x="215" y="195" width="175" height="70" />
+    <text class="text tiny" x="225" y="215">Chris Evans</text>
+    <text class="muted tiny" x="225" y="232">Biology Interest</text>
+    <text class="muted tiny" x="225" y="249">Last: 14 days ago</text>
+    <rect class="card" x="215" y="275" width="175" height="70" />
+    <text class="text tiny" x="225" y="295">Sara Lee</text>
+    <text class="muted tiny" x="225" y="312">Nursing Interest</text>
+    <text class="muted tiny" x="225" y="329">Last: 21 days ago</text>
+
+    <rect class="card-soft" x="415" y="155" width="195" height="520" />
+    <text class="orange small" x="430" y="180" style="font-weight:600">WARM (28)</text>
+    <rect class="card" x="425" y="195" width="175" height="70" />
+    <text class="text tiny" x="435" y="215">Mike Chen</text>
+    <text class="muted tiny" x="435" y="232">CS Interest</text>
+    <text class="muted tiny" x="435" y="249">Last: 3 days ago</text>
+
+    <rect class="card-soft" x="625" y="155" width="195" height="520" />
+    <text class="red small" x="640" y="180" style="font-weight:600">HOT (12)</text>
+    <rect class="card" x="635" y="195" width="175" height="70" />
+    <text class="text tiny" x="645" y="215">Alice Johnson</text>
+    <text class="muted tiny" x="645" y="232">CS B.S. — Applied</text>
+    <text class="muted tiny" x="645" y="249">Last: Today</text>
+
+    <rect class="card-soft" x="835" y="155" width="180" height="520" />
+    <text class="green small" x="850" y="180" style="font-weight:600">READY (8)</text>
+    <rect class="card" x="845" y="195" width="160" height="70" />
+    <text class="text tiny" x="855" y="215">Pat Kim</text>
+    <text class="muted tiny" x="855" y="232">MBA — Draft started</text>
+    <text class="muted tiny" x="855" y="249">Last: Yesterday</text>
+  </g>
+
+  <!-- Frame 11: Reports Center -->
+  <g transform="translate(1140 2615)">
+    <text class="frame-label" x="0" y="-8">13. Reports Center</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/reports</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Reports</text>
+    <text class="text h3" x="205" y="130">Reports</text>
+    <!-- Report cards grid -->
+    <rect class="card" x="205" y="148" width="250" height="120" />
+    <text class="text small" x="220" y="172" style="font-weight:600">Enrollment Funnel</text>
+    <text class="muted tiny" x="220" y="194">Prospect → Enrolled conversion</text>
+    <rect class="button-primary" x="220" y="232" width="80" height="26" />
+    <text class="white badge-text" x="233" y="249">Generate</text>
+    <rect class="button-outline" x="310" y="232" width="80" height="26" />
+    <text class="purple badge-text" x="319" y="249">Download</text>
+
+    <rect class="card" x="475" y="148" width="250" height="120" />
+    <text class="text small" x="490" y="172" style="font-weight:600">Application Status</text>
+    <text class="muted tiny" x="490" y="194">Current pipeline by status</text>
+    <rect class="button-primary" x="490" y="232" width="80" height="26" />
+    <text class="white badge-text" x="503" y="249">Generate</text>
+
+    <rect class="card" x="745" y="148" width="250" height="120" />
+    <text class="text small" x="760" y="172" style="font-weight:600">Recruiter Performance</text>
+    <text class="muted tiny" x="760" y="194">Load, conversion, response time</text>
+    <rect class="button-primary" x="760" y="232" width="80" height="26" />
+    <text class="white badge-text" x="773" y="249">Generate</text>
+
+    <rect class="card" x="205" y="288" width="250" height="120" />
+    <text class="text small" x="220" y="312" style="font-weight:600">Campaign Analytics</text>
+    <text class="muted tiny" x="220" y="334">Open/click rates by campaign</text>
+
+    <rect class="card" x="475" y="288" width="250" height="120" />
+    <text class="text small" x="490" y="312" style="font-weight:600">Event Analytics</text>
+    <text class="muted tiny" x="490" y="334">Registration, attendance, conversion</text>
+
+    <rect class="card" x="745" y="288" width="250" height="120" />
+    <text class="text small" x="760" y="312" style="font-weight:600">Document Bottleneck</text>
+    <text class="muted tiny" x="760" y="334">Missing docs by program/term</text>
+
+    <rect class="card" x="205" y="428" width="250" height="120" />
+    <text class="text small" x="220" y="452" style="font-weight:600">SIS Sync Status</text>
+    <text class="muted tiny" x="220" y="474">Sync health and error log</text>
+
+    <!-- Export history -->
+    <rect class="card" x="205" y="570" width="810" height="140" />
+    <text class="text small" x="220" y="594" style="font-weight:600">Export History</text>
+    <rect class="table-head" x="220" y="608" width="780" height="24" rx="4" />
+    <text class="muted tiny" x="230" y="624">Report</text>
+    <text class="muted tiny" x="420" y="624">Format</text>
+    <text class="muted tiny" x="510" y="624">By</text>
+    <text class="muted tiny" x="630" y="624">Date</text>
+    <text class="muted tiny" x="760" y="624">Download</text>
+    <text class="text tiny" x="230" y="650">Enrollment Funnel</text>
+    <text class="text tiny" x="420" y="650">PDF</text>
+    <text class="muted tiny" x="510" y="650">Admin Gopher</text>
+    <text class="muted tiny" x="630" y="650">May 18</text>
+    <rect class="button-outline" x="760" y="636" width="60" height="22" />
+    <text class="purple badge-text" x="772" y="651">↓ PDF</text>
+  </g>
+
+  <!-- Frame 12: Settings & Configuration -->
+  <g transform="translate(2220 2615)">
+    <text class="frame-label" x="0" y="-8">15. Settings &amp; Configuration</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/settings</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Settings</text>
+    <text class="text h3" x="205" y="130">Settings</text>
+    <!-- Tabs -->
+    <text class="purple small" x="205" y="162" style="font-weight:600;text-decoration:underline">Custom Fields</text>
+    <text class="muted small" x="320" y="162">Checklists</text>
+    <text class="muted small" x="410" y="162">Lead Rules</text>
+    <text class="muted small" x="500" y="162">Scoring</text>
+    <text class="muted small" x="570" y="162">SIS Sync</text>
+    <text class="muted small" x="645" y="162">Import/Export</text>
+    <!-- Custom fields table -->
+    <rect class="card" x="205" y="178" width="810" height="300" />
+    <text class="text small" x="220" y="204" style="font-weight:600">Custom Fields</text>
+    <rect class="button-primary" x="870" y="188" width="120" height="28" />
+    <text class="white tiny" x="892" y="207">+ Add Field</text>
+    <rect class="table-head" x="220" y="220" width="780" height="26" rx="4" />
+    <text class="muted tiny" x="230" y="237">Field Name</text>
+    <text class="muted tiny" x="380" y="237">Entity</text>
+    <text class="muted tiny" x="480" y="237">Type</text>
+    <text class="muted tiny" x="580" y="237">Required</text>
+    <text class="muted tiny" x="660" y="237">Searchable</text>
+    <text class="muted tiny" x="770" y="237">Actions</text>
+    <text class="text tiny" x="230" y="266">High School GPA</text>
+    <text class="text tiny" x="380" y="266">Application</text>
+    <text class="text tiny" x="480" y="266">Number</text>
+    <text class="text tiny" x="595" y="266">Yes</text>
+    <text class="text tiny" x="680" y="266">Yes</text>
+    <rect class="button-outline" x="770" y="252" width="40" height="20" />
+    <text class="purple tiny" x="778" y="266">Edit</text>
+    <line class="line" x1="220" y1="278" x2="1000" y2="278" />
+    <text class="text tiny" x="230" y="300">Intended Major</text>
+    <text class="text tiny" x="380" y="300">Constituent</text>
+    <text class="text tiny" x="480" y="300">Select</text>
+    <text class="text tiny" x="595" y="300">No</text>
+    <text class="text tiny" x="680" y="300">Yes</text>
+    <!-- SIS Sync status preview -->
+    <rect class="card" x="205" y="500" width="810" height="180" />
+    <text class="text small" x="220" y="526" style="font-weight:600">SIS Sync Status</text>
+    <text class="muted tiny" x="220" y="548">Last batch sync: May 19, 2026 02:00 AM</text>
+    <rect class="green-soft" x="220" y="560" width="90" height="22" rx="11" />
+    <text class="green badge-text" x="235" y="575">✓ Healthy</text>
+    <rect class="button-outline" x="900" y="520" width="100" height="28" />
+    <text class="purple tiny" x="915" y="539">Manual Sync</text>
+    <!-- Sync errors -->
+    <text class="muted tiny" x="220" y="608">Recent Sync Errors (2)</text>
+    <rect class="table-head" x="220" y="618" width="780" height="22" rx="4" />
+    <text class="muted tiny" x="230" y="633">Entity</text>
+    <text class="muted tiny" x="400" y="633">Error</text>
+    <text class="muted tiny" x="700" y="633">Time</text>
+    <text class="text tiny" x="230" y="656">Constituent PS-9981</text>
+    <text class="red tiny" x="400" y="656">Field mismatch: email format</text>
+    <text class="muted tiny" x="700" y="656">May 19 02:01</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 5: Audit, RAG, Inquiries (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="3405">Staff Admin — Audit, RAG &amp; Inquiries</text>
+
+  <!-- Frame 13: Audit Log -->
+  <g transform="translate(60 3430)">
+    <text class="frame-label" x="0" y="-8">14. Audit Log</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/audit</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Audit Log</text>
+    <text class="text h3" x="205" y="130">Audit Log</text>
+    <!-- Filters -->
+    <rect class="card" x="205" y="148" width="810" height="60" />
+    <rect class="field" x="220" y="160" width="140" height="32" />
+    <text class="muted tiny" x="232" y="181">Date range ▾</text>
+    <rect class="field" x="375" y="160" width="120" height="32" />
+    <text class="muted tiny" x="387" y="181">Actor ▾</text>
+    <rect class="field" x="510" y="160" width="150" height="32" />
+    <text class="muted tiny" x="522" y="181">Action type ▾</text>
+    <rect class="button-outline" x="900" y="160" width="90" height="32" />
+    <text class="purple tiny" x="917" y="181">Export Log</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="228" width="810" height="480" />
+    <rect class="table-head" x="220" y="240" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="259">Timestamp</text>
+    <text class="muted tiny" x="370" y="259">Actor</text>
+    <text class="muted tiny" x="490" y="259">Action</text>
+    <text class="muted tiny" x="660" y="259">Target</text>
+    <text class="muted tiny" x="830" y="259">Details</text>
+    <text class="text tiny" x="230" y="290">May 19 14:32</text>
+    <text class="text tiny" x="370" y="290">Dr. Park</text>
+    <text class="text tiny" x="490" y="290">Application Decision</text>
+    <text class="muted tiny" x="660" y="290">App #1024 (Jane Doe)</text>
+    <text class="muted tiny" x="830" y="290">Admitted</text>
+    <line class="line" x1="220" y1="302" x2="1000" y2="302" />
+    <text class="text tiny" x="230" y="322">May 19 14:10</text>
+    <text class="text tiny" x="370" y="322">Admin Gopher</text>
+    <text class="text tiny" x="490" y="322">Data Export</text>
+    <text class="muted tiny" x="660" y="322">Enrollment Funnel PDF</text>
+    <text class="muted tiny" x="830" y="322">342 records</text>
+    <line class="line" x1="220" y1="334" x2="1000" y2="334" />
+    <text class="text tiny" x="230" y="354">May 19 11:45</text>
+    <text class="text tiny" x="370" y="354">System</text>
+    <text class="text tiny" x="490" y="354">SIS Sync</text>
+    <text class="muted tiny" x="660" y="354">Batch sync completed</text>
+    <text class="muted tiny" x="830" y="354">2 errors</text>
+    <line class="line" x1="220" y1="366" x2="1000" y2="366" />
+    <text class="text tiny" x="230" y="386">May 19 09:22</text>
+    <text class="text tiny" x="370" y="386">J. Smith</text>
+    <text class="text tiny" x="490" y="386">Duplicate Merge</text>
+    <text class="muted tiny" x="660" y="386">Const #45 ← #78</text>
+    <text class="muted tiny" x="830" y="386">Auto-matched</text>
+  </g>
+
+  <!-- Frame 14: RAG Staff Assistant -->
+  <g transform="translate(1140 3430)">
+    <text class="frame-label" x="0" y="-8">16. RAG Staff Assistant</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/rag-assistant</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / RAG Assistant</text>
+    <!-- Hero -->
+    <rect class="hero" x="205" y="108" width="810" height="90" />
+    <text class="white h3" x="230" y="148">Admissions Policy Assistant</text>
+    <text class="white tiny" x="230" y="172">AI-powered Q&amp;A from admissions policy documents</text>
+    <!-- Disclaimer -->
+    <rect class="orange-soft" x="205" y="212" width="810" height="30" rx="8" />
+    <text class="orange tiny" x="220" y="232">⚠ Responses are AI-generated. Verify against official policy before acting.</text>
+    <!-- Chat area -->
+    <rect class="card" x="205" y="256" width="540" height="420" />
+    <!-- User message -->
+    <rect class="purple-soft" x="380" y="275" width="340" height="50" rx="10" />
+    <text class="text tiny" x="395" y="298">What are the transfer credit requirements</text>
+    <text class="text tiny" x="395" y="314">for the CS B.S. program?</text>
+    <!-- AI response -->
+    <rect class="card-soft" x="220" y="340" width="380" height="100" />
+    <text class="text tiny" x="235" y="362">Transfer students must have:</text>
+    <text class="text tiny" x="235" y="382">• Minimum 2.5 GPA from accredited institution</text>
+    <text class="text tiny" x="235" y="402">• Completed Calculus I and Intro to CS</text>
+    <text class="text tiny" x="235" y="422">• Maximum 90 transfer credits accepted</text>
+    <text class="muted tiny" x="235" y="440">[Source: Transfer Policy 2025-26, p.12]</text>
+    <!-- Input -->
+    <rect class="field" x="220" y="640" width="440" height="36" />
+    <text class="muted tiny" x="235" y="663">Ask a policy question...</text>
+    <rect class="button-primary" x="670" y="640" width="55" height="36" />
+    <text class="white tiny" x="682" y="663">Send</text>
+    <!-- Citations panel -->
+    <rect class="card" x="760" y="256" width="255" height="420" />
+    <text class="text small" x="775" y="282" style="font-weight:600">Sources</text>
+    <rect class="card-soft" x="775" y="298" width="225" height="60" />
+    <text class="purple tiny" x="788" y="316">Transfer Policy 2025-26</text>
+    <text class="muted tiny" x="788" y="334">Pages 11-14, Section 3.2</text>
+    <text class="muted tiny" x="788" y="348">Relevance: 94%</text>
+    <rect class="card-soft" x="775" y="368" width="225" height="60" />
+    <text class="purple tiny" x="788" y="386">CS Program Requirements</text>
+    <text class="muted tiny" x="788" y="404">Pages 3-4, Prerequisites</text>
+    <text class="muted tiny" x="788" y="418">Relevance: 87%</text>
+  </g>
+
+  <!-- Frame 15: Inquiry Management -->
+  <g transform="translate(2220 3430)">
+    <text class="frame-label" x="0" y="-8">5. Inquiry Management</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/inquiries</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="sidebar" x="0" y="22" width="180" height="720" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="670" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Inquiries</text>
+    <text class="text h3" x="205" y="130">Inquiries</text>
+    <!-- Filters -->
+    <rect class="card" x="205" y="148" width="810" height="60" />
+    <rect class="field" x="220" y="160" width="180" height="32" />
+    <text class="muted tiny" x="232" y="181">Date range ▾</text>
+    <rect class="field" x="415" y="160" width="120" height="32" />
+    <text class="muted tiny" x="427" y="181">Source ▾</text>
+    <rect class="field" x="550" y="160" width="130" height="32" />
+    <text class="muted tiny" x="562" y="181">Program ▾</text>
+    <rect class="field" x="695" y="160" width="100" height="32" />
+    <text class="muted tiny" x="707" y="181">Status ▾</text>
+    <!-- Table -->
+    <rect class="card" x="205" y="228" width="810" height="450" />
+    <rect class="table-head" x="220" y="240" width="780" height="28" rx="4" />
+    <text class="muted tiny" x="230" y="259">Name/Email</text>
+    <text class="muted tiny" x="370" y="259">Source</text>
+    <text class="muted tiny" x="470" y="259">Program</text>
+    <text class="muted tiny" x="580" y="259">Status</text>
+    <text class="muted tiny" x="680" y="259">Assigned</text>
+    <text class="muted tiny" x="780" y="259">Date</text>
+    <text class="muted tiny" x="870" y="259">Actions</text>
+    <text class="text tiny" x="230" y="290">Maria Garcia</text>
+    <text class="muted tiny" x="370" y="290">Open House</text>
+    <text class="text tiny" x="470" y="290">Nursing</text>
+    <rect class="green-soft" x="580" y="278" width="50" height="18" rx="9" />
+    <text class="green badge-text" x="588" y="291">New</text>
+    <text class="muted tiny" x="680" y="290">—</text>
+    <text class="muted tiny" x="780" y="290">May 18</text>
+    <rect class="button-outline" x="870" y="276" width="70" height="20" />
+    <text class="purple badge-text" x="880" y="290">Convert</text>
+    <line class="line" x1="220" y1="302" x2="1000" y2="302" />
+    <text class="text tiny" x="230" y="322">tom@test.com</text>
+    <text class="muted tiny" x="370" y="322">Website</text>
+    <text class="text tiny" x="470" y="322">MBA</text>
+    <rect class="cyan-soft" x="580" y="310" width="72" height="18" rx="9" />
+    <text class="cyan badge-text" x="588" y="323">Contacted</text>
+    <text class="muted tiny" x="680" y="322">M. Lee</text>
+    <text class="muted tiny" x="780" y="322">May 16</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 6: Applicant Portal Screens (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="4220">Applicant Portal — Public &amp; Authenticated</text>
+
+  <!-- Frame 16: Applicant Dashboard -->
+  <g transform="translate(60 4245)">
+    <text class="frame-label" x="0" y="-8">17. Applicant Portal — Dashboard</text>
+    <text class="frame-route" x="0" y="10">/applicant/dashboard</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <!-- No sidebar — simple header -->
+    <rect class="header" x="0" y="22" width="1040" height="56" rx="18" />
+    <text class="purple h3" x="30" y="58">SchoolCRM</text>
+    <text class="muted small" x="830" y="55">Jane Doe</text>
+    <circle class="avatar" cx="1000" cy="50" r="18" />
+    <rect class="content-bg" x="0" y="78" width="1040" height="664" />
+    <!-- Welcome -->
+    <rect class="hero" x="40" y="100" width="960" height="80" />
+    <text class="white h3" x="70" y="138">Welcome back, Jane!</text>
+    <text class="white tiny" x="70" y="160">Your application journey at a glance</text>
+    <!-- Application cards -->
+    <text class="text small" x="40" y="215" style="font-weight:600">My Applications</text>
+    <rect class="card" x="40" y="230" width="460" height="150" />
+    <text class="text body" x="60" y="258" style="font-weight:600">Computer Science B.S.</text>
+    <text class="muted tiny" x="60" y="280">Fall 2026 • Freshman</text>
+    <rect class="cyan-soft" x="60" y="295" width="75" height="22" rx="11" />
+    <text class="cyan badge-text" x="72" y="310">In Review</text>
+    <text class="muted tiny" x="60" y="340">Checklist: 4/4 complete</text>
+    <!-- Progress bar -->
+    <rect class="green-soft" x="60" y="350" width="380" height="8" rx="4" />
+    <rect class="green" x="60" y="350" width="380" height="8" rx="4" />
+    <rect class="button-primary" x="60" y="365" width="100" height="28" />
+    <text class="white tiny" x="78" y="383">View Status</text>
+
+    <rect class="card" x="540" y="230" width="460" height="150" />
+    <text class="text body" x="560" y="258" style="font-weight:600">Start New Application</text>
+    <text class="muted tiny" x="560" y="280">Apply to another program</text>
+    <rect class="button-outline" x="560" y="310" width="130" height="32" />
+    <text class="purple tiny" x="580" y="331">+ New Application</text>
+
+    <!-- Upcoming events -->
+    <rect class="card" x="40" y="410" width="460" height="120" />
+    <text class="text small" x="60" y="438" style="font-weight:600">Upcoming Events</text>
+    <text class="text tiny" x="60" y="466">Fall Open House — Jun 1, 2026</text>
+    <text class="muted tiny" x="60" y="486">Campus Tour • 10:00 AM - 2:00 PM</text>
+    <rect class="green-soft" x="60" y="496" width="72" height="18" rx="9" />
+    <text class="green badge-text" x="70" y="509">Registered</text>
+
+    <!-- Notifications -->
+    <rect class="card" x="540" y="410" width="460" height="120" />
+    <text class="text small" x="560" y="438" style="font-weight:600">Messages</text>
+    <text class="text tiny" x="560" y="466">Application received — May 15</text>
+    <text class="muted tiny" x="560" y="486">Thank you for applying! Your reviewer...</text>
+  </g>
+
+  <!-- Frame 17: Application Form -->
+  <g transform="translate(1140 4245)">
+    <text class="frame-label" x="0" y="-8">18. Application Form (Multi-step)</text>
+    <text class="frame-route" x="0" y="10">/applicant/applications/:id/edit</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="header" x="0" y="22" width="1040" height="56" rx="18" />
+    <text class="purple h3" x="30" y="58">SchoolCRM</text>
+    <text class="muted small" x="830" y="55">Jane Doe</text>
+    <rect class="content-bg" x="0" y="78" width="1040" height="664" />
+    <text class="text h3" x="40" y="118">Application: Computer Science B.S. — Fall 2026</text>
+    <!-- Form stepper -->
+    <rect class="card" x="40" y="135" width="960" height="50" />
+    <circle class="stepper-done" cx="120" cy="160" r="10" />
+    <text class="muted tiny" x="138" y="164">Personal Info</text>
+    <line class="line" x1="230" y1="160" x2="290" y2="160" />
+    <circle class="stepper-done" cx="310" cy="160" r="10" />
+    <text class="muted tiny" x="328" y="164">Academic</text>
+    <line class="line" x1="400" y1="160" x2="460" y2="160" />
+    <circle class="stepper-active" cx="480" cy="160" r="10" />
+    <text class="purple tiny" x="498" y="164">Program</text>
+    <line class="muted-line" x1="555" y1="160" x2="615" y2="160" />
+    <circle class="stepper-pending" cx="635" cy="160" r="10" />
+    <text class="muted tiny" x="653" y="164">Documents</text>
+    <line class="muted-line" x1="730" y1="160" x2="790" y2="160" />
+    <circle class="stepper-pending" cx="810" cy="160" r="10" />
+    <text class="muted tiny" x="828" y="164">Review</text>
+    <!-- Form card (Step 3: Program) -->
+    <rect class="card" x="40" y="200" width="960" height="440" />
+    <text class="text body" x="60" y="232" style="font-weight:600">Step 3: Program Selection</text>
+    <text class="muted tiny" x="60" y="254">Choose your program, type, and term.</text>
+    <!-- Fields -->
+    <text class="text tiny" x="60" y="290">Program *</text>
+    <rect class="field" x="60" y="298" width="400" height="38" />
+    <text class="text tiny" x="75" y="322">Computer Science B.S.</text>
+    <text class="text tiny" x="60" y="360">Application Type *</text>
+    <rect class="field" x="60" y="368" width="400" height="38" />
+    <text class="text tiny" x="75" y="392">Freshman</text>
+    <text class="text tiny" x="60" y="430">Academic Term *</text>
+    <rect class="field" x="60" y="438" width="400" height="38" />
+    <text class="text tiny" x="75" y="462">Fall 2026</text>
+    <text class="text tiny" x="60" y="500">Intended Concentration</text>
+    <rect class="field" x="60" y="508" width="400" height="38" />
+    <text class="muted tiny" x="75" y="532">Optional — select if applicable</text>
+    <!-- Buttons -->
+    <rect class="button-outline" x="60" y="590" width="100" height="36" />
+    <text class="purple tiny" x="82" y="613">← Back</text>
+    <rect class="button-outline" x="175" y="590" width="100" height="36" />
+    <text class="purple tiny" x="192" y="613">Save Draft</text>
+    <rect class="button-primary" x="860" y="590" width="110" height="36" />
+    <text class="white tiny" x="883" y="613">Next Step →</text>
+  </g>
+
+  <!-- Frame 18: Applicant Status + Uploads -->
+  <g transform="translate(2220 4245)">
+    <text class="frame-label" x="0" y="-8">19. Applicant Status &amp; Uploads</text>
+    <text class="frame-route" x="0" y="10">/applicant/applications/:id/status</text>
+    <rect class="frame" x="0" y="22" width="1040" height="720" />
+    <rect class="header" x="0" y="22" width="1040" height="56" rx="18" />
+    <text class="purple h3" x="30" y="58">SchoolCRM</text>
+    <text class="muted small" x="830" y="55">Jane Doe</text>
+    <rect class="content-bg" x="0" y="78" width="1040" height="664" />
+    <!-- Status hero -->
+    <rect class="hero" x="40" y="100" width="700" height="90" />
+    <text class="white h3" x="70" y="135">Application In Review</text>
+    <text class="white tiny" x="70" y="158">All documents received. Your reviewer is evaluating your application.</text>
+    <!-- Stepper -->
+    <rect class="card" x="40" y="205" width="700" height="50" />
+    <circle class="stepper-done" cx="100" cy="230" r="8" />
+    <text class="muted tiny" x="115" y="234">Submitted</text>
+    <line class="line" x1="170" y1="230" x2="230" y2="230" />
+    <circle class="stepper-done" cx="250" cy="230" r="8" />
+    <text class="muted tiny" x="265" y="234">Documents</text>
+    <line class="line" x1="330" y1="230" x2="390" y2="230" />
+    <circle class="stepper-active" cx="410" cy="230" r="8" />
+    <text class="purple tiny" x="425" y="234">In Review</text>
+    <line class="muted-line" x1="480" y1="230" x2="540" y2="230" />
+    <circle class="stepper-pending" cx="560" cy="230" r="8" />
+    <text class="muted tiny" x="575" y="234">Decision</text>
+    <!-- Document checklist -->
+    <rect class="card" x="40" y="270" width="700" height="280" />
+    <text class="text small" x="60" y="298" style="font-weight:600">Document Checklist</text>
+    <rect class="table-head" x="55" y="312" width="670" height="26" rx="4" />
+    <text class="muted tiny" x="65" y="329">Document</text>
+    <text class="muted tiny" x="300" y="329">Status</text>
+    <text class="muted tiny" x="450" y="329">Action</text>
+    <text class="text tiny" x="65" y="358">Official Transcript</text>
+    <rect class="green-soft" x="300" y="346" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="309" y="359">Accepted</text>
+    <text class="text tiny" x="65" y="388">SAT/ACT Scores</text>
+    <rect class="green-soft" x="300" y="376" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="309" y="389">Accepted</text>
+    <text class="text tiny" x="65" y="418">Personal Essay</text>
+    <rect class="green-soft" x="300" y="406" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="309" y="419">Accepted</text>
+    <text class="text tiny" x="65" y="448">Letter of Recommendation</text>
+    <rect class="green-soft" x="300" y="436" width="65" height="18" rx="9" />
+    <text class="green badge-text" x="309" y="449">Accepted</text>
+    <text class="green tiny" x="60" y="525">✓ All documents complete!</text>
+    <!-- RAG assistant panel -->
+    <rect class="card" x="760" y="100" width="240" height="540" />
+    <text class="purple small" x="778" y="128" style="font-weight:600">Admissions Assistant</text>
+    <text class="muted tiny" x="778" y="148">Ask about your application</text>
+    <rect class="purple-soft" x="775" y="168" width="210" height="50" rx="8" />
+    <text class="text tiny" x="788" y="190">When will I hear back</text>
+    <text class="text tiny" x="788" y="206">about my decision?</text>
+    <rect class="card-soft" x="775" y="228" width="210" height="70" rx="8" />
+    <text class="text tiny" x="788" y="250">Decisions are typically</text>
+    <text class="text tiny" x="788" y="266">released within 4-6 weeks</text>
+    <text class="text tiny" x="788" y="282">of review start.</text>
+    <rect class="field" x="775" y="590" width="160" height="32" />
+    <text class="muted tiny" x="788" y="611">Ask a question...</text>
+    <rect class="button-primary" x="942" y="590" width="44" height="32" />
+    <text class="white tiny" x="952" y="611">→</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ROW 7: Public screens + Lead Rules (3 frames) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text class="section-title" x="60" y="5035">Public Pages &amp; Additional Screens</text>
+
+  <!-- Frame 19: Public Inquiry Form -->
+  <g transform="translate(60 5060)">
+    <text class="frame-label" x="0" y="-8">21. Public Inquiry Form</text>
+    <text class="frame-route" x="0" y="10">/inquiry (anonymous)</text>
+    <rect class="frame" x="0" y="22" width="1040" height="320" />
+    <!-- Clean public page -->
+    <rect class="header" x="0" y="22" width="1040" height="50" rx="18" />
+    <text class="purple h3" x="30" y="54">SchoolCRM Admissions</text>
+    <rect class="content-bg" x="0" y="72" width="1040" height="270" />
+    <rect class="card" x="200" y="90" width="640" height="260" />
+    <text class="text h3" x="280" y="125">Request Information</text>
+    <text class="muted tiny" x="280" y="148">Tell us about yourself and we'll connect you with an admissions counselor.</text>
+    <!-- Form fields (2 columns) -->
+    <rect class="field" x="230" y="165" width="270" height="32" />
+    <text class="muted tiny" x="245" y="186">First Name *</text>
+    <rect class="field" x="530" y="165" width="270" height="32" />
+    <text class="muted tiny" x="545" y="186">Last Name *</text>
+    <rect class="field" x="230" y="210" width="270" height="32" />
+    <text class="muted tiny" x="245" y="231">Email *</text>
+    <rect class="field" x="530" y="210" width="270" height="32" />
+    <text class="muted tiny" x="545" y="231">Phone</text>
+    <rect class="field" x="230" y="255" width="270" height="32" />
+    <text class="muted tiny" x="245" y="276">Program of Interest ▾</text>
+    <rect class="field" x="530" y="255" width="270" height="32" />
+    <text class="muted tiny" x="545" y="276">Term ▾</text>
+    <rect class="button-primary" x="420" y="305" width="200" height="36" />
+    <text class="white small" x="475" y="328">Submit Inquiry</text>
+  </g>
+
+  <!-- Frame 20: Applicant Event Registration -->
+  <g transform="translate(1140 5060)">
+    <text class="frame-label" x="0" y="-8">20. Applicant Event Registration</text>
+    <text class="frame-route" x="0" y="10">/applicant/events</text>
+    <rect class="frame" x="0" y="22" width="1040" height="320" />
+    <rect class="header" x="0" y="22" width="1040" height="50" rx="18" />
+    <text class="purple h3" x="30" y="54">SchoolCRM</text>
+    <text class="muted small" x="830" y="51">Jane Doe</text>
+    <rect class="content-bg" x="0" y="72" width="1040" height="270" />
+    <text class="text h3" x="40" y="108">Admissions Events</text>
+    <!-- Event cards -->
+    <rect class="card" x="40" y="120" width="300" height="140" />
+    <text class="text small" x="60" y="145" style="font-weight:600">Fall Open House</text>
+    <text class="muted tiny" x="60" y="165">Jun 1, 2026 • Campus</text>
+    <text class="muted tiny" x="60" y="183">10:00 AM - 2:00 PM</text>
+    <text class="muted tiny" x="60" y="205">44 spots remaining</text>
+    <rect class="green-soft" x="60" y="220" width="80" height="22" rx="11" />
+    <text class="green badge-text" x="72" y="235">✓ Registered</text>
+
+    <rect class="card" x="370" y="120" width="300" height="140" />
+    <text class="text small" x="390" y="145" style="font-weight:600">STEM Info Session</text>
+    <text class="muted tiny" x="390" y="165">Jun 15, 2026 • Virtual</text>
+    <text class="muted tiny" x="390" y="183">2:00 PM - 3:30 PM</text>
+    <text class="muted tiny" x="390" y="205">12 spots remaining</text>
+    <rect class="button-primary" x="390" y="220" width="90" height="26" />
+    <text class="white badge-text" x="405" y="237">Register</text>
+
+    <rect class="card" x="700" y="120" width="300" height="140" />
+    <text class="text small" x="720" y="145" style="font-weight:600">Financial Aid Workshop</text>
+    <text class="muted tiny" x="720" y="165">Jul 1, 2026 • Virtual</text>
+    <text class="muted tiny" x="720" y="183">4:00 PM - 5:00 PM</text>
+    <text class="muted tiny" x="720" y="205">30 spots remaining</text>
+    <rect class="button-primary" x="720" y="220" width="90" height="26" />
+    <text class="white badge-text" x="735" y="237">Register</text>
+  </g>
+
+  <!-- Frame 21: Lead Assignment Rules -->
+  <g transform="translate(2220 5060)">
+    <text class="frame-label" x="0" y="-8">12. Lead Assignment Rules</text>
+    <text class="frame-route" x="0" y="10">/admin/admissions/settings/lead-rules</text>
+    <rect class="frame" x="0" y="22" width="1040" height="320" />
+    <rect class="sidebar" x="0" y="22" width="180" height="320" rx="18" />
+    <text class="white small" x="18" y="58" style="font-weight:700">SchoolCRM</text>
+    <rect class="header" x="180" y="22" width="860" height="50" rx="18" />
+    <rect class="content-bg" x="180" y="72" width="860" height="270" />
+    <text class="muted tiny" x="205" y="98">Home / Admissions / Settings / Lead Rules</text>
+    <text class="text h3" x="205" y="128">Lead Assignment Rules</text>
+    <rect class="button-primary" x="870" y="106" width="100" height="28" />
+    <text class="white tiny" x="887" y="125">+ Add Rule</text>
+    <!-- Rules table -->
+    <rect class="card" x="205" y="145" width="810" height="180" />
+    <rect class="table-head" x="220" y="157" width="780" height="24" rx="4" />
+    <text class="muted tiny" x="230" y="173">Priority</text>
+    <text class="muted tiny" x="290" y="173">Rule Name</text>
+    <text class="muted tiny" x="450" y="173">Criteria</text>
+    <text class="muted tiny" x="700" y="173">Recruiter</text>
+    <text class="muted tiny" x="820" y="173">Status</text>
+    <text class="muted tiny" x="910" y="173">Actions</text>
+    <text class="text tiny" x="240" y="200">1</text>
+    <text class="text tiny" x="290" y="200">Northeast Territory</text>
+    <text class="muted tiny" x="450" y="200">State: NY, NJ, CT, MA</text>
+    <text class="text tiny" x="700" y="200">J. Smith</text>
+    <rect class="green-soft" x="820" y="188" width="52" height="18" rx="9" />
+    <text class="green badge-text" x="828" y="201">Active</text>
+    <rect class="button-outline" x="910" y="186" width="40" height="20" />
+    <text class="purple tiny" x="918" y="200">Edit</text>
+    <line class="line" x1="220" y1="212" x2="1000" y2="212" />
+    <text class="text tiny" x="240" y="234">2</text>
+    <text class="text tiny" x="290" y="234">Graduate Programs</text>
+    <text class="muted tiny" x="450" y="234">App Type: Graduate</text>
+    <text class="text tiny" x="700" y="234">A. Patel</text>
+    <rect class="green-soft" x="820" y="222" width="52" height="18" rx="9" />
+    <text class="green badge-text" x="828" y="235">Active</text>
+    <line class="line" x1="220" y1="246" x2="1000" y2="246" />
+    <text class="text tiny" x="240" y="268">3</text>
+    <text class="text tiny" x="290" y="268">CS Department Referrals</text>
+    <text class="muted tiny" x="450" y="268">Program: CS* + Source: Faculty Referral</text>
+    <text class="text tiny" x="700" y="268">M. Lee</text>
+    <rect class="green-soft" x="820" y="256" width="52" height="18" rx="9" />
+    <text class="green badge-text" x="828" y="269">Active</text>
+  </g>
+
+</svg>
