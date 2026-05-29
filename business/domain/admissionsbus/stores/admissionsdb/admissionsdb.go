@@ -193,6 +193,269 @@ func (s *Store) queryStaffProfile(ctx context.Context, filter admissionsbus.Staf
 	return toBusStaffProfile(dbProfile)
 }
 
+// CreateLeadScoreRule inserts a new admissions lead score rule into the database.
+func (s *Store) CreateLeadScoreRule(ctx context.Context, rule admissionsbus.LeadScoreRule) error {
+	const q = `
+	INSERT INTO admissions_lead_score_rules
+		(lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated)
+	VALUES
+		(:lead_score_rule_id, :name, :description, :criteria, :points, :is_active, :priority, :date_created, :date_updated)`
+
+	dbRule, err := toDBLeadScoreRule(rule)
+	if err != nil {
+		return fmt.Errorf("todb: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbRule); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateLeadScoreRule replaces mutable admissions lead score rule data in the database.
+func (s *Store) UpdateLeadScoreRule(ctx context.Context, rule admissionsbus.LeadScoreRule) error {
+	const q = `
+	UPDATE
+		admissions_lead_score_rules
+	SET
+		name = :name,
+		description = :description,
+		criteria = :criteria,
+		points = :points,
+		is_active = :is_active,
+		priority = :priority,
+		date_updated = :date_updated
+	WHERE
+		lead_score_rule_id = :lead_score_rule_id`
+
+	dbRule, err := toDBLeadScoreRule(rule)
+	if err != nil {
+		return fmt.Errorf("todb: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbRule); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryLeadScoreRules retrieves a list of admissions lead score rules from the database.
+func (s *Store) QueryLeadScoreRules(ctx context.Context, filter admissionsbus.LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.LeadScoreRule, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated
+	FROM
+		admissions_lead_score_rules`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreRuleFilter(filter, data, buf)
+
+	orderByClause, err := leadScoreRuleOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbRules []leadScoreRuleDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbRules); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusLeadScoreRules(dbRules)
+}
+
+// CountLeadScoreRules returns the total number of admissions lead score rules in the database.
+func (s *Store) CountLeadScoreRules(ctx context.Context, filter admissionsbus.LeadScoreRuleQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_lead_score_rules`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreRuleFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryLeadScoreRuleByID finds an admissions lead score rule by ID.
+func (s *Store) QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (admissionsbus.LeadScoreRule, error) {
+	filter := admissionsbus.LeadScoreRuleQueryFilter{ID: &ruleID}
+	rule, err := s.queryLeadScoreRule(ctx, filter)
+	if err != nil {
+		return admissionsbus.LeadScoreRule{}, err
+	}
+
+	return rule, nil
+}
+
+func (s *Store) queryLeadScoreRule(ctx context.Context, filter admissionsbus.LeadScoreRuleQueryFilter) (admissionsbus.LeadScoreRule, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated
+	FROM
+		admissions_lead_score_rules`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreRuleFilter(filter, data, buf)
+
+	var dbRule leadScoreRuleDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbRule); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.LeadScoreRule{}, fmt.Errorf("db: %w", admissionsbus.ErrLeadScoreRuleNotFound)
+		}
+		return admissionsbus.LeadScoreRule{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusLeadScoreRule(dbRule)
+}
+
+// UpsertLeadScore inserts or replaces a constituent's latest admissions lead score.
+func (s *Store) UpsertLeadScore(ctx context.Context, score admissionsbus.LeadScore) error {
+	const q = `
+	INSERT INTO admissions_lead_scores
+		(lead_score_id, constituent_id, total_score, score_band, breakdown, recalculated_at, date_created, date_updated)
+	VALUES
+		(:lead_score_id, :constituent_id, :total_score, :score_band, :breakdown, :recalculated_at, :date_created, :date_updated)
+	ON CONFLICT (constituent_id) DO UPDATE SET
+		total_score = EXCLUDED.total_score,
+		score_band = EXCLUDED.score_band,
+		breakdown = EXCLUDED.breakdown,
+		recalculated_at = EXCLUDED.recalculated_at,
+		date_updated = EXCLUDED.date_updated`
+
+	dbScore, err := toDBLeadScore(score)
+	if err != nil {
+		return fmt.Errorf("todb: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbScore); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryLeadScores retrieves a list of admissions lead scores from the database.
+func (s *Store) QueryLeadScores(ctx context.Context, filter admissionsbus.LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.LeadScore, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		lead_score_id, constituent_id, total_score, score_band, breakdown, recalculated_at, date_created, date_updated
+	FROM
+		admissions_lead_scores`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreFilter(filter, data, buf)
+
+	orderByClause, err := leadScoreOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbScores []leadScoreDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbScores); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusLeadScores(dbScores)
+}
+
+// CountLeadScores returns the total number of admissions lead scores in the database.
+func (s *Store) CountLeadScores(ctx context.Context, filter admissionsbus.LeadScoreQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_lead_scores`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryLeadScoreByID finds an admissions lead score by ID.
+func (s *Store) QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (admissionsbus.LeadScore, error) {
+	filter := admissionsbus.LeadScoreQueryFilter{ID: &scoreID}
+	score, err := s.queryLeadScore(ctx, filter)
+	if err != nil {
+		return admissionsbus.LeadScore{}, err
+	}
+
+	return score, nil
+}
+
+// QueryLeadScoreByConstituentID finds an admissions lead score by constituent ID.
+func (s *Store) QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.LeadScore, error) {
+	filter := admissionsbus.LeadScoreQueryFilter{ConstituentID: &constituentID}
+	score, err := s.queryLeadScore(ctx, filter)
+	if err != nil {
+		return admissionsbus.LeadScore{}, err
+	}
+
+	return score, nil
+}
+
+func (s *Store) queryLeadScore(ctx context.Context, filter admissionsbus.LeadScoreQueryFilter) (admissionsbus.LeadScore, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		lead_score_id, constituent_id, total_score, score_band, breakdown, recalculated_at, date_created, date_updated
+	FROM
+		admissions_lead_scores`
+
+	buf := bytes.NewBufferString(q)
+	s.applyLeadScoreFilter(filter, data, buf)
+
+	var dbScore leadScoreDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbScore); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.LeadScore{}, fmt.Errorf("db: %w", admissionsbus.ErrLeadScoreNotFound)
+		}
+		return admissionsbus.LeadScore{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusLeadScore(dbScore)
+}
+
 // CreateConstituent inserts a new Constituent into the database.
 func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
 	const q = `
