@@ -15,7 +15,7 @@ RUN npm run build
 FROM caddy:2.9-alpine
 ARG BUILD_DATE
 ARG BUILD_TAG
-COPY --from=build_web_admin /app/dist/smart /srv
+COPY --from=build_web_admin /app/dist/fuse/browser /srv
 COPY api/frontends/web-admin/Caddyfile /etc/caddy/Caddyfile
 COPY api/frontends/web-admin/docker-entrypoint.sh /usr/bin/frontend-entrypoint.sh
 RUN chmod +x /usr/bin/frontend-entrypoint.sh
