@@ -40,6 +40,54 @@ func (ext *Extension) Health(ctx context.Context) (admissionsbus.Health, error) 
 	return ext.bus.Health(ctx)
 }
 
+// CreateStaffProfile applies otel to admissions staff profile creation.
+func (ext *Extension) CreateStaffProfile(ctx context.Context, np admissionsbus.NewStaffProfile) (admissionsbus.StaffProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createstaffprofile")
+	defer span.End()
+
+	return ext.bus.CreateStaffProfile(ctx, np)
+}
+
+// UpdateStaffProfile applies otel to admissions staff profile updates.
+func (ext *Extension) UpdateStaffProfile(ctx context.Context, profile admissionsbus.StaffProfile, np admissionsbus.NewStaffProfile) (admissionsbus.StaffProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updatestaffprofile")
+	defer span.End()
+
+	return ext.bus.UpdateStaffProfile(ctx, profile, np)
+}
+
+// QueryStaffProfiles applies otel to admissions staff profile queries.
+func (ext *Extension) QueryStaffProfiles(ctx context.Context, filter admissionsbus.StaffProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.StaffProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querystaffprofiles")
+	defer span.End()
+
+	return ext.bus.QueryStaffProfiles(ctx, filter, orderBy, page)
+}
+
+// CountStaffProfiles applies otel to admissions staff profile counts.
+func (ext *Extension) CountStaffProfiles(ctx context.Context, filter admissionsbus.StaffProfileQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countstaffprofiles")
+	defer span.End()
+
+	return ext.bus.CountStaffProfiles(ctx, filter)
+}
+
+// QueryStaffProfileByID applies otel to admissions staff profile ID lookups.
+func (ext *Extension) QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.StaffProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querystaffprofilebyid")
+	defer span.End()
+
+	return ext.bus.QueryStaffProfileByID(ctx, profileID)
+}
+
+// QueryStaffProfileByUserID applies otel to admissions staff profile user lookups.
+func (ext *Extension) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.StaffProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querystaffprofilebyuserid")
+	defer span.End()
+
+	return ext.bus.QueryStaffProfileByUserID(ctx, userID)
+}
+
 // CreateConstituent applies otel to Constituent creation.
 func (ext *Extension) CreateConstituent(ctx context.Context, nc admissionsbus.NewConstituent) (admissionsbus.Constituent, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createconstituent")

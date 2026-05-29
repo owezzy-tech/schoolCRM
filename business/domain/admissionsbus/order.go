@@ -5,6 +5,9 @@ import "github.com/owezzy/schoolCRM/business/sdk/order"
 // DefaultProgramOrderBy represents the default way we sort programs.
 var DefaultProgramOrderBy = order.NewBy(OrderByProgramID, order.ASC)
 
+// DefaultStaffProfileOrderBy represents the default way we sort staff profiles.
+var DefaultStaffProfileOrderBy = order.NewBy(OrderByStaffProfileID, order.ASC)
+
 // DefaultConstituentOrderBy represents the default way we sort constituents.
 var DefaultConstituentOrderBy = order.NewBy(OrderByConstituentID, order.ASC)
 
@@ -21,6 +24,13 @@ var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order
 var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
 
 // Set of fields that programs can be ordered by.
+const (
+	OrderByStaffProfileID          = "a"
+	OrderByStaffProfileUser        = "b"
+	OrderByStaffProfileDateCreated = "c"
+)
+
+// Set of fields that constituents can be ordered by.
 const (
 	OrderByConstituentID             = "a"
 	OrderByConstituentLastName       = "b"
