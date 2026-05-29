@@ -127,3 +127,38 @@ CREATE TABLE admissions_academic_terms (
 
 CREATE INDEX idx_admissions_academic_terms_active ON admissions_academic_terms (is_active);
 CREATE INDEX idx_admissions_academic_terms_code ON admissions_academic_terms (code);
+
+-- Version: 1.07
+-- Description: Create admissions constituents table
+CREATE TABLE admissions_constituents (
+    constituent_id   UUID      NOT NULL,
+    first_name       TEXT      NOT NULL,
+    last_name        TEXT      NOT NULL,
+    preferred_name   TEXT      NULL,
+    middle_name      TEXT      NULL,
+    suffix           TEXT      NULL,
+    date_of_birth    TIMESTAMP NOT NULL,
+    primary_email    TEXT      NOT NULL,
+    primary_phone    TEXT      NOT NULL,
+    external_sis_id  TEXT      UNIQUE NULL,
+    lifecycle_stage  TEXT      NOT NULL,
+    duplicate_status TEXT      NOT NULL,
+    duplicate_of_id  UUID      NULL,
+    sis_synced_at    TIMESTAMP NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (constituent_id),
+    FOREIGN KEY (duplicate_of_id) REFERENCES admissions_constituents(constituent_id),
+    CONSTRAINT admissions_constituents_lifecycle_stage CHECK (lifecycle_stage IN ('PROSPECT', 'INQUIRY', 'APPLICANT', 'ADMITTED', 'ENROLLED', 'ALUMNI')),
+    CONSTRAINT admissions_constituents_duplicate_status CHECK (duplicate_status IN ('ACTIVE', 'MERGED', 'DUPLICATE_OF')),
+    CONSTRAINT admissions_constituents_duplicate_consistency CHECK (
+        (duplicate_status = 'ACTIVE' AND duplicate_of_id IS NULL)
+        OR (duplicate_status IN ('MERGED', 'DUPLICATE_OF') AND duplicate_of_id IS NOT NULL)
+    )
+);
+
+CREATE INDEX idx_admissions_constituents_email ON admissions_constituents (primary_email);
+CREATE INDEX idx_admissions_constituents_phone ON admissions_constituents (primary_phone);
+CREATE INDEX idx_admissions_constituents_lifecycle ON admissions_constituents (lifecycle_stage);
+CREATE INDEX idx_admissions_constituents_duplicate_status ON admissions_constituents (duplicate_status);
