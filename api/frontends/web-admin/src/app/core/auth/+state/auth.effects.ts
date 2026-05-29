@@ -9,6 +9,14 @@ import { of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { AuthApiActions, AuthPageActions } from './auth.actions';
 
+interface JsonApiResource<T> {
+    attributes: T;
+}
+
+interface JsonApiDocument<T> {
+    data: JsonApiResource<T>;
+}
+
 interface SignInResponse {
     accessToken: string;
     tokenType: 'Bearer';
@@ -25,9 +33,15 @@ interface AuthenticateResponse {
     user: User;
 }
 
+interface JsonApiError {
+    detail?: string;
+    title?: string;
+}
+
 interface AuthErrorResponse {
     error?: {
         message?: string;
+        errors?: JsonApiError[];
     };
 }
 
@@ -43,12 +57,13 @@ export class AuthEffects {
             ofType(AuthPageActions.signIn),
             switchMap(({ email, password }) =>
                 this.httpClient
-                    .post<SignInResponse>('/v1/auth/login', {
+                    .post<JsonApiDocument<SignInResponse>>('/v1/auth/login', {
                         email,
                         password,
                     })
                     .pipe(
-                        map(({ accessToken, user }) => {
+                        map(({ data }) => {
+                            const { accessToken, user } = data.attributes;
                             this.tokenStorage.set(accessToken);
                             this.userService.user = user;
                             return AuthApiActions.signInSuccess({
@@ -59,9 +74,7 @@ export class AuthEffects {
                         catchError((error: AuthErrorResponse) =>
                             of(
                                 AuthApiActions.signInFailure({
-                                    error:
-                                        error.error?.message ??
-                                        'Sign in failed.',
+                                    error: authErrorMessage(error),
                                 })
                             )
                         )
@@ -88,11 +101,12 @@ export class AuthEffects {
                 });
 
                 return this.httpClient
-                    .get<AuthenticateResponse>('/v1/auth/authenticate', {
+                    .get<JsonApiDocument<AuthenticateResponse>>('/v1/auth/authenticate', {
                         headers,
                     })
                     .pipe(
-                        map((response) => {
+                        map(({ data }) => {
+                            const response = data.attributes;
                             const user = {
                                 ...response.user,
                                 roles:
@@ -125,5 +139,14 @@ export class AuthEffects {
             tap(() => this.tokenStorage.clear()),
             map(() => AuthApiActions.signOutSuccess())
         )
+    );
+}
+
+function authErrorMessage(error: AuthErrorResponse): string {
+    return (
+        error.error?.errors?.[0]?.detail ??
+        error.error?.errors?.[0]?.title ??
+        error.error?.message ??
+        'Sign in failed.'
     );
 }
