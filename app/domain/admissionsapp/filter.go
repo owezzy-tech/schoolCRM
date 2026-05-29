@@ -52,6 +52,19 @@ type duplicateReviewQueryParams struct {
 	Status                 string
 }
 
+type applicationQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	ConstituentID   string
+	ProgramID       string
+	AcademicTermID  string
+	ApplicationType string
+	Status          string
+	ActiveOnly      string
+}
+
 func parseProgramQueryParams(r *http.Request) programQueryParams {
 	values := r.URL.Query()
 
@@ -107,6 +120,23 @@ func parseDuplicateReviewQueryParams(r *http.Request) duplicateReviewQueryParams
 		CandidateConstituentID: values.Get("candidate_constituent_id"),
 		MatchType:              values.Get("match_type"),
 		Status:                 values.Get("status"),
+	}
+}
+
+func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
+	values := r.URL.Query()
+
+	return applicationQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("application_id"),
+		ConstituentID:   values.Get("constituent_id"),
+		ProgramID:       values.Get("program_id"),
+		AcademicTermID:  values.Get("academic_term_id"),
+		ApplicationType: values.Get("application_type"),
+		Status:          values.Get("status"),
+		ActiveOnly:      values.Get("active_only"),
 	}
 }
 
@@ -270,6 +300,72 @@ func parseDuplicateReviewFilter(qp duplicateReviewQueryParams) (admissionsbus.Du
 
 	if fieldErrors != nil {
 		return admissionsbus.DuplicateReviewQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.ApplicationQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicationQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		id, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &id
+		}
+	}
+
+	if qp.ProgramID != "" {
+		id, err := uuid.Parse(qp.ProgramID)
+		if err != nil {
+			fieldErrors.Add("program_id", err)
+		} else {
+			filter.ProgramID = &id
+		}
+	}
+
+	if qp.AcademicTermID != "" {
+		id, err := uuid.Parse(qp.AcademicTermID)
+		if err != nil {
+			fieldErrors.Add("academic_term_id", err)
+		} else {
+			filter.AcademicTermID = &id
+		}
+	}
+
+	if qp.ApplicationType != "" {
+		applicationType := admissionsbus.ApplicationType(qp.ApplicationType)
+		filter.ApplicationType = &applicationType
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.ApplicationStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.ActiveOnly != "" {
+		activeOnly, err := strconv.ParseBool(qp.ActiveOnly)
+		if err != nil {
+			fieldErrors.Add("active_only", err)
+		} else {
+			filter.ActiveOnly = &activeOnly
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ApplicationQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

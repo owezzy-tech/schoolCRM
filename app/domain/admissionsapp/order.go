@@ -31,3 +31,11 @@ var duplicateReviewOrderByFields = map[string]string{
 	"match_score":         admissionsbus.OrderByDuplicateReviewMatchScore,
 	"date_created":        admissionsbus.OrderByDuplicateReviewDateCreated,
 }
+
+var applicationOrderByFields = map[string]string{
+	"application_id":   admissionsbus.OrderByApplicationID,
+	"status":           admissionsbus.OrderByApplicationStatus,
+	"application_type": admissionsbus.OrderByApplicationType,
+	"submitted_at":     admissionsbus.OrderByApplicationSubmittedAt,
+	"date_created":     admissionsbus.OrderByApplicationDateCreated,
+}

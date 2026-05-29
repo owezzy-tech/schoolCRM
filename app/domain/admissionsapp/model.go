@@ -391,6 +391,105 @@ func toBusResolveDuplicateReview(app ResolveDuplicateReview, actorID uuid.UUID) 
 	}
 }
 
+// Application represents a constituent's application for a program and academic term.
+type Application struct {
+	ID                 string  `json:"id"`
+	ConstituentID      string  `json:"constituentID"`
+	ProgramID          string  `json:"programID"`
+	AcademicTermID     string  `json:"academicTermID"`
+	ApplicationType    string  `json:"applicationType"`
+	Status             string  `json:"status"`
+	AssignedReviewerID *string `json:"assignedReviewerID,omitempty"`
+	SubmittedAt        *string `json:"submittedAt,omitempty"`
+	DateCreated        string  `json:"dateCreated"`
+	DateUpdated        string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Application) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplication(application admissionsbus.Application) Application {
+	return Application{
+		ID:                 application.ID.String(),
+		ConstituentID:      application.ConstituentID.String(),
+		ProgramID:          application.ProgramID.String(),
+		AcademicTermID:     application.AcademicTermID.String(),
+		ApplicationType:    application.ApplicationType.String(),
+		Status:             application.Status.String(),
+		AssignedReviewerID: uuidStringPtr(application.AssignedReviewerID),
+		SubmittedAt:        formatTimePtr(application.SubmittedAt),
+		DateCreated:        application.DateCreated.Format(time.RFC3339),
+		DateUpdated:        application.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplications(applications []admissionsbus.Application) []Application {
+	app := make([]Application, len(applications))
+	for i, application := range applications {
+		app[i] = toAppApplication(application)
+	}
+
+	return app
+}
+
+// NewApplication defines the data needed to create a draft application.
+type NewApplication struct {
+	ConstituentID      string  `json:"constituentID"`
+	ProgramID          string  `json:"programID"`
+	AcademicTermID     string  `json:"academicTermID"`
+	ApplicationType    string  `json:"applicationType"`
+	AssignedReviewerID *string `json:"assignedReviewerID"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplication) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewApplication(app NewApplication) (admissionsbus.NewApplication, error) {
+	var fieldErrors errs.FieldErrors
+
+	constituentID, err := uuid.Parse(app.ConstituentID)
+	if err != nil {
+		fieldErrors.Add("constituentID", err)
+	}
+
+	programID, err := uuid.Parse(app.ProgramID)
+	if err != nil {
+		fieldErrors.Add("programID", err)
+	}
+
+	academicTermID, err := uuid.Parse(app.AcademicTermID)
+	if err != nil {
+		fieldErrors.Add("academicTermID", err)
+	}
+
+	var assignedReviewerID *uuid.UUID
+	if app.AssignedReviewerID != nil {
+		parsed, err := uuid.Parse(*app.AssignedReviewerID)
+		if err != nil {
+			fieldErrors.Add("assignedReviewerID", err)
+		} else {
+			assignedReviewerID = &parsed
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewApplication{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewApplication{
+		ConstituentID:      constituentID,
+		ProgramID:          programID,
+		AcademicTermID:     academicTermID,
+		ApplicationType:    admissionsbus.ApplicationType(app.ApplicationType),
+		AssignedReviewerID: assignedReviewerID,
+	}, nil
+}
+
 func formatTimePtr(t *time.Time) *string {
 	if t == nil {
 		return nil
