@@ -250,3 +250,32 @@ CREATE TABLE admissions_application_transitions (
 CREATE INDEX idx_admissions_application_transitions_application ON admissions_application_transitions (application_id);
 CREATE INDEX idx_admissions_application_transitions_actor ON admissions_application_transitions (actor_id);
 CREATE INDEX idx_admissions_application_transitions_created ON admissions_application_transitions (date_created);
+
+-- Version: 1.11
+-- Description: Create admissions staff profiles
+CREATE TABLE admissions_staff_profiles (
+    staff_profile_id  UUID      NOT NULL,
+    user_id           UUID      NOT NULL,
+    admissions_roles  TEXT[]    NOT NULL,
+    is_active         BOOLEAN   NOT NULL,
+    date_created      TIMESTAMP NOT NULL,
+    date_updated      TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (staff_profile_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_staff_profiles_unique_user UNIQUE (user_id),
+    CONSTRAINT admissions_staff_profiles_roles_not_empty CHECK (cardinality(admissions_roles) > 0),
+    CONSTRAINT admissions_staff_profiles_roles CHECK (admissions_roles <@ ARRAY[
+        'ADMISSIONS_ADMIN',
+        'RECRUITER',
+        'APPLICATION_REVIEWER',
+        'MARKETING_MANAGER',
+        'EVENT_MANAGER',
+        'REPORT_VIEWER',
+        'APPLICANT'
+    ]::TEXT[])
+);
+
+CREATE INDEX idx_admissions_staff_profiles_user ON admissions_staff_profiles (user_id);
+CREATE INDEX idx_admissions_staff_profiles_roles ON admissions_staff_profiles USING GIN (admissions_roles);
+CREATE INDEX idx_admissions_staff_profiles_active ON admissions_staff_profiles (is_active);
