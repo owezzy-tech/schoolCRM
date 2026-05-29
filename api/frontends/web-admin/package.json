@@ -7,7 +7,7 @@
     "private": true,
     "scripts": {
         "ng": "ng",
-        "start": "ng serve --port 4400",
+        "start": "ng serve --port 4400 --proxy-config proxy.conf.json",
         "build": "ng build",
         "lint": "ng build --configuration development",
         "watch": "ng build --watch --configuration development",

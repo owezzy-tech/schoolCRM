@@ -1,0 +1,12 @@
+{
+    "/v1/auth": {
+        "target": "http://localhost:6000",
+        "secure": false,
+        "changeOrigin": true
+    },
+    "/v1": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+    }
+}

@@ -1,4 +1,3 @@
-import { provideHttpClient } from '@angular/common/http';
 import {
     ApplicationConfig,
     inject,
@@ -26,7 +25,6 @@ import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 export const appConfig: ApplicationConfig = {
     providers: [
         provideAnimations(),
-        provideHttpClient(),
         provideRouter(
             appRoutes,
             withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
