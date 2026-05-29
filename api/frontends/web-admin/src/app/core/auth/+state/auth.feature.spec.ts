@@ -49,12 +49,17 @@ describe('authReducer', () => {
 
         const state = authReducer(
             authenticatedState,
-            AuthApiActions.signInUsingTokenFailure()
+            AuthApiActions.signInUsingTokenFailure({
+                error: 'Unable to restore your session. Please sign in again.',
+            })
         );
 
         expect(state.authenticated).toBe(false);
         expect(state.accessToken).toBeNull();
         expect(state.user).toBeNull();
         expect(state.loading).toBe(false);
+        expect(state.error).toBe(
+            'Unable to restore your session. Please sign in again.'
+        );
     });
 });

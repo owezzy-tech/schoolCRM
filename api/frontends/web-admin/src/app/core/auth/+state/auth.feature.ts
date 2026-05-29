@@ -65,12 +65,13 @@ export const authFeature = createFeature({
             })
         ),
 
-        on(AuthApiActions.signInUsingTokenFailure, (state) => ({
+        on(AuthApiActions.signInUsingTokenFailure, (state, { error }) => ({
             ...state,
             authenticated: false,
             accessToken: null,
             user: null,
             loading: false,
+            error,
         })),
 
         on(AuthApiActions.signOutSuccess, (_state) => ({
@@ -91,5 +92,4 @@ export const {
     selectAccessToken,
     selectUser,
     selectLoading,
-    selectError,
 } = authFeature;

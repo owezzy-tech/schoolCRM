@@ -22,7 +22,7 @@ export const AuthApiActions = createActionGroup({
         'Sign In Failure': props<{ error: string }>(),
 
         'Sign In Using Token Success': props<AuthSuccessPayload>(),
-        'Sign In Using Token Failure': emptyProps(),
+        'Sign In Using Token Failure': props<{ error: string }>(),
 
         'Sign Out Success': emptyProps(),
     },

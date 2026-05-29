@@ -76,7 +76,11 @@ export class AuthEffects {
             switchMap(() => {
                 const token = this.tokenStorage.get() ?? '';
                 if (!token || AuthUtils.isTokenExpired(token)) {
-                    return of(AuthApiActions.signInUsingTokenFailure());
+                    return of(
+                        AuthApiActions.signInUsingTokenFailure({
+                            error: 'Your session has expired. Please sign in again.',
+                        })
+                    );
                 }
 
                 const headers = new HttpHeaders({
@@ -104,7 +108,11 @@ export class AuthEffects {
                             });
                         }),
                         catchError(() =>
-                            of(AuthApiActions.signInUsingTokenFailure())
+                            of(
+                                AuthApiActions.signInUsingTokenFailure({
+                                    error: 'Unable to restore your session. Please sign in again.',
+                                })
+                            )
                         )
                     );
             })
