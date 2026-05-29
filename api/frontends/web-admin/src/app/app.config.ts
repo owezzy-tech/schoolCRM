@@ -1,55 +1,125 @@
-import { HTTP_INTERCEPTORS, provideHttpClient } from '@angular/common/http';
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
-import { APP_ROUTE } from './app.routes';
-import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import {
+    ApplicationConfig,
+    inject,
+    isDevMode,
+    provideAppInitializer,
+} from '@angular/core';
+import { LuxonDateAdapter } from '@angular/material-luxon-adapter';
+import { DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { HashLocationStrategy, LocationStrategy } from '@angular/common';
-import { JwtInterceptor } from '@core/interceptor/jwt.interceptor';
-import { ErrorInterceptor } from '@core/interceptor/error.interceptor';
-import { DirectionService, LanguageService } from '@core';
-import { TranslateModule } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
-import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
-import { MomentDateAdapter } from '@angular/material-moment-adapter';
-import { FeatherModule } from 'angular-feather';
-import { allIcons } from 'angular-feather/icons';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { provideFuse } from '@fuse';
+import { TranslocoService, provideTransloco } from '@jsverse/transloco';
+import { appRoutes } from 'app/app.routes';
+import { provideAuth } from 'app/core/auth/auth.provider';
+import { provideIcons } from 'app/core/icons/icons.provider';
+import { MockApiService } from 'app/mock-api';
+import { firstValueFrom } from 'rxjs';
+import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
-        provideRouter(APP_ROUTE),
         provideAnimations(),
-        { provide: LocationStrategy, useClass: HashLocationStrategy },
-        { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-        { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
-        DirectionService, LanguageService,
-        importProvidersFrom(
-            TranslateModule.forRoot({
-                defaultLanguage: 'en',
-            })
+        provideHttpClient(),
+        provideRouter(
+            appRoutes,
+            withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
         ),
-        ...provideTranslateHttpLoader({
-            prefix: './assets/i18n/',
-            suffix: '.json',
-        }),
-        { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
-        { provide: DateAdapter, useClass: MomentDateAdapter },
+
+        // Material Date Adapter
+        {
+            provide: DateAdapter,
+            useClass: LuxonDateAdapter,
+        },
         {
             provide: MAT_DATE_FORMATS,
             useValue: {
                 parse: {
-                    dateInput: 'YYYY-MM-DD',
+                    dateInput: 'D',
                 },
                 display: {
-                    dateInput: 'YYYY-MM-DD',
-                    monthYearLabel: 'YYYY MMM',
-                    dateA11yLabel: 'LL',
-                    monthYearA11yLabel: 'YYYY MMM',
+                    dateInput: 'DDD',
+                    monthYearLabel: 'LLL yyyy',
+                    dateA11yLabel: 'DD',
+                    monthYearA11yLabel: 'LLLL yyyy',
                 },
             },
         },
-        importProvidersFrom(FeatherModule.pick(allIcons)),
 
+        // Transloco Config
+        provideTransloco({
+            config: {
+                availableLangs: [
+                    {
+                        id: 'en',
+                        label: 'English',
+                    },
+                    {
+                        id: 'tr',
+                        label: 'Turkish',
+                    },
+                ],
+                defaultLang: 'en',
+                fallbackLang: 'en',
+                reRenderOnLangChange: true,
+                prodMode: !isDevMode(),
+            },
+            loader: TranslocoHttpLoader,
+        }),
+        provideAppInitializer(() => {
+            const translocoService = inject(TranslocoService);
+            const defaultLang = translocoService.getDefaultLang();
+            translocoService.setActiveLang(defaultLang);
+
+            return firstValueFrom(translocoService.load(defaultLang));
+        }),
+
+        // Fuse
+        provideAuth(),
+        provideIcons(),
+        provideFuse({
+            mockApi: {
+                delay: 0,
+                service: MockApiService,
+            },
+            fuse: {
+                layout: 'classy',
+                scheme: 'light',
+                screens: {
+                    sm: '600px',
+                    md: '960px',
+                    lg: '1280px',
+                    xl: '1440px',
+                },
+                theme: 'theme-default',
+                themes: [
+                    {
+                        id: 'theme-default',
+                        name: 'Default',
+                    },
+                    {
+                        id: 'theme-brand',
+                        name: 'Brand',
+                    },
+                    {
+                        id: 'theme-teal',
+                        name: 'Teal',
+                    },
+                    {
+                        id: 'theme-rose',
+                        name: 'Rose',
+                    },
+                    {
+                        id: 'theme-purple',
+                        name: 'Purple',
+                    },
+                    {
+                        id: 'theme-amber',
+                        name: 'Amber',
+                    },
+                ],
+            },
+        }),
     ],
-
 };
