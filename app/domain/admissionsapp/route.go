@@ -7,6 +7,7 @@ import (
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
@@ -15,6 +16,7 @@ import (
 type Config struct {
 	Log           *logger.Logger
 	AdmissionsBus admissionsbus.ExtBusiness
+	AuditBus      auditbus.ExtBusiness
 	AuthClient    authclient.Authenticator
 }
 
@@ -25,7 +27,7 @@ func Routes(app *web.App, cfg Config) {
 	authen := mid.Authenticate(cfg.AuthClient)
 	ruleAny := mid.Authorize(cfg.AuthClient, auth.RuleAny)
 
-	api := newApp(cfg.AdmissionsBus)
+	api := newApp(cfg.AdmissionsBus, cfg.AuditBus)
 
 	app.HandlerFunc(http.MethodGet, version, "/admissions/health", api.health, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/constituents", api.queryConstituents, authen, ruleAny)
@@ -36,4 +38,8 @@ func Routes(app *web.App, cfg Config) {
 	app.HandlerFunc(http.MethodGet, version, "/admissions/programs/{program_id}", api.queryProgramByID, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/academic-terms", api.queryAcademicTerms, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/academic-terms/{academic_term_id}", api.queryAcademicTermByID, authen, ruleAny)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/duplicate-reviews", api.queryDuplicateReviews, authen, ruleAny)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/duplicate-reviews/{duplicate_review_id}", api.queryDuplicateReviewByID, authen, ruleAny)
+	app.HandlerFunc(http.MethodPost, version, "/admissions/duplicate-reviews", api.createDuplicateReview, authen, ruleAny)
+	app.HandlerFunc(http.MethodPut, version, "/admissions/duplicate-reviews/{duplicate_review_id}/resolution", api.resolveDuplicateReview, authen, ruleAny)
 }

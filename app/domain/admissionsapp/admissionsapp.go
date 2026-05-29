@@ -7,20 +7,26 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/app/sdk/errs"
+	"github.com/owezzy/schoolCRM/app/sdk/mid"
 	"github.com/owezzy/schoolCRM/app/sdk/query"
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/sdk/order"
 	"github.com/owezzy/schoolCRM/business/sdk/page"
+	"github.com/owezzy/schoolCRM/business/types/domain"
+	"github.com/owezzy/schoolCRM/business/types/name"
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
 
 type app struct {
 	admissionsBus admissionsbus.ExtBusiness
+	auditBus      auditbus.ExtBusiness
 }
 
-func newApp(admissionsBus admissionsbus.ExtBusiness) *app {
+func newApp(admissionsBus admissionsbus.ExtBusiness, auditBus auditbus.ExtBusiness) *app {
 	return &app{
 		admissionsBus: admissionsBus,
+		auditBus:      auditBus,
 	}
 }
 
@@ -214,4 +220,109 @@ func (a *app) queryAcademicTermByID(ctx context.Context, r *http.Request) web.En
 	}
 
 	return toAppAcademicTerm(term)
+}
+
+func (a *app) createDuplicateReview(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewDuplicateReview
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nr, err := toBusNewDuplicateReview(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	review, err := a.admissionsBus.CreateDuplicateReview(ctx, nr)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create duplicate review: %s", err)
+	}
+
+	return toAppDuplicateReview(review)
+}
+
+func (a *app) resolveDuplicateReview(ctx context.Context, r *http.Request) web.Encoder {
+	var app ResolveDuplicateReview
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	reviewID, err := uuid.Parse(web.Param(r, "duplicate_review_id"))
+	if err != nil {
+		return errs.NewFieldErrors("duplicate_review_id", err)
+	}
+
+	review, err := a.admissionsBus.QueryDuplicateReviewByID(ctx, reviewID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query duplicate review: %s", err)
+	}
+
+	rr := toBusResolveDuplicateReview(app, mid.GetSubjectID(ctx))
+	resolved, err := a.admissionsBus.ResolveDuplicateReview(ctx, review, rr)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "resolve duplicate review: %s", err)
+	}
+
+	if a.auditBus != nil {
+		na := auditbus.NewAudit{
+			ObjID:     resolved.ID,
+			ObjDomain: domain.Admissions,
+			ObjName:   name.MustParse("Duplicate Review"),
+			ActorID:   rr.ActorID,
+			Action:    "duplicate_" + rr.Resolution.String(),
+			Data:      toAppDuplicateReview(resolved),
+			Message:   "duplicate review resolved",
+		}
+
+		if _, err := a.auditBus.Create(ctx, na); err != nil {
+			return errs.Errorf(errs.Internal, "audit duplicate review: %s", err)
+		}
+	}
+
+	return toAppDuplicateReview(resolved)
+}
+
+func (a *app) queryDuplicateReviews(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseDuplicateReviewQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseDuplicateReviewFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(duplicateReviewOrderByFields, qp.OrderBy, admissionsbus.DefaultDuplicateReviewOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	reviews, err := a.admissionsBus.QueryDuplicateReviews(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query duplicate reviews: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountDuplicateReviews(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count duplicate reviews: %s", err)
+	}
+
+	return query.NewResult(toAppDuplicateReviews(reviews), total, page)
+}
+
+func (a *app) queryDuplicateReviewByID(ctx context.Context, r *http.Request) web.Encoder {
+	reviewID, err := uuid.Parse(web.Param(r, "duplicate_review_id"))
+	if err != nil {
+		return errs.NewFieldErrors("duplicate_review_id", err)
+	}
+
+	review, err := a.admissionsBus.QueryDuplicateReviewByID(ctx, reviewID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query duplicate review: %s", err)
+	}
+
+	return toAppDuplicateReview(review)
 }
