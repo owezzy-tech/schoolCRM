@@ -41,6 +41,7 @@ func (all) Add(app *web.App, cfg mux.Config) {
 	admissionsapp.Routes(app, admissionsapp.Config{
 		Log:           cfg.Log,
 		AdmissionsBus: cfg.BusConfig.AdmissionsBus,
+		AuditBus:      cfg.BusConfig.AuditBus,
 		AuthClient:    cfg.SchoolCRMConfig.AuthClient,
 	})
 
