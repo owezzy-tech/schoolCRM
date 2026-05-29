@@ -36,6 +36,14 @@ cp -rf source dest          # NOT: cp -r source dest
 - `apt-get` - use `-y` flag
 - `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
+## API Response Contract
+
+- All backend HTTP API handlers registered through `foundation/web` must return JSON:API v1.1 documents.
+- Success responses use `Content-Type: application/vnd.api+json` and include top-level `jsonapi: { version: "1.1" }` plus `data`.
+- Error responses use top-level `errors`; surface client-safe messages in `errors[0].detail` so frontends can display API failure messages.
+- Do not return ad hoc `{ "error": ... }` or bare domain JSON from normal API handlers. Add new response behavior through the central `foundation/web.Respond` pipeline.
+- Frontends consuming backend APIs must unwrap JSON:API `data.attributes` for single resources, `data` plus `meta` for collections, and `errors[0].detail` for failed requests.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 

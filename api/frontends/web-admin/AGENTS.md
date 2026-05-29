@@ -78,6 +78,7 @@ npm test           # Karma + Jasmine (no tests exist yet)
 - **Mock API**: All `api/*` calls intercepted in dev by `src/app/mock-api/`. Disable by removing from `provideFuse()`.
 - **Build budgets**: 3MB warn / 5MB error (initial), 75KB / 90KB (component styles)
 - **Auth tokens**: Stored in localStorage, validated via `AuthUtils.isTokenExpired()`
+- **API responses**: Backend REST APIs return JSON:API v1.1 envelopes. Read resource payloads from `data.attributes`, collection payloads from `data` plus `meta`, and error messages from `errors[0].detail`.
 - **Dark mode**: CSS class-based (`.dark` selector on body)
 - **Tailwind breakpoints**: Non-standard — sm:600, md:960, lg:1280, xl:1440
 
