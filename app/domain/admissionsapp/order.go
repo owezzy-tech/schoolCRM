@@ -23,3 +23,11 @@ var academicTermOrderByFields = map[string]string{
 	"start_date":       admissionsbus.OrderByAcademicTermStartDate,
 	"active":           admissionsbus.OrderByAcademicTermActive,
 }
+
+var duplicateReviewOrderByFields = map[string]string{
+	"duplicate_review_id": admissionsbus.OrderByDuplicateReviewID,
+	"status":              admissionsbus.OrderByDuplicateReviewStatus,
+	"match_type":          admissionsbus.OrderByDuplicateReviewMatchType,
+	"match_score":         admissionsbus.OrderByDuplicateReviewMatchScore,
+	"date_created":        admissionsbus.OrderByDuplicateReviewDateCreated,
+}

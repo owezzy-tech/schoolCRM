@@ -284,6 +284,113 @@ func toAppAcademicTerms(terms []admissionsbus.AcademicTerm) []AcademicTerm {
 	return app
 }
 
+// DuplicateReview represents a potential constituent duplicate requiring staff resolution.
+type DuplicateReview struct {
+	ID                     string  `json:"id"`
+	SourceConstituentID    string  `json:"sourceConstituentID"`
+	CandidateConstituentID string  `json:"candidateConstituentID"`
+	MatchType              string  `json:"matchType"`
+	MatchScore             int     `json:"matchScore"`
+	MatchReason            string  `json:"matchReason"`
+	Status                 string  `json:"status"`
+	ResolvedBy             *string `json:"resolvedBy,omitempty"`
+	ResolvedAt             *string `json:"resolvedAt,omitempty"`
+	ResolutionNote         *string `json:"resolutionNote,omitempty"`
+	DateCreated            string  `json:"dateCreated"`
+	DateUpdated            string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app DuplicateReview) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppDuplicateReview(review admissionsbus.DuplicateReview) DuplicateReview {
+	return DuplicateReview{
+		ID:                     review.ID.String(),
+		SourceConstituentID:    review.SourceConstituentID.String(),
+		CandidateConstituentID: review.CandidateConstituentID.String(),
+		MatchType:              review.MatchType.String(),
+		MatchScore:             review.MatchScore,
+		MatchReason:            review.MatchReason,
+		Status:                 review.Status.String(),
+		ResolvedBy:             uuidStringPtr(review.ResolvedBy),
+		ResolvedAt:             formatTimePtr(review.ResolvedAt),
+		ResolutionNote:         review.ResolutionNote,
+		DateCreated:            review.DateCreated.Format(time.RFC3339),
+		DateUpdated:            review.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppDuplicateReviews(reviews []admissionsbus.DuplicateReview) []DuplicateReview {
+	app := make([]DuplicateReview, len(reviews))
+	for i, review := range reviews {
+		app[i] = toAppDuplicateReview(review)
+	}
+
+	return app
+}
+
+// NewDuplicateReview defines the data needed to enqueue a duplicate review.
+type NewDuplicateReview struct {
+	SourceConstituentID    string `json:"sourceConstituentID"`
+	CandidateConstituentID string `json:"candidateConstituentID"`
+	MatchType              string `json:"matchType"`
+	MatchScore             int    `json:"matchScore"`
+	MatchReason            string `json:"matchReason"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewDuplicateReview) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewDuplicateReview(app NewDuplicateReview) (admissionsbus.NewDuplicateReview, error) {
+	var fieldErrors errs.FieldErrors
+
+	sourceID, err := uuid.Parse(app.SourceConstituentID)
+	if err != nil {
+		fieldErrors.Add("sourceConstituentID", err)
+	}
+
+	candidateID, err := uuid.Parse(app.CandidateConstituentID)
+	if err != nil {
+		fieldErrors.Add("candidateConstituentID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewDuplicateReview{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewDuplicateReview{
+		SourceConstituentID:    sourceID,
+		CandidateConstituentID: candidateID,
+		MatchType:              admissionsbus.DuplicateReviewMatchType(app.MatchType),
+		MatchScore:             app.MatchScore,
+		MatchReason:            app.MatchReason,
+	}, nil
+}
+
+// ResolveDuplicateReview defines a staff duplicate resolution action.
+type ResolveDuplicateReview struct {
+	Resolution string  `json:"resolution"`
+	Note       *string `json:"note"`
+}
+
+// Decode implements the decoder interface.
+func (app *ResolveDuplicateReview) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusResolveDuplicateReview(app ResolveDuplicateReview, actorID uuid.UUID) admissionsbus.ResolveDuplicateReview {
+	return admissionsbus.ResolveDuplicateReview{
+		Resolution: admissionsbus.DuplicateReviewResolution(app.Resolution),
+		ActorID:    actorID,
+		Note:       app.Note,
+	}
+}
+
 func formatTimePtr(t *time.Time) *string {
 	if t == nil {
 		return nil

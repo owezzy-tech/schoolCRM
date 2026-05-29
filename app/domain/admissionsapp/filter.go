@@ -41,6 +41,17 @@ type academicTermQueryParams struct {
 	Active        string
 }
 
+type duplicateReviewQueryParams struct {
+	Page                   string
+	Rows                   string
+	OrderBy                string
+	ID                     string
+	SourceConstituentID    string
+	CandidateConstituentID string
+	MatchType              string
+	Status                 string
+}
+
 func parseProgramQueryParams(r *http.Request) programQueryParams {
 	values := r.URL.Query()
 
@@ -81,6 +92,21 @@ func parseAcademicTermQueryParams(r *http.Request) academicTermQueryParams {
 		ExternalSISID: values.Get("external_sis_id"),
 		Code:          values.Get("code"),
 		Active:        values.Get("active"),
+	}
+}
+
+func parseDuplicateReviewQueryParams(r *http.Request) duplicateReviewQueryParams {
+	values := r.URL.Query()
+
+	return duplicateReviewQueryParams{
+		Page:                   values.Get("page"),
+		Rows:                   values.Get("rows"),
+		OrderBy:                values.Get("orderBy"),
+		ID:                     values.Get("duplicate_review_id"),
+		SourceConstituentID:    values.Get("source_constituent_id"),
+		CandidateConstituentID: values.Get("candidate_constituent_id"),
+		MatchType:              values.Get("match_type"),
+		Status:                 values.Get("status"),
 	}
 }
 
@@ -196,6 +222,54 @@ func parseAcademicTermFilter(qp academicTermQueryParams) (admissionsbus.Academic
 
 	if fieldErrors != nil {
 		return admissionsbus.AcademicTermQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseDuplicateReviewFilter(qp duplicateReviewQueryParams) (admissionsbus.DuplicateReviewQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.DuplicateReviewQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("duplicate_review_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.SourceConstituentID != "" {
+		id, err := uuid.Parse(qp.SourceConstituentID)
+		if err != nil {
+			fieldErrors.Add("source_constituent_id", err)
+		} else {
+			filter.SourceConstituentID = &id
+		}
+	}
+
+	if qp.CandidateConstituentID != "" {
+		id, err := uuid.Parse(qp.CandidateConstituentID)
+		if err != nil {
+			fieldErrors.Add("candidate_constituent_id", err)
+		} else {
+			filter.CandidateConstituentID = &id
+		}
+	}
+
+	if qp.MatchType != "" {
+		matchType := admissionsbus.DuplicateReviewMatchType(qp.MatchType)
+		filter.MatchType = &matchType
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.DuplicateReviewStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.DuplicateReviewQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil
