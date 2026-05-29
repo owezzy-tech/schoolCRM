@@ -10,17 +10,9 @@ export interface AuthState {
     error: string | null;
 }
 
-const getInitialAccessToken = (): string | null => {
-    if (typeof localStorage === 'undefined') {
-        return null;
-    }
-
-    return localStorage.getItem('accessToken');
-};
-
 const initialState: AuthState = {
     authenticated: false,
-    accessToken: getInitialAccessToken(),
+    accessToken: null,
     user: null,
     loading: false,
     error: null,
