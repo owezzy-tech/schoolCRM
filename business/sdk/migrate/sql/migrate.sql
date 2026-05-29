@@ -80,3 +80,50 @@ CREATE TABLE audit (
 
     PRIMARY KEY (id)
 );
+
+-- Version: 1.06
+-- Description: Create admissions reference tables
+CREATE TABLE admissions_programs (
+    program_id      UUID      NOT NULL,
+    external_sis_id TEXT      UNIQUE NOT NULL,
+    name            TEXT      NOT NULL,
+    code            TEXT      NOT NULL,
+    description     TEXT      NULL,
+    degree_level    TEXT      NULL,
+    is_active       BOOLEAN   NOT NULL,
+    synced_at       TIMESTAMP NULL,
+    date_created    TIMESTAMP NOT NULL,
+    date_updated    TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (program_id)
+);
+
+CREATE INDEX idx_admissions_programs_active ON admissions_programs (is_active);
+CREATE INDEX idx_admissions_programs_code ON admissions_programs (code);
+
+CREATE TABLE admissions_academic_terms (
+    academic_term_id        UUID      NOT NULL,
+    external_sis_id         TEXT      UNIQUE NOT NULL,
+    name                    TEXT      NOT NULL,
+    code                    TEXT      NOT NULL,
+    term_type               TEXT      NULL,
+    start_date              TIMESTAMP NOT NULL,
+    end_date                TIMESTAMP NOT NULL,
+    application_start_date  TIMESTAMP NULL,
+    application_deadline    TIMESTAMP NULL,
+    is_active               BOOLEAN   NOT NULL,
+    synced_at               TIMESTAMP NULL,
+    date_created            TIMESTAMP NOT NULL,
+    date_updated            TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (academic_term_id),
+    CONSTRAINT admissions_academic_terms_date_range CHECK (start_date < end_date),
+    CONSTRAINT admissions_academic_terms_application_window CHECK (
+        application_start_date IS NULL
+        OR application_deadline IS NULL
+        OR application_deadline >= application_start_date
+    )
+);
+
+CREATE INDEX idx_admissions_academic_terms_active ON admissions_academic_terms (is_active);
+CREATE INDEX idx_admissions_academic_terms_code ON admissions_academic_terms (code);
