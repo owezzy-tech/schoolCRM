@@ -65,6 +65,17 @@ type applicationQueryParams struct {
 	ActiveOnly      string
 }
 
+type applicationTransitionQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ApplicationID string
+	ActorID       string
+	FromStatus    string
+	ToStatus      string
+}
+
 func parseProgramQueryParams(r *http.Request) programQueryParams {
 	values := r.URL.Query()
 
@@ -137,6 +148,21 @@ func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
 		ApplicationType: values.Get("application_type"),
 		Status:          values.Get("status"),
 		ActiveOnly:      values.Get("active_only"),
+	}
+}
+
+func parseApplicationTransitionQueryParams(r *http.Request) applicationTransitionQueryParams {
+	values := r.URL.Query()
+
+	return applicationTransitionQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("application_transition_id"),
+		ApplicationID: values.Get("application_id"),
+		ActorID:       values.Get("actor_id"),
+		FromStatus:    values.Get("from_status"),
+		ToStatus:      values.Get("to_status"),
 	}
 }
 
@@ -366,6 +392,54 @@ func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.Applicatio
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseApplicationTransitionFilter(qp applicationTransitionQueryParams) (admissionsbus.ApplicationTransitionQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicationTransitionQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("application_transition_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.ActorID != "" {
+		id, err := uuid.Parse(qp.ActorID)
+		if err != nil {
+			fieldErrors.Add("actor_id", err)
+		} else {
+			filter.ActorID = &id
+		}
+	}
+
+	if qp.FromStatus != "" {
+		status := admissionsbus.ApplicationStatus(qp.FromStatus)
+		filter.FromStatus = &status
+	}
+
+	if qp.ToStatus != "" {
+		status := admissionsbus.ApplicationStatus(qp.ToStatus)
+		filter.ToStatus = &status
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ApplicationTransitionQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

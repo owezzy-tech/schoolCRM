@@ -39,3 +39,10 @@ var applicationOrderByFields = map[string]string{
 	"submitted_at":     admissionsbus.OrderByApplicationSubmittedAt,
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
 }
+
+var applicationTransitionOrderByFields = map[string]string{
+	"application_transition_id": admissionsbus.OrderByApplicationTransitionID,
+	"application_id":            admissionsbus.OrderByApplicationTransitionApplication,
+	"actor_id":                  admissionsbus.OrderByApplicationTransitionActor,
+	"date_created":              admissionsbus.OrderByApplicationTransitionDateCreated,
+}

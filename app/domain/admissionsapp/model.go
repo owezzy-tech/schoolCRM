@@ -405,6 +405,48 @@ type Application struct {
 	DateUpdated        string  `json:"dateUpdated"`
 }
 
+// ApplicationTransition represents immutable application status transition history.
+type ApplicationTransition struct {
+	ID            string          `json:"id"`
+	ApplicationID string          `json:"applicationID"`
+	FromStatus    string          `json:"fromStatus"`
+	ToStatus      string          `json:"toStatus"`
+	ActorID       string          `json:"actorID"`
+	Reason        *string         `json:"reason,omitempty"`
+	Note          *string         `json:"note,omitempty"`
+	Metadata      json.RawMessage `json:"metadata,omitempty"`
+	DateCreated   string          `json:"dateCreated"`
+}
+
+// Encode implements the encoder interface.
+func (app ApplicationTransition) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplicationTransition(transition admissionsbus.ApplicationTransition) ApplicationTransition {
+	return ApplicationTransition{
+		ID:            transition.ID.String(),
+		ApplicationID: transition.ApplicationID.String(),
+		FromStatus:    transition.FromStatus.String(),
+		ToStatus:      transition.ToStatus.String(),
+		ActorID:       transition.ActorID.String(),
+		Reason:        transition.Reason,
+		Note:          transition.Note,
+		Metadata:      json.RawMessage(transition.Metadata),
+		DateCreated:   transition.DateCreated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplicationTransitions(transitions []admissionsbus.ApplicationTransition) []ApplicationTransition {
+	app := make([]ApplicationTransition, len(transitions))
+	for i, transition := range transitions {
+		app[i] = toAppApplicationTransition(transition)
+	}
+
+	return app
+}
+
 // Encode implements the encoder interface.
 func (app Application) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
@@ -488,6 +530,29 @@ func toBusNewApplication(app NewApplication) (admissionsbus.NewApplication, erro
 		ApplicationType:    admissionsbus.ApplicationType(app.ApplicationType),
 		AssignedReviewerID: assignedReviewerID,
 	}, nil
+}
+
+// NewApplicationTransition defines the data needed to change an application status.
+type NewApplicationTransition struct {
+	ToStatus string          `json:"toStatus"`
+	Reason   *string         `json:"reason"`
+	Note     *string         `json:"note"`
+	Metadata json.RawMessage `json:"metadata"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplicationTransition) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewApplicationTransition(app NewApplicationTransition, actorID uuid.UUID) admissionsbus.NewApplicationTransition {
+	return admissionsbus.NewApplicationTransition{
+		ToStatus: admissionsbus.ApplicationStatus(app.ToStatus),
+		ActorID:  actorID,
+		Reason:   app.Reason,
+		Note:     app.Note,
+		Metadata: []byte(app.Metadata),
+	}
 }
 
 func formatTimePtr(t *time.Time) *string {
