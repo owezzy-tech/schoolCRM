@@ -124,6 +124,113 @@ func TestCreateConstituentRequiresIdentityFields(t *testing.T) {
 	}
 }
 
+func TestCreateStaffProfileRequiresContextRoles(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		np   NewStaffProfile
+		want error
+	}{
+		{
+			name: "user id",
+			np: NewStaffProfile{
+				Roles: []AdmissionsRole{AdmissionsRoleApplicationReviewer},
+			},
+			want: ErrStaffProfileUserRequired,
+		},
+		{
+			name: "role required",
+			np: NewStaffProfile{
+				UserID: uuid.New(),
+			},
+			want: ErrStaffProfileRoleRequired,
+		},
+		{
+			name: "valid role",
+			np: NewStaffProfile{
+				UserID: uuid.New(),
+				Roles:  []AdmissionsRole{"UNKNOWN"},
+			},
+			want: ErrInvalidAdmissionsRole,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateStaffProfile(context.Background(), tt.np)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateStaffProfileStoresAdmissionsContextRoles(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	userID := uuid.New()
+
+	profile, err := bus.CreateStaffProfile(context.Background(), NewStaffProfile{
+		UserID: userID,
+		Roles: []AdmissionsRole{
+			AdmissionsRoleApplicationReviewer,
+			AdmissionsRoleReportViewer,
+		},
+		Active: true,
+	})
+	if err != nil {
+		t.Fatalf("CreateStaffProfile returned error: %v", err)
+	}
+
+	if profile.UserID != userID {
+		t.Fatalf("UserID = %s, want %s", profile.UserID, userID)
+	}
+
+	if len(store.staffProfiles) != 1 {
+		t.Fatalf("stored profiles = %d, want 1", len(store.staffProfiles))
+	}
+
+	permissions := AdmissionsPermissionsToStrings(AdmissionsPermissionsForRoles(profile.Roles))
+	if !containsString(permissions, AdmissionsPermissionReviewApplications.String()) {
+		t.Fatalf("permissions = %v, want %s", permissions, AdmissionsPermissionReviewApplications)
+	}
+
+	if !containsString(permissions, AdmissionsPermissionResolveDuplicates.String()) {
+		t.Fatalf("permissions = %v, want %s", permissions, AdmissionsPermissionResolveDuplicates)
+	}
+}
+
+func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T) {
+	t.Parallel()
+
+	permissions := AdmissionsPermissionsToStrings(AdmissionsPermissionsForRoles([]AdmissionsRole{AdmissionsRoleRecruiter}))
+
+	if !containsString(permissions, AdmissionsPermissionManageConstituents.String()) {
+		t.Fatalf("permissions = %v, want %s", permissions, AdmissionsPermissionManageConstituents)
+	}
+
+	if containsString(permissions, AdmissionsPermissionReviewApplications.String()) {
+		t.Fatalf("permissions = %v, did not expect %s", permissions, AdmissionsPermissionReviewApplications)
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+
+	return false
+}
+
 func TestCreateConstituentAutoLinksExactEmailDuplicate(t *testing.T) {
 	t.Parallel()
 
@@ -532,6 +639,7 @@ func (ioDiscard) Write(p []byte) (int, error) {
 }
 
 type stubStore struct {
+	staffProfiles          []StaffProfile
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -547,6 +655,48 @@ func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
 
 func (s *stubStore) Health(context.Context) (Health, error) {
 	return Health{}, nil
+}
+
+func (s *stubStore) CreateStaffProfile(_ context.Context, profile StaffProfile) error {
+	s.staffProfiles = append(s.staffProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) UpdateStaffProfile(_ context.Context, profile StaffProfile) error {
+	for i, existing := range s.staffProfiles {
+		if existing.ID == profile.ID {
+			s.staffProfiles[i] = profile
+			return nil
+		}
+	}
+	s.staffProfiles = append(s.staffProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) QueryStaffProfiles(context.Context, StaffProfileQueryFilter, order.By, page.Page) ([]StaffProfile, error) {
+	return s.staffProfiles, nil
+}
+
+func (s *stubStore) CountStaffProfiles(context.Context, StaffProfileQueryFilter) (int, error) {
+	return len(s.staffProfiles), nil
+}
+
+func (s *stubStore) QueryStaffProfileByID(_ context.Context, profileID uuid.UUID) (StaffProfile, error) {
+	for _, profile := range s.staffProfiles {
+		if profile.ID == profileID {
+			return profile, nil
+		}
+	}
+	return StaffProfile{}, ErrStaffProfileNotFound
+}
+
+func (s *stubStore) QueryStaffProfileByUserID(_ context.Context, userID uuid.UUID) (StaffProfile, error) {
+	for _, profile := range s.staffProfiles {
+		if profile.UserID == userID {
+			return profile, nil
+		}
+	}
+	return StaffProfile{}, ErrStaffProfileNotFound
 }
 
 func (s *stubStore) CreateConstituent(_ context.Context, cst Constituent) error {

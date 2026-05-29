@@ -7,6 +7,44 @@ import (
 	"github.com/google/uuid"
 )
 
+// AdmissionsRole represents a context-specific role inside the admissions CRM.
+type AdmissionsRole string
+
+// Set of valid admissions CRM roles.
+const (
+	AdmissionsRoleAdmin               AdmissionsRole = "ADMISSIONS_ADMIN"
+	AdmissionsRoleRecruiter           AdmissionsRole = "RECRUITER"
+	AdmissionsRoleApplicationReviewer AdmissionsRole = "APPLICATION_REVIEWER"
+	AdmissionsRoleMarketingManager    AdmissionsRole = "MARKETING_MANAGER"
+	AdmissionsRoleEventManager        AdmissionsRole = "EVENT_MANAGER"
+	AdmissionsRoleReportViewer        AdmissionsRole = "REPORT_VIEWER"
+	AdmissionsRoleApplicant           AdmissionsRole = "APPLICANT"
+)
+
+// String returns the admissions role as a string.
+func (role AdmissionsRole) String() string {
+	return string(role)
+}
+
+// AdmissionsPermission represents an action permission inside the admissions CRM.
+type AdmissionsPermission string
+
+// Set of action-based admissions permissions.
+const (
+	AdmissionsPermissionRead               AdmissionsPermission = "admissions:read"
+	AdmissionsPermissionManageConstituents AdmissionsPermission = "admissions:manage_constituents"
+	AdmissionsPermissionManageApplications AdmissionsPermission = "admissions:manage_applications"
+	AdmissionsPermissionReviewApplications AdmissionsPermission = "admissions:review_applications"
+	AdmissionsPermissionResolveDuplicates  AdmissionsPermission = "admissions:resolve_duplicates"
+	AdmissionsPermissionManageReferences   AdmissionsPermission = "admissions:manage_references"
+	AdmissionsPermissionManageStaff        AdmissionsPermission = "admissions:manage_staff"
+)
+
+// String returns the admissions permission as a string.
+func (permission AdmissionsPermission) String() string {
+	return string(permission)
+}
+
 // Health describes the currently available admissions bounded-context seams.
 type Health struct {
 	Context    string
@@ -213,6 +251,23 @@ type ApplicationTransition struct {
 	DateCreated   time.Time
 }
 
+// StaffProfile connects an identity user to admissions-specific staff roles.
+type StaffProfile struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Roles       []AdmissionsRole
+	Active      bool
+	DateCreated time.Time
+	DateUpdated time.Time
+}
+
+// NewStaffProfile is what we require to create an admissions staff profile.
+type NewStaffProfile struct {
+	UserID uuid.UUID
+	Roles  []AdmissionsRole
+	Active bool
+}
+
 // NewApplicationTransition is what we require to change an application status.
 type NewApplicationTransition struct {
 	ToStatus ApplicationStatus
@@ -333,6 +388,7 @@ type ResolveDuplicateReview struct {
 // AggregateNames returns the scaffolded admissions aggregate names.
 func AggregateNames() []string {
 	return []string{
+		"staffProfile",
 		"constituent",
 		"inquiry",
 		"application",
@@ -343,6 +399,15 @@ func AggregateNames() []string {
 		"academicTerm",
 		"duplicateReview",
 	}
+}
+
+// StaffProfileQueryFilter holds the available fields a staff profile query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type StaffProfileQueryFilter struct {
+	ID     *uuid.UUID
+	UserID *uuid.UUID
+	Role   *AdmissionsRole
+	Active *bool
 }
 
 // ProgramQueryFilter holds the available fields a program query can be filtered on.

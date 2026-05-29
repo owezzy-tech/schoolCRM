@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -52,6 +53,10 @@ var (
 	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
 	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
 	ErrApplicationActorRequired     = errors.New("application transition actor required")
+	ErrStaffProfileNotFound         = errors.New("staff profile not found")
+	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
+	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
+	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -59,6 +64,12 @@ var (
 type Storer interface {
 	NewWithTx(tx sqldb.CommitRollbacker) (Storer, error)
 	Health(ctx context.Context) (Health, error)
+	CreateStaffProfile(ctx context.Context, profile StaffProfile) error
+	UpdateStaffProfile(ctx context.Context, profile StaffProfile) error
+	QueryStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter, orderBy order.By, page page.Page) ([]StaffProfile, error)
+	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
+	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
+	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
 	CreateConstituent(ctx context.Context, cst Constituent) error
 	UpdateConstituent(ctx context.Context, cst Constituent) error
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -97,6 +108,12 @@ type Storer interface {
 type ExtBusiness interface {
 	NewWithTx(tx sqldb.CommitRollbacker) (ExtBusiness, error)
 	Health(ctx context.Context) (Health, error)
+	CreateStaffProfile(ctx context.Context, np NewStaffProfile) (StaffProfile, error)
+	UpdateStaffProfile(ctx context.Context, profile StaffProfile, np NewStaffProfile) (StaffProfile, error)
+	QueryStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter, orderBy order.By, page page.Page) ([]StaffProfile, error)
+	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
+	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
+	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
 	CreateConstituent(ctx context.Context, nc NewConstituent) (Constituent, error)
 	UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error)
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -126,6 +143,82 @@ type ExtBusiness interface {
 	TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
+}
+
+// CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
+func (b *Business) CreateStaffProfile(ctx context.Context, np NewStaffProfile) (StaffProfile, error) {
+	if err := validateNewStaffProfile(np); err != nil {
+		return StaffProfile{}, err
+	}
+
+	now := time.Now()
+	profile := StaffProfile{
+		ID:          uuid.New(),
+		UserID:      np.UserID,
+		Roles:       np.Roles,
+		Active:      np.Active,
+		DateCreated: now,
+		DateUpdated: now,
+	}
+
+	if err := b.storer.CreateStaffProfile(ctx, profile); err != nil {
+		return StaffProfile{}, fmt.Errorf("create staff profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// UpdateStaffProfile replaces mutable admissions staff profile data.
+func (b *Business) UpdateStaffProfile(ctx context.Context, profile StaffProfile, np NewStaffProfile) (StaffProfile, error) {
+	if err := validateNewStaffProfile(np); err != nil {
+		return StaffProfile{}, err
+	}
+
+	profile.UserID = np.UserID
+	profile.Roles = np.Roles
+	profile.Active = np.Active
+	profile.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateStaffProfile(ctx, profile); err != nil {
+		return StaffProfile{}, fmt.Errorf("update staff profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// QueryStaffProfiles retrieves a list of admissions staff profiles.
+func (b *Business) QueryStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter, orderBy order.By, page page.Page) ([]StaffProfile, error) {
+	profiles, err := b.storer.QueryStaffProfiles(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query staff profiles: %w", err)
+	}
+
+	return profiles, nil
+}
+
+// CountStaffProfiles returns the total number of admissions staff profiles.
+func (b *Business) CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error) {
+	return b.storer.CountStaffProfiles(ctx, filter)
+}
+
+// QueryStaffProfileByID finds an admissions staff profile by ID.
+func (b *Business) QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error) {
+	profile, err := b.storer.QueryStaffProfileByID(ctx, profileID)
+	if err != nil {
+		return StaffProfile{}, fmt.Errorf("query staff profile: profileID[%s]: %w", profileID, err)
+	}
+
+	return profile, nil
+}
+
+// QueryStaffProfileByUserID finds an admissions staff profile by identity user ID.
+func (b *Business) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error) {
+	profile, err := b.storer.QueryStaffProfileByUserID(ctx, userID)
+	if err != nil {
+		return StaffProfile{}, fmt.Errorf("query staff profile: userID[%s]: %w", userID, err)
+	}
+
+	return profile, nil
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -790,6 +883,129 @@ func validateRequiredConstituentFields(firstName string, lastName string, dob ti
 	}
 
 	return nil
+}
+
+func validateNewStaffProfile(np NewStaffProfile) error {
+	if np.UserID == uuid.Nil {
+		return ErrStaffProfileUserRequired
+	}
+
+	if len(np.Roles) == 0 {
+		return ErrStaffProfileRoleRequired
+	}
+
+	for _, role := range np.Roles {
+		if err := validateAdmissionsRole(role); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateAdmissionsRole(role AdmissionsRole) error {
+	switch role {
+	case AdmissionsRoleAdmin,
+		AdmissionsRoleRecruiter,
+		AdmissionsRoleApplicationReviewer,
+		AdmissionsRoleMarketingManager,
+		AdmissionsRoleEventManager,
+		AdmissionsRoleReportViewer,
+		AdmissionsRoleApplicant:
+		return nil
+	default:
+		return ErrInvalidAdmissionsRole
+	}
+}
+
+// AdmissionsPermissionsForRoles returns the action permissions granted by a set
+// of admissions context roles.
+func AdmissionsPermissionsForRoles(roles []AdmissionsRole) []AdmissionsPermission {
+	permissions := make(map[AdmissionsPermission]struct{})
+
+	for _, role := range roles {
+		for _, permission := range admissionsPermissionsForRole(role) {
+			permissions[permission] = struct{}{}
+		}
+	}
+
+	result := make([]AdmissionsPermission, 0, len(permissions))
+	for permission := range permissions {
+		result = append(result, permission)
+	}
+	sort.Slice(result, func(i int, j int) bool {
+		return result[i] < result[j]
+	})
+
+	return result
+}
+
+func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
+	switch role {
+	case AdmissionsRoleAdmin:
+		return []AdmissionsPermission{
+			AdmissionsPermissionRead,
+			AdmissionsPermissionManageConstituents,
+			AdmissionsPermissionManageApplications,
+			AdmissionsPermissionReviewApplications,
+			AdmissionsPermissionResolveDuplicates,
+			AdmissionsPermissionManageReferences,
+			AdmissionsPermissionManageStaff,
+		}
+	case AdmissionsRoleRecruiter:
+		return []AdmissionsPermission{
+			AdmissionsPermissionRead,
+			AdmissionsPermissionManageConstituents,
+			AdmissionsPermissionManageApplications,
+		}
+	case AdmissionsRoleApplicationReviewer:
+		return []AdmissionsPermission{
+			AdmissionsPermissionRead,
+			AdmissionsPermissionReviewApplications,
+			AdmissionsPermissionResolveDuplicates,
+		}
+	case AdmissionsRoleMarketingManager,
+		AdmissionsRoleEventManager,
+		AdmissionsRoleReportViewer,
+		AdmissionsRoleApplicant:
+		return []AdmissionsPermission{AdmissionsPermissionRead}
+	default:
+		return nil
+	}
+}
+
+// ParseAdmissionsRoles converts persisted role strings into admissions roles.
+func ParseAdmissionsRoles(values []string) ([]AdmissionsRole, error) {
+	roles := make([]AdmissionsRole, len(values))
+	for i, value := range values {
+		role := AdmissionsRole(value)
+		if err := validateAdmissionsRole(role); err != nil {
+			return nil, err
+		}
+		roles[i] = role
+	}
+
+	return roles, nil
+}
+
+// AdmissionsRolesToStrings converts admissions roles into strings for storage and claims.
+func AdmissionsRolesToStrings(roles []AdmissionsRole) []string {
+	values := make([]string, len(roles))
+	for i, role := range roles {
+		values[i] = role.String()
+	}
+
+	return values
+}
+
+// AdmissionsPermissionsToStrings converts admissions permissions into strings for clients and audits.
+func AdmissionsPermissionsToStrings(permissions []AdmissionsPermission) []string {
+	values := make([]string, len(permissions))
+	for i, permission := range permissions {
+		values[i] = permission.String()
+	}
+
+	return values
 }
 
 func validateLifecycleStage(stage LifecycleStage) error {
