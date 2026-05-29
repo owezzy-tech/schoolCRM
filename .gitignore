@@ -1,9 +1,8 @@
 # Project
-app/services/sales-api/sales-api
+api/services/schoolcrm/schoolcrm
 app/services/metrics/metrics
-app/tooling/sales-admin/sales-admin
-app/tooling/sales-admin/logfmt
-app/tooling/sales-admin/docs
+api/tooling/admin/admin
+api/tooling/logfmt/logfmt
 .excalidraw
 database-data/
 
@@ -54,3 +53,8 @@ node_modules/
 api/frontends/web-admin/dist/
 api/frontends/web-admin/.angular/
 api/frontends/web-admin/node_modules/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

@@ -1,0 +1,30 @@
+<div class="absolute inset-0">
+    <div
+        class="flex h-full flex-auto flex-col items-center justify-center p-6 sm:p-10"
+    >
+        <div class="w-full max-w-3xl text-center">
+            <div
+                class="text-[10rem] font-extrabold leading-none tracking-tight text-primary-500 sm:text-[14rem]"
+            >
+                404
+            </div>
+        </div>
+
+        <div
+            class="mt-8 text-center text-4xl font-extrabold leading-tight tracking-tight sm:mt-12 md:text-7xl md:leading-none"
+        >
+            Ooops... 404!
+        </div>
+        <div
+            class="text-secondary mt-2 text-center text-lg font-medium tracking-tight md:text-xl"
+        >
+            The page you requested could not be found.
+        </div>
+        <a
+            class="mt-12 font-medium text-primary-500 underline"
+            [routerLink]="['/']"
+        >
+            Back to Dashboard
+        </a>
+    </div>
+</div>

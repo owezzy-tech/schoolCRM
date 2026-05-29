@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	authbuild "github.com/owezzy/schoolCRM/api/services/auth/build"
-	salesbuild "github.com/owezzy/schoolCRM/api/services/sales/build"
+	schoolcrmbuild "github.com/owezzy/schoolCRM/api/services/schoolcrm/build"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient/http"
 	"github.com/owezzy/schoolCRM/app/sdk/mux"
@@ -33,7 +33,8 @@ func New(t *testing.T, testName string) *Test {
 			UserBus: db.BusDomain.User,
 		},
 		AuthConfig: mux.AuthConfig{
-			Auth: auth,
+			Auth:     auth,
+			TokenKey: kid,
 		},
 	}, authbuild.Routes()))
 
@@ -54,10 +55,10 @@ func New(t *testing.T, testName string) *Test {
 			HomeBus:     db.BusDomain.Home,
 			VProductBus: db.BusDomain.VProduct,
 		},
-		SalesConfig: mux.SalesConfig{
+		SchoolCRMConfig: mux.SchoolCRMConfig{
 			AuthClient: authClient,
 		},
-	}, salesbuild.Routes())
+	}, schoolcrmbuild.Routes())
 
 	return &Test{
 		DB:   db,

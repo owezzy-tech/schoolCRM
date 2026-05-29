@@ -6,9 +6,11 @@ import (
 	"embed"
 	"net/http"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
@@ -16,7 +18,6 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/vproductbus"
 	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/owezzy/schoolCRM/foundation/web"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -53,33 +54,35 @@ func WithFileServer(react bool, static embed.FS, dir string, path string) func(o
 	}
 }
 
-// SalesConfig contains sales service specific config.
-type SalesConfig struct {
+// SchoolCRMConfig contains SchoolCRM service specific config.
+type SchoolCRMConfig struct {
 	AuthClient authclient.Authenticator
 }
 
 // AuthConfig contains auth service specific config.
 type AuthConfig struct {
-	Auth *auth.Auth
+	Auth     *auth.Auth
+	TokenKey string
 }
 
 type BusConfig struct {
-	AuditBus    auditbus.ExtBusiness
-	UserBus     userbus.ExtBusiness
-	ProductBus  productbus.ExtBusiness
-	HomeBus     homebus.ExtBusiness
-	VProductBus vproductbus.ExtBusiness
+	AdmissionsBus admissionsbus.ExtBusiness
+	AuditBus      auditbus.ExtBusiness
+	UserBus       userbus.ExtBusiness
+	ProductBus    productbus.ExtBusiness
+	HomeBus       homebus.ExtBusiness
+	VProductBus   vproductbus.ExtBusiness
 }
 
 // Config contains all the mandatory systems required by handlers.
 type Config struct {
-	Build       string
-	Log         *logger.Logger
-	DB          *sqlx.DB
-	Tracer      trace.Tracer
-	BusConfig   BusConfig
-	SalesConfig SalesConfig
-	AuthConfig  AuthConfig
+	Build           string
+	Log             *logger.Logger
+	DB              *sqlx.DB
+	Tracer          trace.Tracer
+	BusConfig       BusConfig
+	SchoolCRMConfig SchoolCRMConfig
+	AuthConfig      AuthConfig
 }
 
 // RouteAdder defines behavior that sets the routes to bind for an instance

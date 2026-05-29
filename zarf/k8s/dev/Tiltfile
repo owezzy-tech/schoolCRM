@@ -2,7 +2,7 @@
 # Local development environment with Kind, Kustomize, and Helm
 #
 # Infrastructure (Database, Observability) deployed via Kustomize
-# Application services (Auth, Sales) deployed via Helm
+# Application services (Auth, SchoolCRM) deployed via Helm
 #
 # Usage:
 #   tilt up              Start all services
@@ -13,7 +13,7 @@
 #   - data: Database (Kustomize)
 #   - observability: Grafana, Prometheus, Tempo, Loki, Promtail (Kustomize)
 #   - build: Local binary compilation
-#   - services: Auth, Sales (Helm with hot-reload via live_update)
+#   - services: Auth, SchoolCRM (Helm with hot-reload via live_update)
 
 # Load extensions
 load('ext://restart_process', 'docker_build_with_restart')
@@ -23,10 +23,10 @@ load('ext://restart_process', 'docker_build_with_restart')
 # =============================================================================
 
 # Kubernetes namespace
-k8s_namespace = 'sales-system'
+k8s_namespace = 'schoolcrm-system'
 
 # Allow Kubernetes context (set to your cluster name)
-allow_k8s_contexts('kind-ardan-starter-cluster')
+allow_k8s_contexts('schoolcrm-cluster')
 
 # Tilt settings
 update_settings()
@@ -97,14 +97,14 @@ k8s_resource(
 )
 
 # =============================================================================
-# Sales Service
+# SchoolCRM Service
 # =============================================================================
 
 # Compile binaries locally for fast iteration
 local_resource(
-  'sales-compile',
-  'CGO_ENABLED=0 GOOS=linux go build -o ./zarf/build/sales ./api/services/sales && CGO_ENABLED=0 GOOS=linux go build -o ./zarf/build/admin ./api/tooling/admin',
-  deps=['./api/services/sales', './api/tooling/admin', './app', './business', './foundation'],
+  'schoolcrm-compile',
+  'CGO_ENABLED=0 GOOS=linux go build -o ./zarf/build/sales ./api/services/schoolcrm && CGO_ENABLED=0 GOOS=linux go build -o ./zarf/build/admin ./api/tooling/admin',
+  deps=['./api/services/schoolcrm', './api/tooling/admin', './app', './business', './foundation'],
   labels=['build'],
   ignore=['**/*_test.go'],
 )
@@ -114,7 +114,7 @@ docker_build_with_restart(
   'localhost:5001/ardanlabs/sales',
   '.',
   entrypoint=['/service/sales'],
-  dockerfile='./zarf/docker/dockerfile.sales',
+  dockerfile='./zarf/docker/dockerfile.schoolcrm',
   build_args={'BUILD_TAG': 'develop'},
   live_update=[
     sync('./zarf/build/sales', '/service/sales'),
@@ -122,26 +122,46 @@ docker_build_with_restart(
   ],
 )
 
-# Deploy sales service via Helm
+# Deploy SchoolCRM service via Helm
 # Using k8s_yaml + k8s_resource pattern to ensure proper image build dependency
 k8s_yaml(helm(
-  './zarf/helm/charts/sales',
+  './zarf/helm/charts/schoolcrm',
   namespace=k8s_namespace,
-  values=['./zarf/helm/charts/sales/values-dev.yaml'],
+  values=['./zarf/helm/charts/schoolcrm/values-dev.yaml'],
 ))
 
 k8s_resource(
   'sales',
   labels=['services'],
-  port_forwards=['3000:3000', '3010:3010', '4020:4020'],  # Sales, Debug, Metrics
-  resource_deps=['sales-compile', 'auth', 'database'],
+  port_forwards=['3000:3000', '3010:3010', '4020:4020'],  # SchoolCRM, Debug, Metrics
+  resource_deps=['schoolcrm-compile', 'auth', 'database'],
 )
 
-# Run database migrations automatically after sales pod is ready
+# =============================================================================
+# Web Admin Frontend
+# =============================================================================
+
+docker_build_with_restart(
+  'localhost:5001/schoolcrm/web-admin',
+  '.',
+  dockerfile='./zarf/docker/dockerfile.web-admin',
+  build_args={'BUILD_TAG': 'develop'},
+)
+
+k8s_yaml(kustomize('./zarf/k8s/dev/web-admin'))
+
+k8s_resource(
+  'web-admin',
+  labels=['services'],
+  port_forwards=['8080:80'],
+  resource_deps=['auth', 'sales'],
+)
+
+# Run database migrations automatically after SchoolCRM pod is ready
 # This runs once on startup and when you manually trigger it in Tilt
 local_resource(
-  'sales-migrate',
-  'kubectl wait --for=condition=ready pod -l app=sales -n sales-system --timeout=120s && kubectl exec -n sales-system deployment/sales -c sales -- ./admin migrate-seed',
+  'schoolcrm-migrate',
+  'kubectl wait --for=condition=ready pod -l app=schoolcrm -n schoolcrm-system --timeout=120s && kubectl exec -n schoolcrm-system deployment/sales -c schoolcrm -- ./admin migrate-seed',
   resource_deps=['sales'],
   labels=['services'],
 )
@@ -170,5 +190,4 @@ docker_build_with_restart(
     sync('./zarf/build/metrics', '/service/metrics'),
   ],
 )
-
 

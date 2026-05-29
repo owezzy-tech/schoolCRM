@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/errs"
 	"github.com/owezzy/schoolCRM/business/types/role"
 	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/owezzy/schoolCRM/foundation/web"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/google"
 )
 
 type app struct {
@@ -61,10 +61,10 @@ func (a *app) authCallback(ctx context.Context, r *http.Request) web.Encoder {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.UserID,
 			Issuer:    a.auth.Issuer(),
-			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(2 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(auth.TokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
-		Roles: []string{role.Admin.String()},
+		Roles: []string{role.SchoolAdmin.String()},
 	}
 
 	token, err := a.auth.GenerateToken(a.tokenKey, clms)

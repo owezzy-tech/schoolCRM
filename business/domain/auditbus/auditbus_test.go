@@ -39,7 +39,7 @@ func Test_Audit(t *testing.T) {
 func insertSeedData(busDomain dbtest.BusDomain) (unittest.SeedData, error) {
 	ctx := context.Background()
 
-	usrs, err := userbus.TestSeedUsers(ctx, 1, role.Admin, busDomain.User)
+	usrs, err := userbus.TestSeedUsers(ctx, 1, role.SchoolAdmin, busDomain.User)
 	if err != nil {
 		return unittest.SeedData{}, fmt.Errorf("seeding users : %w", err)
 	}

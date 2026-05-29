@@ -1,0 +1,102 @@
+/* ----------------------------------------------------------------------------------------------------- */
+/*  @ FullCalendar example styles restored from the previous web-admin calendar app. */
+/* ----------------------------------------------------------------------------------------------------- */
+
+.calendar-page {
+    .fc {
+        --fc-border-color: var(--fuse-border);
+        --fc-event-bg-color: var(--fuse-primary);
+        --fc-event-border-color: var(--fuse-primary);
+
+        color: var(--fuse-text-default);
+        font-family: inherit;
+    }
+
+    .fc .fc-toolbar {
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .fc .fc-button-primary {
+        border: 1px solid var(--fuse-border) !important;
+        border-radius: 5px !important;
+        background-color: var(--fuse-bg-card) !important;
+        color: var(--fuse-text-secondary) !important;
+        box-shadow: none !important;
+        font-weight: 600;
+
+        &:disabled,
+        &:not(:disabled).fc-button-active,
+        &:not(:disabled):active {
+            border-color: var(--fuse-primary) !important;
+            background-color: var(--fuse-primary) !important;
+            color: #ffffff !important;
+        }
+
+        &:hover {
+            border-color: var(--fuse-border) !important;
+            background-color: var(--fuse-hover) !important;
+            color: var(--fuse-text-default) !important;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 3px rgb(var(--fuse-primary-rgb) / 0.25) !important;
+        }
+    }
+
+    .fc .fc-daygrid-day-number,
+    .fc .fc-col-header-cell-cushion {
+        color: var(--fuse-text-default);
+        text-decoration: none;
+    }
+
+    .fc .fc-daygrid-day.fc-day-today {
+        background-color: transparent !important;
+    }
+
+    .fc-day-today .fc-daygrid-day-number {
+        display: inline-flex;
+        width: 25px;
+        height: 25px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--fuse-primary);
+        color: #ffffff;
+    }
+
+    .fc .fc-daygrid-event {
+        padding: 0 10px;
+        color: #ffffff;
+        text-align: left;
+        box-shadow: 0 4px 25px 0 rgb(0 0 0 / 0.1);
+    }
+
+    .fc-daygrid-block-event .fc-event-time,
+    .fc-daygrid-dot-event .fc-event-time,
+    .fc-daygrid-dot-event .fc-event-title,
+    .fc-event-title-container .fc-event-title {
+        font-size: 12px !important;
+        font-weight: 400 !important;
+        text-align: left;
+    }
+
+    .fc-daygrid-event-dot {
+        display: none;
+    }
+
+    .fc-event-success {
+        border: none !important;
+        background-color: #53b958 !important;
+        color: #ffffff !important;
+        font-weight: 400;
+        box-shadow:
+            0 4px 20px 0 rgb(0 0 0 / 0.14),
+            0 7px 10px -5px rgb(76 175 80 / 0.4);
+    }
+}

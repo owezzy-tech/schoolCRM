@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/errs"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/types/role"
 	"github.com/owezzy/schoolCRM/foundation/web"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 )
 
 // Authenticate is a middleware function that integrates with an authentication client
@@ -122,7 +122,7 @@ func HandleAuthorization(ctx context.Context, authorizationHeader string, userBu
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usr.ID.String(),
 			Issuer:    ath.Issuer(),
-			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(8760 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(auth.TokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
 		Roles: role.ParseToString(usr.Roles),

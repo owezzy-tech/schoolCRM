@@ -1,24 +1,53 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <title>Fuse Angular - Angular Template and Starter Kit</title>
+        <meta charset="utf-8" />
+        <meta
+            name="description"
+            content="Admin Template and Starter Kit with Angular, Angular Material Components and TailwindCSS"
+        />
+        <meta
+            name="keywords"
+            content="Fuse,HTML,CSS,Angular,Angular 13,Angular 14,Angular 15,Material,Angular Components,Tailwind,Tailwind CSS,TailwindCSS,Admin Template,Admin Starter Kit"
+        />
+        <meta
+            name="viewport"
+            content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0"
+        />
 
-<head>
-  <meta charset="utf-8">
-  <title>Smart - Angular 17+ Admin Dashboard Template for University, School & Colleges </title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
-  <!-- Plugins Core Css -->
-  <link
-    href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp"
-    rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap" rel="stylesheet">
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&callback=Function.prototype">
-  </script>
-</head>
+        <base href="/" />
 
-<body>
-  <app-root></app-root>
-</body>
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" href="favicon-16x16.png" />
+        <link rel="icon" type="image/png" href="favicon-32x32.png" />
 
+        <!-- Fonts -->
+        <link href="https://fonts.gstatic.com" rel="preconnect" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Icon fonts -->
+        <link
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet"
+        />
+    </head>
+
+    <body>
+        <!-- Splash screen -->
+        <fuse-splash-screen>
+            <img src="images/logo/logo.svg" alt="Fuse logo" />
+            <div class="spinner">
+                <div class="bounce1"></div>
+                <div class="bounce2"></div>
+                <div class="bounce3"></div>
+            </div>
+        </fuse-splash-screen>
+
+        <!-- App root -->
+        <app-root></app-root>
+    </body>
 </html>

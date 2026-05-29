@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "schoolCRM",
+  "project_id": "fecd3122-e265-434c-ac15-a62944254a24"
+}

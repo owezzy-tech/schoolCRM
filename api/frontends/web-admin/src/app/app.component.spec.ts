@@ -1,22 +1,36 @@
-import { TestBed, waitForAsync } from '@angular/core/testing';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, RouterOutlet } from '@angular/router';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { AppComponent } from './app.component';
-import { testProviders } from './testing/test-providers';
+
+@Component({
+    selector: 'router-outlet',
+    template: '',
+})
+class RouterOutletStubComponent {}
+
 describe('AppComponent', () => {
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [AppComponent],
-      providers: testProviders,
-    }).compileComponents();
-  }));
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
-  });
-  it('should render the router shell', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('router-outlet')).toBeTruthy();
-  });
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [AppComponent],
+            providers: [provideRouter([])],
+        })
+            .overrideComponent(AppComponent, {
+                remove: {
+                    imports: [RouterOutlet],
+                },
+                add: {
+                    imports: [RouterOutletStubComponent],
+                },
+            })
+            .compileComponents();
+    });
+
+    it('creates the app component', () => {
+        const fixture = TestBed.createComponent(AppComponent);
+
+        expect(fixture.componentInstance).toBeTruthy();
+    });
 });

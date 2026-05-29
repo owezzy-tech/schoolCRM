@@ -178,14 +178,14 @@ Configured scopes include:
 - `rag`
 - `go`
 - `auth`
-- `sales`
+- `schoolcrm`
 - `metrics`
 - `docs`
 - `config`
 - `deps`
 - `ci`
 
-Custom scopes are also allowed when needed.
+Custom scopes are not accepted by the commit hook unless they are added to `commitlint.config.cjs`.
 
 ## Typical Workflow
 

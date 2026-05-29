@@ -2,7 +2,7 @@
 # Override these with environment-specific values files
 
 image:
-  repository: registry.example.com/ardanlabs/auth
+  repository: registry.example.com/schoolcrm/auth
   tag: "1.0.0"
   pullPolicy: IfNotPresent
 
@@ -48,7 +48,7 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 2
 
-namespace: sales-system
+namespace: schoolcrm-system
 
 database:
   # For production with managed databases (RDS, Cloud SQL, etc.), configure:

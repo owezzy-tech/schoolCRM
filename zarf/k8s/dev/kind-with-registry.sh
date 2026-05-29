@@ -2,7 +2,7 @@
 set -o errexit
 
 # Desired cluster name; default is "kind"
-KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind-ardan-starter-cluster}"
+KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind-schoolcrm-cluster}"
 
 reg_name='kind-registry'
 reg_port='5001'
@@ -31,10 +31,10 @@ containerdConfigPatches:
 nodes:
   - role: control-plane
     extraPortMappings:
-      # Sales-Api
+      # SchoolCRM API
       - containerPort: 3000
         hostPort: 3000
-      # Sales-Api debug
+      # SchoolCRM API debug
       - containerPort: 3010
         hostPort: 3010
       # Metrics

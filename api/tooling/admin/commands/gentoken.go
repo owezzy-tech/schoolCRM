@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/stores/userdb"
@@ -14,8 +16,6 @@ import (
 	"github.com/owezzy/schoolCRM/business/types/role"
 	"github.com/owezzy/schoolCRM/foundation/keystore"
 	"github.com/owezzy/schoolCRM/foundation/logger"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 )
 
 // GenToken generates a JWT for the specified user.
@@ -68,7 +68,7 @@ func GenToken(log *logger.Logger, dbConfig sqldb.Config, keyPath string, userID 
 
 	// Generating a token requires defining a set of claims. In this applications
 	// case, we only care about defining the subject and the user in question and
-	// the roles they have on the database. This token will expire in a year.
+	// the roles they have on the database. This token will expire in 8 hours.
 	//
 	// iss (issuer): Issuer of the JWT
 	// sub (subject): Subject of the JWT (the user)
@@ -81,7 +81,7 @@ func GenToken(log *logger.Logger, dbConfig sqldb.Config, keyPath string, userID 
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usr.ID.String(),
 			Issuer:    ath.Issuer(),
-			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(8760 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(auth.TokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
 		Roles: role.ParseToString(usr.Roles),

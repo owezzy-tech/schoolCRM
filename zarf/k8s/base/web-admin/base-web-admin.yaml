@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: schoolcrm-system
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-admin
+  namespace: schoolcrm-system
+
+spec:
+  selector:
+    matchLabels:
+      app: web-admin
+
+  template:
+    metadata:
+      labels:
+        app: web-admin
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: web-admin
+          image: web-admin-image
+
+          ports:
+            - name: http
+              containerPort: 80
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          env:
+            - name: AUTH_API_UPSTREAM
+              value: auth-service:6000
+            - name: SCHOOLCRM_API_UPSTREAM
+              value: schoolcrm-service:3000
+            - name: GOOGLE_MAPS_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: web-admin-config
+                  key: google_maps_api_key
+                  optional: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-admin-service
+  namespace: schoolcrm-system
+
+spec:
+  selector:
+    app: web-admin
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

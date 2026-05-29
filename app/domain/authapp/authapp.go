@@ -5,21 +5,76 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/mail"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/errs"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
+	"github.com/owezzy/schoolCRM/business/domain/userbus"
+	"github.com/owezzy/schoolCRM/business/types/role"
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
 
 type app struct {
-	auth *auth.Auth
+	auth     *auth.Auth
+	userBus  userbus.ExtBusiness
+	tokenKey string
 }
 
-func newApp(ath *auth.Auth) *app {
+func newApp(ath *auth.Auth, userBus userbus.ExtBusiness, tokenKey string) *app {
 	return &app{
-		auth: ath,
+		auth:     ath,
+		userBus:  userBus,
+		tokenKey: tokenKey,
+	}
+}
+
+func (a *app) login(ctx context.Context, r *http.Request) web.Encoder {
+	var req loginReq
+	if err := web.Decode(r, &req); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	addr, err := mail.ParseAddress(req.Email)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	usr, err := a.userBus.Authenticate(ctx, *addr, req.Password)
+	if err != nil {
+		return errs.New(errs.Unauthenticated, err)
+	}
+
+	if !usr.Enabled {
+		return errs.New(errs.Unauthenticated, auth.ErrUserDisabled)
+	}
+
+	now := time.Now().UTC()
+	expiresAt := now.Add(auth.TokenExpiry)
+	claims := auth.Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   usr.ID.String(),
+			Issuer:    a.auth.Issuer(),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(now),
+		},
+		Roles: role.ParseToString(usr.Roles),
+	}
+
+	tkn, err := a.auth.GenerateToken(a.tokenKey, claims)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	return loginResp{
+		AccessToken: tkn,
+		TokenType:   "Bearer",
+		ExpiresAt:   expiresAt,
+		ExpiresIn:   int(auth.TokenExpiry.Seconds()),
+		User:        toLoginUser(usr),
 	}
 }
 
@@ -49,9 +104,15 @@ func (a *app) authenticate(ctx context.Context, r *http.Request) web.Encoder {
 		return errs.New(errs.Unauthenticated, err)
 	}
 
-	resp := authclient.AuthenticateResp{
-		UserID: userID,
+	usr, err := a.userBus.QueryByID(ctx, userID)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	resp := authenticateResp{
+		UserID: userID.String(),
 		Claims: mid.GetClaims(ctx),
+		User:   toLoginUser(usr),
 	}
 
 	return resp
