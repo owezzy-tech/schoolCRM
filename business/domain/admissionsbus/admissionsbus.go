@@ -57,6 +57,14 @@ var (
 	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
 	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
 	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
+	ErrLeadScoreRuleNotFound        = errors.New("lead score rule not found")
+	ErrLeadScoreNotFound            = errors.New("lead score not found")
+	ErrLeadScoreRuleNameRequired    = errors.New("lead score rule name required")
+	ErrLeadScoreCriteriaRequired    = errors.New("lead score criteria required")
+	ErrInvalidLeadScoreCriterion    = errors.New("invalid lead score criterion")
+	ErrInvalidLeadScorePoints       = errors.New("lead score points must be greater than or equal to zero")
+	ErrInvalidLeadScorePriority     = errors.New("lead score priority must be greater than or equal to zero")
+	ErrInvalidLeadScoreBand         = errors.New("invalid lead score band")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -70,6 +78,16 @@ type Storer interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
+	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
+	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
+	CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error)
+	QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error)
+	UpsertLeadScore(ctx context.Context, score LeadScore) error
+	QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error)
+	CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error)
+	QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error)
+	QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
 	CreateConstituent(ctx context.Context, cst Constituent) error
 	UpdateConstituent(ctx context.Context, cst Constituent) error
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -114,6 +132,16 @@ type ExtBusiness interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error)
+	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error)
+	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
+	CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error)
+	QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error)
+	RecalculateLeadScoreForConstituent(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
+	QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error)
+	CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error)
+	QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error)
+	QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
 	CreateConstituent(ctx context.Context, nc NewConstituent) (Constituent, error)
 	UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error)
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -219,6 +247,165 @@ func (b *Business) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UU
 	}
 
 	return profile, nil
+}
+
+// CreateLeadScoreRule adds an explainable lead scoring rule.
+func (b *Business) CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error) {
+	if err := validateNewLeadScoreRule(nr); err != nil {
+		return LeadScoreRule{}, err
+	}
+
+	now := time.Now()
+	rule := LeadScoreRule{
+		ID:          uuid.New(),
+		Name:        strings.TrimSpace(nr.Name),
+		Description: trimStringPtr(nr.Description),
+		Criteria:    nr.Criteria,
+		Points:      nr.Points,
+		Active:      nr.Active,
+		Priority:    nr.Priority,
+		DateCreated: now,
+		DateUpdated: now,
+	}
+
+	if err := b.storer.CreateLeadScoreRule(ctx, rule); err != nil {
+		return LeadScoreRule{}, fmt.Errorf("create lead score rule: %w", err)
+	}
+
+	return rule, nil
+}
+
+// UpdateLeadScoreRule replaces mutable lead scoring rule data.
+func (b *Business) UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error) {
+	if err := validateNewLeadScoreRule(nr); err != nil {
+		return LeadScoreRule{}, err
+	}
+
+	rule.Name = strings.TrimSpace(nr.Name)
+	rule.Description = trimStringPtr(nr.Description)
+	rule.Criteria = nr.Criteria
+	rule.Points = nr.Points
+	rule.Active = nr.Active
+	rule.Priority = nr.Priority
+	rule.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateLeadScoreRule(ctx, rule); err != nil {
+		return LeadScoreRule{}, fmt.Errorf("update lead score rule: %w", err)
+	}
+
+	return rule, nil
+}
+
+// QueryLeadScoreRules retrieves lead scoring rules.
+func (b *Business) QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error) {
+	rules, err := b.storer.QueryLeadScoreRules(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query lead score rules: %w", err)
+	}
+
+	return rules, nil
+}
+
+// CountLeadScoreRules returns the total number of lead score rules.
+func (b *Business) CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error) {
+	return b.storer.CountLeadScoreRules(ctx, filter)
+}
+
+// QueryLeadScoreRuleByID finds a lead scoring rule by ID.
+func (b *Business) QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error) {
+	rule, err := b.storer.QueryLeadScoreRuleByID(ctx, ruleID)
+	if err != nil {
+		return LeadScoreRule{}, fmt.Errorf("query lead score rule: ruleID[%s]: %w", ruleID, err)
+	}
+
+	return rule, nil
+}
+
+// RecalculateLeadScoreForConstituent recalculates and stores a constituent's latest lead score.
+func (b *Business) RecalculateLeadScoreForConstituent(ctx context.Context, constituentID uuid.UUID) (LeadScore, error) {
+	constituent, err := b.QueryConstituentByID(ctx, constituentID)
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	active := true
+	rules, err := b.QueryLeadScoreRules(ctx, LeadScoreRuleQueryFilter{Active: &active}, DefaultLeadScoreRuleOrderBy, page.MustParse("1", "100"))
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	applications, err := b.QueryApplications(ctx, ApplicationQueryFilter{ConstituentID: &constituentID}, DefaultApplicationOrderBy, page.MustParse("1", "100"))
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	existing, err := b.storer.QueryLeadScoreByConstituentID(ctx, constituentID)
+	if err != nil && !errors.Is(err, ErrLeadScoreNotFound) {
+		return LeadScore{}, fmt.Errorf("query lead score: %w", err)
+	}
+
+	now := time.Now()
+	score := LeadScore{
+		ID:             existing.ID,
+		ConstituentID:  constituentID,
+		RecalculatedAt: now,
+		DateCreated:    existing.DateCreated,
+		DateUpdated:    now,
+	}
+	if score.ID == uuid.Nil {
+		score.ID = uuid.New()
+		score.DateCreated = now
+	}
+
+	for _, rule := range rules {
+		result := evaluateLeadScoreRule(rule, constituent, applications)
+		score.Breakdown = append(score.Breakdown, result)
+		if result.Matched {
+			score.TotalScore += result.Points
+		}
+	}
+	score.Band = LeadScoreBandForTotal(score.TotalScore)
+
+	if err := b.storer.UpsertLeadScore(ctx, score); err != nil {
+		return LeadScore{}, fmt.Errorf("upsert lead score: %w", err)
+	}
+
+	return score, nil
+}
+
+// QueryLeadScores retrieves lead scores.
+func (b *Business) QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error) {
+	scores, err := b.storer.QueryLeadScores(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query lead scores: %w", err)
+	}
+
+	return scores, nil
+}
+
+// CountLeadScores returns the total number of lead scores.
+func (b *Business) CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error) {
+	return b.storer.CountLeadScores(ctx, filter)
+}
+
+// QueryLeadScoreByID finds a lead score by ID.
+func (b *Business) QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error) {
+	score, err := b.storer.QueryLeadScoreByID(ctx, scoreID)
+	if err != nil {
+		return LeadScore{}, fmt.Errorf("query lead score: scoreID[%s]: %w", scoreID, err)
+	}
+
+	return score, nil
+}
+
+// QueryLeadScoreByConstituentID finds a lead score by constituent ID.
+func (b *Business) QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error) {
+	score, err := b.storer.QueryLeadScoreByConstituentID(ctx, constituentID)
+	if err != nil {
+		return LeadScore{}, fmt.Errorf("query lead score: constituentID[%s]: %w", constituentID, err)
+	}
+
+	return score, nil
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -951,6 +1138,7 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionResolveDuplicates,
 			AdmissionsPermissionManageReferences,
 			AdmissionsPermissionManageStaff,
+			AdmissionsPermissionManageLeadScoring,
 		}
 	case AdmissionsRoleRecruiter:
 		return []AdmissionsPermission{
@@ -965,8 +1153,12 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionResolveDuplicates,
 		}
 	case AdmissionsRoleMarketingManager,
-		AdmissionsRoleEventManager,
-		AdmissionsRoleReportViewer,
+		AdmissionsRoleEventManager:
+		return []AdmissionsPermission{
+			AdmissionsPermissionRead,
+			AdmissionsPermissionManageLeadScoring,
+		}
+	case AdmissionsRoleReportViewer,
 		AdmissionsRoleApplicant:
 		return []AdmissionsPermission{AdmissionsPermissionRead}
 	default:
@@ -1006,6 +1198,175 @@ func AdmissionsPermissionsToStrings(permissions []AdmissionsPermission) []string
 	}
 
 	return values
+}
+
+func validateNewLeadScoreRule(nr NewLeadScoreRule) error {
+	if strings.TrimSpace(nr.Name) == "" {
+		return ErrLeadScoreRuleNameRequired
+	}
+
+	if len(nr.Criteria) == 0 {
+		return ErrLeadScoreCriteriaRequired
+	}
+
+	if nr.Points < 0 {
+		return ErrInvalidLeadScorePoints
+	}
+
+	if nr.Priority < 0 {
+		return ErrInvalidLeadScorePriority
+	}
+
+	for _, criterion := range nr.Criteria {
+		if err := validateLeadScoreCriterion(criterion); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateLeadScoreCriterion(criterion LeadScoreCriterion) error {
+	if len(criterion.Values) == 0 {
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	switch criterion.Field {
+	case LeadScoreCriterionFieldLifecycleStage,
+		LeadScoreCriterionFieldApplicationType,
+		LeadScoreCriterionFieldApplicationStatus,
+		LeadScoreCriterionFieldProgramID,
+		LeadScoreCriterionFieldAcademicTermID:
+	default:
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	switch criterion.Operator {
+	case LeadScoreCriterionOperatorEquals:
+		if len(criterion.Values) != 1 {
+			return ErrInvalidLeadScoreCriterion
+		}
+	case LeadScoreCriterionOperatorIn:
+	default:
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	for _, value := range criterion.Values {
+		if strings.TrimSpace(value) == "" {
+			return ErrInvalidLeadScoreCriterion
+		}
+	}
+
+	return nil
+}
+
+// LeadScoreBandForTotal derives the score band from a total score.
+func LeadScoreBandForTotal(total int) LeadScoreBand {
+	switch {
+	case total >= 76:
+		return LeadScoreBandReadyToApply
+	case total >= 51:
+		return LeadScoreBandHot
+	case total >= 26:
+		return LeadScoreBandWarm
+	default:
+		return LeadScoreBandCold
+	}
+}
+
+func validateLeadScoreBand(band LeadScoreBand) error {
+	switch band {
+	case LeadScoreBandCold,
+		LeadScoreBandWarm,
+		LeadScoreBandHot,
+		LeadScoreBandReadyToApply:
+		return nil
+	default:
+		return ErrInvalidLeadScoreBand
+	}
+}
+
+func evaluateLeadScoreRule(rule LeadScoreRule, constituent Constituent, applications []Application) LeadScoreRuleResult {
+	result := LeadScoreRuleResult{
+		RuleID: rule.ID,
+		Name:   rule.Name,
+		Points: rule.Points,
+	}
+
+	for _, criterion := range rule.Criteria {
+		matched, value := evaluateLeadScoreCriterion(criterion, constituent, applications)
+		if !matched {
+			result.Reason = fmt.Sprintf("%s did not match %s", criterion.Field, strings.Join(criterion.Values, ", "))
+			return result
+		}
+
+		result.Reason = appendReason(result.Reason, fmt.Sprintf("%s matched %s", criterion.Field, value))
+	}
+
+	result.Matched = true
+	return result
+}
+
+func evaluateLeadScoreCriterion(criterion LeadScoreCriterion, constituent Constituent, applications []Application) (bool, string) {
+	values := valuesForLeadScoreCriterion(criterion.Field, constituent, applications)
+	for _, candidate := range values {
+		if criterionMatchesValue(criterion, candidate) {
+			return true, candidate
+		}
+	}
+
+	return false, ""
+}
+
+func valuesForLeadScoreCriterion(field LeadScoreCriterionField, constituent Constituent, applications []Application) []string {
+	switch field {
+	case LeadScoreCriterionFieldLifecycleStage:
+		return []string{constituent.LifecycleStage.String()}
+	case LeadScoreCriterionFieldApplicationType:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.ApplicationType.String())
+		}
+		return values
+	case LeadScoreCriterionFieldApplicationStatus:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.Status.String())
+		}
+		return values
+	case LeadScoreCriterionFieldProgramID:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.ProgramID.String())
+		}
+		return values
+	case LeadScoreCriterionFieldAcademicTermID:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.AcademicTermID.String())
+		}
+		return values
+	default:
+		return nil
+	}
+}
+
+func criterionMatchesValue(criterion LeadScoreCriterion, candidate string) bool {
+	for _, value := range criterion.Values {
+		if strings.EqualFold(candidate, strings.TrimSpace(value)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func appendReason(existing string, next string) string {
+	if existing == "" {
+		return next
+	}
+
+	return existing + "; " + next
 }
 
 func validateLifecycleStage(stage LifecycleStage) error {
