@@ -30,6 +30,7 @@
         "@jsverse/transloco": "^8.3.0",
         "@ngrx/effects": "^21.1.0",
         "@ngrx/operators": "^21.1.0",
+        "@ngrx/router-store": "^21.1.0",
         "@ngrx/store": "^21.1.0",
         "@ngrx/store-devtools": "^21.1.0",
         "apexcharts": "^5.10.3",
