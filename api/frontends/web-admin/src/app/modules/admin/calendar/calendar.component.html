@@ -1,0 +1,42 @@
+<div class="calendar-page flex min-w-0 flex-auto flex-col">
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="mb-8 flex flex-col gap-2">
+            <div class="text-4xl font-extrabold leading-none tracking-tight">
+                Calendar
+            </div>
+            <div class="text-secondary max-w-3xl text-base">
+                FullCalendar example restored from the previous web-admin app,
+                adapted to the current Fuse layout and lazy route structure.
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="rounded-2xl bg-card p-4 shadow sm:p-6">
+                <full-calendar [options]="calendarOptions"></full-calendar>
+            </div>
+
+            <aside class="rounded-2xl bg-card p-6 shadow">
+                <div class="text-lg font-semibold">Event details</div>
+                <p class="text-secondary mt-3 text-sm leading-6">
+                    {{ selectedDate() }}
+                </p>
+
+                <div class="mt-8 border-t pt-6">
+                    <div class="text-sm font-medium uppercase tracking-wide text-secondary">
+                        Restored demo data
+                    </div>
+                    <ul class="mt-4 space-y-3 text-sm">
+                        <li>
+                            <span class="font-medium">All Day Event</span>
+                            <span class="text-secondary block">June 4–6, 2020</span>
+                        </li>
+                        <li>
+                            <span class="font-medium">Break</span>
+                            <span class="text-secondary block">June 10–12, 2020</span>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
