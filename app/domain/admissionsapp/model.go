@@ -19,6 +19,82 @@ type Health struct {
 	Aggregates []string `json:"aggregates"`
 }
 
+// StaffProfile represents an admissions staff context profile.
+type StaffProfile struct {
+	ID          string   `json:"id"`
+	UserID      string   `json:"userID"`
+	Roles       []string `json:"roles"`
+	Permissions []string `json:"permissions"`
+	Active      bool     `json:"active"`
+	DateCreated string   `json:"dateCreated"`
+	DateUpdated string   `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app StaffProfile) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppStaffProfile(profile admissionsbus.StaffProfile) StaffProfile {
+	permissions := admissionsbus.AdmissionsPermissionsForRoles(profile.Roles)
+
+	return StaffProfile{
+		ID:          profile.ID.String(),
+		UserID:      profile.UserID.String(),
+		Roles:       admissionsbus.AdmissionsRolesToStrings(profile.Roles),
+		Permissions: admissionsbus.AdmissionsPermissionsToStrings(permissions),
+		Active:      profile.Active,
+		DateCreated: profile.DateCreated.Format(time.RFC3339),
+		DateUpdated: profile.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppStaffProfiles(profiles []admissionsbus.StaffProfile) []StaffProfile {
+	app := make([]StaffProfile, len(profiles))
+	for i, profile := range profiles {
+		app[i] = toAppStaffProfile(profile)
+	}
+
+	return app
+}
+
+// NewStaffProfile defines the data needed to create or update an admissions staff profile.
+type NewStaffProfile struct {
+	UserID string   `json:"userID"`
+	Roles  []string `json:"roles"`
+	Active bool     `json:"active"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewStaffProfile) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewStaffProfile(app NewStaffProfile) (admissionsbus.NewStaffProfile, error) {
+	var fieldErrors errs.FieldErrors
+
+	userID, err := uuid.Parse(app.UserID)
+	if err != nil {
+		fieldErrors.Add("userID", err)
+	}
+
+	roles, err := admissionsbus.ParseAdmissionsRoles(app.Roles)
+	if err != nil {
+		fieldErrors.Add("roles", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewStaffProfile{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewStaffProfile{
+		UserID: userID,
+		Roles:  roles,
+		Active: app.Active,
+	}, nil
+}
+
 // Encode implements the encoder interface.
 func (app Health) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)

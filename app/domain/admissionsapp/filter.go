@@ -20,6 +20,16 @@ type programQueryParams struct {
 	Active        string
 }
 
+type staffProfileQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	UserID  string
+	Role    string
+	Active  string
+}
+
 type constituentQueryParams struct {
 	Page            string
 	Rows            string
@@ -87,6 +97,20 @@ func parseProgramQueryParams(r *http.Request) programQueryParams {
 		ExternalSISID: values.Get("external_sis_id"),
 		Code:          values.Get("code"),
 		Active:        values.Get("active"),
+	}
+}
+
+func parseStaffProfileQueryParams(r *http.Request) staffProfileQueryParams {
+	values := r.URL.Query()
+
+	return staffProfileQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("staff_profile_id"),
+		UserID:  values.Get("user_id"),
+		Role:    values.Get("role"),
+		Active:  values.Get("active"),
 	}
 }
 
@@ -198,6 +222,49 @@ func parseProgramFilter(qp programQueryParams) (admissionsbus.ProgramQueryFilter
 
 	if fieldErrors != nil {
 		return admissionsbus.ProgramQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseStaffProfileFilter(qp staffProfileQueryParams) (admissionsbus.StaffProfileQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.StaffProfileQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("staff_profile_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.UserID != "" {
+		userID, err := uuid.Parse(qp.UserID)
+		if err != nil {
+			fieldErrors.Add("user_id", err)
+		} else {
+			filter.UserID = &userID
+		}
+	}
+
+	if qp.Role != "" {
+		role := admissionsbus.AdmissionsRole(qp.Role)
+		filter.Role = &role
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.StaffProfileQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

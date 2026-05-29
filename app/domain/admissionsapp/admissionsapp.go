@@ -77,6 +77,99 @@ func (a *app) createConstituent(ctx context.Context, r *http.Request) web.Encode
 	return toAppConstituent(cst)
 }
 
+func (a *app) createStaffProfile(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewStaffProfile
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	np, err := toBusNewStaffProfile(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profile, err := a.admissionsBus.CreateStaffProfile(ctx, np)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create staff profile: %s", err)
+	}
+
+	return toAppStaffProfile(profile)
+}
+
+func (a *app) updateStaffProfile(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewStaffProfile
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profileID, err := uuid.Parse(web.Param(r, "staff_profile_id"))
+	if err != nil {
+		return errs.NewFieldErrors("staff_profile_id", err)
+	}
+
+	profile, err := a.admissionsBus.QueryStaffProfileByID(ctx, profileID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query staff profile: %s", err)
+	}
+
+	np, err := toBusNewStaffProfile(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateStaffProfile(ctx, profile, np)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update staff profile: %s", err)
+	}
+
+	return toAppStaffProfile(updated)
+}
+
+func (a *app) queryStaffProfiles(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseStaffProfileQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseStaffProfileFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(staffProfileOrderByFields, qp.OrderBy, admissionsbus.DefaultStaffProfileOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	profiles, err := a.admissionsBus.QueryStaffProfiles(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query staff profiles: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountStaffProfiles(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count staff profiles: %s", err)
+	}
+
+	return query.NewResult(toAppStaffProfiles(profiles), total, page)
+}
+
+func (a *app) queryStaffProfileByID(ctx context.Context, r *http.Request) web.Encoder {
+	profileID, err := uuid.Parse(web.Param(r, "staff_profile_id"))
+	if err != nil {
+		return errs.NewFieldErrors("staff_profile_id", err)
+	}
+
+	profile, err := a.admissionsBus.QueryStaffProfileByID(ctx, profileID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query staff profile: %s", err)
+	}
+
+	return toAppStaffProfile(profile)
+}
+
 func (a *app) updateConstituent(ctx context.Context, r *http.Request) web.Encoder {
 	var app UpdateConstituent
 	if err := web.Decode(r, &app); err != nil {
