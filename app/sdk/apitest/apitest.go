@@ -5,17 +5,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/mail"
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/sdk/dbtest"
 	"github.com/owezzy/schoolCRM/business/types/role"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 type testOption struct {
@@ -76,7 +77,16 @@ func (at *Test) Run(t *testing.T, table []Table, testName string, options ...Opt
 				return
 			}
 
-			if err := json.Unmarshal(w.Body.Bytes(), tt.GotResp); err != nil {
+			if got, exp := w.Header().Get("Content-Type"), "application/vnd.api+json"; got != exp {
+				t.Fatalf("%s: Should receive content type %q for the response : %q", tt.Name, exp, got)
+			}
+
+			body, err := unwrapJSONAPI(w.Body.Bytes(), tt.StatusCode)
+			if err != nil {
+				t.Fatalf("Should be able to unwrap the JSON:API response : %s", err)
+			}
+
+			if err := json.Unmarshal(body, tt.GotResp); err != nil {
 				t.Fatalf("Should be able to unmarshal the response : %s", err)
 			}
 
@@ -94,6 +104,137 @@ func (at *Test) Run(t *testing.T, table []Table, testName string, options ...Opt
 
 		t.Run(testName+"-"+tt.Name, f)
 	}
+}
+
+func unwrapJSONAPI(body []byte, statusCode int) ([]byte, error) {
+	var doc struct {
+		Data   json.RawMessage `json:"data"`
+		Errors []struct {
+			Status string `json:"status"`
+			Code   string `json:"code"`
+			Detail string `json:"detail"`
+		} `json:"errors"`
+		Meta map[string]json.RawMessage `json:"meta"`
+	}
+
+	if err := json.Unmarshal(body, &doc); err != nil {
+		return nil, fmt.Errorf("decode document: %w", err)
+	}
+
+	if statusCode >= http.StatusBadRequest {
+		if len(doc.Errors) == 0 {
+			return nil, fmt.Errorf("missing JSON:API errors")
+		}
+
+		legacy := struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}{
+			Code:    doc.Errors[0].Code,
+			Message: doc.Errors[0].Detail,
+		}
+
+		data, err := json.Marshal(legacy)
+		if err != nil {
+			return nil, fmt.Errorf("marshal legacy error: %w", err)
+		}
+
+		return data, nil
+	}
+
+	if doc.Data == nil {
+		return nil, fmt.Errorf("missing JSON:API data")
+	}
+
+	if doc.Meta != nil {
+		items, err := unwrapJSONAPICollection(doc.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		query := map[string]json.RawMessage{
+			"items": items,
+		}
+		for key, value := range doc.Meta {
+			query[key] = value
+		}
+
+		data, err := json.Marshal(query)
+		if err != nil {
+			return nil, fmt.Errorf("marshal query result: %w", err)
+		}
+
+		return data, nil
+	}
+
+	var resource struct {
+		ID         string          `json:"id"`
+		Attributes json.RawMessage `json:"attributes"`
+	}
+	if err := json.Unmarshal(doc.Data, &resource); err != nil {
+		return nil, fmt.Errorf("decode resource: %w", err)
+	}
+
+	if resource.Attributes == nil {
+		return nil, fmt.Errorf("missing JSON:API resource attributes")
+	}
+
+	return mergeResourceID(resource.ID, resource.Attributes)
+}
+
+func unwrapJSONAPICollection(data json.RawMessage) (json.RawMessage, error) {
+	var resources []struct {
+		ID         string          `json:"id"`
+		Attributes json.RawMessage `json:"attributes"`
+	}
+	if err := json.Unmarshal(data, &resources); err != nil {
+		return nil, fmt.Errorf("decode collection resources: %w", err)
+	}
+
+	items := make([]json.RawMessage, 0, len(resources))
+	for _, resource := range resources {
+		if resource.Attributes == nil {
+			return nil, fmt.Errorf("missing collection resource attributes")
+		}
+
+		item, err := mergeResourceID(resource.ID, resource.Attributes)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, item)
+	}
+
+	encoded, err := json.Marshal(items)
+	if err != nil {
+		return nil, fmt.Errorf("marshal collection items: %w", err)
+	}
+
+	return encoded, nil
+}
+
+func mergeResourceID(id string, attributes json.RawMessage) (json.RawMessage, error) {
+	if id == "" {
+		return attributes, nil
+	}
+
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(attributes, &body); err != nil {
+		return nil, fmt.Errorf("decode resource attributes: %w", err)
+	}
+
+	encodedID, err := json.Marshal(id)
+	if err != nil {
+		return nil, fmt.Errorf("marshal resource id: %w", err)
+	}
+	body["id"] = encodedID
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal resource attributes: %w", err)
+	}
+
+	return data, nil
 }
 
 // =============================================================================
