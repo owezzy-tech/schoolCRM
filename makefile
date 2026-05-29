@@ -121,13 +121,17 @@ PROMTAIL        := grafana/promtail:3.6.0
 
 KIND_CLUSTER    := schoolcrm-cluster
 NAMESPACE       := schoolcrm-system
-SCHOOLCRM_APP       := schoolcrm
+
+SCHOOLCRM_APP   := schoolcrm
 AUTH_APP        := auth
 WEB_ADMIN_APP   := web-admin
 RAG_APP         := rag
+
 BASE_IMAGE_NAME := localhost/schoolcrm
+
 VERSION         := 0.0.1
-SCHOOLCRM_IMAGE     := $(BASE_IMAGE_NAME)/$(SCHOOLCRM_APP):$(VERSION)
+
+SCHOOLCRM_IMAGE := $(BASE_IMAGE_NAME)/$(SCHOOLCRM_APP):$(VERSION)
 METRICS_IMAGE   := $(BASE_IMAGE_NAME)/metrics:$(VERSION)
 AUTH_IMAGE      := $(BASE_IMAGE_NAME)/$(AUTH_APP):$(VERSION)
 WEB_ADMIN_IMAGE := $(BASE_IMAGE_NAME)/$(WEB_ADMIN_APP):$(VERSION)
