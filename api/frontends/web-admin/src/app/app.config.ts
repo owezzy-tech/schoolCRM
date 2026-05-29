@@ -17,6 +17,7 @@ import { appRoutes } from 'app/app.routes';
 import { provideAuth } from 'app/core/auth/auth.provider';
 import { AuthEffects } from 'app/core/auth/store/auth.effects';
 import { authFeature } from 'app/core/auth/store/auth.feature';
+import { metaReducers } from 'app/core/auth/store/store.logger';
 import { provideIcons } from 'app/core/icons/icons.provider';
 import { MockApiService } from 'app/mock-api';
 import { firstValueFrom } from 'rxjs';
@@ -30,7 +31,10 @@ export const appConfig: ApplicationConfig = {
             withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
         ),
 
-        provideStore({ [authFeature.name]: authFeature.reducer }),
+        provideStore(
+            { [authFeature.name]: authFeature.reducer },
+            { metaReducers }
+        ),
         provideEffects(AuthEffects),
         provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
 
