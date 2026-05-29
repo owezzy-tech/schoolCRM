@@ -80,3 +80,19 @@ npm test           # Karma + Jasmine (no tests exist yet)
 - **Auth tokens**: Stored in localStorage, validated via `AuthUtils.isTokenExpired()`
 - **Dark mode**: CSS class-based (`.dark` selector on body)
 - **Tailwind breakpoints**: Non-standard — sm:600, md:960, lg:1280, xl:1440
+
+## BEADS WORKFLOW
+
+- This frontend is part of the root SchoolCRM monorepo Beads database.
+- Always run `bd` commands from `/Users/owen_adirah/GolandProjects/schoolCRM`.
+- Do **not** run `bd init` in `api/frontends/web-admin` and do not create a nested `.beads/` directory here.
+- Create or claim a root Beads issue before implementing frontend work:
+
+```bash
+bd ready
+bd show <id>
+bd update <id> --claim
+```
+
+- Use inline Beads commands only; never use `bd edit` because it opens an interactive editor.
+- Close the issue only after frontend validation passes (`npx -p node@22 npm run build`, `npx -p node@22 npm test`, and targeted LSP diagnostics).

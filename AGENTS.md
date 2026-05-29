@@ -55,6 +55,10 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+- Beads is initialized **only at the repository root**. Always run `bd` commands from `/Users/owen_adirah/GolandProjects/schoolCRM`; do NOT run `bd init` or create nested `.beads/` directories in subprojects such as `api/frontends/web-admin`.
+- Create a bead before feature implementation, claim it with `bd update <id> --claim`, and close it only after validation passes.
+- Never use `bd edit`; it opens an interactive editor. Use inline flags such as `--description`, `--acceptance`, `--notes`, and `--design`.
+- Use numeric priorities only: `0` critical, `1` high, `2` medium, `3` low, `4` backlog.
 
 ## Session Completion
 
