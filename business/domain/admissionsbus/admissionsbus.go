@@ -41,6 +41,15 @@ var (
 	ErrInvalidResolution        = errors.New("invalid duplicate review resolution")
 	ErrDuplicateReviewResolved  = errors.New("duplicate review already resolved")
 	ErrResolutionActorRequired  = errors.New("resolution actor required")
+	ErrApplicationNotFound      = errors.New("application not found")
+	ErrInvalidApplicationType   = errors.New("invalid application type")
+	ErrInvalidApplicationStatus = errors.New("invalid application status")
+	ErrDuplicateApplication     = errors.New("active application already exists for constituent term and program")
+	ErrConstituentIDRequired    = errors.New("constituent id required")
+	ErrProgramIDRequired        = errors.New("program id required")
+	ErrAcademicTermIDRequired   = errors.New("academic term id required")
+	ErrInactiveProgram          = errors.New("program is inactive")
+	ErrInactiveAcademicTerm     = errors.New("academic term is inactive")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -70,6 +79,11 @@ type Storer interface {
 	QueryDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]DuplicateReview, error)
 	CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error)
 	QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error)
+	CreateApplication(ctx context.Context, app Application) error
+	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
+	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
+	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -99,6 +113,10 @@ type ExtBusiness interface {
 	QueryDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]DuplicateReview, error)
 	CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error)
 	QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error)
+	CreateApplication(ctx context.Context, na NewApplication) (Application, error)
+	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
+	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
+	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -605,6 +623,83 @@ func (b *Business) QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.U
 	return review, nil
 }
 
+// CreateApplication adds a draft application while enforcing active application uniqueness.
+func (b *Business) CreateApplication(ctx context.Context, na NewApplication) (Application, error) {
+	if err := validateNewApplication(na); err != nil {
+		return Application{}, err
+	}
+
+	if _, err := b.storer.QueryConstituentByID(ctx, na.ConstituentID); err != nil {
+		return Application{}, fmt.Errorf("query constituent: %w", err)
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, na.ProgramID)
+	if err != nil {
+		return Application{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return Application{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, na.AcademicTermID)
+	if err != nil {
+		return Application{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return Application{}, ErrInactiveAcademicTerm
+	}
+
+	if _, err := b.storer.QueryActiveApplicationByTuple(ctx, na.ConstituentID, na.AcademicTermID, na.ProgramID); err == nil {
+		return Application{}, ErrDuplicateApplication
+	} else if !errors.Is(err, ErrApplicationNotFound) {
+		return Application{}, fmt.Errorf("query active application: %w", err)
+	}
+
+	now := time.Now()
+	app := Application{
+		ID:                 uuid.New(),
+		ConstituentID:      na.ConstituentID,
+		ProgramID:          na.ProgramID,
+		AcademicTermID:     na.AcademicTermID,
+		ApplicationType:    na.ApplicationType,
+		Status:             ApplicationStatusDraft,
+		AssignedReviewerID: na.AssignedReviewerID,
+		DateCreated:        now,
+		DateUpdated:        now,
+	}
+
+	if err := b.storer.CreateApplication(ctx, app); err != nil {
+		return Application{}, fmt.Errorf("create application: %w", err)
+	}
+
+	return app, nil
+}
+
+// QueryApplications retrieves a list of existing applications.
+func (b *Business) QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error) {
+	applications, err := b.storer.QueryApplications(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query applications: %w", err)
+	}
+
+	return applications, nil
+}
+
+// CountApplications returns the total number of applications.
+func (b *Business) CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error) {
+	return b.storer.CountApplications(ctx, filter)
+}
+
+// QueryApplicationByID finds an Application by ID.
+func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error) {
+	app, err := b.storer.QueryApplicationByID(ctx, applicationID)
+	if err != nil {
+		return Application{}, fmt.Errorf("query application: applicationID[%s]: %w", applicationID, err)
+	}
+
+	return app, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -733,6 +828,64 @@ func statusForResolution(resolution DuplicateReviewResolution) (DuplicateReviewS
 		return DuplicateReviewStatusDeferred, nil
 	default:
 		return "", ErrInvalidResolution
+	}
+}
+
+func validateNewApplication(na NewApplication) error {
+	if na.ConstituentID == uuid.Nil {
+		return ErrConstituentIDRequired
+	}
+
+	if na.ProgramID == uuid.Nil {
+		return ErrProgramIDRequired
+	}
+
+	if na.AcademicTermID == uuid.Nil {
+		return ErrAcademicTermIDRequired
+	}
+
+	return validateApplicationType(na.ApplicationType)
+}
+
+func validateApplicationType(applicationType ApplicationType) error {
+	switch applicationType {
+	case ApplicationTypeFreshman,
+		ApplicationTypeTransfer,
+		ApplicationTypeGraduate:
+		return nil
+	default:
+		return ErrInvalidApplicationType
+	}
+}
+
+func validateApplicationStatus(status ApplicationStatus) error {
+	switch status {
+	case ApplicationStatusDraft,
+		ApplicationStatusSubmitted,
+		ApplicationStatusAwaitingDocuments,
+		ApplicationStatusReadyForReview,
+		ApplicationStatusInReview,
+		ApplicationStatusDecisionPending,
+		ApplicationStatusAdmitted,
+		ApplicationStatusDenied,
+		ApplicationStatusWaitlisted,
+		ApplicationStatusDeferred,
+		ApplicationStatusWithdrawn,
+		ApplicationStatusEnrolled:
+		return nil
+	default:
+		return ErrInvalidApplicationStatus
+	}
+}
+
+func isApplicationActive(status ApplicationStatus) bool {
+	switch status {
+	case ApplicationStatusDenied,
+		ApplicationStatusWithdrawn,
+		ApplicationStatusEnrolled:
+		return false
+	default:
+		return true
 	}
 }
 

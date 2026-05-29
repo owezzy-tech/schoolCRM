@@ -326,8 +326,105 @@ func TestResolveDuplicateReviewLinksSourceConstituent(t *testing.T) {
 	}
 }
 
+func TestCreateApplicationPreventsDuplicateActiveApplication(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	store.applications = append(store.applications, Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeFreshman,
+		Status:          ApplicationStatusDraft,
+	})
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.CreateApplication(context.Background(), NewApplication{
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeFreshman,
+	})
+
+	if !errors.Is(err, ErrDuplicateApplication) {
+		t.Fatalf("err = %v, want %v", err, ErrDuplicateApplication)
+	}
+}
+
+func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	store.applications = append(store.applications, Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeFreshman,
+		Status:          ApplicationStatusWithdrawn,
+	})
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	created, err := bus.CreateApplication(context.Background(), NewApplication{
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeTransfer,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplication returned error: %v", err)
+	}
+
+	if created.Status != ApplicationStatusDraft {
+		t.Fatalf("Status = %s, want %s", created.Status, ApplicationStatusDraft)
+	}
+
+	if len(store.applications) != 2 {
+		t.Fatalf("application count = %d, want 2", len(store.applications))
+	}
+}
+
+func TestCreateApplicationValidatesApplicationType(t *testing.T) {
+	t.Parallel()
+
+	store := newApplicationStubStore(uuid.New(), uuid.New(), uuid.New())
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.CreateApplication(context.Background(), NewApplication{
+		ConstituentID:   uuid.New(),
+		ProgramID:       uuid.New(),
+		AcademicTermID:  uuid.New(),
+		ApplicationType: ApplicationType("UNKNOWN"),
+	})
+
+	if !errors.Is(err, ErrInvalidApplicationType) {
+		t.Fatalf("err = %v, want %v", err, ErrInvalidApplicationType)
+	}
+}
+
 func newTestBusiness() ExtBusiness {
 	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{})
+}
+
+func newApplicationStubStore(constituentID uuid.UUID, programID uuid.UUID, termID uuid.UUID) *stubStore {
+	return &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant, DuplicateStatus: DuplicateStatusActive},
+		},
+		programs: map[uuid.UUID]Program{
+			programID: {ID: programID, Active: true},
+		},
+		terms: map[uuid.UUID]AcademicTerm{
+			termID: {ID: termID, Active: true},
+		},
+	}
 }
 
 type ioDiscard struct{}
@@ -340,6 +437,9 @@ type stubStore struct {
 	constituents       map[uuid.UUID]Constituent
 	constituentByEmail map[string]Constituent
 	duplicateReviews   []DuplicateReview
+	programs           map[uuid.UUID]Program
+	terms              map[uuid.UUID]AcademicTerm
+	applications       []Application
 }
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
@@ -381,9 +481,12 @@ func (s *stubStore) CountConstituents(context.Context, ConstituentQueryFilter) (
 
 func (s *stubStore) QueryConstituentByID(_ context.Context, id uuid.UUID) (Constituent, error) {
 	if s.constituents != nil {
-		return s.constituents[id], nil
+		cst, exists := s.constituents[id]
+		if exists {
+			return cst, nil
+		}
 	}
-	return Constituent{}, nil
+	return Constituent{}, ErrConstituentNotFound
 }
 
 func (s *stubStore) QueryConstituentByPrimaryEmail(_ context.Context, email string) (Constituent, error) {
@@ -413,8 +516,14 @@ func (s *stubStore) CountPrograms(context.Context, ProgramQueryFilter) (int, err
 	return 0, nil
 }
 
-func (s *stubStore) QueryProgramByID(context.Context, uuid.UUID) (Program, error) {
-	return Program{}, nil
+func (s *stubStore) QueryProgramByID(_ context.Context, id uuid.UUID) (Program, error) {
+	if s.programs != nil {
+		program, exists := s.programs[id]
+		if exists {
+			return program, nil
+		}
+	}
+	return Program{}, ErrProgramNotFound
 }
 
 func (s *stubStore) QueryProgramByExternalSISID(context.Context, string) (Program, error) {
@@ -433,8 +542,14 @@ func (s *stubStore) CountAcademicTerms(context.Context, AcademicTermQueryFilter)
 	return 0, nil
 }
 
-func (s *stubStore) QueryAcademicTermByID(context.Context, uuid.UUID) (AcademicTerm, error) {
-	return AcademicTerm{}, nil
+func (s *stubStore) QueryAcademicTermByID(_ context.Context, id uuid.UUID) (AcademicTerm, error) {
+	if s.terms != nil {
+		term, exists := s.terms[id]
+		if exists {
+			return term, nil
+		}
+	}
+	return AcademicTerm{}, ErrAcademicTermNotFound
 }
 
 func (s *stubStore) QueryAcademicTermByExternalSISID(context.Context, string) (AcademicTerm, error) {
@@ -460,4 +575,35 @@ func (s *stubStore) CountDuplicateReviews(context.Context, DuplicateReviewQueryF
 
 func (s *stubStore) QueryDuplicateReviewByID(context.Context, uuid.UUID) (DuplicateReview, error) {
 	return DuplicateReview{}, nil
+}
+
+func (s *stubStore) CreateApplication(_ context.Context, app Application) error {
+	s.applications = append(s.applications, app)
+	return nil
+}
+
+func (s *stubStore) QueryApplications(context.Context, ApplicationQueryFilter, order.By, page.Page) ([]Application, error) {
+	return s.applications, nil
+}
+
+func (s *stubStore) CountApplications(context.Context, ApplicationQueryFilter) (int, error) {
+	return len(s.applications), nil
+}
+
+func (s *stubStore) QueryApplicationByID(_ context.Context, id uuid.UUID) (Application, error) {
+	for _, app := range s.applications {
+		if app.ID == id {
+			return app, nil
+		}
+	}
+	return Application{}, ErrApplicationNotFound
+}
+
+func (s *stubStore) QueryActiveApplicationByTuple(_ context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error) {
+	for _, app := range s.applications {
+		if app.ConstituentID == constituentID && app.AcademicTermID == academicTermID && app.ProgramID == programID && isApplicationActive(app.Status) {
+			return app, nil
+		}
+	}
+	return Application{}, ErrApplicationNotFound
 }

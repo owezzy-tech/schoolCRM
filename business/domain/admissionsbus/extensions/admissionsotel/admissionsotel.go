@@ -215,3 +215,35 @@ func (ext *Extension) QueryDuplicateReviewByID(ctx context.Context, reviewID uui
 
 	return ext.bus.QueryDuplicateReviewByID(ctx, reviewID)
 }
+
+// CreateApplication applies otel to Application creation.
+func (ext *Extension) CreateApplication(ctx context.Context, na admissionsbus.NewApplication) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplication")
+	defer span.End()
+
+	return ext.bus.CreateApplication(ctx, na)
+}
+
+// QueryApplications applies otel to Application queries.
+func (ext *Extension) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplications")
+	defer span.End()
+
+	return ext.bus.QueryApplications(ctx, filter, orderBy, page)
+}
+
+// CountApplications applies otel to Application counts.
+func (ext *Extension) CountApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplications")
+	defer span.End()
+
+	return ext.bus.CountApplications(ctx, filter)
+}
+
+// QueryApplicationByID applies otel to Application ID lookups.
+func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationbyid")
+	defer span.End()
+
+	return ext.bus.QueryApplicationByID(ctx, applicationID)
+}
