@@ -162,3 +162,38 @@ CREATE INDEX idx_admissions_constituents_email ON admissions_constituents (prima
 CREATE INDEX idx_admissions_constituents_phone ON admissions_constituents (primary_phone);
 CREATE INDEX idx_admissions_constituents_lifecycle ON admissions_constituents (lifecycle_stage);
 CREATE INDEX idx_admissions_constituents_duplicate_status ON admissions_constituents (duplicate_status);
+
+-- Version: 1.08
+-- Description: Create admissions duplicate review queue
+CREATE TABLE admissions_duplicate_reviews (
+    duplicate_review_id       UUID      NOT NULL,
+    source_constituent_id     UUID      NOT NULL,
+    candidate_constituent_id  UUID      NOT NULL,
+    match_type                TEXT      NOT NULL,
+    match_score               INT       NOT NULL,
+    match_reason              TEXT      NOT NULL,
+    status                    TEXT      NOT NULL,
+    resolved_by               UUID      NULL,
+    resolved_at               TIMESTAMP NULL,
+    resolution_note           TEXT      NULL,
+    date_created              TIMESTAMP NOT NULL,
+    date_updated              TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (duplicate_review_id),
+    FOREIGN KEY (source_constituent_id) REFERENCES admissions_constituents(constituent_id),
+    FOREIGN KEY (candidate_constituent_id) REFERENCES admissions_constituents(constituent_id),
+    CONSTRAINT admissions_duplicate_reviews_distinct_pair CHECK (source_constituent_id <> candidate_constituent_id),
+    CONSTRAINT admissions_duplicate_reviews_match_type CHECK (match_type IN ('EXACT', 'FUZZY')),
+    CONSTRAINT admissions_duplicate_reviews_match_score CHECK (match_score >= 0 AND match_score <= 100),
+    CONSTRAINT admissions_duplicate_reviews_status CHECK (status IN ('PENDING', 'LINKED', 'MERGED', 'REJECTED', 'DEFERRED')),
+    CONSTRAINT admissions_duplicate_reviews_resolution_consistency CHECK (
+        (status = 'PENDING' AND resolved_by IS NULL AND resolved_at IS NULL)
+        OR (status IN ('LINKED', 'MERGED', 'REJECTED', 'DEFERRED') AND resolved_by IS NOT NULL AND resolved_at IS NOT NULL)
+    ),
+    CONSTRAINT admissions_duplicate_reviews_unique_pair UNIQUE (source_constituent_id, candidate_constituent_id)
+);
+
+CREATE INDEX idx_admissions_duplicate_reviews_source ON admissions_duplicate_reviews (source_constituent_id);
+CREATE INDEX idx_admissions_duplicate_reviews_candidate ON admissions_duplicate_reviews (candidate_constituent_id);
+CREATE INDEX idx_admissions_duplicate_reviews_status ON admissions_duplicate_reviews (status);
+CREATE INDEX idx_admissions_duplicate_reviews_match_type ON admissions_duplicate_reviews (match_type);

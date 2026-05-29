@@ -11,6 +11,9 @@ var DefaultConstituentOrderBy = order.NewBy(OrderByConstituentID, order.ASC)
 // DefaultAcademicTermOrderBy represents the default way we sort academic terms.
 var DefaultAcademicTermOrderBy = order.NewBy(OrderByAcademicTermStartDate, order.ASC)
 
+// DefaultDuplicateReviewOrderBy represents the default way we sort duplicate reviews.
+var DefaultDuplicateReviewOrderBy = order.NewBy(OrderByDuplicateReviewDateCreated, order.ASC)
+
 // Set of fields that programs can be ordered by.
 const (
 	OrderByConstituentID             = "a"
@@ -34,4 +37,13 @@ const (
 	OrderByAcademicTermCode      = "c"
 	OrderByAcademicTermStartDate = "d"
 	OrderByAcademicTermActive    = "e"
+)
+
+// Set of fields that duplicate reviews can be ordered by.
+const (
+	OrderByDuplicateReviewID          = "a"
+	OrderByDuplicateReviewStatus      = "b"
+	OrderByDuplicateReviewMatchType   = "c"
+	OrderByDuplicateReviewMatchScore  = "d"
+	OrderByDuplicateReviewDateCreated = "e"
 )

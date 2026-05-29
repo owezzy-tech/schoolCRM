@@ -47,6 +47,53 @@ func (status DuplicateStatus) String() string {
 	return string(status)
 }
 
+// DuplicateReviewStatus represents staff workflow state for a potential duplicate.
+type DuplicateReviewStatus string
+
+// Set of valid duplicate review statuses.
+const (
+	DuplicateReviewStatusPending  DuplicateReviewStatus = "PENDING"
+	DuplicateReviewStatusLinked   DuplicateReviewStatus = "LINKED"
+	DuplicateReviewStatusMerged   DuplicateReviewStatus = "MERGED"
+	DuplicateReviewStatusRejected DuplicateReviewStatus = "REJECTED"
+	DuplicateReviewStatusDeferred DuplicateReviewStatus = "DEFERRED"
+)
+
+// String returns the duplicate review status as a string.
+func (status DuplicateReviewStatus) String() string {
+	return string(status)
+}
+
+// DuplicateReviewMatchType represents the confidence class for a duplicate match.
+type DuplicateReviewMatchType string
+
+// Set of valid duplicate review match types.
+const (
+	DuplicateReviewMatchTypeExact DuplicateReviewMatchType = "EXACT"
+	DuplicateReviewMatchTypeFuzzy DuplicateReviewMatchType = "FUZZY"
+)
+
+// String returns the duplicate review match type as a string.
+func (matchType DuplicateReviewMatchType) String() string {
+	return string(matchType)
+}
+
+// DuplicateReviewResolution represents a staff action taken on a duplicate review.
+type DuplicateReviewResolution string
+
+// Set of valid duplicate review resolution actions.
+const (
+	DuplicateReviewResolutionLink   DuplicateReviewResolution = "LINK"
+	DuplicateReviewResolutionMerge  DuplicateReviewResolution = "MERGE"
+	DuplicateReviewResolutionReject DuplicateReviewResolution = "REJECT"
+	DuplicateReviewResolutionDefer  DuplicateReviewResolution = "DEFER"
+)
+
+// String returns the duplicate review resolution as a string.
+func (resolution DuplicateReviewResolution) String() string {
+	return string(resolution)
+}
+
 // Constituent is the durable person identity root for admissions workflows.
 type Constituent struct {
 	ID              uuid.UUID
@@ -171,7 +218,36 @@ type UpsertAcademicTerm struct {
 }
 
 // DuplicateReview represents a potential constituent duplicate requiring resolution.
-type DuplicateReview struct{}
+type DuplicateReview struct {
+	ID                     uuid.UUID
+	SourceConstituentID    uuid.UUID
+	CandidateConstituentID uuid.UUID
+	MatchType              DuplicateReviewMatchType
+	MatchScore             int
+	MatchReason            string
+	Status                 DuplicateReviewStatus
+	ResolvedBy             *uuid.UUID
+	ResolvedAt             *time.Time
+	ResolutionNote         *string
+	DateCreated            time.Time
+	DateUpdated            time.Time
+}
+
+// NewDuplicateReview is what we require when enqueueing a possible duplicate.
+type NewDuplicateReview struct {
+	SourceConstituentID    uuid.UUID
+	CandidateConstituentID uuid.UUID
+	MatchType              DuplicateReviewMatchType
+	MatchScore             int
+	MatchReason            string
+}
+
+// ResolveDuplicateReview defines a staff decision for a duplicate review.
+type ResolveDuplicateReview struct {
+	Resolution DuplicateReviewResolution
+	ActorID    uuid.UUID
+	Note       *string
+}
 
 // AggregateNames returns the scaffolded admissions aggregate names.
 func AggregateNames() []string {
@@ -214,4 +290,14 @@ type ConstituentQueryFilter struct {
 	ExternalSISID   *string
 	LifecycleStage  *LifecycleStage
 	DuplicateStatus *DuplicateStatus
+}
+
+// DuplicateReviewQueryFilter holds the available fields a duplicate review query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type DuplicateReviewQueryFilter struct {
+	ID                     *uuid.UUID
+	SourceConstituentID    *uuid.UUID
+	CandidateConstituentID *uuid.UUID
+	MatchType              *DuplicateReviewMatchType
+	Status                 *DuplicateReviewStatus
 }
