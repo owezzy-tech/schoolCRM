@@ -17,6 +17,9 @@ var DefaultDuplicateReviewOrderBy = order.NewBy(OrderByDuplicateReviewDateCreate
 // DefaultApplicationOrderBy represents the default way we sort applications.
 var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order.ASC)
 
+// DefaultApplicationTransitionOrderBy represents the default way we sort application transitions.
+var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
+
 // Set of fields that programs can be ordered by.
 const (
 	OrderByConstituentID             = "a"
@@ -58,4 +61,12 @@ const (
 	OrderByApplicationType        = "c"
 	OrderByApplicationSubmittedAt = "d"
 	OrderByApplicationDateCreated = "e"
+)
+
+// Set of fields that application transitions can be ordered by.
+const (
+	OrderByApplicationTransitionID          = "a"
+	OrderByApplicationTransitionApplication = "b"
+	OrderByApplicationTransitionActor       = "c"
+	OrderByApplicationTransitionDateCreated = "d"
 )

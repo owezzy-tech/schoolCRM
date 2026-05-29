@@ -200,6 +200,28 @@ type Application struct {
 	DateUpdated        time.Time
 }
 
+// ApplicationTransition records an immutable application status transition.
+type ApplicationTransition struct {
+	ID            uuid.UUID
+	ApplicationID uuid.UUID
+	FromStatus    ApplicationStatus
+	ToStatus      ApplicationStatus
+	ActorID       uuid.UUID
+	Reason        *string
+	Note          *string
+	Metadata      []byte
+	DateCreated   time.Time
+}
+
+// NewApplicationTransition is what we require to change an application status.
+type NewApplicationTransition struct {
+	ToStatus ApplicationStatus
+	ActorID  uuid.UUID
+	Reason   *string
+	Note     *string
+	Metadata []byte
+}
+
 // NewApplication is what we require from clients when adding an Application.
 type NewApplication struct {
 	ConstituentID      uuid.UUID
@@ -371,4 +393,14 @@ type ApplicationQueryFilter struct {
 	ApplicationType *ApplicationType
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
+}
+
+// ApplicationTransitionQueryFilter holds the available fields an application transition query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicationTransitionQueryFilter struct {
+	ID            *uuid.UUID
+	ApplicationID *uuid.UUID
+	ActorID       *uuid.UUID
+	FromStatus    *ApplicationStatus
+	ToStatus      *ApplicationStatus
 }

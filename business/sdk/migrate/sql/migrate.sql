@@ -227,3 +227,26 @@ CREATE INDEX idx_admissions_applications_constituent ON admissions_applications 
 CREATE INDEX idx_admissions_applications_program ON admissions_applications (program_id);
 CREATE INDEX idx_admissions_applications_academic_term ON admissions_applications (academic_term_id);
 CREATE INDEX idx_admissions_applications_status ON admissions_applications (status);
+
+-- Version: 1.10
+-- Description: Create admissions application transition history table
+CREATE TABLE admissions_application_transitions (
+    application_transition_id UUID      NOT NULL,
+    application_id            UUID      NOT NULL,
+    from_status               TEXT      NOT NULL,
+    to_status                 TEXT      NOT NULL,
+    actor_id                  UUID      NOT NULL,
+    reason                    TEXT      NULL,
+    note                      TEXT      NULL,
+    metadata                  JSONB     NULL,
+    date_created              TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (application_transition_id),
+    FOREIGN KEY (application_id) REFERENCES admissions_applications(application_id),
+    CONSTRAINT admissions_application_transitions_from_status CHECK (from_status IN ('DRAFT', 'SUBMITTED', 'AWAITING_DOCUMENTS', 'READY_FOR_REVIEW', 'IN_REVIEW', 'DECISION_PENDING', 'ADMITTED', 'DENIED', 'WAITLISTED', 'DEFERRED', 'WITHDRAWN', 'ENROLLED')),
+    CONSTRAINT admissions_application_transitions_to_status CHECK (to_status IN ('DRAFT', 'SUBMITTED', 'AWAITING_DOCUMENTS', 'READY_FOR_REVIEW', 'IN_REVIEW', 'DECISION_PENDING', 'ADMITTED', 'DENIED', 'WAITLISTED', 'DEFERRED', 'WITHDRAWN', 'ENROLLED'))
+);
+
+CREATE INDEX idx_admissions_application_transitions_application ON admissions_application_transitions (application_id);
+CREATE INDEX idx_admissions_application_transitions_actor ON admissions_application_transitions (actor_id);
+CREATE INDEX idx_admissions_application_transitions_created ON admissions_application_transitions (date_created);
