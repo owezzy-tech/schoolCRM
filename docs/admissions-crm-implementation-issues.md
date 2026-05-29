@@ -8,6 +8,7 @@ Related planning artifacts:
 - [`docs/admissions-crm-architecture.md`](admissions-crm-architecture.md)
 - [`docs/diagrams/admissions-crm-bounded-contexts.excalidraw`](diagrams/admissions-crm-bounded-contexts.excalidraw)
 - [`docs/diagrams/admissions-crm-application-workflow.excalidraw`](diagrams/admissions-crm-application-workflow.excalidraw)
+- [`docs/diagrams/admissions-crm-screens-png/`](diagrams/admissions-crm-screens-png/) — frontend implementation wireframe screens
 
 ## Milestone 1: Constituent and Application Core
 

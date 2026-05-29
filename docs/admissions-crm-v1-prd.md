@@ -4,6 +4,8 @@
 
 This PRD is derived from `docs/19-002_customer_relationship_management_crm_system_full.pdf`, the CRM RFP for the Division of Student Affairs and Enrollment Management, plus the product decisions captured during the requirements grilling session.
 
+Implementation wireframes are maintained in [`docs/admissions-crm-wireframes.md`](admissions-crm-wireframes.md) with rendered screen diagrams under [`docs/diagrams/admissions-crm-screens-png/`](diagrams/admissions-crm-screens-png/). Use those PNG diagrams as the source of truth for frontend admissions screens.
+
 ## Problem Statement
 
 SchoolCRM needs to pivot its first CRM product slice from generic school operations to an admissions and enrollment CRM. The RFP is centered on prospective students, applicants, recruitment, admissions operations, events, communications, reporting, and PeopleSoft SIS integration. A generic school-management CRM would miss the most important domain concepts and would make later admissions workflows harder to model.

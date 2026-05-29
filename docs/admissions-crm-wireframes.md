@@ -2,11 +2,12 @@
 
 These wireframes translate the Admissions CRM v1 PRD into UI screens that follow the current `web-admin` frontend design language. Every workflow in the PRD is captured as a distinct screen or sub-screen.
 
-Primary artifact:
+Primary artifacts:
 
-- [`docs/diagrams/admissions-crm-ui-wireframes.svg`](diagrams/admissions-crm-ui-wireframes.svg)
+- Screen PNG set: [`docs/diagrams/admissions-crm-screens-png/`](diagrams/admissions-crm-screens-png/)
+- User journey diagram: [`docs/diagrams/admissions-crm-user-journey.svg`](diagrams/admissions-crm-user-journey.svg)
 
-The SVG is Figma-friendly: import it into Figma to use as a visual design board, or keep it in the repo as the implementation reference.
+Use the PNG screen set as the implementation reference for frontend work. Each PNG is embedded in the matching screen section below using relative Markdown image paths so the previews render in GitHub and other Markdown viewers. The SVG user journey remains the cross-screen workflow reference.
 
 ## Existing Frontend Design Cues Used
 
@@ -30,6 +31,10 @@ Roles: `ADMISSIONS_ADMIN`, `RECRUITER`, `REPORT_VIEWER`
 
 Purpose: admissions leadership and recruiters see funnel health at a glance.
 
+Rendered screen:
+
+![Admissions dashboard wireframe](diagrams/admissions-crm-screens-png/01-dashboard.png)
+
 Key components:
 
 - Breadcrumb: `Admissions / Dashboard`.
@@ -47,6 +52,10 @@ Roles: `ADMISSIONS_ADMIN`, `RECRUITER`
 
 Purpose: search and manage the prospect/applicant population.
 
+Rendered screen:
+
+![Constituent list wireframe](diagrams/admissions-crm-screens-png/02-constituents.png)
+
 Key components:
 
 - Search bar + advanced filter drawer (lifecycle stage, program interest, term, lead score, territory, assigned recruiter).
@@ -61,6 +70,10 @@ Route: `/admin/admissions/constituents/:id`
 Roles: `ADMISSIONS_ADMIN`, `RECRUITER`
 
 Purpose: full profile view for one constituent across their lifecycle.
+
+Rendered screen:
+
+![Constituent detail wireframe](diagrams/admissions-crm-screens-png/03-constituent-detail.png)
 
 Key components:
 
@@ -80,6 +93,10 @@ Roles: `ADMISSIONS_ADMIN`
 
 Purpose: staff review fuzzy duplicate matches before merging.
 
+Rendered screen:
+
+![Duplicate review queue wireframe](diagrams/admissions-crm-screens-png/04-duplicates.png)
+
 Key components:
 
 - Queue count badge in sidebar nav.
@@ -95,6 +112,10 @@ Roles: `ADMISSIONS_ADMIN`, `RECRUITER`
 
 Purpose: manage anonymous and authenticated inquiries before they become applications.
 
+Rendered screen:
+
+![Inquiry management wireframe](diagrams/admissions-crm-screens-png/05-inquiries.png)
+
 Key components:
 
 - Filter card: date range, source, program interest, status (New, Contacted, Converted, Closed).
@@ -108,6 +129,10 @@ Route: `/admin/admissions/online-applications`
 Roles: `ADMISSIONS_ADMIN`, `RECRUITER`, `APPLICATION_REVIEWER`
 
 Purpose: staff triage and filter program applications.
+
+Rendered screen:
+
+![Online applications list wireframe](diagrams/admissions-crm-screens-png/06-applications.png)
 
 Key components:
 
@@ -124,6 +149,10 @@ Route: `/admin/admissions/applications/:id`
 Roles: `ADMISSIONS_ADMIN`, `APPLICATION_REVIEWER`, `RECRUITER`
 
 Purpose: reviewers inspect one application end-to-end and make decisions.
+
+Rendered screen:
+
+![Application detail review workspace wireframe](diagrams/admissions-crm-screens-png/07-application-detail.png)
 
 Key components:
 
@@ -144,6 +173,10 @@ Roles: `ADMISSIONS_ADMIN`, `RECRUITER`, `MARKETING_MANAGER`
 
 Purpose: view all communications and compose new messages.
 
+Rendered screen:
+
+![Communications center wireframe](diagrams/admissions-crm-screens-png/08-communications.png)
+
 Key components:
 
 - Tab bar: All Messages, Email, SMS, Phone Calls, Notifications.
@@ -158,6 +191,10 @@ Route: `/admin/admissions/campaigns`
 Roles: `MARKETING_MANAGER`, `ADMISSIONS_ADMIN`
 
 Purpose: create and manage segmented outreach campaigns.
+
+Rendered screen:
+
+![Campaign builder wireframe](diagrams/admissions-crm-screens-png/09-campaigns.png)
 
 Key components:
 
@@ -176,6 +213,10 @@ Roles: `EVENT_MANAGER`, `ADMISSIONS_ADMIN`
 
 Purpose: manage admissions events (open houses, info sessions, tours).
 
+Rendered screen:
+
+![Event management wireframe](diagrams/admissions-crm-screens-png/10-events.png)
+
 Key components:
 
 - Event list table: Name, Type, Date, Capacity, Registered, Checked-In, Status (Upcoming/In Progress/Completed/Cancelled), Actions.
@@ -193,6 +234,10 @@ Roles: `ADMISSIONS_ADMIN`, `RECRUITER`
 
 Purpose: view lead pipeline and manage assignment/scoring.
 
+Rendered screen:
+
+![Lead management pipeline wireframe](diagrams/admissions-crm-screens-png/11-leads.png)
+
 Key components:
 
 - Pipeline view toggle: Table view / Kanban board (columns = lead score bands: Cold, Warm, Hot, Ready to Apply).
@@ -207,6 +252,12 @@ Roles: `ADMISSIONS_ADMIN`
 
 Purpose: configure automatic lead assignment rules.
 
+Rendered screen:
+
+![Lead assignment rules within settings wireframe](diagrams/admissions-crm-screens-png/14-settings.png)
+
+Note: lead assignment rules are a settings sub-screen, so they are rendered in the Settings & Configuration PNG rather than a separate `12-lead-rules.png` file.
+
 Key components:
 
 - Rules list (ordered, first-match): Priority, Rule Name, Criteria Summary, Assigned Recruiter, Status (Active/Inactive), Actions.
@@ -219,6 +270,10 @@ Route: `/admin/admissions/reports`
 Roles: `REPORT_VIEWER`, `ADMISSIONS_ADMIN`
 
 Purpose: operational dashboards and exports.
+
+Rendered screen:
+
+![Reports center wireframe](diagrams/admissions-crm-screens-png/12-reports.png)
 
 Key components:
 
@@ -234,6 +289,10 @@ Roles: `ADMISSIONS_ADMIN`, `SUPER_ADMIN`
 
 Purpose: view security-sensitive and workflow audit events.
 
+Rendered screen:
+
+![Audit log wireframe](diagrams/admissions-crm-screens-png/13-audit.png)
+
 Key components:
 
 - Filter card: date range, actor, action type (login, role change, export, application transition, decision, merge, SIS sync, RAG query, custom field change).
@@ -247,6 +306,10 @@ Route: `/admin/admissions/settings`
 Roles: `ADMISSIONS_ADMIN`
 
 Purpose: hub for admissions configuration.
+
+Rendered screen:
+
+![Settings and configuration wireframe](diagrams/admissions-crm-screens-png/14-settings.png)
 
 Sub-sections (tab bar or cards):
 
@@ -263,6 +326,10 @@ Route: `/admin/admissions/rag-assistant`
 Roles: `ADMISSIONS_ADMIN`, `RECRUITER`, `APPLICATION_REVIEWER`
 
 Purpose: staff-facing policy/knowledge Q&A chatbot.
+
+Rendered screen:
+
+![Admissions policy assistant wireframe](diagrams/admissions-crm-screens-png/15-assistant.png)
 
 Key components:
 
@@ -283,6 +350,10 @@ Roles: `APPLICANT` (authenticated)
 
 Purpose: applicant sees their applications and next steps.
 
+Rendered screen:
+
+![Applicant portal dashboard wireframe](diagrams/admissions-crm-screens-png/16-portal-home.png)
+
 Key components:
 
 - Simplified header (no admin sidebar): logo, applicant name, logout.
@@ -298,6 +369,10 @@ Route: `/applicant/applications/:id/edit`
 Roles: `APPLICANT`
 
 Purpose: multi-step application form.
+
+Rendered screen:
+
+![Applicant application form wireframe](diagrams/admissions-crm-screens-png/17-portal-apply.png)
 
 Key components:
 
@@ -317,6 +392,10 @@ Roles: `APPLICANT`
 
 Purpose: applicant tracks application progress and uploads documents.
 
+Rendered screen:
+
+![Applicant application status wireframe](diagrams/admissions-crm-screens-png/18-portal-status.png)
+
 Key components:
 
 - Status hero card: current state badge, next expected action, estimated timeline.
@@ -333,6 +412,10 @@ Roles: `APPLICANT` (or anonymous for public events)
 
 Purpose: browse and register for admissions events.
 
+Rendered screen:
+
+![Applicant event registration wireframe](diagrams/admissions-crm-screens-png/19-portal-events.png)
+
 Key components:
 
 - Event cards grid: event name, date, type, location, capacity remaining, Register button.
@@ -344,6 +427,10 @@ Key components:
 Route: `/inquiry` (anonymous, no auth required)
 
 Purpose: anonymous prospects submit interest.
+
+Rendered screen:
+
+![Public inquiry form wireframe](diagrams/admissions-crm-screens-png/20-portal-inquiry.png)
 
 Key components:
 
