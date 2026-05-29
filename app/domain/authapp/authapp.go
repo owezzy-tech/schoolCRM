@@ -104,9 +104,15 @@ func (a *app) authenticate(ctx context.Context, r *http.Request) web.Encoder {
 		return errs.New(errs.Unauthenticated, err)
 	}
 
-	resp := authclient.AuthenticateResp{
-		UserID: userID,
+	usr, err := a.userBus.QueryByID(ctx, userID)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	resp := authenticateResp{
+		UserID: userID.String(),
 		Claims: mid.GetClaims(ctx),
+		User:   toLoginUser(usr),
 	}
 
 	return resp

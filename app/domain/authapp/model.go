@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"time"
 
+	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/types/role"
 )
@@ -65,6 +66,18 @@ type loginUser struct {
 	Name  string   `json:"name"`
 	Email string   `json:"email"`
 	Roles []string `json:"roles"`
+}
+
+type authenticateResp struct {
+	UserID string      `json:"userID"`
+	Claims auth.Claims `json:"claims"`
+	User   loginUser   `json:"user"`
+}
+
+// Encode implements the encoder interface.
+func (ar authenticateResp) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(ar)
+	return data, "application/json", err
 }
 
 func toLoginUser(usr userbus.User) loginUser {
