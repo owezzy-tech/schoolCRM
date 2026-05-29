@@ -147,8 +147,67 @@ type UpdateConstituent struct {
 // Inquiry captures pre-application interest in the school.
 type Inquiry struct{}
 
+// ApplicationType represents the admissions category for an application.
+type ApplicationType string
+
+// Set of valid application types.
+const (
+	ApplicationTypeFreshman ApplicationType = "FRESHMAN"
+	ApplicationTypeTransfer ApplicationType = "TRANSFER"
+	ApplicationTypeGraduate ApplicationType = "GRADUATE"
+)
+
+// String returns the application type as a string.
+func (applicationType ApplicationType) String() string {
+	return string(applicationType)
+}
+
+// ApplicationStatus represents the workflow state of an admissions application.
+type ApplicationStatus string
+
+// Set of valid application statuses.
+const (
+	ApplicationStatusDraft             ApplicationStatus = "DRAFT"
+	ApplicationStatusSubmitted         ApplicationStatus = "SUBMITTED"
+	ApplicationStatusAwaitingDocuments ApplicationStatus = "AWAITING_DOCUMENTS"
+	ApplicationStatusReadyForReview    ApplicationStatus = "READY_FOR_REVIEW"
+	ApplicationStatusInReview          ApplicationStatus = "IN_REVIEW"
+	ApplicationStatusDecisionPending   ApplicationStatus = "DECISION_PENDING"
+	ApplicationStatusAdmitted          ApplicationStatus = "ADMITTED"
+	ApplicationStatusDenied            ApplicationStatus = "DENIED"
+	ApplicationStatusWaitlisted        ApplicationStatus = "WAITLISTED"
+	ApplicationStatusDeferred          ApplicationStatus = "DEFERRED"
+	ApplicationStatusWithdrawn         ApplicationStatus = "WITHDRAWN"
+	ApplicationStatusEnrolled          ApplicationStatus = "ENROLLED"
+)
+
+// String returns the application status as a string.
+func (status ApplicationStatus) String() string {
+	return string(status)
+}
+
 // Application represents a constituent's program application for a term.
-type Application struct{}
+type Application struct {
+	ID                 uuid.UUID
+	ConstituentID      uuid.UUID
+	ProgramID          uuid.UUID
+	AcademicTermID     uuid.UUID
+	ApplicationType    ApplicationType
+	Status             ApplicationStatus
+	AssignedReviewerID *uuid.UUID
+	SubmittedAt        *time.Time
+	DateCreated        time.Time
+	DateUpdated        time.Time
+}
+
+// NewApplication is what we require from clients when adding an Application.
+type NewApplication struct {
+	ConstituentID      uuid.UUID
+	ProgramID          uuid.UUID
+	AcademicTermID     uuid.UUID
+	ApplicationType    ApplicationType
+	AssignedReviewerID *uuid.UUID
+}
 
 // Checklist groups required admissions items for an application.
 type Checklist struct{}
@@ -300,4 +359,16 @@ type DuplicateReviewQueryFilter struct {
 	CandidateConstituentID *uuid.UUID
 	MatchType              *DuplicateReviewMatchType
 	Status                 *DuplicateReviewStatus
+}
+
+// ApplicationQueryFilter holds the available fields an application query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicationQueryFilter struct {
+	ID              *uuid.UUID
+	ConstituentID   *uuid.UUID
+	ProgramID       *uuid.UUID
+	AcademicTermID  *uuid.UUID
+	ApplicationType *ApplicationType
+	Status          *ApplicationStatus
+	ActiveOnly      *bool
 }

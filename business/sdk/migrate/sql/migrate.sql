@@ -197,3 +197,33 @@ CREATE INDEX idx_admissions_duplicate_reviews_source ON admissions_duplicate_rev
 CREATE INDEX idx_admissions_duplicate_reviews_candidate ON admissions_duplicate_reviews (candidate_constituent_id);
 CREATE INDEX idx_admissions_duplicate_reviews_status ON admissions_duplicate_reviews (status);
 CREATE INDEX idx_admissions_duplicate_reviews_match_type ON admissions_duplicate_reviews (match_type);
+
+-- Version: 1.09
+-- Description: Create admissions applications table
+CREATE TABLE admissions_applications (
+    application_id        UUID      NOT NULL,
+    constituent_id        UUID      NOT NULL,
+    program_id            UUID      NOT NULL,
+    academic_term_id      UUID      NOT NULL,
+    application_type      TEXT      NOT NULL,
+    status                TEXT      NOT NULL,
+    assigned_reviewer_id  UUID      NULL,
+    submitted_at          TIMESTAMP NULL,
+    date_created          TIMESTAMP NOT NULL,
+    date_updated          TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (application_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id),
+    FOREIGN KEY (program_id) REFERENCES admissions_programs(program_id),
+    FOREIGN KEY (academic_term_id) REFERENCES admissions_academic_terms(academic_term_id),
+    CONSTRAINT admissions_applications_type CHECK (application_type IN ('FRESHMAN', 'TRANSFER', 'GRADUATE')),
+    CONSTRAINT admissions_applications_status CHECK (status IN ('DRAFT', 'SUBMITTED', 'AWAITING_DOCUMENTS', 'READY_FOR_REVIEW', 'IN_REVIEW', 'DECISION_PENDING', 'ADMITTED', 'DENIED', 'WAITLISTED', 'DEFERRED', 'WITHDRAWN', 'ENROLLED'))
+);
+
+CREATE UNIQUE INDEX idx_admissions_applications_active_tuple
+    ON admissions_applications (constituent_id, academic_term_id, program_id)
+    WHERE status NOT IN ('DENIED', 'WITHDRAWN', 'ENROLLED');
+CREATE INDEX idx_admissions_applications_constituent ON admissions_applications (constituent_id);
+CREATE INDEX idx_admissions_applications_program ON admissions_applications (program_id);
+CREATE INDEX idx_admissions_applications_academic_term ON admissions_applications (academic_term_id);
+CREATE INDEX idx_admissions_applications_status ON admissions_applications (status);
