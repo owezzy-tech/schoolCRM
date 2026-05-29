@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { AuthUtils } from 'app/core/auth/auth.utils';
+import { TokenStorageService } from 'app/core/auth/token-storage.service';
 import { User } from 'app/core/user/user.types';
 import { UserService } from 'app/core/user/user.service';
 import { of } from 'rxjs';
@@ -10,11 +11,17 @@ import { AuthApiActions, AuthPageActions } from './auth.actions';
 
 interface SignInResponse {
     accessToken: string;
+    tokenType: 'Bearer';
+    expiresAt: string;
+    expiresIn: number;
     user: User;
 }
 
-interface TokenSignInResponse {
-    accessToken?: string;
+interface AuthenticateResponse {
+    userID: string;
+    claims: {
+        roles?: string[];
+    };
     user: User;
 }
 
@@ -28,6 +35,7 @@ interface AuthErrorResponse {
 export class AuthEffects {
     private readonly actions$ = inject(Actions);
     private readonly httpClient = inject(HttpClient);
+    private readonly tokenStorage = inject(TokenStorageService);
     private readonly userService = inject(UserService);
 
     signIn$ = createEffect(() =>
@@ -35,13 +43,13 @@ export class AuthEffects {
             ofType(AuthPageActions.signIn),
             switchMap(({ email, password }) =>
                 this.httpClient
-                    .post<SignInResponse>('api/auth/sign-in', {
+                    .post<SignInResponse>('/v1/auth/login', {
                         email,
                         password,
                     })
                     .pipe(
                         map(({ accessToken, user }) => {
-                            localStorage.setItem('accessToken', accessToken);
+                            this.tokenStorage.set(accessToken);
                             this.userService.user = user;
                             return AuthApiActions.signInSuccess({
                                 accessToken,
@@ -66,23 +74,33 @@ export class AuthEffects {
         this.actions$.pipe(
             ofType(AuthPageActions.signInUsingToken),
             switchMap(() => {
-                const token = localStorage.getItem('accessToken') ?? '';
+                const token = this.tokenStorage.get() ?? '';
                 if (!token || AuthUtils.isTokenExpired(token)) {
                     return of(AuthApiActions.signInUsingTokenFailure());
                 }
+
+                const headers = new HttpHeaders({
+                    Authorization: `Bearer ${token}`,
+                });
+
                 return this.httpClient
-                    .post<TokenSignInResponse>(
-                        'api/auth/sign-in-with-token',
-                        { accessToken: token }
-                    )
+                    .get<AuthenticateResponse>('/v1/auth/authenticate', {
+                        headers,
+                    })
                     .pipe(
                         map((response) => {
-                            const newToken = response.accessToken ?? token;
-                            localStorage.setItem('accessToken', newToken);
-                            this.userService.user = response.user;
+                            const user = {
+                                ...response.user,
+                                roles:
+                                    response.user.roles ??
+                                    response.claims.roles ??
+                                    [],
+                            };
+                            this.tokenStorage.set(token);
+                            this.userService.user = user;
                             return AuthApiActions.signInUsingTokenSuccess({
-                                accessToken: newToken,
-                                user: response.user,
+                                accessToken: token,
+                                user,
                             });
                         }),
                         catchError(() =>
@@ -96,7 +114,7 @@ export class AuthEffects {
     signOut$ = createEffect(() =>
         this.actions$.pipe(
             ofType(AuthPageActions.signOut),
-            tap(() => localStorage.removeItem('accessToken')),
+            tap(() => this.tokenStorage.clear()),
             map(() => AuthApiActions.signOutSuccess())
         )
     );
