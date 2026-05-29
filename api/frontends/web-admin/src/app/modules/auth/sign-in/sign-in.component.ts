@@ -1,4 +1,12 @@
-import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    inject,
+    OnInit,
+    ViewChild,
+    ViewEncapsulation,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
     FormsModule,
     NgForm,
@@ -16,7 +24,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { fuseAnimations } from '@fuse/animations';
 import { FuseAlertComponent, FuseAlertType } from '@fuse/components/alert';
-import { AuthService } from 'app/core/auth/auth.service';
+import { Actions, ofType } from '@ngrx/effects';
+import { Store } from '@ngrx/store';
+import {
+    AuthApiActions,
+    AuthPageActions,
+} from 'app/core/auth/store';
 
 @Component({
     selector: 'auth-sign-in',
@@ -46,26 +59,15 @@ export class AuthSignInComponent implements OnInit {
     signInForm: UntypedFormGroup;
     showAlert: boolean = false;
 
-    /**
-     * Constructor
-     */
-    constructor(
-        private _activatedRoute: ActivatedRoute,
-        private _authService: AuthService,
-        private _formBuilder: UntypedFormBuilder,
-        private _router: Router
-    ) {}
+    private readonly store = inject(Store);
+    private readonly actions$ = inject(Actions);
+    private readonly activatedRoute = inject(ActivatedRoute);
+    private readonly formBuilder = inject(UntypedFormBuilder);
+    private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * On init
-     */
     ngOnInit(): void {
-        // Create the form
-        this.signInForm = this._formBuilder.group({
+        this.signInForm = this.formBuilder.group({
             email: [
                 'hughes.brian@company.com',
                 [Validators.required, Validators.email],
@@ -73,58 +75,41 @@ export class AuthSignInComponent implements OnInit {
             password: ['admin', Validators.required],
             rememberMe: [''],
         });
+
+        this.actions$
+            .pipe(
+                ofType(AuthApiActions.signInSuccess),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => {
+                const redirectURL =
+                    this.activatedRoute.snapshot.queryParamMap.get(
+                        'redirectURL'
+                    ) || '/signed-in-redirect';
+                this.router.navigateByUrl(redirectURL);
+            });
+
+        this.actions$
+            .pipe(
+                ofType(AuthApiActions.signInFailure),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => {
+                this.signInForm.enable();
+                this.signInNgForm.resetForm();
+                this.alert = { type: 'error', message: 'Wrong email or password' };
+                this.showAlert = true;
+            });
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Sign in
-     */
     signIn(): void {
-        // Return if the form is invalid
         if (this.signInForm.invalid) {
             return;
         }
-
-        // Disable the form
         this.signInForm.disable();
-
-        // Hide the alert
         this.showAlert = false;
 
-        // Sign in
-        this._authService.signIn(this.signInForm.value).subscribe(
-            () => {
-                // Set the redirect url.
-                // The '/signed-in-redirect' is a dummy url to catch the request and redirect the user
-                // to the correct page after a successful sign in. This way, that url can be set via
-                // routing file and we don't have to touch here.
-                const redirectURL =
-                    this._activatedRoute.snapshot.queryParamMap.get(
-                        'redirectURL'
-                    ) || '/signed-in-redirect';
-
-                // Navigate to the redirect url
-                this._router.navigateByUrl(redirectURL);
-            },
-            (response) => {
-                // Re-enable the form
-                this.signInForm.enable();
-
-                // Reset the form
-                this.signInNgForm.resetForm();
-
-                // Set the alert
-                this.alert = {
-                    type: 'error',
-                    message: 'Wrong email or password',
-                };
-
-                // Show the alert
-                this.showAlert = true;
-            }
-        );
+        const { email, password } = this.signInForm.value;
+        this.store.dispatch(AuthPageActions.signIn({ email, password }));
     }
 }

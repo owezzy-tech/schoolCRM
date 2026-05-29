@@ -11,8 +11,13 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideFuse } from '@fuse';
 import { TranslocoService, provideTransloco } from '@jsverse/transloco';
+import { provideEffects } from '@ngrx/effects';
+import { provideStore } from '@ngrx/store';
+import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { appRoutes } from 'app/app.routes';
 import { provideAuth } from 'app/core/auth/auth.provider';
+import { AuthEffects } from 'app/core/auth/store/auth.effects';
+import { authFeature } from 'app/core/auth/store/auth.feature';
 import { provideIcons } from 'app/core/icons/icons.provider';
 import { MockApiService } from 'app/mock-api';
 import { firstValueFrom } from 'rxjs';
@@ -26,6 +31,10 @@ export const appConfig: ApplicationConfig = {
             appRoutes,
             withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
         ),
+
+        provideStore({ [authFeature.name]: authFeature.reducer }),
+        provideEffects(AuthEffects),
+        provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
 
         // Material Date Adapter
         {
