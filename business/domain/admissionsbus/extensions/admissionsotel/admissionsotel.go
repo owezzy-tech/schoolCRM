@@ -88,6 +88,86 @@ func (ext *Extension) QueryStaffProfileByUserID(ctx context.Context, userID uuid
 	return ext.bus.QueryStaffProfileByUserID(ctx, userID)
 }
 
+// CreateLeadScoreRule applies otel to lead score rule creation.
+func (ext *Extension) CreateLeadScoreRule(ctx context.Context, nr admissionsbus.NewLeadScoreRule) (admissionsbus.LeadScoreRule, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createleadscorerule")
+	defer span.End()
+
+	return ext.bus.CreateLeadScoreRule(ctx, nr)
+}
+
+// UpdateLeadScoreRule applies otel to lead score rule updates.
+func (ext *Extension) UpdateLeadScoreRule(ctx context.Context, rule admissionsbus.LeadScoreRule, nr admissionsbus.NewLeadScoreRule) (admissionsbus.LeadScoreRule, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateleadscorerule")
+	defer span.End()
+
+	return ext.bus.UpdateLeadScoreRule(ctx, rule, nr)
+}
+
+// QueryLeadScoreRules applies otel to lead score rule queries.
+func (ext *Extension) QueryLeadScoreRules(ctx context.Context, filter admissionsbus.LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.LeadScoreRule, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryleadscorerules")
+	defer span.End()
+
+	return ext.bus.QueryLeadScoreRules(ctx, filter, orderBy, page)
+}
+
+// CountLeadScoreRules applies otel to lead score rule counts.
+func (ext *Extension) CountLeadScoreRules(ctx context.Context, filter admissionsbus.LeadScoreRuleQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countleadscorerules")
+	defer span.End()
+
+	return ext.bus.CountLeadScoreRules(ctx, filter)
+}
+
+// QueryLeadScoreRuleByID applies otel to lead score rule ID lookups.
+func (ext *Extension) QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (admissionsbus.LeadScoreRule, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryleadscorerulebyid")
+	defer span.End()
+
+	return ext.bus.QueryLeadScoreRuleByID(ctx, ruleID)
+}
+
+// RecalculateLeadScoreForConstituent applies otel to lead score recalculation.
+func (ext *Extension) RecalculateLeadScoreForConstituent(ctx context.Context, constituentID uuid.UUID) (admissionsbus.LeadScore, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.recalculateleadscoreforconstituent")
+	defer span.End()
+
+	return ext.bus.RecalculateLeadScoreForConstituent(ctx, constituentID)
+}
+
+// QueryLeadScores applies otel to lead score queries.
+func (ext *Extension) QueryLeadScores(ctx context.Context, filter admissionsbus.LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.LeadScore, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryleadscores")
+	defer span.End()
+
+	return ext.bus.QueryLeadScores(ctx, filter, orderBy, page)
+}
+
+// CountLeadScores applies otel to lead score counts.
+func (ext *Extension) CountLeadScores(ctx context.Context, filter admissionsbus.LeadScoreQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countleadscores")
+	defer span.End()
+
+	return ext.bus.CountLeadScores(ctx, filter)
+}
+
+// QueryLeadScoreByID applies otel to lead score ID lookups.
+func (ext *Extension) QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (admissionsbus.LeadScore, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryleadscorebyid")
+	defer span.End()
+
+	return ext.bus.QueryLeadScoreByID(ctx, scoreID)
+}
+
+// QueryLeadScoreByConstituentID applies otel to lead score constituent lookups.
+func (ext *Extension) QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.LeadScore, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryleadscorebyconstituentid")
+	defer span.End()
+
+	return ext.bus.QueryLeadScoreByConstituentID(ctx, constituentID)
+}
+
 // CreateConstituent applies otel to Constituent creation.
 func (ext *Extension) CreateConstituent(ctx context.Context, nc admissionsbus.NewConstituent) (admissionsbus.Constituent, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createconstituent")
