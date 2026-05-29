@@ -95,6 +95,183 @@ func toBusNewStaffProfile(app NewStaffProfile) (admissionsbus.NewStaffProfile, e
 	}, nil
 }
 
+// LeadScoreCriterion represents a single condition in a lead score rule.
+type LeadScoreCriterion struct {
+	Field    string   `json:"field"`
+	Operator string   `json:"operator"`
+	Values   []string `json:"values"`
+}
+
+func toAppLeadScoreCriterion(criterion admissionsbus.LeadScoreCriterion) LeadScoreCriterion {
+	return LeadScoreCriterion{
+		Field:    criterion.Field.String(),
+		Operator: criterion.Operator.String(),
+		Values:   criterion.Values,
+	}
+}
+
+func toAppLeadScoreCriteria(criteria []admissionsbus.LeadScoreCriterion) []LeadScoreCriterion {
+	app := make([]LeadScoreCriterion, len(criteria))
+	for i, criterion := range criteria {
+		app[i] = toAppLeadScoreCriterion(criterion)
+	}
+
+	return app
+}
+
+func toBusLeadScoreCriterion(app LeadScoreCriterion) admissionsbus.LeadScoreCriterion {
+	return admissionsbus.LeadScoreCriterion{
+		Field:    admissionsbus.LeadScoreCriterionField(app.Field),
+		Operator: admissionsbus.LeadScoreCriterionOperator(app.Operator),
+		Values:   app.Values,
+	}
+}
+
+func toBusLeadScoreCriteria(app []LeadScoreCriterion) []admissionsbus.LeadScoreCriterion {
+	criteria := make([]admissionsbus.LeadScoreCriterion, len(app))
+	for i, criterion := range app {
+		criteria[i] = toBusLeadScoreCriterion(criterion)
+	}
+
+	return criteria
+}
+
+// LeadScoreRule represents an explainable rule contributing points to a lead score.
+type LeadScoreRule struct {
+	ID          string               `json:"id"`
+	Name        string               `json:"name"`
+	Description *string              `json:"description,omitempty"`
+	Criteria    []LeadScoreCriterion `json:"criteria"`
+	Points      int                  `json:"points"`
+	Active      bool                 `json:"active"`
+	Priority    int                  `json:"priority"`
+	DateCreated string               `json:"dateCreated"`
+	DateUpdated string               `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app LeadScoreRule) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppLeadScoreRule(rule admissionsbus.LeadScoreRule) LeadScoreRule {
+	return LeadScoreRule{
+		ID:          rule.ID.String(),
+		Name:        rule.Name,
+		Description: rule.Description,
+		Criteria:    toAppLeadScoreCriteria(rule.Criteria),
+		Points:      rule.Points,
+		Active:      rule.Active,
+		Priority:    rule.Priority,
+		DateCreated: rule.DateCreated.Format(time.RFC3339),
+		DateUpdated: rule.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppLeadScoreRules(rules []admissionsbus.LeadScoreRule) []LeadScoreRule {
+	app := make([]LeadScoreRule, len(rules))
+	for i, rule := range rules {
+		app[i] = toAppLeadScoreRule(rule)
+	}
+
+	return app
+}
+
+// NewLeadScoreRule defines the data needed to create or update a lead score rule.
+type NewLeadScoreRule struct {
+	Name        string               `json:"name"`
+	Description *string              `json:"description"`
+	Criteria    []LeadScoreCriterion `json:"criteria"`
+	Points      int                  `json:"points"`
+	Active      bool                 `json:"active"`
+	Priority    int                  `json:"priority"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewLeadScoreRule) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewLeadScoreRule(app NewLeadScoreRule) admissionsbus.NewLeadScoreRule {
+	return admissionsbus.NewLeadScoreRule{
+		Name:        app.Name,
+		Description: app.Description,
+		Criteria:    toBusLeadScoreCriteria(app.Criteria),
+		Points:      app.Points,
+		Active:      app.Active,
+		Priority:    app.Priority,
+	}
+}
+
+// LeadScoreRuleResult explains how one rule contributed to a score.
+type LeadScoreRuleResult struct {
+	RuleID  string `json:"ruleID"`
+	Name    string `json:"name"`
+	Points  int    `json:"points"`
+	Matched bool   `json:"matched"`
+	Reason  string `json:"reason"`
+}
+
+func toAppLeadScoreRuleResult(result admissionsbus.LeadScoreRuleResult) LeadScoreRuleResult {
+	return LeadScoreRuleResult{
+		RuleID:  result.RuleID.String(),
+		Name:    result.Name,
+		Points:  result.Points,
+		Matched: result.Matched,
+		Reason:  result.Reason,
+	}
+}
+
+func toAppLeadScoreRuleResults(results []admissionsbus.LeadScoreRuleResult) []LeadScoreRuleResult {
+	app := make([]LeadScoreRuleResult, len(results))
+	for i, result := range results {
+		app[i] = toAppLeadScoreRuleResult(result)
+	}
+
+	return app
+}
+
+// LeadScore represents the latest explainable score for a constituent.
+type LeadScore struct {
+	ID             string                `json:"id"`
+	ConstituentID  string                `json:"constituentID"`
+	TotalScore     int                   `json:"totalScore"`
+	Band           string                `json:"band"`
+	Breakdown      []LeadScoreRuleResult `json:"breakdown"`
+	RecalculatedAt string                `json:"recalculatedAt"`
+	DateCreated    string                `json:"dateCreated"`
+	DateUpdated    string                `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app LeadScore) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppLeadScore(score admissionsbus.LeadScore) LeadScore {
+	return LeadScore{
+		ID:             score.ID.String(),
+		ConstituentID:  score.ConstituentID.String(),
+		TotalScore:     score.TotalScore,
+		Band:           score.Band.String(),
+		Breakdown:      toAppLeadScoreRuleResults(score.Breakdown),
+		RecalculatedAt: score.RecalculatedAt.Format(time.RFC3339),
+		DateCreated:    score.DateCreated.Format(time.RFC3339),
+		DateUpdated:    score.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppLeadScores(scores []admissionsbus.LeadScore) []LeadScore {
+	app := make([]LeadScore, len(scores))
+	for i, score := range scores {
+		app[i] = toAppLeadScore(score)
+	}
+
+	return app
+}
+
 // Encode implements the encoder interface.
 func (app Health) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)

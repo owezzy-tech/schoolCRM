@@ -170,6 +170,167 @@ func (a *app) queryStaffProfileByID(ctx context.Context, r *http.Request) web.En
 	return toAppStaffProfile(profile)
 }
 
+func (a *app) createLeadScoreRule(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewLeadScoreRule
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	rule, err := a.admissionsBus.CreateLeadScoreRule(ctx, toBusNewLeadScoreRule(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create lead score rule: %s", err)
+	}
+
+	return toAppLeadScoreRule(rule)
+}
+
+func (a *app) updateLeadScoreRule(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewLeadScoreRule
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	ruleID, err := uuid.Parse(web.Param(r, "lead_score_rule_id"))
+	if err != nil {
+		return errs.NewFieldErrors("lead_score_rule_id", err)
+	}
+
+	rule, err := a.admissionsBus.QueryLeadScoreRuleByID(ctx, ruleID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead score rule: %s", err)
+	}
+
+	updated, err := a.admissionsBus.UpdateLeadScoreRule(ctx, rule, toBusNewLeadScoreRule(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update lead score rule: %s", err)
+	}
+
+	return toAppLeadScoreRule(updated)
+}
+
+func (a *app) queryLeadScoreRules(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseLeadScoreRuleQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseLeadScoreRuleFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(leadScoreRuleOrderByFields, qp.OrderBy, admissionsbus.DefaultLeadScoreRuleOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	rules, err := a.admissionsBus.QueryLeadScoreRules(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead score rules: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountLeadScoreRules(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count lead score rules: %s", err)
+	}
+
+	return query.NewResult(toAppLeadScoreRules(rules), total, page)
+}
+
+func (a *app) queryLeadScoreRuleByID(ctx context.Context, r *http.Request) web.Encoder {
+	ruleID, err := uuid.Parse(web.Param(r, "lead_score_rule_id"))
+	if err != nil {
+		return errs.NewFieldErrors("lead_score_rule_id", err)
+	}
+
+	rule, err := a.admissionsBus.QueryLeadScoreRuleByID(ctx, ruleID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead score rule: %s", err)
+	}
+
+	return toAppLeadScoreRule(rule)
+}
+
+func (a *app) queryLeadScores(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseLeadScoreQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseLeadScoreFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(leadScoreOrderByFields, qp.OrderBy, admissionsbus.DefaultLeadScoreOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	scores, err := a.admissionsBus.QueryLeadScores(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead scores: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountLeadScores(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count lead scores: %s", err)
+	}
+
+	return query.NewResult(toAppLeadScores(scores), total, page)
+}
+
+func (a *app) queryLeadScoreByID(ctx context.Context, r *http.Request) web.Encoder {
+	scoreID, err := uuid.Parse(web.Param(r, "lead_score_id"))
+	if err != nil {
+		return errs.NewFieldErrors("lead_score_id", err)
+	}
+
+	score, err := a.admissionsBus.QueryLeadScoreByID(ctx, scoreID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead score: %s", err)
+	}
+
+	return toAppLeadScore(score)
+}
+
+func (a *app) queryLeadScoreByConstituentID(ctx context.Context, r *http.Request) web.Encoder {
+	constituentID, err := uuid.Parse(web.Param(r, "constituent_id"))
+	if err != nil {
+		return errs.NewFieldErrors("constituent_id", err)
+	}
+
+	score, err := a.admissionsBus.QueryLeadScoreByConstituentID(ctx, constituentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query lead score: %s", err)
+	}
+
+	return toAppLeadScore(score)
+}
+
+func (a *app) recalculateLeadScoreForConstituent(ctx context.Context, r *http.Request) web.Encoder {
+	txApp, err := a.newWithTx(ctx)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "new transaction app: %s", err)
+	}
+
+	constituentID, err := uuid.Parse(web.Param(r, "constituent_id"))
+	if err != nil {
+		return errs.NewFieldErrors("constituent_id", err)
+	}
+
+	score, err := txApp.admissionsBus.RecalculateLeadScoreForConstituent(ctx, constituentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "recalculate lead score: %s", err)
+	}
+
+	return toAppLeadScore(score)
+}
+
 func (a *app) updateConstituent(ctx context.Context, r *http.Request) web.Encoder {
 	var app UpdateConstituent
 	if err := web.Decode(r, &app); err != nil {
