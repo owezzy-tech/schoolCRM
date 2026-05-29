@@ -91,10 +91,10 @@ export class AuthSignInComponent implements OnInit {
                 ofType(AuthApiActions.signInFailure),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(() => {
+            .subscribe(({ error }) => {
                 this.signInForm.enable();
                 this.signInNgForm.resetForm();
-                this.alert = { type: 'error', message: 'Wrong email or password' };
+                this.alert = { type: 'error', message: error };
                 this.showAlert = true;
             });
     }
