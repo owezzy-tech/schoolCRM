@@ -119,6 +119,11 @@ export const appRoutes: Route[] = [
                     import('app/modules/admin/example/example.routes'),
             },
             {
+                path: 'calendar',
+                loadChildren: () =>
+                    import('app/modules/admin/calendar/calendar.routes'),
+            },
+            {
                 path: '404-not-found',
                 pathMatch: 'full',
                 loadChildren: () =>
