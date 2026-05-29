@@ -6,7 +6,7 @@ import { AuthUtils } from 'app/core/auth/auth.utils';
 import { TokenStorageService } from 'app/core/auth/token-storage.service';
 import { Observable, of } from 'rxjs';
 import { map, switchMap, take } from 'rxjs/operators';
-import { AuthApiActions, AuthPageActions, selectAuthenticated } from './store';
+import { AuthApiActions, AuthPageActions, selectAuthenticated } from './+state';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

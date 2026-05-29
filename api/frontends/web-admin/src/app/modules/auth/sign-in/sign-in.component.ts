@@ -26,10 +26,7 @@ import { fuseAnimations } from '@fuse/animations';
 import { FuseAlertComponent, FuseAlertType } from '@fuse/components/alert';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import {
-    AuthApiActions,
-    AuthPageActions,
-} from 'app/core/auth/store';
+import { AuthApiActions, AuthPageActions } from 'app/core/auth/+state';
 
 @Component({
     selector: 'auth-sign-in',
