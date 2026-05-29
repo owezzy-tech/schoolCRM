@@ -7,7 +7,17 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+	"github.com/owezzy/schoolCRM/business/sdk/sqldb/dbarray"
 )
+
+type staffProfileDB struct {
+	ID          uuid.UUID      `db:"staff_profile_id"`
+	UserID      uuid.UUID      `db:"user_id"`
+	Roles       dbarray.String `db:"admissions_roles"`
+	Active      bool           `db:"is_active"`
+	DateCreated time.Time      `db:"date_created"`
+	DateUpdated time.Time      `db:"date_updated"`
+}
 
 type constituentDB struct {
 	ID              uuid.UUID  `db:"constituent_id"`
@@ -79,6 +89,46 @@ type applicationTransitionDB struct {
 	Note          *string         `db:"note"`
 	Metadata      json.RawMessage `db:"metadata"`
 	DateCreated   time.Time       `db:"date_created"`
+}
+
+func toDBStaffProfile(bus admissionsbus.StaffProfile) staffProfileDB {
+	return staffProfileDB{
+		ID:          bus.ID,
+		UserID:      bus.UserID,
+		Roles:       admissionsbus.AdmissionsRolesToStrings(bus.Roles),
+		Active:      bus.Active,
+		DateCreated: bus.DateCreated.UTC(),
+		DateUpdated: bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusStaffProfile(db staffProfileDB) (admissionsbus.StaffProfile, error) {
+	roles, err := admissionsbus.ParseAdmissionsRoles(db.Roles)
+	if err != nil {
+		return admissionsbus.StaffProfile{}, err
+	}
+
+	return admissionsbus.StaffProfile{
+		ID:          db.ID,
+		UserID:      db.UserID,
+		Roles:       roles,
+		Active:      db.Active,
+		DateCreated: db.DateCreated.In(time.Local),
+		DateUpdated: db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusStaffProfiles(dbs []staffProfileDB) ([]admissionsbus.StaffProfile, error) {
+	bus := make([]admissionsbus.StaffProfile, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusStaffProfile(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
 }
 
 func toDBConstituent(bus admissionsbus.Constituent) constituentDB {

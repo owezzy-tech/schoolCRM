@@ -41,6 +41,35 @@ func (s *Store) applyConstituentFilter(filter admissionsbus.ConstituentQueryFilt
 	}
 }
 
+func (s *Store) applyStaffProfileFilter(filter admissionsbus.StaffProfileQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["staff_profile_id"] = filter.ID
+		wc = append(wc, "staff_profile_id = :staff_profile_id")
+	}
+
+	if filter.UserID != nil {
+		data["user_id"] = filter.UserID
+		wc = append(wc, "user_id = :user_id")
+	}
+
+	if filter.Role != nil {
+		data["admissions_role"] = filter.Role.String()
+		wc = append(wc, ":admissions_role = ANY(admissions_roles)")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
 func (s *Store) applyProgramFilter(filter admissionsbus.ProgramQueryFilter, data map[string]any, buf *bytes.Buffer) {
 	var wc []string
 

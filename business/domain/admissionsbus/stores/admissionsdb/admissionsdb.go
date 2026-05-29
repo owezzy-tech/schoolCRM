@@ -58,6 +58,141 @@ func (s *Store) Health(ctx context.Context) (admissionsbus.Health, error) {
 	}, nil
 }
 
+// CreateStaffProfile inserts a new admissions staff profile into the database.
+func (s *Store) CreateStaffProfile(ctx context.Context, profile admissionsbus.StaffProfile) error {
+	const q = `
+	INSERT INTO admissions_staff_profiles
+		(staff_profile_id, user_id, admissions_roles, is_active, date_created, date_updated)
+	VALUES
+		(:staff_profile_id, :user_id, :admissions_roles, :is_active, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBStaffProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateStaffProfile replaces mutable admissions staff profile data in the database.
+func (s *Store) UpdateStaffProfile(ctx context.Context, profile admissionsbus.StaffProfile) error {
+	const q = `
+	UPDATE
+		admissions_staff_profiles
+	SET
+		user_id = :user_id,
+		admissions_roles = :admissions_roles,
+		is_active = :is_active,
+		date_updated = :date_updated
+	WHERE
+		staff_profile_id = :staff_profile_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBStaffProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryStaffProfiles retrieves a list of admissions staff profiles from the database.
+func (s *Store) QueryStaffProfiles(ctx context.Context, filter admissionsbus.StaffProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.StaffProfile, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		staff_profile_id, user_id, admissions_roles, is_active, date_created, date_updated
+	FROM
+		admissions_staff_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyStaffProfileFilter(filter, data, buf)
+
+	orderByClause, err := staffProfileOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbProfiles []staffProfileDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbProfiles); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusStaffProfiles(dbProfiles)
+}
+
+// CountStaffProfiles returns the total number of admissions staff profiles in the database.
+func (s *Store) CountStaffProfiles(ctx context.Context, filter admissionsbus.StaffProfileQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_staff_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyStaffProfileFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryStaffProfileByID finds an admissions staff profile by ID.
+func (s *Store) QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.StaffProfile, error) {
+	filter := admissionsbus.StaffProfileQueryFilter{ID: &profileID}
+	profile, err := s.queryStaffProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.StaffProfile{}, err
+	}
+
+	return profile, nil
+}
+
+// QueryStaffProfileByUserID finds an admissions staff profile by identity user ID.
+func (s *Store) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.StaffProfile, error) {
+	filter := admissionsbus.StaffProfileQueryFilter{UserID: &userID}
+	profile, err := s.queryStaffProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.StaffProfile{}, err
+	}
+
+	return profile, nil
+}
+
+func (s *Store) queryStaffProfile(ctx context.Context, filter admissionsbus.StaffProfileQueryFilter) (admissionsbus.StaffProfile, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		staff_profile_id, user_id, admissions_roles, is_active, date_created, date_updated
+	FROM
+		admissions_staff_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyStaffProfileFilter(filter, data, buf)
+
+	var dbProfile staffProfileDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbProfile); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.StaffProfile{}, fmt.Errorf("db: %w", admissionsbus.ErrStaffProfileNotFound)
+		}
+		return admissionsbus.StaffProfile{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusStaffProfile(dbProfile)
+}
+
 // CreateConstituent inserts a new Constituent into the database.
 func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
 	const q = `

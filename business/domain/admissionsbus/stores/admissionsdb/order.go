@@ -14,6 +14,12 @@ var programOrderByFields = map[string]string{
 	admissionsbus.OrderByProgramActive: "is_active",
 }
 
+var staffProfileOrderByFields = map[string]string{
+	admissionsbus.OrderByStaffProfileID:          "staff_profile_id",
+	admissionsbus.OrderByStaffProfileUser:        "user_id",
+	admissionsbus.OrderByStaffProfileDateCreated: "date_created",
+}
+
 var constituentOrderByFields = map[string]string{
 	admissionsbus.OrderByConstituentID:             "constituent_id",
 	admissionsbus.OrderByConstituentLastName:       "last_name",
@@ -54,6 +60,15 @@ var applicationTransitionOrderByFields = map[string]string{
 
 func programOrderByClause(orderBy order.By) (string, error) {
 	by, exists := programOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func staffProfileOrderByClause(orderBy order.By) (string, error) {
+	by, exists := staffProfileOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}
