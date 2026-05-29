@@ -31,6 +31,7 @@ func Test_Auth(t *testing.T) {
 	t.Run("test5", test5(ath))
 	t.Run("test6", test6(ath))
 	t.Run("admissions rules", testAdmissionsRules(ath))
+	t.Run("admissions lead scoring rules", testAdmissionsLeadScoringRules(ath))
 }
 
 func test1(ath *auth.Auth) func(t *testing.T) {
@@ -283,6 +284,60 @@ func testAdmissionsRules(ath *auth.Auth) func(t *testing.T) {
 
 		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsResolveDuplicates); err != nil {
 			t.Errorf("Should be able to authorize admissions duplicate resolution action: %s", err)
+		}
+
+		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsManageStaff); err == nil {
+			t.Error("Should NOT be able to authorize admissions staff management action")
+		}
+
+		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsManageLeadScoring); err == nil {
+			t.Error("Should NOT be able to authorize admissions lead scoring action")
+		}
+
+		claims.Roles = []string{role.SchoolAdmin.String(), "MARKETING_MANAGER"}
+		token, err = ath.GenerateToken(kid, claims)
+		if err != nil {
+			t.Fatalf("Should be able to generate a JWT : %s", err)
+		}
+
+		parsedClaims, err = ath.Authenticate(context.Background(), "Bearer "+token)
+		if err != nil {
+			t.Fatalf("Should be able to authenticate the claims : %s", err)
+		}
+
+		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsManageLeadScoring); err != nil {
+			t.Errorf("Should be able to authorize admissions lead scoring action: %s", err)
+		}
+	}
+
+	return f
+}
+
+func testAdmissionsLeadScoringRules(ath *auth.Auth) func(t *testing.T) {
+	f := func(t *testing.T) {
+		claims := auth.Claims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				Issuer:    ath.Issuer(),
+				Subject:   "5cf37266-3473-4006-984f-9325122678b7",
+				ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			},
+			Roles: []string{role.SchoolAdmin.String(), "MARKETING_MANAGER"},
+		}
+
+		token, err := ath.GenerateToken(kid, claims)
+		if err != nil {
+			t.Fatalf("Should be able to generate a JWT : %s", err)
+		}
+
+		parsedClaims, err := ath.Authenticate(context.Background(), "Bearer "+token)
+		if err != nil {
+			t.Fatalf("Should be able to authenticate the claims : %s", err)
+		}
+
+		userID := uuid.MustParse(claims.Subject)
+		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsManageLeadScoring); err != nil {
+			t.Errorf("Should be able to authorize admissions lead scoring action: %s", err)
 		}
 
 		if err := ath.Authorize(context.Background(), parsedClaims, userID, auth.RuleAdmissionsManageStaff); err == nil {

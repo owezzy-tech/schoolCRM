@@ -42,6 +42,8 @@ role_admissions_manage_references := {role_admissions_admin}
 
 role_admissions_manage_staff := {role_admissions_admin}
 
+role_admissions_manage_lead_scoring := {role_admissions_admin, role_marketing_manager, role_event_manager}
+
 role_admin_compat := {role_super_admin, role_school_admin}
 
 role_user_compat := {role_teacher, role_student, role_parent}
@@ -202,5 +204,13 @@ default rule_admissions_manage_staff := false
 rule_admissions_manage_staff if {
 	claim_roles := {role | some role in input.Roles}
 	input_allowed := role_admissions_manage_staff & claim_roles
+	count(input_allowed) > 0
+}
+
+default rule_admissions_manage_lead_scoring := false
+
+rule_admissions_manage_lead_scoring if {
+	claim_roles := {role | some role in input.Roles}
+	input_allowed := role_admissions_manage_lead_scoring & claim_roles
 	count(input_allowed) > 0
 }
