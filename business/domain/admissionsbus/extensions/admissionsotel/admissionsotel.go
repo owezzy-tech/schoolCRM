@@ -175,3 +175,43 @@ func (ext *Extension) QueryAcademicTermByExternalSISID(ctx context.Context, exte
 
 	return ext.bus.QueryAcademicTermByExternalSISID(ctx, externalSISID)
 }
+
+// CreateDuplicateReview applies otel to duplicate review creation.
+func (ext *Extension) CreateDuplicateReview(ctx context.Context, nr admissionsbus.NewDuplicateReview) (admissionsbus.DuplicateReview, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createduplicatereview")
+	defer span.End()
+
+	return ext.bus.CreateDuplicateReview(ctx, nr)
+}
+
+// ResolveDuplicateReview applies otel to duplicate review resolution.
+func (ext *Extension) ResolveDuplicateReview(ctx context.Context, review admissionsbus.DuplicateReview, rr admissionsbus.ResolveDuplicateReview) (admissionsbus.DuplicateReview, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.resolveduplicatereview")
+	defer span.End()
+
+	return ext.bus.ResolveDuplicateReview(ctx, review, rr)
+}
+
+// QueryDuplicateReviews applies otel to duplicate review queries.
+func (ext *Extension) QueryDuplicateReviews(ctx context.Context, filter admissionsbus.DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.DuplicateReview, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryduplicatereviews")
+	defer span.End()
+
+	return ext.bus.QueryDuplicateReviews(ctx, filter, orderBy, page)
+}
+
+// CountDuplicateReviews applies otel to duplicate review counts.
+func (ext *Extension) CountDuplicateReviews(ctx context.Context, filter admissionsbus.DuplicateReviewQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countduplicatereviews")
+	defer span.End()
+
+	return ext.bus.CountDuplicateReviews(ctx, filter)
+}
+
+// QueryDuplicateReviewByID applies otel to duplicate review ID lookups.
+func (ext *Extension) QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (admissionsbus.DuplicateReview, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryduplicatereviewbyid")
+	defer span.End()
+
+	return ext.bus.QueryDuplicateReviewByID(ctx, reviewID)
+}

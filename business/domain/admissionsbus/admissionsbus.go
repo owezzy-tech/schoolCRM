@@ -32,6 +32,15 @@ var (
 	ErrAcademicTermNotFound     = errors.New("academic term not found")
 	ErrInvalidTermDateRange     = errors.New("term start date must be before end date")
 	ErrInvalidApplicationWindow = errors.New("application deadline must be on or after application start date")
+	ErrDuplicateReviewNotFound  = errors.New("duplicate review not found")
+	ErrInvalidDuplicateReview   = errors.New("invalid duplicate review")
+	ErrInvalidMatchType         = errors.New("invalid duplicate match type")
+	ErrInvalidMatchScore        = errors.New("duplicate match score must be between 0 and 100")
+	ErrMatchReasonRequired      = errors.New("duplicate match reason required")
+	ErrInvalidReviewStatus      = errors.New("invalid duplicate review status")
+	ErrInvalidResolution        = errors.New("invalid duplicate review resolution")
+	ErrDuplicateReviewResolved  = errors.New("duplicate review already resolved")
+	ErrResolutionActorRequired  = errors.New("resolution actor required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -56,6 +65,11 @@ type Storer interface {
 	CountAcademicTerms(ctx context.Context, filter AcademicTermQueryFilter) (int, error)
 	QueryAcademicTermByID(ctx context.Context, termID uuid.UUID) (AcademicTerm, error)
 	QueryAcademicTermByExternalSISID(ctx context.Context, externalSISID string) (AcademicTerm, error)
+	CreateDuplicateReview(ctx context.Context, review DuplicateReview) error
+	UpdateDuplicateReview(ctx context.Context, review DuplicateReview) error
+	QueryDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]DuplicateReview, error)
+	CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error)
+	QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -80,6 +94,11 @@ type ExtBusiness interface {
 	CountAcademicTerms(ctx context.Context, filter AcademicTermQueryFilter) (int, error)
 	QueryAcademicTermByID(ctx context.Context, termID uuid.UUID) (AcademicTerm, error)
 	QueryAcademicTermByExternalSISID(ctx context.Context, externalSISID string) (AcademicTerm, error)
+	CreateDuplicateReview(ctx context.Context, nr NewDuplicateReview) (DuplicateReview, error)
+	ResolveDuplicateReview(ctx context.Context, review DuplicateReview, rr ResolveDuplicateReview) (DuplicateReview, error)
+	QueryDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]DuplicateReview, error)
+	CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error)
+	QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error)
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -182,6 +201,20 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 		SISSyncedAt:     nc.SISSyncedAt,
 		DateCreated:     now,
 		DateUpdated:     now,
+	}
+
+	match, err := b.queryTrustedExactDuplicate(ctx, cst)
+	if err != nil {
+		return Constituent{}, err
+	}
+
+	if match != nil {
+		if cst.ExternalSISID != nil && match.ExternalSISID != nil && *cst.ExternalSISID == *match.ExternalSISID {
+			return *match, nil
+		}
+
+		cst.DuplicateStatus = DuplicateStatusDuplicateOf
+		cst.DuplicateOfID = &match.ID
 	}
 
 	if err := b.storer.CreateConstituent(ctx, cst); err != nil {
@@ -304,6 +337,30 @@ func (b *Business) QueryConstituentByExternalSISID(ctx context.Context, external
 	}
 
 	return cst, nil
+}
+
+func (b *Business) queryTrustedExactDuplicate(ctx context.Context, cst Constituent) (*Constituent, error) {
+	if cst.ExternalSISID != nil {
+		match, err := b.storer.QueryConstituentByExternalSISID(ctx, *cst.ExternalSISID)
+		if err != nil && !errors.Is(err, ErrConstituentNotFound) {
+			return nil, fmt.Errorf("query external sis duplicate: %w", err)
+		}
+
+		if err == nil && match.ID != cst.ID {
+			return &match, nil
+		}
+	}
+
+	match, err := b.storer.QueryConstituentByPrimaryEmail(ctx, cst.PrimaryEmail.String())
+	if err != nil && !errors.Is(err, ErrConstituentNotFound) {
+		return nil, fmt.Errorf("query email duplicate: %w", err)
+	}
+
+	if err == nil && match.ID != cst.ID {
+		return &match, nil
+	}
+
+	return nil, nil
 }
 
 // UpsertProgram creates or updates SIS-owned Program reference data for sync/import paths.
@@ -443,6 +500,111 @@ func (b *Business) QueryAcademicTermByExternalSISID(ctx context.Context, externa
 	return term, nil
 }
 
+// CreateDuplicateReview adds a possible duplicate pair to the staff review queue.
+func (b *Business) CreateDuplicateReview(ctx context.Context, nr NewDuplicateReview) (DuplicateReview, error) {
+	if err := validateNewDuplicateReview(nr); err != nil {
+		return DuplicateReview{}, err
+	}
+
+	now := time.Now()
+	review := DuplicateReview{
+		ID:                     uuid.New(),
+		SourceConstituentID:    nr.SourceConstituentID,
+		CandidateConstituentID: nr.CandidateConstituentID,
+		MatchType:              nr.MatchType,
+		MatchScore:             nr.MatchScore,
+		MatchReason:            strings.TrimSpace(nr.MatchReason),
+		Status:                 DuplicateReviewStatusPending,
+		DateCreated:            now,
+		DateUpdated:            now,
+	}
+
+	if err := b.storer.CreateDuplicateReview(ctx, review); err != nil {
+		return DuplicateReview{}, fmt.Errorf("create duplicate review: %w", err)
+	}
+
+	return review, nil
+}
+
+// ResolveDuplicateReview records a staff decision for a pending duplicate review.
+func (b *Business) ResolveDuplicateReview(ctx context.Context, review DuplicateReview, rr ResolveDuplicateReview) (DuplicateReview, error) {
+	if review.Status != DuplicateReviewStatusPending && review.Status != DuplicateReviewStatusDeferred {
+		return DuplicateReview{}, ErrDuplicateReviewResolved
+	}
+
+	if rr.ActorID == uuid.Nil {
+		return DuplicateReview{}, ErrResolutionActorRequired
+	}
+
+	status, err := statusForResolution(rr.Resolution)
+	if err != nil {
+		return DuplicateReview{}, err
+	}
+
+	now := time.Now()
+	review.Status = status
+	review.ResolvedBy = &rr.ActorID
+	review.ResolvedAt = &now
+	review.ResolutionNote = trimStringPtr(rr.Note)
+	review.DateUpdated = now
+
+	if err := b.storer.UpdateDuplicateReview(ctx, review); err != nil {
+		return DuplicateReview{}, fmt.Errorf("update duplicate review: %w", err)
+	}
+
+	if rr.Resolution == DuplicateReviewResolutionLink || rr.Resolution == DuplicateReviewResolutionMerge {
+		source, err := b.storer.QueryConstituentByID(ctx, review.SourceConstituentID)
+		if err != nil {
+			return DuplicateReview{}, fmt.Errorf("query source constituent: %w", err)
+		}
+
+		candidate, err := b.storer.QueryConstituentByID(ctx, review.CandidateConstituentID)
+		if err != nil {
+			return DuplicateReview{}, fmt.Errorf("query candidate constituent: %w", err)
+		}
+
+		duplicateStatus := DuplicateStatusDuplicateOf
+		if rr.Resolution == DuplicateReviewResolutionMerge {
+			duplicateStatus = DuplicateStatusMerged
+		}
+
+		source.DuplicateStatus = duplicateStatus
+		source.DuplicateOfID = &candidate.ID
+		source.DateUpdated = now
+
+		if err := b.storer.UpdateConstituent(ctx, source); err != nil {
+			return DuplicateReview{}, fmt.Errorf("update source duplicate link: %w", err)
+		}
+	}
+
+	return review, nil
+}
+
+// QueryDuplicateReviews retrieves a list of existing duplicate reviews.
+func (b *Business) QueryDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]DuplicateReview, error) {
+	reviews, err := b.storer.QueryDuplicateReviews(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query duplicate reviews: %w", err)
+	}
+
+	return reviews, nil
+}
+
+// CountDuplicateReviews returns the total number of duplicate reviews.
+func (b *Business) CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error) {
+	return b.storer.CountDuplicateReviews(ctx, filter)
+}
+
+// QueryDuplicateReviewByID finds a DuplicateReview by ID.
+func (b *Business) QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error) {
+	review, err := b.storer.QueryDuplicateReviewByID(ctx, reviewID)
+	if err != nil {
+		return DuplicateReview{}, fmt.Errorf("query duplicate review: reviewID[%s]: %w", reviewID, err)
+	}
+
+	return review, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -514,6 +676,63 @@ func validateDuplicateStatus(status DuplicateStatus, duplicateOfID *uuid.UUID) e
 		return nil
 	default:
 		return ErrInvalidDuplicateStatus
+	}
+}
+
+func validateNewDuplicateReview(nr NewDuplicateReview) error {
+	if nr.SourceConstituentID == uuid.Nil || nr.CandidateConstituentID == uuid.Nil || nr.SourceConstituentID == nr.CandidateConstituentID {
+		return ErrInvalidDuplicateReview
+	}
+
+	if err := validateDuplicateReviewMatchType(nr.MatchType); err != nil {
+		return err
+	}
+
+	if nr.MatchScore < 0 || nr.MatchScore > 100 {
+		return ErrInvalidMatchScore
+	}
+
+	if strings.TrimSpace(nr.MatchReason) == "" {
+		return ErrMatchReasonRequired
+	}
+
+	return nil
+}
+
+func validateDuplicateReviewMatchType(matchType DuplicateReviewMatchType) error {
+	switch matchType {
+	case DuplicateReviewMatchTypeExact, DuplicateReviewMatchTypeFuzzy:
+		return nil
+	default:
+		return ErrInvalidMatchType
+	}
+}
+
+func validateDuplicateReviewStatus(status DuplicateReviewStatus) error {
+	switch status {
+	case DuplicateReviewStatusPending,
+		DuplicateReviewStatusLinked,
+		DuplicateReviewStatusMerged,
+		DuplicateReviewStatusRejected,
+		DuplicateReviewStatusDeferred:
+		return nil
+	default:
+		return ErrInvalidReviewStatus
+	}
+}
+
+func statusForResolution(resolution DuplicateReviewResolution) (DuplicateReviewStatus, error) {
+	switch resolution {
+	case DuplicateReviewResolutionLink:
+		return DuplicateReviewStatusLinked, nil
+	case DuplicateReviewResolutionMerge:
+		return DuplicateReviewStatusMerged, nil
+	case DuplicateReviewResolutionReject:
+		return DuplicateReviewStatusRejected, nil
+	case DuplicateReviewResolutionDefer:
+		return DuplicateReviewStatusDeferred, nil
+	default:
+		return "", ErrInvalidResolution
 	}
 }
 

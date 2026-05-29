@@ -124,6 +124,62 @@ func TestCreateConstituentRequiresIdentityFields(t *testing.T) {
 	}
 }
 
+func TestCreateConstituentAutoLinksExactEmailDuplicate(t *testing.T) {
+	t.Parallel()
+
+	email := mail.Address{Address: "applicant@example.com"}
+	matchID := uuid.New()
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{},
+		constituentByEmail: map[string]Constituent{
+			email.String(): {ID: matchID, PrimaryEmail: email},
+		},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	created, err := bus.CreateConstituent(context.Background(), NewConstituent{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+	})
+	if err != nil {
+		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+
+	if created.DuplicateStatus != DuplicateStatusDuplicateOf {
+		t.Fatalf("DuplicateStatus = %s, want %s", created.DuplicateStatus, DuplicateStatusDuplicateOf)
+	}
+
+	if created.DuplicateOfID == nil || *created.DuplicateOfID != matchID {
+		t.Fatalf("DuplicateOfID = %v, want %s", created.DuplicateOfID, matchID)
+	}
+
+	stored := store.constituents[created.ID]
+	if stored.DuplicateStatus != DuplicateStatusDuplicateOf {
+		t.Fatalf("stored DuplicateStatus = %s, want %s", stored.DuplicateStatus, DuplicateStatusDuplicateOf)
+	}
+}
+
+func TestCreateConstituentIgnoresMissingExactDuplicate(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	email := mail.Address{Address: "applicant@example.com"}
+
+	_, err := bus.CreateConstituent(context.Background(), NewConstituent{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+	})
+	if err != nil {
+		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+}
+
 func TestUpdateConstituentLifecycleTransitions(t *testing.T) {
 	t.Parallel()
 
@@ -151,6 +207,125 @@ func TestUpdateConstituentLifecycleTransitions(t *testing.T) {
 	}
 }
 
+func TestCreateDuplicateReviewValidatesPair(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	id := uuid.New()
+
+	_, err := bus.CreateDuplicateReview(context.Background(), NewDuplicateReview{
+		SourceConstituentID:    id,
+		CandidateConstituentID: id,
+		MatchType:              DuplicateReviewMatchTypeExact,
+		MatchScore:             100,
+		MatchReason:            "same email",
+	})
+
+	if !errors.Is(err, ErrInvalidDuplicateReview) {
+		t.Fatalf("err = %v, want %v", err, ErrInvalidDuplicateReview)
+	}
+}
+
+func TestCreateDuplicateReviewValidatesMatchData(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nr   NewDuplicateReview
+		want error
+	}{
+		{
+			name: "match type",
+			nr: NewDuplicateReview{
+				SourceConstituentID:    uuid.New(),
+				CandidateConstituentID: uuid.New(),
+				MatchType:              DuplicateReviewMatchType("UNKNOWN"),
+				MatchScore:             100,
+				MatchReason:            "same email",
+			},
+			want: ErrInvalidMatchType,
+		},
+		{
+			name: "match score",
+			nr: NewDuplicateReview{
+				SourceConstituentID:    uuid.New(),
+				CandidateConstituentID: uuid.New(),
+				MatchType:              DuplicateReviewMatchTypeExact,
+				MatchScore:             101,
+				MatchReason:            "same email",
+			},
+			want: ErrInvalidMatchScore,
+		},
+		{
+			name: "match reason",
+			nr: NewDuplicateReview{
+				SourceConstituentID:    uuid.New(),
+				CandidateConstituentID: uuid.New(),
+				MatchType:              DuplicateReviewMatchTypeExact,
+				MatchScore:             100,
+			},
+			want: ErrMatchReasonRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateDuplicateReview(context.Background(), tt.nr)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveDuplicateReviewLinksSourceConstituent(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	sourceID := uuid.New()
+	candidateID := uuid.New()
+	store.constituents[sourceID] = Constituent{ID: sourceID, DuplicateStatus: DuplicateStatusActive}
+	store.constituents[candidateID] = Constituent{ID: candidateID, DuplicateStatus: DuplicateStatusActive}
+
+	review := DuplicateReview{
+		ID:                     uuid.New(),
+		SourceConstituentID:    sourceID,
+		CandidateConstituentID: candidateID,
+		MatchType:              DuplicateReviewMatchTypeExact,
+		MatchScore:             100,
+		MatchReason:            "same email",
+		Status:                 DuplicateReviewStatusPending,
+	}
+
+	resolved, err := bus.ResolveDuplicateReview(context.Background(), review, ResolveDuplicateReview{
+		Resolution: DuplicateReviewResolutionLink,
+		ActorID:    uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("ResolveDuplicateReview returned error: %v", err)
+	}
+
+	if resolved.Status != DuplicateReviewStatusLinked {
+		t.Fatalf("Status = %s, want %s", resolved.Status, DuplicateReviewStatusLinked)
+	}
+
+	source := store.constituents[sourceID]
+	if source.DuplicateStatus != DuplicateStatusDuplicateOf {
+		t.Fatalf("DuplicateStatus = %s, want %s", source.DuplicateStatus, DuplicateStatusDuplicateOf)
+	}
+
+	if source.DuplicateOfID == nil || *source.DuplicateOfID != candidateID {
+		t.Fatalf("DuplicateOfID = %v, want %s", source.DuplicateOfID, candidateID)
+	}
+}
+
 func newTestBusiness() ExtBusiness {
 	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{})
 }
@@ -161,7 +336,11 @@ func (ioDiscard) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-type stubStore struct{}
+type stubStore struct {
+	constituents       map[uuid.UUID]Constituent
+	constituentByEmail map[string]Constituent
+	duplicateReviews   []DuplicateReview
+}
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
 	return s, nil
@@ -171,11 +350,24 @@ func (s *stubStore) Health(context.Context) (Health, error) {
 	return Health{}, nil
 }
 
-func (s *stubStore) CreateConstituent(context.Context, Constituent) error {
+func (s *stubStore) CreateConstituent(_ context.Context, cst Constituent) error {
+	if s.constituents != nil {
+		s.constituents[cst.ID] = cst
+	}
+
+	if s.constituentByEmail != nil {
+		if _, exists := s.constituentByEmail[cst.PrimaryEmail.String()]; !exists {
+			s.constituentByEmail[cst.PrimaryEmail.String()] = cst
+		}
+	}
+
 	return nil
 }
 
-func (s *stubStore) UpdateConstituent(context.Context, Constituent) error {
+func (s *stubStore) UpdateConstituent(_ context.Context, cst Constituent) error {
+	if s.constituents != nil {
+		s.constituents[cst.ID] = cst
+	}
 	return nil
 }
 
@@ -187,16 +379,26 @@ func (s *stubStore) CountConstituents(context.Context, ConstituentQueryFilter) (
 	return 0, nil
 }
 
-func (s *stubStore) QueryConstituentByID(context.Context, uuid.UUID) (Constituent, error) {
+func (s *stubStore) QueryConstituentByID(_ context.Context, id uuid.UUID) (Constituent, error) {
+	if s.constituents != nil {
+		return s.constituents[id], nil
+	}
 	return Constituent{}, nil
 }
 
-func (s *stubStore) QueryConstituentByPrimaryEmail(context.Context, string) (Constituent, error) {
-	return Constituent{}, nil
+func (s *stubStore) QueryConstituentByPrimaryEmail(_ context.Context, email string) (Constituent, error) {
+	if s.constituentByEmail != nil {
+		cst, exists := s.constituentByEmail[email]
+		if exists {
+			return cst, nil
+		}
+	}
+
+	return Constituent{}, ErrConstituentNotFound
 }
 
 func (s *stubStore) QueryConstituentByExternalSISID(context.Context, string) (Constituent, error) {
-	return Constituent{}, nil
+	return Constituent{}, ErrConstituentNotFound
 }
 
 func (s *stubStore) UpsertProgram(context.Context, Program) error {
@@ -237,4 +439,25 @@ func (s *stubStore) QueryAcademicTermByID(context.Context, uuid.UUID) (AcademicT
 
 func (s *stubStore) QueryAcademicTermByExternalSISID(context.Context, string) (AcademicTerm, error) {
 	return AcademicTerm{}, nil
+}
+
+func (s *stubStore) CreateDuplicateReview(_ context.Context, review DuplicateReview) error {
+	s.duplicateReviews = append(s.duplicateReviews, review)
+	return nil
+}
+
+func (s *stubStore) UpdateDuplicateReview(context.Context, DuplicateReview) error {
+	return nil
+}
+
+func (s *stubStore) QueryDuplicateReviews(context.Context, DuplicateReviewQueryFilter, order.By, page.Page) ([]DuplicateReview, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountDuplicateReviews(context.Context, DuplicateReviewQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryDuplicateReviewByID(context.Context, uuid.UUID) (DuplicateReview, error) {
+	return DuplicateReview{}, nil
 }
