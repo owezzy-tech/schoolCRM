@@ -3,6 +3,7 @@ package admissionsapp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -325,4 +326,71 @@ func (a *app) queryDuplicateReviewByID(ctx context.Context, r *http.Request) web
 	}
 
 	return toAppDuplicateReview(review)
+}
+
+func (a *app) createApplication(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplication
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	na, err := toBusNewApplication(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	application, err := a.admissionsBus.CreateApplication(ctx, na)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrDuplicateApplication) {
+			return errs.New(errs.Aborted, admissionsbus.ErrDuplicateApplication)
+		}
+		return errs.Errorf(errs.Internal, "create application: %s", err)
+	}
+
+	return toAppApplication(application)
+}
+
+func (a *app) queryApplications(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicationQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicationFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(applicationOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicationOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	applications, err := a.admissionsBus.QueryApplications(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applications: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplications(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applications: %s", err)
+	}
+
+	return query.NewResult(toAppApplications(applications), total, page)
+}
+
+func (a *app) queryApplicationByID(ctx context.Context, r *http.Request) web.Encoder {
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	application, err := a.admissionsBus.QueryApplicationByID(ctx, applicationID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application: %s", err)
+	}
+
+	return toAppApplication(application)
 }
