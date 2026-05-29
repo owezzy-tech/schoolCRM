@@ -11,17 +11,17 @@ import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideFuse } from '@fuse';
 import { TranslocoService, provideTransloco } from '@jsverse/transloco';
 import { provideEffects } from '@ngrx/effects';
+import { provideRouterStore } from '@ngrx/router-store';
 import { provideStore } from '@ngrx/store';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { appRoutes } from 'app/app.routes';
 import { provideAuth } from 'app/core/auth/auth.provider';
-import { AuthEffects } from 'app/core/auth/store/auth.effects';
-import { authFeature } from 'app/core/auth/store/auth.feature';
-import { metaReducers } from 'app/core/auth/store/store.logger';
+import { AuthEffects } from 'app/core/auth/+state/auth.effects';
 import { provideIcons } from 'app/core/icons/icons.provider';
 import { MockApiService } from 'app/mock-api';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
+import { metaReducers, rootReducers } from './core/store/store.logger';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -32,12 +32,21 @@ export const appConfig: ApplicationConfig = {
         ),
 
         provideStore(
-            { [authFeature.name]: authFeature.reducer },
-            { metaReducers }
-        ),
+            rootReducers, {
+                metaReducers,
+                runtimeChecks: {
+                    // strictStateImmutability and strictActionImmutability are enabled by default
+                    strictStateSerializability: true,
+                    strictActionSerializability: true,
+                    strictActionWithinNgZone: false,
+                    strictActionTypeUniqueness: true,
+                },
+            }),
+        provideRouterStore(),
         provideEffects(AuthEffects),
-        provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
-
+        provideStoreDevtools({
+            name: 'School CRM Store',
+            maxAge: 25, logOnly: !isDevMode() }),
         // Material Date Adapter
         {
             provide: DateAdapter,
