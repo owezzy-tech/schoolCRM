@@ -584,6 +584,29 @@ func (s *Store) CreateApplication(ctx context.Context, app admissionsbus.Applica
 	return nil
 }
 
+// UpdateApplication replaces mutable application data in the database.
+func (s *Store) UpdateApplication(ctx context.Context, app admissionsbus.Application) error {
+	const q = `
+	UPDATE
+		admissions_applications
+	SET
+		status = :status,
+		assigned_reviewer_id = :assigned_reviewer_id,
+		submitted_at = :submitted_at,
+		date_updated = :date_updated
+	WHERE
+		application_id = :application_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
+			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
+		}
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
 // QueryApplications retrieves a list of Applications from the database.
 func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
 	data := map[string]any{
@@ -688,6 +711,76 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 	}
 
 	return toBusApplication(dbApplication), nil
+}
+
+// CreateApplicationTransition inserts immutable Application transition history.
+func (s *Store) CreateApplicationTransition(ctx context.Context, transition admissionsbus.ApplicationTransition) error {
+	const q = `
+	INSERT INTO admissions_application_transitions
+		(application_transition_id, application_id, from_status, to_status, actor_id, reason, note, metadata, date_created)
+	VALUES
+		(:application_transition_id, :application_id, :from_status, :to_status, :actor_id, :reason, :note, :metadata, :date_created)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplicationTransition(transition)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplicationTransitions retrieves a list of Application transitions from the database.
+func (s *Store) QueryApplicationTransitions(ctx context.Context, filter admissionsbus.ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationTransition, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		application_transition_id, application_id, from_status, to_status, actor_id, reason, note, metadata, date_created
+	FROM
+		admissions_application_transitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationTransitionFilter(filter, data, buf)
+
+	orderByClause, err := applicationTransitionOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbTransitions []applicationTransitionDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbTransitions); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplicationTransitions(dbTransitions), nil
+}
+
+// CountApplicationTransitions returns the total number of Application transitions in the database.
+func (s *Store) CountApplicationTransitions(ctx context.Context, filter admissionsbus.ApplicationTransitionQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_application_transitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationTransitionFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
 }
 
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {

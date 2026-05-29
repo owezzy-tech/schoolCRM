@@ -1,6 +1,7 @@
 package admissionsdb
 
 import (
+	"encoding/json"
 	"net/mail"
 	"time"
 
@@ -66,6 +67,18 @@ type applicationDB struct {
 	SubmittedAt        *time.Time `db:"submitted_at"`
 	DateCreated        time.Time  `db:"date_created"`
 	DateUpdated        time.Time  `db:"date_updated"`
+}
+
+type applicationTransitionDB struct {
+	ID            uuid.UUID       `db:"application_transition_id"`
+	ApplicationID uuid.UUID       `db:"application_id"`
+	FromStatus    string          `db:"from_status"`
+	ToStatus      string          `db:"to_status"`
+	ActorID       uuid.UUID       `db:"actor_id"`
+	Reason        *string         `db:"reason"`
+	Note          *string         `db:"note"`
+	Metadata      json.RawMessage `db:"metadata"`
+	DateCreated   time.Time       `db:"date_created"`
 }
 
 func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
@@ -305,6 +318,43 @@ func toBusApplications(dbs []applicationDB) []admissionsbus.Application {
 	bus := make([]admissionsbus.Application, len(dbs))
 	for i, db := range dbs {
 		bus[i] = toBusApplication(db)
+	}
+
+	return bus
+}
+
+func toDBApplicationTransition(bus admissionsbus.ApplicationTransition) applicationTransitionDB {
+	return applicationTransitionDB{
+		ID:            bus.ID,
+		ApplicationID: bus.ApplicationID,
+		FromStatus:    bus.FromStatus.String(),
+		ToStatus:      bus.ToStatus.String(),
+		ActorID:       bus.ActorID,
+		Reason:        bus.Reason,
+		Note:          bus.Note,
+		Metadata:      json.RawMessage(bus.Metadata),
+		DateCreated:   bus.DateCreated.UTC(),
+	}
+}
+
+func toBusApplicationTransition(db applicationTransitionDB) admissionsbus.ApplicationTransition {
+	return admissionsbus.ApplicationTransition{
+		ID:            db.ID,
+		ApplicationID: db.ApplicationID,
+		FromStatus:    admissionsbus.ApplicationStatus(db.FromStatus),
+		ToStatus:      admissionsbus.ApplicationStatus(db.ToStatus),
+		ActorID:       db.ActorID,
+		Reason:        db.Reason,
+		Note:          db.Note,
+		Metadata:      []byte(db.Metadata),
+		DateCreated:   db.DateCreated.In(time.Local),
+	}
+}
+
+func toBusApplicationTransitions(dbs []applicationTransitionDB) []admissionsbus.ApplicationTransition {
+	bus := make([]admissionsbus.ApplicationTransition, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusApplicationTransition(db)
 	}
 
 	return bus

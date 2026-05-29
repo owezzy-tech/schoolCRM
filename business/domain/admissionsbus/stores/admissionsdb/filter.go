@@ -167,7 +167,42 @@ func (s *Store) applyApplicationFilter(filter admissionsbus.ApplicationQueryFilt
 	}
 
 	if filter.ActiveOnly != nil && *filter.ActiveOnly {
+		// Keep this predicate aligned with admissionsbus.isApplicationActive.
 		wc = append(wc, "status NOT IN ('DENIED', 'WITHDRAWN', 'ENROLLED')")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyApplicationTransitionFilter(filter admissionsbus.ApplicationTransitionQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["application_transition_id"] = filter.ID
+		wc = append(wc, "application_transition_id = :application_transition_id")
+	}
+
+	if filter.ApplicationID != nil {
+		data["application_id"] = filter.ApplicationID
+		wc = append(wc, "application_id = :application_id")
+	}
+
+	if filter.ActorID != nil {
+		data["actor_id"] = filter.ActorID
+		wc = append(wc, "actor_id = :actor_id")
+	}
+
+	if filter.FromStatus != nil {
+		data["from_status"] = filter.FromStatus.String()
+		wc = append(wc, "from_status = :from_status")
+	}
+
+	if filter.ToStatus != nil {
+		data["to_status"] = filter.ToStatus.String()
+		wc = append(wc, "to_status = :to_status")
 	}
 
 	if len(wc) > 0 {
