@@ -1,11 +1,31 @@
 package admissionsdb
 
 import (
+	"net/mail"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
 )
+
+type constituentDB struct {
+	ID              uuid.UUID  `db:"constituent_id"`
+	FirstName       string     `db:"first_name"`
+	LastName        string     `db:"last_name"`
+	PreferredName   *string    `db:"preferred_name"`
+	MiddleName      *string    `db:"middle_name"`
+	Suffix          *string    `db:"suffix"`
+	DateOfBirth     time.Time  `db:"date_of_birth"`
+	PrimaryEmail    string     `db:"primary_email"`
+	PrimaryPhone    string     `db:"primary_phone"`
+	ExternalSISID   *string    `db:"external_sis_id"`
+	LifecycleStage  string     `db:"lifecycle_stage"`
+	DuplicateStatus string     `db:"duplicate_status"`
+	DuplicateOfID   *uuid.UUID `db:"duplicate_of_id"`
+	SISSyncedAt     *time.Time `db:"sis_synced_at"`
+	DateCreated     time.Time  `db:"date_created"`
+	DateUpdated     time.Time  `db:"date_updated"`
+}
 
 type programDB struct {
 	ID            uuid.UUID  `db:"program_id"`
@@ -18,6 +38,66 @@ type programDB struct {
 	SyncedAt      *time.Time `db:"synced_at"`
 	DateCreated   time.Time  `db:"date_created"`
 	DateUpdated   time.Time  `db:"date_updated"`
+}
+
+func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
+	return constituentDB{
+		ID:              bus.ID,
+		FirstName:       bus.FirstName,
+		LastName:        bus.LastName,
+		PreferredName:   bus.PreferredName,
+		MiddleName:      bus.MiddleName,
+		Suffix:          bus.Suffix,
+		DateOfBirth:     bus.DateOfBirth.UTC(),
+		PrimaryEmail:    bus.PrimaryEmail.String(),
+		PrimaryPhone:    bus.PrimaryPhone,
+		ExternalSISID:   bus.ExternalSISID,
+		LifecycleStage:  bus.LifecycleStage.String(),
+		DuplicateStatus: bus.DuplicateStatus.String(),
+		DuplicateOfID:   bus.DuplicateOfID,
+		SISSyncedAt:     utcTimePtr(bus.SISSyncedAt),
+		DateCreated:     bus.DateCreated.UTC(),
+		DateUpdated:     bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusConstituent(db constituentDB) (admissionsbus.Constituent, error) {
+	email, err := mail.ParseAddress(db.PrimaryEmail)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return admissionsbus.Constituent{
+		ID:              db.ID,
+		FirstName:       db.FirstName,
+		LastName:        db.LastName,
+		PreferredName:   db.PreferredName,
+		MiddleName:      db.MiddleName,
+		Suffix:          db.Suffix,
+		DateOfBirth:     db.DateOfBirth.In(time.Local),
+		PrimaryEmail:    *email,
+		PrimaryPhone:    db.PrimaryPhone,
+		ExternalSISID:   db.ExternalSISID,
+		LifecycleStage:  admissionsbus.LifecycleStage(db.LifecycleStage),
+		DuplicateStatus: admissionsbus.DuplicateStatus(db.DuplicateStatus),
+		DuplicateOfID:   db.DuplicateOfID,
+		SISSyncedAt:     localTimePtr(db.SISSyncedAt),
+		DateCreated:     db.DateCreated.In(time.Local),
+		DateUpdated:     db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusConstituents(dbs []constituentDB) ([]admissionsbus.Constituent, error) {
+	bus := make([]admissionsbus.Constituent, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusConstituent(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
 }
 
 type academicTermDB struct {

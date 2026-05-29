@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/mail"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -55,6 +56,163 @@ func (s *Store) Health(ctx context.Context) (admissionsbus.Health, error) {
 		Status:     "ready",
 		Aggregates: admissionsbus.AggregateNames(),
 	}, nil
+}
+
+// CreateConstituent inserts a new Constituent into the database.
+func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
+	const q = `
+	INSERT INTO admissions_constituents
+		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated)
+	VALUES
+		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sis_synced_at, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBConstituent(cst)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateConstituent replaces mutable constituent data in the database.
+func (s *Store) UpdateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
+	const q = `
+	UPDATE
+		admissions_constituents
+	SET
+		preferred_name = :preferred_name,
+		middle_name = :middle_name,
+		suffix = :suffix,
+		primary_email = :primary_email,
+		primary_phone = :primary_phone,
+		lifecycle_stage = :lifecycle_stage,
+		duplicate_status = :duplicate_status,
+		duplicate_of_id = :duplicate_of_id,
+		sis_synced_at = :sis_synced_at,
+		date_updated = :date_updated
+	WHERE
+		constituent_id = :constituent_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBConstituent(cst)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryConstituents retrieves a list of Constituents from the database.
+func (s *Store) QueryConstituents(ctx context.Context, filter admissionsbus.ConstituentQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Constituent, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+	FROM
+		admissions_constituents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyConstituentFilter(filter, data, buf)
+
+	orderByClause, err := constituentOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbConstituents []constituentDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbConstituents); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusConstituents(dbConstituents)
+}
+
+// CountConstituents returns the total number of Constituents in the database.
+func (s *Store) CountConstituents(ctx context.Context, filter admissionsbus.ConstituentQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_constituents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyConstituentFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryConstituentByID finds a Constituent by ID.
+func (s *Store) QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{ID: &constituentID}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByPrimaryEmail finds a Constituent by primary email.
+func (s *Store) QueryConstituentByPrimaryEmail(ctx context.Context, email string) (admissionsbus.Constituent, error) {
+	address, err := mail.ParseAddress(email)
+	if err != nil {
+		return admissionsbus.Constituent{}, fmt.Errorf("parse email: %w", err)
+	}
+
+	filter := admissionsbus.ConstituentQueryFilter{PrimaryEmail: address}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByExternalSISID finds a Constituent by SIS ID.
+func (s *Store) QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{ExternalSISID: &externalSISID}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+func (s *Store) queryConstituent(ctx context.Context, filter admissionsbus.ConstituentQueryFilter) (admissionsbus.Constituent, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+	FROM
+		admissions_constituents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyConstituentFilter(filter, data, buf)
+
+	var dbConstituent constituentDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbConstituent); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Constituent{}, fmt.Errorf("db: %w", admissionsbus.ErrConstituentNotFound)
+		}
+		return admissionsbus.Constituent{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusConstituent(dbConstituent)
 }
 
 // UpsertProgram creates or updates a Program by immutable external SIS ID.
