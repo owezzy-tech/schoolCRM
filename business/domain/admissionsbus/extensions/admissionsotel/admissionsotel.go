@@ -40,6 +40,62 @@ func (ext *Extension) Health(ctx context.Context) (admissionsbus.Health, error) 
 	return ext.bus.Health(ctx)
 }
 
+// CreateConstituent applies otel to Constituent creation.
+func (ext *Extension) CreateConstituent(ctx context.Context, nc admissionsbus.NewConstituent) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createconstituent")
+	defer span.End()
+
+	return ext.bus.CreateConstituent(ctx, nc)
+}
+
+// UpdateConstituent applies otel to Constituent updates.
+func (ext *Extension) UpdateConstituent(ctx context.Context, cst admissionsbus.Constituent, uc admissionsbus.UpdateConstituent) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateconstituent")
+	defer span.End()
+
+	return ext.bus.UpdateConstituent(ctx, cst, uc)
+}
+
+// QueryConstituents applies otel to Constituent queries.
+func (ext *Extension) QueryConstituents(ctx context.Context, filter admissionsbus.ConstituentQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituents")
+	defer span.End()
+
+	return ext.bus.QueryConstituents(ctx, filter, orderBy, page)
+}
+
+// CountConstituents applies otel to Constituent counts.
+func (ext *Extension) CountConstituents(ctx context.Context, filter admissionsbus.ConstituentQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countconstituents")
+	defer span.End()
+
+	return ext.bus.CountConstituents(ctx, filter)
+}
+
+// QueryConstituentByID applies otel to Constituent ID lookups.
+func (ext *Extension) QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbyid")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByID(ctx, constituentID)
+}
+
+// QueryConstituentByPrimaryEmail applies otel to Constituent email lookups.
+func (ext *Extension) QueryConstituentByPrimaryEmail(ctx context.Context, email string) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbyprimaryemail")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByPrimaryEmail(ctx, email)
+}
+
+// QueryConstituentByExternalSISID applies otel to Constituent SIS ID lookups.
+func (ext *Extension) QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbyexternalsisid")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByExternalSISID(ctx, externalSISID)
+}
+
 // UpsertProgram applies otel to Program sync/import upserts.
 func (ext *Extension) UpsertProgram(ctx context.Context, up admissionsbus.UpsertProgram) (admissionsbus.Program, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.upsertprogram")
