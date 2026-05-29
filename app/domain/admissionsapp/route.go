@@ -3,11 +3,13 @@ package admissionsapp
 import (
 	"net/http"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
+	"github.com/owezzy/schoolCRM/business/sdk/sqldb"
 	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/owezzy/schoolCRM/foundation/web"
 )
@@ -15,6 +17,7 @@ import (
 // Config contains all the mandatory systems required by handlers.
 type Config struct {
 	Log           *logger.Logger
+	DB            *sqlx.DB
 	AdmissionsBus admissionsbus.ExtBusiness
 	AuditBus      auditbus.ExtBusiness
 	AuthClient    authclient.Authenticator
@@ -26,6 +29,7 @@ func Routes(app *web.App, cfg Config) {
 
 	authen := mid.Authenticate(cfg.AuthClient)
 	ruleAny := mid.Authorize(cfg.AuthClient, auth.RuleAny)
+	transaction := mid.BeginCommitRollback(cfg.Log, sqldb.NewBeginner(cfg.DB))
 
 	api := newApp(cfg.AdmissionsBus, cfg.AuditBus)
 
@@ -41,6 +45,8 @@ func Routes(app *web.App, cfg Config) {
 	app.HandlerFunc(http.MethodGet, version, "/admissions/applications", api.queryApplications, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/applications/{application_id}", api.queryApplicationByID, authen, ruleAny)
 	app.HandlerFunc(http.MethodPost, version, "/admissions/applications", api.createApplication, authen, ruleAny)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/applications/{application_id}/transitions", api.queryApplicationTransitions, authen, ruleAny)
+	app.HandlerFunc(http.MethodPost, version, "/admissions/applications/{application_id}/transitions", api.transitionApplicationStatus, authen, ruleAny, transaction)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/duplicate-reviews", api.queryDuplicateReviews, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/duplicate-reviews/{duplicate_review_id}", api.queryDuplicateReviewByID, authen, ruleAny)
 	app.HandlerFunc(http.MethodPost, version, "/admissions/duplicate-reviews", api.createDuplicateReview, authen, ruleAny)

@@ -4,6 +4,7 @@ package admissionsapp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -29,6 +30,23 @@ func newApp(admissionsBus admissionsbus.ExtBusiness, auditBus auditbus.ExtBusine
 		admissionsBus: admissionsBus,
 		auditBus:      auditBus,
 	}
+}
+
+func (a *app) newWithTx(ctx context.Context) (*app, error) {
+	tx, err := mid.GetTran(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	admissionsBus, err := a.admissionsBus.NewWithTx(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &app{
+		admissionsBus: admissionsBus,
+		auditBus:      a.auditBus,
+	}, nil
 }
 
 func (a *app) health(ctx context.Context, _ *http.Request) web.Encoder {
@@ -393,4 +411,87 @@ func (a *app) queryApplicationByID(ctx context.Context, r *http.Request) web.Enc
 	}
 
 	return toAppApplication(application)
+}
+
+func (a *app) transitionApplicationStatus(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicationTransition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	application, err := a.admissionsBus.QueryApplicationByID(ctx, applicationID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application: %s", err)
+	}
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	nt := toBusNewApplicationTransition(app, mid.GetSubjectID(ctx))
+	updated, transition, err := a.admissionsBus.TransitionApplicationStatus(ctx, application, nt)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrInvalidApplicationTransition) {
+			return errs.New(errs.FailedPrecondition, admissionsbus.ErrInvalidApplicationTransition)
+		}
+		return errs.Errorf(errs.Internal, "transition application: %s", err)
+	}
+
+	if a.auditBus != nil {
+		na := auditbus.NewAudit{
+			ObjID:     updated.ID,
+			ObjDomain: domain.Admissions,
+			ObjName:   name.MustParse("Application"),
+			ActorID:   nt.ActorID,
+			Action:    "application_transition",
+			Data:      toAppApplicationTransition(transition),
+			Message:   fmt.Sprintf("application status changed from %s to %s", transition.FromStatus, transition.ToStatus),
+		}
+
+		if _, err := a.auditBus.Create(ctx, na); err != nil {
+			return errs.Errorf(errs.Internal, "audit application transition: %s", err)
+		}
+	}
+
+	return toAppApplication(updated)
+}
+
+func (a *app) queryApplicationTransitions(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicationTransitionQueryParams(r)
+	if qp.ApplicationID == "" {
+		qp.ApplicationID = web.Param(r, "application_id")
+	}
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicationTransitionFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(applicationTransitionOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicationTransitionOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	transitions, err := a.admissionsBus.QueryApplicationTransitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application transitions: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplicationTransitions(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count application transitions: %s", err)
+	}
+
+	return query.NewResult(toAppApplicationTransitions(transitions), total, page)
 }
