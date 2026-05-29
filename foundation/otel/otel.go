@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +38,15 @@ func InitTracing(cfg Config) (trace.TracerProvider, func(ctx context.Context), e
 	// compatible with your project. Please review the documentation for
 	// opentelemetry.
 
+	var traceProvider trace.TracerProvider
+	teardown := func(ctx context.Context) {}
+
+	if strings.TrimSpace(cfg.Host) == "" {
+		traceProvider = noop.NewTracerProvider()
+		setTracingGlobals(traceProvider)
+		return traceProvider, teardown, nil
+	}
+
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(
@@ -48,35 +58,31 @@ func InitTracing(cfg Config) (trace.TracerProvider, func(ctx context.Context), e
 		return nil, nil, fmt.Errorf("creating new exporter: %w", err)
 	}
 
-	var traceProvider trace.TracerProvider
-	teardown := func(ctx context.Context) {}
-
-	switch cfg.Host {
-	case "":
-		traceProvider = noop.NewTracerProvider()
-
-	default:
-		tp := sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.ParentBased(newEndpointExcluder(cfg.ExcludedRoutes, cfg.Probability))),
-			sdktrace.WithBatcher(exporter,
-				sdktrace.WithMaxExportBatchSize(sdktrace.DefaultMaxExportBatchSize),
-				sdktrace.WithBatchTimeout(sdktrace.DefaultScheduleDelay*time.Millisecond),
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.ParentBased(newEndpointExcluder(cfg.ExcludedRoutes, cfg.Probability))),
+		sdktrace.WithBatcher(exporter,
+			sdktrace.WithMaxExportBatchSize(sdktrace.DefaultMaxExportBatchSize),
+			sdktrace.WithBatchTimeout(sdktrace.DefaultScheduleDelay*time.Millisecond),
+		),
+		sdktrace.WithResource(
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceNameKey.String(cfg.ServiceName),
 			),
-			sdktrace.WithResource(
-				resource.NewWithAttributes(
-					semconv.SchemaURL,
-					semconv.ServiceNameKey.String(cfg.ServiceName),
-				),
-			),
-		)
+		),
+	)
 
-		teardown = func(ctx context.Context) {
-			tp.Shutdown(ctx)
-		}
-
-		traceProvider = tp
+	teardown = func(ctx context.Context) {
+		tp.Shutdown(ctx)
 	}
 
+	traceProvider = tp
+	setTracingGlobals(traceProvider)
+
+	return traceProvider, teardown, nil
+}
+
+func setTracingGlobals(traceProvider trace.TracerProvider) {
 	// We must set this provider as the global provider for things to work,
 	// but we pass this provider around the program where needed to collect
 	// our traces.
@@ -87,8 +93,6 @@ func InitTracing(cfg Config) (trace.TracerProvider, func(ctx context.Context), e
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-
-	return traceProvider, teardown, nil
 }
 
 // InjectTracing initializes the request for tracing by writing otel related
