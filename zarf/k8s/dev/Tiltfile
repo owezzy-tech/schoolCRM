@@ -26,7 +26,7 @@ load('ext://restart_process', 'docker_build_with_restart')
 k8s_namespace = 'schoolcrm-system'
 
 # Allow Kubernetes context (set to your cluster name)
-allow_k8s_contexts('kind-ardan-starter-cluster')
+allow_k8s_contexts('schoolcrm-cluster')
 
 # Tilt settings
 update_settings()
@@ -137,6 +137,26 @@ k8s_resource(
   resource_deps=['schoolcrm-compile', 'auth', 'database'],
 )
 
+# =============================================================================
+# Web Admin Frontend
+# =============================================================================
+
+docker_build_with_restart(
+  'localhost:5001/schoolcrm/web-admin',
+  '.',
+  dockerfile='./zarf/docker/dockerfile.web-admin',
+  build_args={'BUILD_TAG': 'develop'},
+)
+
+k8s_yaml(kustomize('./zarf/k8s/dev/web-admin'))
+
+k8s_resource(
+  'web-admin',
+  labels=['services'],
+  port_forwards=['8080:80'],
+  resource_deps=['auth', 'sales'],
+)
+
 # Run database migrations automatically after SchoolCRM pod is ready
 # This runs once on startup and when you manually trigger it in Tilt
 local_resource(
@@ -170,5 +190,4 @@ docker_build_with_restart(
     sync('./zarf/build/metrics', '/service/metrics'),
   ],
 )
-
 

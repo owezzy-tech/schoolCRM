@@ -272,6 +272,7 @@ dev-load:
 	kind load docker-image $(SCHOOLCRM_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(AUTH_IMAGE) --name $(KIND_CLUSTER) & \
+	kind load docker-image $(WEB_ADMIN_IMAGE) --name $(KIND_CLUSTER) & \
 	kind load docker-image $(RAG_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
 
@@ -291,9 +292,13 @@ dev-apply:
 	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
+	kustomize build zarf/k8s/dev/web-admin | kubectl apply -f -
+	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(WEB_ADMIN_APP) --timeout=120s --for=condition=Ready
+
 dev-restart:
 	kubectl rollout restart deployment $(AUTH_APP) --namespace=$(NAMESPACE)
 	kubectl rollout restart deployment $(SCHOOLCRM_APP) --namespace=$(NAMESPACE)
+	kubectl rollout restart deployment $(WEB_ADMIN_APP) --namespace=$(NAMESPACE)
 
 dev-run: build dev-up dev-load dev-apply
 
@@ -306,6 +311,9 @@ dev-logs:
 
 dev-logs-auth:
 	kubectl logs --namespace=$(NAMESPACE) -l app=$(AUTH_APP) --all-containers=true -f --tail=100 | go run api/tooling/logfmt/main.go
+
+dev-logs-web-admin:
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(WEB_ADMIN_APP) --all-containers=true -f --tail=100
 
 # ------------------------------------------------------------------------------
 
