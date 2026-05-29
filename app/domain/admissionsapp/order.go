@@ -9,6 +9,13 @@ var programOrderByFields = map[string]string{
 	"active":     admissionsbus.OrderByProgramActive,
 }
 
+var constituentOrderByFields = map[string]string{
+	"constituent_id":  admissionsbus.OrderByConstituentID,
+	"last_name":       admissionsbus.OrderByConstituentLastName,
+	"primary_email":   admissionsbus.OrderByConstituentPrimaryEmail,
+	"lifecycle_stage": admissionsbus.OrderByConstituentLifecycleStage,
+}
+
 var academicTermOrderByFields = map[string]string{
 	"academic_term_id": admissionsbus.OrderByAcademicTermID,
 	"name":             admissionsbus.OrderByAcademicTermName,

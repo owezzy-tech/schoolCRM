@@ -2,6 +2,7 @@ package admissionsapp
 
 import (
 	"net/http"
+	"net/mail"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -17,6 +18,17 @@ type programQueryParams struct {
 	ExternalSISID string
 	Code          string
 	Active        string
+}
+
+type constituentQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	PrimaryEmail    string
+	ExternalSISID   string
+	LifecycleStage  string
+	DuplicateStatus string
 }
 
 type academicTermQueryParams struct {
@@ -40,6 +52,21 @@ func parseProgramQueryParams(r *http.Request) programQueryParams {
 		ExternalSISID: values.Get("external_sis_id"),
 		Code:          values.Get("code"),
 		Active:        values.Get("active"),
+	}
+}
+
+func parseConstituentQueryParams(r *http.Request) constituentQueryParams {
+	values := r.URL.Query()
+
+	return constituentQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("constituent_id"),
+		PrimaryEmail:    values.Get("primary_email"),
+		ExternalSISID:   values.Get("external_sis_id"),
+		LifecycleStage:  values.Get("lifecycle_stage"),
+		DuplicateStatus: values.Get("duplicate_status"),
 	}
 }
 
@@ -89,6 +116,49 @@ func parseProgramFilter(qp programQueryParams) (admissionsbus.ProgramQueryFilter
 
 	if fieldErrors != nil {
 		return admissionsbus.ProgramQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseConstituentFilter(qp constituentQueryParams) (admissionsbus.ConstituentQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ConstituentQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.PrimaryEmail != "" {
+		email, err := mail.ParseAddress(qp.PrimaryEmail)
+		if err != nil {
+			fieldErrors.Add("primary_email", err)
+		} else {
+			filter.PrimaryEmail = email
+		}
+	}
+
+	if qp.ExternalSISID != "" {
+		filter.ExternalSISID = &qp.ExternalSISID
+	}
+
+	if qp.LifecycleStage != "" {
+		stage := admissionsbus.LifecycleStage(qp.LifecycleStage)
+		filter.LifecycleStage = &stage
+	}
+
+	if qp.DuplicateStatus != "" {
+		status := admissionsbus.DuplicateStatus(qp.DuplicateStatus)
+		filter.DuplicateStatus = &status
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ConstituentQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

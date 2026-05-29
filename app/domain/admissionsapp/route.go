@@ -28,6 +28,10 @@ func Routes(app *web.App, cfg Config) {
 	api := newApp(cfg.AdmissionsBus)
 
 	app.HandlerFunc(http.MethodGet, version, "/admissions/health", api.health, authen, ruleAny)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/constituents", api.queryConstituents, authen, ruleAny)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/constituents/{constituent_id}", api.queryConstituentByID, authen, ruleAny)
+	app.HandlerFunc(http.MethodPost, version, "/admissions/constituents", api.createConstituent, authen, ruleAny)
+	app.HandlerFunc(http.MethodPut, version, "/admissions/constituents/{constituent_id}", api.updateConstituent, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/programs", api.queryPrograms, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/programs/{program_id}", api.queryProgramByID, authen, ruleAny)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/academic-terms", api.queryAcademicTerms, authen, ruleAny)

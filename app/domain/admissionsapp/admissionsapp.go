@@ -33,6 +33,99 @@ func (a *app) health(ctx context.Context, _ *http.Request) web.Encoder {
 	return toAppHealth(health)
 }
 
+func (a *app) createConstituent(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewConstituent
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nc, err := toBusNewConstituent(ctx, app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	cst, err := a.admissionsBus.CreateConstituent(ctx, nc)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create constituent: %s", err)
+	}
+
+	return toAppConstituent(cst)
+}
+
+func (a *app) updateConstituent(ctx context.Context, r *http.Request) web.Encoder {
+	var app UpdateConstituent
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	constituentID, err := uuid.Parse(web.Param(r, "constituent_id"))
+	if err != nil {
+		return errs.NewFieldErrors("constituent_id", err)
+	}
+
+	cst, err := a.admissionsBus.QueryConstituentByID(ctx, constituentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query constituent: %s", err)
+	}
+
+	uc, err := toBusUpdateConstituent(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateConstituent(ctx, cst, uc)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update constituent: %s", err)
+	}
+
+	return toAppConstituent(updated)
+}
+
+func (a *app) queryConstituents(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseConstituentQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseConstituentFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(constituentOrderByFields, qp.OrderBy, admissionsbus.DefaultConstituentOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	constituents, err := a.admissionsBus.QueryConstituents(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query constituents: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountConstituents(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count constituents: %s", err)
+	}
+
+	return query.NewResult(toAppConstituents(constituents), total, page)
+}
+
+func (a *app) queryConstituentByID(ctx context.Context, r *http.Request) web.Encoder {
+	constituentID, err := uuid.Parse(web.Param(r, "constituent_id"))
+	if err != nil {
+		return errs.NewFieldErrors("constituent_id", err)
+	}
+
+	cst, err := a.admissionsBus.QueryConstituentByID(ctx, constituentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query constituent: %s", err)
+	}
+
+	return toAppConstituent(cst)
+}
+
 func (a *app) queryPrograms(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseProgramQueryParams(r)
 
