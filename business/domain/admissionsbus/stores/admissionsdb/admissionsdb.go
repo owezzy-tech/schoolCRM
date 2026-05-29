@@ -566,6 +566,130 @@ func (s *Store) queryDuplicateReview(ctx context.Context, filter admissionsbus.D
 	return toBusDuplicateReview(dbReview), nil
 }
 
+// CreateApplication inserts a new Application into the database.
+func (s *Store) CreateApplication(ctx context.Context, app admissionsbus.Application) error {
+	const q = `
+	INSERT INTO admissions_applications
+		(application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated)
+	VALUES
+		(:application_id, :constituent_id, :program_id, :academic_term_id, :application_type, :status, :assigned_reviewer_id, :submitted_at, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
+			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
+		}
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplications retrieves a list of Applications from the database.
+func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+	FROM
+		admissions_applications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFilter(filter, data, buf)
+
+	orderByClause, err := applicationOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbApplications []applicationDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbApplications); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplications(dbApplications), nil
+}
+
+// CountApplications returns the total number of Applications in the database.
+func (s *Store) CountApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_applications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryApplicationByID finds an Application by ID.
+func (s *Store) QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (admissionsbus.Application, error) {
+	filter := admissionsbus.ApplicationQueryFilter{ID: &applicationID}
+	app, err := s.queryApplication(ctx, filter)
+	if err != nil {
+		return admissionsbus.Application{}, err
+	}
+
+	return app, nil
+}
+
+// QueryActiveApplicationByTuple finds an active Application for a constituent, term, and program.
+func (s *Store) QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (admissionsbus.Application, error) {
+	activeOnly := true
+	filter := admissionsbus.ApplicationQueryFilter{
+		ConstituentID:  &constituentID,
+		AcademicTermID: &academicTermID,
+		ProgramID:      &programID,
+		ActiveOnly:     &activeOnly,
+	}
+	app, err := s.queryApplication(ctx, filter)
+	if err != nil {
+		return admissionsbus.Application{}, err
+	}
+
+	return app, nil
+}
+
+func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.ApplicationQueryFilter) (admissionsbus.Application, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+	FROM
+		admissions_applications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFilter(filter, data, buf)
+
+	var dbApplication applicationDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbApplication); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Application{}, fmt.Errorf("db: %w", admissionsbus.ErrApplicationNotFound)
+		}
+		return admissionsbus.Application{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusApplication(dbApplication), nil
+}
+
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {
 	data := map[string]any{}
 

@@ -55,6 +55,19 @@ type duplicateReviewDB struct {
 	DateUpdated            time.Time  `db:"date_updated"`
 }
 
+type applicationDB struct {
+	ID                 uuid.UUID  `db:"application_id"`
+	ConstituentID      uuid.UUID  `db:"constituent_id"`
+	ProgramID          uuid.UUID  `db:"program_id"`
+	AcademicTermID     uuid.UUID  `db:"academic_term_id"`
+	ApplicationType    string     `db:"application_type"`
+	Status             string     `db:"status"`
+	AssignedReviewerID *uuid.UUID `db:"assigned_reviewer_id"`
+	SubmittedAt        *time.Time `db:"submitted_at"`
+	DateCreated        time.Time  `db:"date_created"`
+	DateUpdated        time.Time  `db:"date_updated"`
+}
+
 func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
 	return constituentDB{
 		ID:              bus.ID,
@@ -253,6 +266,45 @@ func toBusDuplicateReviews(dbs []duplicateReviewDB) []admissionsbus.DuplicateRev
 	bus := make([]admissionsbus.DuplicateReview, len(dbs))
 	for i, db := range dbs {
 		bus[i] = toBusDuplicateReview(db)
+	}
+
+	return bus
+}
+
+func toDBApplication(bus admissionsbus.Application) applicationDB {
+	return applicationDB{
+		ID:                 bus.ID,
+		ConstituentID:      bus.ConstituentID,
+		ProgramID:          bus.ProgramID,
+		AcademicTermID:     bus.AcademicTermID,
+		ApplicationType:    bus.ApplicationType.String(),
+		Status:             bus.Status.String(),
+		AssignedReviewerID: bus.AssignedReviewerID,
+		SubmittedAt:        utcTimePtr(bus.SubmittedAt),
+		DateCreated:        bus.DateCreated.UTC(),
+		DateUpdated:        bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusApplication(db applicationDB) admissionsbus.Application {
+	return admissionsbus.Application{
+		ID:                 db.ID,
+		ConstituentID:      db.ConstituentID,
+		ProgramID:          db.ProgramID,
+		AcademicTermID:     db.AcademicTermID,
+		ApplicationType:    admissionsbus.ApplicationType(db.ApplicationType),
+		Status:             admissionsbus.ApplicationStatus(db.Status),
+		AssignedReviewerID: db.AssignedReviewerID,
+		SubmittedAt:        localTimePtr(db.SubmittedAt),
+		DateCreated:        db.DateCreated.In(time.Local),
+		DateUpdated:        db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusApplications(dbs []applicationDB) []admissionsbus.Application {
+	bus := make([]admissionsbus.Application, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusApplication(db)
 	}
 
 	return bus

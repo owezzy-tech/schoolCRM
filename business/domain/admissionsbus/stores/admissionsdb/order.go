@@ -37,6 +37,14 @@ var duplicateReviewOrderByFields = map[string]string{
 	admissionsbus.OrderByDuplicateReviewDateCreated: "date_created",
 }
 
+var applicationOrderByFields = map[string]string{
+	admissionsbus.OrderByApplicationID:          "application_id",
+	admissionsbus.OrderByApplicationStatus:      "status",
+	admissionsbus.OrderByApplicationType:        "application_type",
+	admissionsbus.OrderByApplicationSubmittedAt: "submitted_at",
+	admissionsbus.OrderByApplicationDateCreated: "date_created",
+}
+
 func programOrderByClause(orderBy order.By) (string, error) {
 	by, exists := programOrderByFields[orderBy.Field]
 	if !exists {
@@ -66,6 +74,15 @@ func academicTermOrderByClause(orderBy order.By) (string, error) {
 
 func duplicateReviewOrderByClause(orderBy order.By) (string, error) {
 	by, exists := duplicateReviewOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func applicationOrderByClause(orderBy order.By) (string, error) {
+	by, exists := applicationOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

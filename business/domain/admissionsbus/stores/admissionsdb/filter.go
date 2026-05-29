@@ -132,3 +132,46 @@ func (s *Store) applyDuplicateReviewFilter(filter admissionsbus.DuplicateReviewQ
 		buf.WriteString(strings.Join(wc, " AND "))
 	}
 }
+
+func (s *Store) applyApplicationFilter(filter admissionsbus.ApplicationQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["application_id"] = filter.ID
+		wc = append(wc, "application_id = :application_id")
+	}
+
+	if filter.ConstituentID != nil {
+		data["constituent_id"] = filter.ConstituentID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.ProgramID != nil {
+		data["program_id"] = filter.ProgramID
+		wc = append(wc, "program_id = :program_id")
+	}
+
+	if filter.AcademicTermID != nil {
+		data["academic_term_id"] = filter.AcademicTermID
+		wc = append(wc, "academic_term_id = :academic_term_id")
+	}
+
+	if filter.ApplicationType != nil {
+		data["application_type"] = filter.ApplicationType.String()
+		wc = append(wc, "application_type = :application_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.ActiveOnly != nil && *filter.ActiveOnly {
+		wc = append(wc, "status NOT IN ('DENIED', 'WITHDRAWN', 'ENROLLED')")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
