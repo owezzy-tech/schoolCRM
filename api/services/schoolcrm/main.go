@@ -20,6 +20,9 @@ import (
 	http2 "github.com/owezzy/schoolCRM/app/sdk/authclient/http"
 	"github.com/owezzy/schoolCRM/app/sdk/debug"
 	"github.com/owezzy/schoolCRM/app/sdk/mux"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus/extensions/admissionsotel"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus/stores/admissionsdb"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus/extensions/auditotel"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus/stores/auditdb"
@@ -197,6 +200,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	vproductStorage := vproductdb.NewStore(log, db)
 	vproductBus := vproductbus.NewBusiness(vproductStorage, vproductOtelExt)
 
+	admissionsOtelExt := admissionsotel.NewExtension()
+	admissionsStorage := admissionsdb.NewStore(log, db)
+	admissionsBus := admissionsbus.NewBusiness(log, delegate, admissionsStorage, admissionsOtelExt)
+
 	// -------------------------------------------------------------------------
 	// Initialize authentication support
 
@@ -264,11 +271,12 @@ func run(ctx context.Context, log *logger.Logger) error {
 		DB:     db,
 		Tracer: tracer,
 		BusConfig: mux.BusConfig{
-			AuditBus:    auditBus,
-			UserBus:     userBus,
-			ProductBus:  productBus,
-			HomeBus:     homeBus,
-			VProductBus: vproductBus,
+			AdmissionsBus: admissionsBus,
+			AuditBus:      auditBus,
+			UserBus:       userBus,
+			ProductBus:    productBus,
+			HomeBus:       homeBus,
+			VProductBus:   vproductBus,
 		},
 		SchoolCRMConfig: mux.SchoolCRMConfig{
 			AuthClient: authClient,

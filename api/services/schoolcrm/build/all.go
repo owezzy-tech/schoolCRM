@@ -4,6 +4,7 @@
 package build
 
 import (
+	"github.com/owezzy/schoolCRM/app/domain/admissionsapp"
 	"github.com/owezzy/schoolCRM/app/domain/auditapp"
 	"github.com/owezzy/schoolCRM/app/domain/checkapp"
 	"github.com/owezzy/schoolCRM/app/domain/homeapp"
@@ -35,6 +36,12 @@ func (all) Add(app *web.App, cfg mux.Config) {
 		Log:        cfg.Log,
 		HomeBus:    cfg.BusConfig.HomeBus,
 		AuthClient: cfg.SchoolCRMConfig.AuthClient,
+	})
+
+	admissionsapp.Routes(app, admissionsapp.Config{
+		Log:           cfg.Log,
+		AdmissionsBus: cfg.BusConfig.AdmissionsBus,
+		AuthClient:    cfg.SchoolCRMConfig.AuthClient,
 	})
 
 	productapp.Routes(app, productapp.Config{

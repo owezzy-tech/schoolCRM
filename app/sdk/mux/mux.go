@@ -10,6 +10,7 @@ import (
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/authclient"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
@@ -65,11 +66,12 @@ type AuthConfig struct {
 }
 
 type BusConfig struct {
-	AuditBus    auditbus.ExtBusiness
-	UserBus     userbus.ExtBusiness
-	ProductBus  productbus.ExtBusiness
-	HomeBus     homebus.ExtBusiness
-	VProductBus vproductbus.ExtBusiness
+	AdmissionsBus admissionsbus.ExtBusiness
+	AuditBus      auditbus.ExtBusiness
+	UserBus       userbus.ExtBusiness
+	ProductBus    productbus.ExtBusiness
+	HomeBus       homebus.ExtBusiness
+	VProductBus   vproductbus.ExtBusiness
 }
 
 // Config contains all the mandatory systems required by handlers.
