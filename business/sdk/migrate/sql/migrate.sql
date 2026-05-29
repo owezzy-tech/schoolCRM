@@ -279,3 +279,48 @@ CREATE TABLE admissions_staff_profiles (
 CREATE INDEX idx_admissions_staff_profiles_user ON admissions_staff_profiles (user_id);
 CREATE INDEX idx_admissions_staff_profiles_roles ON admissions_staff_profiles USING GIN (admissions_roles);
 CREATE INDEX idx_admissions_staff_profiles_active ON admissions_staff_profiles (is_active);
+
+-- Version: 1.12
+-- Description: Create admissions lead scoring rules and scores
+CREATE TABLE admissions_lead_score_rules (
+    lead_score_rule_id  UUID      NOT NULL,
+    name                TEXT      NOT NULL,
+    description         TEXT      NULL,
+    criteria            JSONB     NOT NULL,
+    points              INT       NOT NULL,
+    is_active           BOOLEAN   NOT NULL,
+    priority            INT       NOT NULL,
+    date_created        TIMESTAMP NOT NULL,
+    date_updated        TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (lead_score_rule_id),
+    CONSTRAINT admissions_lead_score_rules_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT admissions_lead_score_rules_criteria_not_empty CHECK (jsonb_typeof(criteria) = 'array' AND jsonb_array_length(criteria) > 0),
+    CONSTRAINT admissions_lead_score_rules_points CHECK (points >= 0),
+    CONSTRAINT admissions_lead_score_rules_priority CHECK (priority >= 0)
+);
+
+CREATE INDEX idx_admissions_lead_score_rules_active ON admissions_lead_score_rules (is_active);
+CREATE INDEX idx_admissions_lead_score_rules_priority ON admissions_lead_score_rules (priority);
+
+CREATE TABLE admissions_lead_scores (
+    lead_score_id    UUID      NOT NULL,
+    constituent_id   UUID      NOT NULL,
+    total_score      INT       NOT NULL,
+    score_band       TEXT      NOT NULL,
+    breakdown        JSONB     NOT NULL,
+    recalculated_at  TIMESTAMP NOT NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (lead_score_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_lead_scores_unique_constituent UNIQUE (constituent_id),
+    CONSTRAINT admissions_lead_scores_total_score CHECK (total_score >= 0),
+    CONSTRAINT admissions_lead_scores_band CHECK (score_band IN ('COLD', 'WARM', 'HOT', 'READY_TO_APPLY')),
+    CONSTRAINT admissions_lead_scores_breakdown_array CHECK (jsonb_typeof(breakdown) = 'array')
+);
+
+CREATE INDEX idx_admissions_lead_scores_constituent ON admissions_lead_scores (constituent_id);
+CREATE INDEX idx_admissions_lead_scores_band ON admissions_lead_scores (score_band);
+CREATE INDEX idx_admissions_lead_scores_total_score ON admissions_lead_scores (total_score DESC);
