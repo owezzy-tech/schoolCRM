@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,16 @@ import (
 
 // Set of error variables for admissions reference data operations.
 var (
+	ErrConstituentNotFound      = errors.New("constituent not found")
+	ErrFirstNameRequired        = errors.New("first name required")
+	ErrLastNameRequired         = errors.New("last name required")
+	ErrDateOfBirthRequired      = errors.New("date of birth required")
+	ErrDateOfBirthInFuture      = errors.New("date of birth cannot be in the future")
+	ErrPrimaryPhoneRequired     = errors.New("primary phone required")
+	ErrInvalidLifecycleStage    = errors.New("invalid lifecycle stage")
+	ErrInvalidDuplicateStatus   = errors.New("invalid duplicate status")
+	ErrInvalidDuplicateLink     = errors.New("duplicate status does not match duplicate link")
+	ErrInvalidLifecycleChange   = errors.New("invalid lifecycle stage change")
 	ErrProgramNotFound          = errors.New("program not found")
 	ErrAcademicTermNotFound     = errors.New("academic term not found")
 	ErrInvalidTermDateRange     = errors.New("term start date must be before end date")
@@ -28,6 +39,13 @@ var (
 type Storer interface {
 	NewWithTx(tx sqldb.CommitRollbacker) (Storer, error)
 	Health(ctx context.Context) (Health, error)
+	CreateConstituent(ctx context.Context, cst Constituent) error
+	UpdateConstituent(ctx context.Context, cst Constituent) error
+	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
+	CountConstituents(ctx context.Context, filter ConstituentQueryFilter) (int, error)
+	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
+	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
+	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
 	UpsertProgram(ctx context.Context, prg Program) error
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -45,6 +63,13 @@ type Storer interface {
 type ExtBusiness interface {
 	NewWithTx(tx sqldb.CommitRollbacker) (ExtBusiness, error)
 	Health(ctx context.Context) (Health, error)
+	CreateConstituent(ctx context.Context, nc NewConstituent) (Constituent, error)
+	UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error)
+	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
+	CountConstituents(ctx context.Context, filter ConstituentQueryFilter) (int, error)
+	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
+	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
+	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
 	UpsertProgram(ctx context.Context, up UpsertProgram) (Program, error)
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -113,6 +138,172 @@ func (b *Business) Health(ctx context.Context) (Health, error) {
 	}
 
 	return health, nil
+}
+
+// CreateConstituent adds a new Constituent to the admissions context.
+func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Constituent, error) {
+	stage := nc.LifecycleStage
+	if stage == "" {
+		stage = LifecycleStageProspect
+	}
+
+	status := nc.DuplicateStatus
+	if status == "" {
+		status = DuplicateStatusActive
+	}
+
+	if err := validateRequiredConstituentFields(nc.FirstName, nc.LastName, nc.DateOfBirth, nc.PrimaryPhone); err != nil {
+		return Constituent{}, err
+	}
+
+	if err := validateLifecycleStage(stage); err != nil {
+		return Constituent{}, err
+	}
+
+	if err := validateDuplicateStatus(status, nc.DuplicateOfID); err != nil {
+		return Constituent{}, err
+	}
+
+	now := time.Now()
+	cst := Constituent{
+		ID:              uuid.New(),
+		FirstName:       strings.TrimSpace(nc.FirstName),
+		LastName:        strings.TrimSpace(nc.LastName),
+		PreferredName:   trimStringPtr(nc.PreferredName),
+		MiddleName:      trimStringPtr(nc.MiddleName),
+		Suffix:          trimStringPtr(nc.Suffix),
+		DateOfBirth:     nc.DateOfBirth,
+		PrimaryEmail:    nc.PrimaryEmail,
+		PrimaryPhone:    strings.TrimSpace(nc.PrimaryPhone),
+		ExternalSISID:   trimStringPtr(nc.ExternalSISID),
+		LifecycleStage:  stage,
+		DuplicateStatus: status,
+		DuplicateOfID:   nc.DuplicateOfID,
+		SISSyncedAt:     nc.SISSyncedAt,
+		DateCreated:     now,
+		DateUpdated:     now,
+	}
+
+	if err := b.storer.CreateConstituent(ctx, cst); err != nil {
+		return Constituent{}, fmt.Errorf("create constituent: %w", err)
+	}
+
+	return cst, nil
+}
+
+// UpdateConstituent modifies mutable information for a Constituent.
+func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error) {
+	if uc.PreferredName != nil {
+		cst.PreferredName = trimStringPtr(uc.PreferredName)
+	}
+
+	if uc.MiddleName != nil {
+		cst.MiddleName = trimStringPtr(uc.MiddleName)
+	}
+
+	if uc.Suffix != nil {
+		cst.Suffix = trimStringPtr(uc.Suffix)
+	}
+
+	if uc.PrimaryEmail != nil {
+		cst.PrimaryEmail = *uc.PrimaryEmail
+	}
+
+	if uc.PrimaryPhone != nil {
+		phone := strings.TrimSpace(*uc.PrimaryPhone)
+		if phone == "" {
+			return Constituent{}, ErrPrimaryPhoneRequired
+		}
+		cst.PrimaryPhone = phone
+	}
+
+	if uc.LifecycleStage != nil {
+		if err := validateLifecycleStage(*uc.LifecycleStage); err != nil {
+			return Constituent{}, err
+		}
+
+		if !canChangeLifecycleStage(cst.LifecycleStage, *uc.LifecycleStage) {
+			return Constituent{}, ErrInvalidLifecycleChange
+		}
+
+		cst.LifecycleStage = *uc.LifecycleStage
+	}
+
+	if uc.DuplicateStatus != nil || uc.DuplicateOfID != nil {
+		status := cst.DuplicateStatus
+		if uc.DuplicateStatus != nil {
+			status = *uc.DuplicateStatus
+		}
+
+		duplicateOfID := cst.DuplicateOfID
+		if uc.DuplicateOfID != nil {
+			duplicateOfID = uc.DuplicateOfID
+		}
+
+		if err := validateDuplicateStatus(status, duplicateOfID); err != nil {
+			return Constituent{}, err
+		}
+
+		cst.DuplicateStatus = status
+		cst.DuplicateOfID = duplicateOfID
+	}
+
+	if uc.SISSyncedAt != nil {
+		cst.SISSyncedAt = uc.SISSyncedAt
+	}
+
+	cst.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateConstituent(ctx, cst); err != nil {
+		return Constituent{}, fmt.Errorf("update constituent: %w", err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituents retrieves a list of existing constituents.
+func (b *Business) QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error) {
+	constituents, err := b.storer.QueryConstituents(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query constituents: %w", err)
+	}
+
+	return constituents, nil
+}
+
+// CountConstituents returns the total number of constituents.
+func (b *Business) CountConstituents(ctx context.Context, filter ConstituentQueryFilter) (int, error) {
+	return b.storer.CountConstituents(ctx, filter)
+}
+
+// QueryConstituentByID finds a Constituent by ID.
+func (b *Business) QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByID(ctx, constituentID)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: constituentID[%s]: %w", constituentID, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByPrimaryEmail finds a Constituent by primary email.
+func (b *Business) QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByPrimaryEmail(ctx, email)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: primaryEmail[%s]: %w", email, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByExternalSISID finds a Constituent by SIS ID.
+func (b *Business) QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByExternalSISID(ctx, externalSISID)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: externalSISID[%s]: %w", externalSISID, err)
+	}
+
+	return cst, nil
 }
 
 // UpsertProgram creates or updates SIS-owned Program reference data for sync/import paths.
@@ -250,4 +441,91 @@ func (b *Business) QueryAcademicTermByExternalSISID(ctx context.Context, externa
 	}
 
 	return term, nil
+}
+
+func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
+	if strings.TrimSpace(firstName) == "" {
+		return ErrFirstNameRequired
+	}
+
+	if strings.TrimSpace(lastName) == "" {
+		return ErrLastNameRequired
+	}
+
+	if dob.IsZero() {
+		return ErrDateOfBirthRequired
+	}
+
+	if dob.After(time.Now()) {
+		return ErrDateOfBirthInFuture
+	}
+
+	if strings.TrimSpace(primaryPhone) == "" {
+		return ErrPrimaryPhoneRequired
+	}
+
+	return nil
+}
+
+func validateLifecycleStage(stage LifecycleStage) error {
+	switch stage {
+	case LifecycleStageProspect,
+		LifecycleStageInquiry,
+		LifecycleStageApplicant,
+		LifecycleStageAdmitted,
+		LifecycleStageEnrolled,
+		LifecycleStageAlumni:
+		return nil
+	default:
+		return ErrInvalidLifecycleStage
+	}
+}
+
+func canChangeLifecycleStage(from LifecycleStage, to LifecycleStage) bool {
+	if from == to {
+		return true
+	}
+
+	if to == LifecycleStageAlumni {
+		return true
+	}
+
+	transitions := map[LifecycleStage]LifecycleStage{
+		LifecycleStageProspect:  LifecycleStageInquiry,
+		LifecycleStageInquiry:   LifecycleStageApplicant,
+		LifecycleStageApplicant: LifecycleStageAdmitted,
+		LifecycleStageAdmitted:  LifecycleStageEnrolled,
+	}
+
+	return transitions[from] == to
+}
+
+func validateDuplicateStatus(status DuplicateStatus, duplicateOfID *uuid.UUID) error {
+	switch status {
+	case DuplicateStatusActive:
+		if duplicateOfID != nil {
+			return ErrInvalidDuplicateLink
+		}
+		return nil
+	case DuplicateStatusMerged, DuplicateStatusDuplicateOf:
+		if duplicateOfID == nil {
+			return ErrInvalidDuplicateLink
+		}
+		return nil
+	default:
+		return ErrInvalidDuplicateStatus
+	}
+}
+
+func trimStringPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+
+	return &trimmed
 }

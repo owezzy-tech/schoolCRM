@@ -5,8 +5,19 @@ import "github.com/owezzy/schoolCRM/business/sdk/order"
 // DefaultProgramOrderBy represents the default way we sort programs.
 var DefaultProgramOrderBy = order.NewBy(OrderByProgramID, order.ASC)
 
+// DefaultConstituentOrderBy represents the default way we sort constituents.
+var DefaultConstituentOrderBy = order.NewBy(OrderByConstituentID, order.ASC)
+
 // DefaultAcademicTermOrderBy represents the default way we sort academic terms.
 var DefaultAcademicTermOrderBy = order.NewBy(OrderByAcademicTermStartDate, order.ASC)
+
+// Set of fields that programs can be ordered by.
+const (
+	OrderByConstituentID             = "a"
+	OrderByConstituentLastName       = "b"
+	OrderByConstituentPrimaryEmail   = "c"
+	OrderByConstituentLifecycleStage = "d"
+)
 
 // Set of fields that programs can be ordered by.
 const (

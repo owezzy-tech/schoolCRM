@@ -1,6 +1,7 @@
 package admissionsbus
 
 import (
+	"net/mail"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,8 +14,88 @@ type Health struct {
 	Aggregates []string
 }
 
+// LifecycleStage represents a constituent's overall admissions journey.
+type LifecycleStage string
+
+// Set of valid constituent lifecycle stages.
+const (
+	LifecycleStageProspect  LifecycleStage = "PROSPECT"
+	LifecycleStageInquiry   LifecycleStage = "INQUIRY"
+	LifecycleStageApplicant LifecycleStage = "APPLICANT"
+	LifecycleStageAdmitted  LifecycleStage = "ADMITTED"
+	LifecycleStageEnrolled  LifecycleStage = "ENROLLED"
+	LifecycleStageAlumni    LifecycleStage = "ALUMNI"
+)
+
+// String returns the lifecycle stage as a string.
+func (stage LifecycleStage) String() string {
+	return string(stage)
+}
+
+// DuplicateStatus represents whether a constituent is canonical or duplicate-linked.
+type DuplicateStatus string
+
+// Set of valid constituent duplicate statuses.
+const (
+	DuplicateStatusActive      DuplicateStatus = "ACTIVE"
+	DuplicateStatusMerged      DuplicateStatus = "MERGED"
+	DuplicateStatusDuplicateOf DuplicateStatus = "DUPLICATE_OF"
+)
+
+// String returns the duplicate status as a string.
+func (status DuplicateStatus) String() string {
+	return string(status)
+}
+
 // Constituent is the durable person identity root for admissions workflows.
-type Constituent struct{}
+type Constituent struct {
+	ID              uuid.UUID
+	FirstName       string
+	LastName        string
+	PreferredName   *string
+	MiddleName      *string
+	Suffix          *string
+	DateOfBirth     time.Time
+	PrimaryEmail    mail.Address
+	PrimaryPhone    string
+	ExternalSISID   *string
+	LifecycleStage  LifecycleStage
+	DuplicateStatus DuplicateStatus
+	DuplicateOfID   *uuid.UUID
+	SISSyncedAt     *time.Time
+	DateCreated     time.Time
+	DateUpdated     time.Time
+}
+
+// NewConstituent is what we require from clients when adding a Constituent.
+type NewConstituent struct {
+	FirstName       string
+	LastName        string
+	PreferredName   *string
+	MiddleName      *string
+	Suffix          *string
+	DateOfBirth     time.Time
+	PrimaryEmail    mail.Address
+	PrimaryPhone    string
+	ExternalSISID   *string
+	LifecycleStage  LifecycleStage
+	DuplicateStatus DuplicateStatus
+	DuplicateOfID   *uuid.UUID
+	SISSyncedAt     *time.Time
+}
+
+// UpdateConstituent defines what information may be provided to modify a Constituent.
+type UpdateConstituent struct {
+	PreferredName   *string
+	MiddleName      *string
+	Suffix          *string
+	PrimaryEmail    *mail.Address
+	PrimaryPhone    *string
+	LifecycleStage  *LifecycleStage
+	DuplicateStatus *DuplicateStatus
+	DuplicateOfID   *uuid.UUID
+	SISSyncedAt     *time.Time
+}
 
 // Inquiry captures pre-application interest in the school.
 type Inquiry struct{}
@@ -123,4 +204,14 @@ type AcademicTermQueryFilter struct {
 	ExternalSISID *string
 	Code          *string
 	Active        *bool
+}
+
+// ConstituentQueryFilter holds the available fields a constituent query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ConstituentQueryFilter struct {
+	ID              *uuid.UUID
+	PrimaryEmail    *mail.Address
+	ExternalSISID   *string
+	LifecycleStage  *LifecycleStage
+	DuplicateStatus *DuplicateStatus
 }
