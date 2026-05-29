@@ -409,6 +409,104 @@ func TestCreateApplicationValidatesApplicationType(t *testing.T) {
 	}
 }
 
+func TestTransitionApplicationStatusAllowsHappyPath(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	app := Application{
+		ID:     uuid.New(),
+		Status: ApplicationStatusDraft,
+	}
+	reason := "submitted by applicant"
+	actorID := uuid.New()
+
+	updated, transition, err := bus.TransitionApplicationStatus(context.Background(), app, NewApplicationTransition{
+		ToStatus: ApplicationStatusSubmitted,
+		ActorID:  actorID,
+		Reason:   &reason,
+	})
+	if err != nil {
+		t.Fatalf("TransitionApplicationStatus returned error: %v", err)
+	}
+
+	if updated.Status != ApplicationStatusSubmitted {
+		t.Fatalf("Status = %s, want %s", updated.Status, ApplicationStatusSubmitted)
+	}
+
+	if updated.SubmittedAt == nil {
+		t.Fatal("SubmittedAt is nil, want timestamp")
+	}
+
+	if transition.FromStatus != ApplicationStatusDraft || transition.ToStatus != ApplicationStatusSubmitted || transition.ActorID != actorID {
+		t.Fatalf("transition = %+v, want from DRAFT to SUBMITTED by actor", transition)
+	}
+
+	if len(store.applicationTransitions) != 1 {
+		t.Fatalf("transition count = %d, want 1", len(store.applicationTransitions))
+	}
+}
+
+func TestTransitionApplicationStatusRejectsInvalidTransition(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	app := Application{
+		ID:     uuid.New(),
+		Status: ApplicationStatusDraft,
+	}
+
+	_, _, err := bus.TransitionApplicationStatus(context.Background(), app, NewApplicationTransition{
+		ToStatus: ApplicationStatusAdmitted,
+		ActorID:  uuid.New(),
+	})
+
+	if !errors.Is(err, ErrInvalidApplicationTransition) {
+		t.Fatalf("err = %v, want %v", err, ErrInvalidApplicationTransition)
+	}
+}
+
+func TestTransitionApplicationStatusAllowsWithdrawalFromReviewStates(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	allowed := []ApplicationStatus{
+		ApplicationStatusDraft,
+		ApplicationStatusSubmitted,
+		ApplicationStatusAwaitingDocuments,
+		ApplicationStatusReadyForReview,
+		ApplicationStatusInReview,
+	}
+
+	for _, from := range allowed {
+		t.Run(from.String(), func(t *testing.T) {
+			t.Parallel()
+
+			_, _, err := bus.TransitionApplicationStatus(context.Background(), Application{ID: uuid.New(), Status: from}, NewApplicationTransition{
+				ToStatus: ApplicationStatusWithdrawn,
+				ActorID:  uuid.New(),
+			})
+			if err != nil {
+				t.Fatalf("TransitionApplicationStatus returned error: %v", err)
+			}
+		})
+	}
+}
+
+func TestTransitionApplicationStatusRequiresActor(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	_, _, err := bus.TransitionApplicationStatus(context.Background(), Application{ID: uuid.New(), Status: ApplicationStatusDraft}, NewApplicationTransition{
+		ToStatus: ApplicationStatusSubmitted,
+	})
+
+	if !errors.Is(err, ErrApplicationActorRequired) {
+		t.Fatalf("err = %v, want %v", err, ErrApplicationActorRequired)
+	}
+}
+
 func newTestBusiness() ExtBusiness {
 	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{})
 }
@@ -434,12 +532,13 @@ func (ioDiscard) Write(p []byte) (int, error) {
 }
 
 type stubStore struct {
-	constituents       map[uuid.UUID]Constituent
-	constituentByEmail map[string]Constituent
-	duplicateReviews   []DuplicateReview
-	programs           map[uuid.UUID]Program
-	terms              map[uuid.UUID]AcademicTerm
-	applications       []Application
+	constituents           map[uuid.UUID]Constituent
+	constituentByEmail     map[string]Constituent
+	duplicateReviews       []DuplicateReview
+	programs               map[uuid.UUID]Program
+	terms                  map[uuid.UUID]AcademicTerm
+	applications           []Application
+	applicationTransitions []ApplicationTransition
 }
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
@@ -582,6 +681,17 @@ func (s *stubStore) CreateApplication(_ context.Context, app Application) error 
 	return nil
 }
 
+func (s *stubStore) UpdateApplication(_ context.Context, app Application) error {
+	for i, existing := range s.applications {
+		if existing.ID == app.ID {
+			s.applications[i] = app
+			return nil
+		}
+	}
+	s.applications = append(s.applications, app)
+	return nil
+}
+
 func (s *stubStore) QueryApplications(context.Context, ApplicationQueryFilter, order.By, page.Page) ([]Application, error) {
 	return s.applications, nil
 }
@@ -606,4 +716,17 @@ func (s *stubStore) QueryActiveApplicationByTuple(_ context.Context, constituent
 		}
 	}
 	return Application{}, ErrApplicationNotFound
+}
+
+func (s *stubStore) CreateApplicationTransition(_ context.Context, transition ApplicationTransition) error {
+	s.applicationTransitions = append(s.applicationTransitions, transition)
+	return nil
+}
+
+func (s *stubStore) QueryApplicationTransitions(context.Context, ApplicationTransitionQueryFilter, order.By, page.Page) ([]ApplicationTransition, error) {
+	return s.applicationTransitions, nil
+}
+
+func (s *stubStore) CountApplicationTransitions(context.Context, ApplicationTransitionQueryFilter) (int, error) {
+	return len(s.applicationTransitions), nil
 }

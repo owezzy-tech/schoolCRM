@@ -18,38 +18,40 @@ import (
 
 // Set of error variables for admissions reference data operations.
 var (
-	ErrConstituentNotFound      = errors.New("constituent not found")
-	ErrFirstNameRequired        = errors.New("first name required")
-	ErrLastNameRequired         = errors.New("last name required")
-	ErrDateOfBirthRequired      = errors.New("date of birth required")
-	ErrDateOfBirthInFuture      = errors.New("date of birth cannot be in the future")
-	ErrPrimaryPhoneRequired     = errors.New("primary phone required")
-	ErrInvalidLifecycleStage    = errors.New("invalid lifecycle stage")
-	ErrInvalidDuplicateStatus   = errors.New("invalid duplicate status")
-	ErrInvalidDuplicateLink     = errors.New("duplicate status does not match duplicate link")
-	ErrInvalidLifecycleChange   = errors.New("invalid lifecycle stage change")
-	ErrProgramNotFound          = errors.New("program not found")
-	ErrAcademicTermNotFound     = errors.New("academic term not found")
-	ErrInvalidTermDateRange     = errors.New("term start date must be before end date")
-	ErrInvalidApplicationWindow = errors.New("application deadline must be on or after application start date")
-	ErrDuplicateReviewNotFound  = errors.New("duplicate review not found")
-	ErrInvalidDuplicateReview   = errors.New("invalid duplicate review")
-	ErrInvalidMatchType         = errors.New("invalid duplicate match type")
-	ErrInvalidMatchScore        = errors.New("duplicate match score must be between 0 and 100")
-	ErrMatchReasonRequired      = errors.New("duplicate match reason required")
-	ErrInvalidReviewStatus      = errors.New("invalid duplicate review status")
-	ErrInvalidResolution        = errors.New("invalid duplicate review resolution")
-	ErrDuplicateReviewResolved  = errors.New("duplicate review already resolved")
-	ErrResolutionActorRequired  = errors.New("resolution actor required")
-	ErrApplicationNotFound      = errors.New("application not found")
-	ErrInvalidApplicationType   = errors.New("invalid application type")
-	ErrInvalidApplicationStatus = errors.New("invalid application status")
-	ErrDuplicateApplication     = errors.New("active application already exists for constituent term and program")
-	ErrConstituentIDRequired    = errors.New("constituent id required")
-	ErrProgramIDRequired        = errors.New("program id required")
-	ErrAcademicTermIDRequired   = errors.New("academic term id required")
-	ErrInactiveProgram          = errors.New("program is inactive")
-	ErrInactiveAcademicTerm     = errors.New("academic term is inactive")
+	ErrConstituentNotFound          = errors.New("constituent not found")
+	ErrFirstNameRequired            = errors.New("first name required")
+	ErrLastNameRequired             = errors.New("last name required")
+	ErrDateOfBirthRequired          = errors.New("date of birth required")
+	ErrDateOfBirthInFuture          = errors.New("date of birth cannot be in the future")
+	ErrPrimaryPhoneRequired         = errors.New("primary phone required")
+	ErrInvalidLifecycleStage        = errors.New("invalid lifecycle stage")
+	ErrInvalidDuplicateStatus       = errors.New("invalid duplicate status")
+	ErrInvalidDuplicateLink         = errors.New("duplicate status does not match duplicate link")
+	ErrInvalidLifecycleChange       = errors.New("invalid lifecycle stage change")
+	ErrProgramNotFound              = errors.New("program not found")
+	ErrAcademicTermNotFound         = errors.New("academic term not found")
+	ErrInvalidTermDateRange         = errors.New("term start date must be before end date")
+	ErrInvalidApplicationWindow     = errors.New("application deadline must be on or after application start date")
+	ErrDuplicateReviewNotFound      = errors.New("duplicate review not found")
+	ErrInvalidDuplicateReview       = errors.New("invalid duplicate review")
+	ErrInvalidMatchType             = errors.New("invalid duplicate match type")
+	ErrInvalidMatchScore            = errors.New("duplicate match score must be between 0 and 100")
+	ErrMatchReasonRequired          = errors.New("duplicate match reason required")
+	ErrInvalidReviewStatus          = errors.New("invalid duplicate review status")
+	ErrInvalidResolution            = errors.New("invalid duplicate review resolution")
+	ErrDuplicateReviewResolved      = errors.New("duplicate review already resolved")
+	ErrResolutionActorRequired      = errors.New("resolution actor required")
+	ErrApplicationNotFound          = errors.New("application not found")
+	ErrInvalidApplicationType       = errors.New("invalid application type")
+	ErrInvalidApplicationStatus     = errors.New("invalid application status")
+	ErrDuplicateApplication         = errors.New("active application already exists for constituent term and program")
+	ErrConstituentIDRequired        = errors.New("constituent id required")
+	ErrProgramIDRequired            = errors.New("program id required")
+	ErrAcademicTermIDRequired       = errors.New("academic term id required")
+	ErrInactiveProgram              = errors.New("program is inactive")
+	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
+	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
+	ErrApplicationActorRequired     = errors.New("application transition actor required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -84,6 +86,10 @@ type Storer interface {
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 	QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error)
+	UpdateApplication(ctx context.Context, app Application) error
+	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
+	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
+	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -117,6 +123,9 @@ type ExtBusiness interface {
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error)
+	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
+	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -700,6 +709,65 @@ func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.
 	return app, nil
 }
 
+// TransitionApplicationStatus changes an Application status and records immutable transition history.
+func (b *Business) TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error) {
+	if nt.ActorID == uuid.Nil {
+		return Application{}, ApplicationTransition{}, ErrApplicationActorRequired
+	}
+
+	if err := validateApplicationStatus(nt.ToStatus); err != nil {
+		return Application{}, ApplicationTransition{}, err
+	}
+
+	if !canTransitionApplicationStatus(app.Status, nt.ToStatus) {
+		return Application{}, ApplicationTransition{}, ErrInvalidApplicationTransition
+	}
+
+	now := time.Now()
+	transition := ApplicationTransition{
+		ID:            uuid.New(),
+		ApplicationID: app.ID,
+		FromStatus:    app.Status,
+		ToStatus:      nt.ToStatus,
+		ActorID:       nt.ActorID,
+		Reason:        trimStringPtr(nt.Reason),
+		Note:          trimStringPtr(nt.Note),
+		Metadata:      nt.Metadata,
+		DateCreated:   now,
+	}
+
+	app.Status = nt.ToStatus
+	app.DateUpdated = now
+	if nt.ToStatus == ApplicationStatusSubmitted && app.SubmittedAt == nil {
+		app.SubmittedAt = &now
+	}
+
+	if err := b.storer.UpdateApplication(ctx, app); err != nil {
+		return Application{}, ApplicationTransition{}, fmt.Errorf("update application: %w", err)
+	}
+
+	if err := b.storer.CreateApplicationTransition(ctx, transition); err != nil {
+		return Application{}, ApplicationTransition{}, fmt.Errorf("create application transition: %w", err)
+	}
+
+	return app, transition, nil
+}
+
+// QueryApplicationTransitions retrieves a list of application transition history records.
+func (b *Business) QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error) {
+	transitions, err := b.storer.QueryApplicationTransitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query application transitions: %w", err)
+	}
+
+	return transitions, nil
+}
+
+// CountApplicationTransitions returns the total number of application transition records.
+func (b *Business) CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error) {
+	return b.storer.CountApplicationTransitions(ctx, filter)
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -887,6 +955,56 @@ func isApplicationActive(status ApplicationStatus) bool {
 	default:
 		return true
 	}
+}
+
+func canTransitionApplicationStatus(from ApplicationStatus, to ApplicationStatus) bool {
+	transitions := map[ApplicationStatus][]ApplicationStatus{
+		ApplicationStatusDraft: {
+			ApplicationStatusSubmitted,
+			ApplicationStatusWithdrawn,
+		},
+		ApplicationStatusSubmitted: {
+			ApplicationStatusAwaitingDocuments,
+			ApplicationStatusReadyForReview,
+			ApplicationStatusWithdrawn,
+		},
+		ApplicationStatusAwaitingDocuments: {
+			ApplicationStatusReadyForReview,
+			ApplicationStatusWithdrawn,
+		},
+		ApplicationStatusReadyForReview: {
+			ApplicationStatusInReview,
+			ApplicationStatusWithdrawn,
+		},
+		ApplicationStatusInReview: {
+			ApplicationStatusDecisionPending,
+			ApplicationStatusWithdrawn,
+		},
+		ApplicationStatusDecisionPending: {
+			ApplicationStatusAdmitted,
+			ApplicationStatusDenied,
+			ApplicationStatusWaitlisted,
+			ApplicationStatusDeferred,
+		},
+		ApplicationStatusAdmitted: {
+			ApplicationStatusEnrolled,
+		},
+		ApplicationStatusWaitlisted: {
+			ApplicationStatusAdmitted,
+			ApplicationStatusDeferred,
+		},
+		ApplicationStatusDeferred: {
+			ApplicationStatusSubmitted,
+		},
+	}
+
+	for _, next := range transitions[from] {
+		if next == to {
+			return true
+		}
+	}
+
+	return false
 }
 
 func trimStringPtr(value *string) *string {

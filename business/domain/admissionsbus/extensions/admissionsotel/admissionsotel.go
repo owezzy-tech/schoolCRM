@@ -247,3 +247,27 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
 }
+
+// TransitionApplicationStatus applies otel to Application status transitions.
+func (ext *Extension) TransitionApplicationStatus(ctx context.Context, app admissionsbus.Application, nt admissionsbus.NewApplicationTransition) (admissionsbus.Application, admissionsbus.ApplicationTransition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.transitionapplicationstatus")
+	defer span.End()
+
+	return ext.bus.TransitionApplicationStatus(ctx, app, nt)
+}
+
+// QueryApplicationTransitions applies otel to Application transition queries.
+func (ext *Extension) QueryApplicationTransitions(ctx context.Context, filter admissionsbus.ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationTransition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationtransitions")
+	defer span.End()
+
+	return ext.bus.QueryApplicationTransitions(ctx, filter, orderBy, page)
+}
+
+// CountApplicationTransitions applies otel to Application transition counts.
+func (ext *Extension) CountApplicationTransitions(ctx context.Context, filter admissionsbus.ApplicationTransitionQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplicationtransitions")
+	defer span.End()
+
+	return ext.bus.CountApplicationTransitions(ctx, filter)
+}
