@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { AuthUtils } from 'app/core/auth/auth.utils';
+import { TokenStorageService } from 'app/core/auth/token-storage.service';
 import { Observable, of } from 'rxjs';
 import { map, switchMap, take } from 'rxjs/operators';
 import { AuthApiActions, AuthPageActions, selectAuthenticated } from './store';
@@ -12,13 +13,14 @@ export class AuthService {
     private readonly store = inject(Store);
     private readonly actions$ = inject(Actions);
     private readonly httpClient = inject(HttpClient);
+    private readonly tokenStorage = inject(TokenStorageService);
 
     set accessToken(token: string) {
-        localStorage.setItem('accessToken', token);
+        this.tokenStorage.set(token);
     }
 
     get accessToken(): string {
-        return localStorage.getItem('accessToken') ?? '';
+        return this.tokenStorage.get() ?? '';
     }
 
     forgotPassword(email: string): Observable<unknown> {
