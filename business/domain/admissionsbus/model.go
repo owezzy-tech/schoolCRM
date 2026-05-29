@@ -38,6 +38,7 @@ const (
 	AdmissionsPermissionResolveDuplicates  AdmissionsPermission = "admissions:resolve_duplicates"
 	AdmissionsPermissionManageReferences   AdmissionsPermission = "admissions:manage_references"
 	AdmissionsPermissionManageStaff        AdmissionsPermission = "admissions:manage_staff"
+	AdmissionsPermissionManageLeadScoring  AdmissionsPermission = "admissions:manage_lead_scoring"
 )
 
 // String returns the admissions permission as a string.
@@ -251,6 +252,104 @@ type ApplicationTransition struct {
 	DateCreated   time.Time
 }
 
+// LeadScoreBand represents an explainable score tier for a constituent.
+type LeadScoreBand string
+
+// Set of derived lead score bands.
+const (
+	LeadScoreBandCold         LeadScoreBand = "COLD"
+	LeadScoreBandWarm         LeadScoreBand = "WARM"
+	LeadScoreBandHot          LeadScoreBand = "HOT"
+	LeadScoreBandReadyToApply LeadScoreBand = "READY_TO_APPLY"
+)
+
+// String returns the lead score band as a string.
+func (band LeadScoreBand) String() string {
+	return string(band)
+}
+
+// LeadScoreCriterionField represents a supported rule criterion field.
+type LeadScoreCriterionField string
+
+// Set of supported lead score criterion fields.
+const (
+	LeadScoreCriterionFieldLifecycleStage    LeadScoreCriterionField = "lifecycle_stage"
+	LeadScoreCriterionFieldApplicationType   LeadScoreCriterionField = "application_type"
+	LeadScoreCriterionFieldApplicationStatus LeadScoreCriterionField = "application_status"
+	LeadScoreCriterionFieldProgramID         LeadScoreCriterionField = "program_id"
+	LeadScoreCriterionFieldAcademicTermID    LeadScoreCriterionField = "academic_term_id"
+)
+
+// String returns the criterion field as a string.
+func (field LeadScoreCriterionField) String() string {
+	return string(field)
+}
+
+// LeadScoreCriterionOperator represents a supported rule comparison operator.
+type LeadScoreCriterionOperator string
+
+// Set of supported lead score criterion operators.
+const (
+	LeadScoreCriterionOperatorEquals LeadScoreCriterionOperator = "EQ"
+	LeadScoreCriterionOperatorIn     LeadScoreCriterionOperator = "IN"
+)
+
+// String returns the criterion operator as a string.
+func (operator LeadScoreCriterionOperator) String() string {
+	return string(operator)
+}
+
+// LeadScoreCriterion is one condition in a lead score rule.
+type LeadScoreCriterion struct {
+	Field    LeadScoreCriterionField
+	Operator LeadScoreCriterionOperator
+	Values   []string
+}
+
+// LeadScoreRule defines an enabled/disabled rule that contributes points to a constituent score.
+type LeadScoreRule struct {
+	ID          uuid.UUID
+	Name        string
+	Description *string
+	Criteria    []LeadScoreCriterion
+	Points      int
+	Active      bool
+	Priority    int
+	DateCreated time.Time
+	DateUpdated time.Time
+}
+
+// NewLeadScoreRule is what we require to create or update a lead score rule.
+type NewLeadScoreRule struct {
+	Name        string
+	Description *string
+	Criteria    []LeadScoreCriterion
+	Points      int
+	Active      bool
+	Priority    int
+}
+
+// LeadScoreRuleResult explains how one rule contributed to a lead score.
+type LeadScoreRuleResult struct {
+	RuleID  uuid.UUID
+	Name    string
+	Points  int
+	Matched bool
+	Reason  string
+}
+
+// LeadScore records the latest explainable score for a constituent.
+type LeadScore struct {
+	ID             uuid.UUID
+	ConstituentID  uuid.UUID
+	TotalScore     int
+	Band           LeadScoreBand
+	Breakdown      []LeadScoreRuleResult
+	RecalculatedAt time.Time
+	DateCreated    time.Time
+	DateUpdated    time.Time
+}
+
 // StaffProfile connects an identity user to admissions-specific staff roles.
 type StaffProfile struct {
 	ID          uuid.UUID
@@ -392,6 +491,8 @@ func AggregateNames() []string {
 		"constituent",
 		"inquiry",
 		"application",
+		"leadScoreRule",
+		"leadScore",
 		"checklist",
 		"document",
 		"decision",
@@ -408,6 +509,22 @@ type StaffProfileQueryFilter struct {
 	UserID *uuid.UUID
 	Role   *AdmissionsRole
 	Active *bool
+}
+
+// LeadScoreRuleQueryFilter holds the available fields a lead score rule query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type LeadScoreRuleQueryFilter struct {
+	ID     *uuid.UUID
+	Active *bool
+}
+
+// LeadScoreQueryFilter holds the available fields a lead score query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type LeadScoreQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	Band          *LeadScoreBand
+	MinScore      *int
 }
 
 // ProgramQueryFilter holds the available fields a program query can be filtered on.

@@ -15,6 +15,20 @@ var staffProfileOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByStaffProfileDateCreated,
 }
 
+var leadScoreRuleOrderByFields = map[string]string{
+	"lead_score_rule_id": admissionsbus.OrderByLeadScoreRuleID,
+	"name":               admissionsbus.OrderByLeadScoreRuleName,
+	"priority":           admissionsbus.OrderByLeadScoreRulePriority,
+	"date_created":       admissionsbus.OrderByLeadScoreRuleDateCreated,
+}
+
+var leadScoreOrderByFields = map[string]string{
+	"lead_score_id":   admissionsbus.OrderByLeadScoreID,
+	"total_score":     admissionsbus.OrderByLeadScoreTotalScore,
+	"band":            admissionsbus.OrderByLeadScoreBand,
+	"recalculated_at": admissionsbus.OrderByLeadScoreRecalculatedAt,
+}
+
 var constituentOrderByFields = map[string]string{
 	"constituent_id":  admissionsbus.OrderByConstituentID,
 	"last_name":       admissionsbus.OrderByConstituentLastName,

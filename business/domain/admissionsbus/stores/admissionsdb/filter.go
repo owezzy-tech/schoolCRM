@@ -70,6 +70,54 @@ func (s *Store) applyStaffProfileFilter(filter admissionsbus.StaffProfileQueryFi
 	}
 }
 
+func (s *Store) applyLeadScoreRuleFilter(filter admissionsbus.LeadScoreRuleQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["lead_score_rule_id"] = filter.ID
+		wc = append(wc, "lead_score_rule_id = :lead_score_rule_id")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyLeadScoreFilter(filter admissionsbus.LeadScoreQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["lead_score_id"] = filter.ID
+		wc = append(wc, "lead_score_id = :lead_score_id")
+	}
+
+	if filter.ConstituentID != nil {
+		data["constituent_id"] = filter.ConstituentID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.Band != nil {
+		data["score_band"] = filter.Band.String()
+		wc = append(wc, "score_band = :score_band")
+	}
+
+	if filter.MinScore != nil {
+		data["min_score"] = filter.MinScore
+		wc = append(wc, "total_score >= :min_score")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
 func (s *Store) applyProgramFilter(filter admissionsbus.ProgramQueryFilter, data map[string]any, buf *bytes.Buffer) {
 	var wc []string
 

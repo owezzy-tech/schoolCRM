@@ -8,6 +8,12 @@ var DefaultProgramOrderBy = order.NewBy(OrderByProgramID, order.ASC)
 // DefaultStaffProfileOrderBy represents the default way we sort staff profiles.
 var DefaultStaffProfileOrderBy = order.NewBy(OrderByStaffProfileID, order.ASC)
 
+// DefaultLeadScoreRuleOrderBy represents the default way we sort lead score rules.
+var DefaultLeadScoreRuleOrderBy = order.NewBy(OrderByLeadScoreRulePriority, order.ASC)
+
+// DefaultLeadScoreOrderBy represents the default way we sort lead scores.
+var DefaultLeadScoreOrderBy = order.NewBy(OrderByLeadScoreTotalScore, order.DESC)
+
 // DefaultConstituentOrderBy represents the default way we sort constituents.
 var DefaultConstituentOrderBy = order.NewBy(OrderByConstituentID, order.ASC)
 
@@ -28,6 +34,22 @@ const (
 	OrderByStaffProfileID          = "a"
 	OrderByStaffProfileUser        = "b"
 	OrderByStaffProfileDateCreated = "c"
+)
+
+// Set of fields that lead score rules can be ordered by.
+const (
+	OrderByLeadScoreRuleID          = "a"
+	OrderByLeadScoreRuleName        = "b"
+	OrderByLeadScoreRulePriority    = "c"
+	OrderByLeadScoreRuleDateCreated = "d"
+)
+
+// Set of fields that lead scores can be ordered by.
+const (
+	OrderByLeadScoreID             = "a"
+	OrderByLeadScoreTotalScore     = "b"
+	OrderByLeadScoreBand           = "c"
+	OrderByLeadScoreRecalculatedAt = "d"
 )
 
 // Set of fields that constituents can be ordered by.

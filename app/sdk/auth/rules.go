@@ -26,6 +26,7 @@ const (
 	RuleAdmissionsResolveDuplicates  = "rule_admissions_resolve_duplicates"
 	RuleAdmissionsManageReferences   = "rule_admissions_manage_references"
 	RuleAdmissionsManageStaff        = "rule_admissions_manage_staff"
+	RuleAdmissionsManageLeadScoring  = "rule_admissions_manage_lead_scoring"
 )
 
 // Package name of our rego code.

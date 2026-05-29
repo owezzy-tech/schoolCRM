@@ -221,6 +221,159 @@ func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T
 	}
 }
 
+func TestCreateLeadScoreRuleValidatesExplainableCriteria(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nr   NewLeadScoreRule
+		want error
+	}{
+		{
+			name: "name",
+			nr: NewLeadScoreRule{
+				Criteria: []LeadScoreCriterion{{Field: LeadScoreCriterionFieldLifecycleStage, Operator: LeadScoreCriterionOperatorEquals, Values: []string{LifecycleStageApplicant.String()}}},
+			},
+			want: ErrLeadScoreRuleNameRequired,
+		},
+		{
+			name: "criteria",
+			nr: NewLeadScoreRule{
+				Name: "Applicant stage",
+			},
+			want: ErrLeadScoreCriteriaRequired,
+		},
+		{
+			name: "points",
+			nr: NewLeadScoreRule{
+				Name:     "Applicant stage",
+				Criteria: []LeadScoreCriterion{{Field: LeadScoreCriterionFieldLifecycleStage, Operator: LeadScoreCriterionOperatorEquals, Values: []string{LifecycleStageApplicant.String()}}},
+				Points:   -1,
+			},
+			want: ErrInvalidLeadScorePoints,
+		},
+		{
+			name: "criterion",
+			nr: NewLeadScoreRule{
+				Name:     "Applicant stage",
+				Criteria: []LeadScoreCriterion{{Field: "unknown", Operator: LeadScoreCriterionOperatorEquals, Values: []string{LifecycleStageApplicant.String()}}},
+			},
+			want: ErrInvalidLeadScoreCriterion,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateLeadScoreRule(context.Background(), tt.nr)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestRecalculateLeadScoreExplainsMatchedRulesAndBand(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant, DuplicateStatus: DuplicateStatusActive},
+		},
+		applications: []Application{{
+			ID:              uuid.New(),
+			ConstituentID:   constituentID,
+			ProgramID:       programID,
+			AcademicTermID:  termID,
+			ApplicationType: ApplicationTypeTransfer,
+			Status:          ApplicationStatusSubmitted,
+		}},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.CreateLeadScoreRule(context.Background(), NewLeadScoreRule{
+		Name:     "Applicant stage",
+		Criteria: []LeadScoreCriterion{{Field: LeadScoreCriterionFieldLifecycleStage, Operator: LeadScoreCriterionOperatorEquals, Values: []string{LifecycleStageApplicant.String()}}},
+		Points:   30,
+		Active:   true,
+		Priority: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateLeadScoreRule returned error: %v", err)
+	}
+
+	_, err = bus.CreateLeadScoreRule(context.Background(), NewLeadScoreRule{
+		Name:     "Submitted application",
+		Criteria: []LeadScoreCriterion{{Field: LeadScoreCriterionFieldApplicationStatus, Operator: LeadScoreCriterionOperatorIn, Values: []string{ApplicationStatusSubmitted.String(), ApplicationStatusReadyForReview.String()}}},
+		Points:   40,
+		Active:   true,
+		Priority: 2,
+	})
+	if err != nil {
+		t.Fatalf("CreateLeadScoreRule returned error: %v", err)
+	}
+
+	score, err := bus.RecalculateLeadScoreForConstituent(context.Background(), constituentID)
+	if err != nil {
+		t.Fatalf("RecalculateLeadScoreForConstituent returned error: %v", err)
+	}
+
+	if score.TotalScore != 70 {
+		t.Fatalf("TotalScore = %d, want 70", score.TotalScore)
+	}
+
+	if score.Band != LeadScoreBandHot {
+		t.Fatalf("Band = %s, want %s", score.Band, LeadScoreBandHot)
+	}
+
+	if len(score.Breakdown) != 2 {
+		t.Fatalf("Breakdown length = %d, want 2", len(score.Breakdown))
+	}
+
+	for _, result := range score.Breakdown {
+		if !result.Matched {
+			t.Fatalf("result %q did not match", result.Name)
+		}
+		if result.Reason == "" {
+			t.Fatalf("result %q should explain the score", result.Name)
+		}
+	}
+
+	if len(store.leadScores) != 1 {
+		t.Fatalf("stored lead scores = %d, want 1", len(store.leadScores))
+	}
+}
+
+func TestLeadScoreBandForTotal(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		total int
+		want  LeadScoreBand
+	}{
+		{total: 0, want: LeadScoreBandCold},
+		{total: 26, want: LeadScoreBandWarm},
+		{total: 51, want: LeadScoreBandHot},
+		{total: 76, want: LeadScoreBandReadyToApply},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want.String(), func(t *testing.T) {
+			t.Parallel()
+
+			if got := LeadScoreBandForTotal(tt.total); got != tt.want {
+				t.Fatalf("LeadScoreBandForTotal(%d) = %s, want %s", tt.total, got, tt.want)
+			}
+		})
+	}
+}
+
 func containsString(values []string, want string) bool {
 	for _, value := range values {
 		if value == want {
@@ -640,6 +793,8 @@ func (ioDiscard) Write(p []byte) (int, error) {
 
 type stubStore struct {
 	staffProfiles          []StaffProfile
+	leadScoreRules         []LeadScoreRule
+	leadScores             []LeadScore
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -697,6 +852,83 @@ func (s *stubStore) QueryStaffProfileByUserID(_ context.Context, userID uuid.UUI
 		}
 	}
 	return StaffProfile{}, ErrStaffProfileNotFound
+}
+
+func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {
+	s.leadScoreRules = append(s.leadScoreRules, rule)
+	return nil
+}
+
+func (s *stubStore) UpdateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {
+	for i, existing := range s.leadScoreRules {
+		if existing.ID == rule.ID {
+			s.leadScoreRules[i] = rule
+			return nil
+		}
+	}
+	s.leadScoreRules = append(s.leadScoreRules, rule)
+	return nil
+}
+
+func (s *stubStore) QueryLeadScoreRules(_ context.Context, filter LeadScoreRuleQueryFilter, _ order.By, _ page.Page) ([]LeadScoreRule, error) {
+	var rules []LeadScoreRule
+	for _, rule := range s.leadScoreRules {
+		if filter.Active != nil && rule.Active != *filter.Active {
+			continue
+		}
+		rules = append(rules, rule)
+	}
+	return rules, nil
+}
+
+func (s *stubStore) CountLeadScoreRules(context.Context, LeadScoreRuleQueryFilter) (int, error) {
+	return len(s.leadScoreRules), nil
+}
+
+func (s *stubStore) QueryLeadScoreRuleByID(_ context.Context, ruleID uuid.UUID) (LeadScoreRule, error) {
+	for _, rule := range s.leadScoreRules {
+		if rule.ID == ruleID {
+			return rule, nil
+		}
+	}
+	return LeadScoreRule{}, ErrLeadScoreRuleNotFound
+}
+
+func (s *stubStore) UpsertLeadScore(_ context.Context, score LeadScore) error {
+	for i, existing := range s.leadScores {
+		if existing.ConstituentID == score.ConstituentID {
+			s.leadScores[i] = score
+			return nil
+		}
+	}
+	s.leadScores = append(s.leadScores, score)
+	return nil
+}
+
+func (s *stubStore) QueryLeadScores(context.Context, LeadScoreQueryFilter, order.By, page.Page) ([]LeadScore, error) {
+	return s.leadScores, nil
+}
+
+func (s *stubStore) CountLeadScores(context.Context, LeadScoreQueryFilter) (int, error) {
+	return len(s.leadScores), nil
+}
+
+func (s *stubStore) QueryLeadScoreByID(_ context.Context, scoreID uuid.UUID) (LeadScore, error) {
+	for _, score := range s.leadScores {
+		if score.ID == scoreID {
+			return score, nil
+		}
+	}
+	return LeadScore{}, ErrLeadScoreNotFound
+}
+
+func (s *stubStore) QueryLeadScoreByConstituentID(_ context.Context, constituentID uuid.UUID) (LeadScore, error) {
+	for _, score := range s.leadScores {
+		if score.ConstituentID == constituentID {
+			return score, nil
+		}
+	}
+	return LeadScore{}, ErrLeadScoreNotFound
 }
 
 func (s *stubStore) CreateConstituent(_ context.Context, cst Constituent) error {

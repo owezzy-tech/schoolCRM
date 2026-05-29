@@ -20,6 +20,20 @@ var staffProfileOrderByFields = map[string]string{
 	admissionsbus.OrderByStaffProfileDateCreated: "date_created",
 }
 
+var leadScoreRuleOrderByFields = map[string]string{
+	admissionsbus.OrderByLeadScoreRuleID:          "lead_score_rule_id",
+	admissionsbus.OrderByLeadScoreRuleName:        "name",
+	admissionsbus.OrderByLeadScoreRulePriority:    "priority",
+	admissionsbus.OrderByLeadScoreRuleDateCreated: "date_created",
+}
+
+var leadScoreOrderByFields = map[string]string{
+	admissionsbus.OrderByLeadScoreID:             "lead_score_id",
+	admissionsbus.OrderByLeadScoreTotalScore:     "total_score",
+	admissionsbus.OrderByLeadScoreBand:           "score_band",
+	admissionsbus.OrderByLeadScoreRecalculatedAt: "recalculated_at",
+}
+
 var constituentOrderByFields = map[string]string{
 	admissionsbus.OrderByConstituentID:             "constituent_id",
 	admissionsbus.OrderByConstituentLastName:       "last_name",
@@ -69,6 +83,24 @@ func programOrderByClause(orderBy order.By) (string, error) {
 
 func staffProfileOrderByClause(orderBy order.By) (string, error) {
 	by, exists := staffProfileOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func leadScoreRuleOrderByClause(orderBy order.By) (string, error) {
+	by, exists := leadScoreRuleOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func leadScoreOrderByClause(orderBy order.By) (string, error) {
+	by, exists := leadScoreOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

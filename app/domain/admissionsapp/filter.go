@@ -30,6 +30,24 @@ type staffProfileQueryParams struct {
 	Active  string
 }
 
+type leadScoreRuleQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	Active  string
+}
+
+type leadScoreQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ConstituentID string
+	Band          string
+	MinScore      string
+}
+
 type constituentQueryParams struct {
 	Page            string
 	Rows            string
@@ -111,6 +129,32 @@ func parseStaffProfileQueryParams(r *http.Request) staffProfileQueryParams {
 		UserID:  values.Get("user_id"),
 		Role:    values.Get("role"),
 		Active:  values.Get("active"),
+	}
+}
+
+func parseLeadScoreRuleQueryParams(r *http.Request) leadScoreRuleQueryParams {
+	values := r.URL.Query()
+
+	return leadScoreRuleQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("lead_score_rule_id"),
+		Active:  values.Get("active"),
+	}
+}
+
+func parseLeadScoreQueryParams(r *http.Request) leadScoreQueryParams {
+	values := r.URL.Query()
+
+	return leadScoreQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("lead_score_id"),
+		ConstituentID: values.Get("constituent_id"),
+		Band:          values.Get("band"),
+		MinScore:      values.Get("min_score"),
 	}
 }
 
@@ -265,6 +309,78 @@ func parseStaffProfileFilter(qp staffProfileQueryParams) (admissionsbus.StaffPro
 
 	if len(fieldErrors) > 0 {
 		return admissionsbus.StaffProfileQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseLeadScoreRuleFilter(qp leadScoreRuleQueryParams) (admissionsbus.LeadScoreRuleQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.LeadScoreRuleQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("lead_score_rule_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.LeadScoreRuleQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseLeadScoreFilter(qp leadScoreQueryParams) (admissionsbus.LeadScoreQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.LeadScoreQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("lead_score_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		constituentID, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &constituentID
+		}
+	}
+
+	if qp.Band != "" {
+		band := admissionsbus.LeadScoreBand(qp.Band)
+		filter.Band = &band
+	}
+
+	if qp.MinScore != "" {
+		minScore, err := strconv.Atoi(qp.MinScore)
+		if err != nil {
+			fieldErrors.Add("min_score", err)
+		} else {
+			filter.MinScore = &minScore
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.LeadScoreQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

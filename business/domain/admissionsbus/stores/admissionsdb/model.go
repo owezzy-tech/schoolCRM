@@ -19,6 +19,29 @@ type staffProfileDB struct {
 	DateUpdated time.Time      `db:"date_updated"`
 }
 
+type leadScoreRuleDB struct {
+	ID          uuid.UUID       `db:"lead_score_rule_id"`
+	Name        string          `db:"name"`
+	Description *string         `db:"description"`
+	Criteria    json.RawMessage `db:"criteria"`
+	Points      int             `db:"points"`
+	Active      bool            `db:"is_active"`
+	Priority    int             `db:"priority"`
+	DateCreated time.Time       `db:"date_created"`
+	DateUpdated time.Time       `db:"date_updated"`
+}
+
+type leadScoreDB struct {
+	ID             uuid.UUID       `db:"lead_score_id"`
+	ConstituentID  uuid.UUID       `db:"constituent_id"`
+	TotalScore     int             `db:"total_score"`
+	Band           string          `db:"score_band"`
+	Breakdown      json.RawMessage `db:"breakdown"`
+	RecalculatedAt time.Time       `db:"recalculated_at"`
+	DateCreated    time.Time       `db:"date_created"`
+	DateUpdated    time.Time       `db:"date_updated"`
+}
+
 type constituentDB struct {
 	ID              uuid.UUID  `db:"constituent_id"`
 	FirstName       string     `db:"first_name"`
@@ -123,6 +146,106 @@ func toBusStaffProfiles(dbs []staffProfileDB) ([]admissionsbus.StaffProfile, err
 	for i, db := range dbs {
 		var err error
 		bus[i], err = toBusStaffProfile(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBLeadScoreRule(bus admissionsbus.LeadScoreRule) (leadScoreRuleDB, error) {
+	criteria, err := json.Marshal(bus.Criteria)
+	if err != nil {
+		return leadScoreRuleDB{}, err
+	}
+
+	return leadScoreRuleDB{
+		ID:          bus.ID,
+		Name:        bus.Name,
+		Description: bus.Description,
+		Criteria:    criteria,
+		Points:      bus.Points,
+		Active:      bus.Active,
+		Priority:    bus.Priority,
+		DateCreated: bus.DateCreated.UTC(),
+		DateUpdated: bus.DateUpdated.UTC(),
+	}, nil
+}
+
+func toBusLeadScoreRule(db leadScoreRuleDB) (admissionsbus.LeadScoreRule, error) {
+	var criteria []admissionsbus.LeadScoreCriterion
+	if err := json.Unmarshal(db.Criteria, &criteria); err != nil {
+		return admissionsbus.LeadScoreRule{}, err
+	}
+
+	return admissionsbus.LeadScoreRule{
+		ID:          db.ID,
+		Name:        db.Name,
+		Description: db.Description,
+		Criteria:    criteria,
+		Points:      db.Points,
+		Active:      db.Active,
+		Priority:    db.Priority,
+		DateCreated: db.DateCreated.In(time.Local),
+		DateUpdated: db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusLeadScoreRules(dbs []leadScoreRuleDB) ([]admissionsbus.LeadScoreRule, error) {
+	bus := make([]admissionsbus.LeadScoreRule, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusLeadScoreRule(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBLeadScore(bus admissionsbus.LeadScore) (leadScoreDB, error) {
+	breakdown, err := json.Marshal(bus.Breakdown)
+	if err != nil {
+		return leadScoreDB{}, err
+	}
+
+	return leadScoreDB{
+		ID:             bus.ID,
+		ConstituentID:  bus.ConstituentID,
+		TotalScore:     bus.TotalScore,
+		Band:           bus.Band.String(),
+		Breakdown:      breakdown,
+		RecalculatedAt: bus.RecalculatedAt.UTC(),
+		DateCreated:    bus.DateCreated.UTC(),
+		DateUpdated:    bus.DateUpdated.UTC(),
+	}, nil
+}
+
+func toBusLeadScore(db leadScoreDB) (admissionsbus.LeadScore, error) {
+	var breakdown []admissionsbus.LeadScoreRuleResult
+	if err := json.Unmarshal(db.Breakdown, &breakdown); err != nil {
+		return admissionsbus.LeadScore{}, err
+	}
+
+	return admissionsbus.LeadScore{
+		ID:             db.ID,
+		ConstituentID:  db.ConstituentID,
+		TotalScore:     db.TotalScore,
+		Band:           admissionsbus.LeadScoreBand(db.Band),
+		Breakdown:      breakdown,
+		RecalculatedAt: db.RecalculatedAt.In(time.Local),
+		DateCreated:    db.DateCreated.In(time.Local),
+		DateUpdated:    db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusLeadScores(dbs []leadScoreDB) ([]admissionsbus.LeadScore, error) {
+	bus := make([]admissionsbus.LeadScore, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusLeadScore(db)
 		if err != nil {
 			return nil, err
 		}
