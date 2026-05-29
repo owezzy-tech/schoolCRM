@@ -98,3 +98,37 @@ func (s *Store) applyAcademicTermFilter(filter admissionsbus.AcademicTermQueryFi
 		buf.WriteString(strings.Join(wc, " AND "))
 	}
 }
+
+func (s *Store) applyDuplicateReviewFilter(filter admissionsbus.DuplicateReviewQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["duplicate_review_id"] = filter.ID
+		wc = append(wc, "duplicate_review_id = :duplicate_review_id")
+	}
+
+	if filter.SourceConstituentID != nil {
+		data["source_constituent_id"] = filter.SourceConstituentID
+		wc = append(wc, "source_constituent_id = :source_constituent_id")
+	}
+
+	if filter.CandidateConstituentID != nil {
+		data["candidate_constituent_id"] = filter.CandidateConstituentID
+		wc = append(wc, "candidate_constituent_id = :candidate_constituent_id")
+	}
+
+	if filter.MatchType != nil {
+		data["match_type"] = filter.MatchType.String()
+		wc = append(wc, "match_type = :match_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}

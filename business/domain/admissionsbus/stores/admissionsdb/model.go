@@ -40,6 +40,21 @@ type programDB struct {
 	DateUpdated   time.Time  `db:"date_updated"`
 }
 
+type duplicateReviewDB struct {
+	ID                     uuid.UUID  `db:"duplicate_review_id"`
+	SourceConstituentID    uuid.UUID  `db:"source_constituent_id"`
+	CandidateConstituentID uuid.UUID  `db:"candidate_constituent_id"`
+	MatchType              string     `db:"match_type"`
+	MatchScore             int        `db:"match_score"`
+	MatchReason            string     `db:"match_reason"`
+	Status                 string     `db:"status"`
+	ResolvedBy             *uuid.UUID `db:"resolved_by"`
+	ResolvedAt             *time.Time `db:"resolved_at"`
+	ResolutionNote         *string    `db:"resolution_note"`
+	DateCreated            time.Time  `db:"date_created"`
+	DateUpdated            time.Time  `db:"date_updated"`
+}
+
 func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
 	return constituentDB{
 		ID:              bus.ID,
@@ -195,6 +210,49 @@ func toBusAcademicTerms(dbs []academicTermDB) []admissionsbus.AcademicTerm {
 	bus := make([]admissionsbus.AcademicTerm, len(dbs))
 	for i, db := range dbs {
 		bus[i] = toBusAcademicTerm(db)
+	}
+
+	return bus
+}
+
+func toDBDuplicateReview(bus admissionsbus.DuplicateReview) duplicateReviewDB {
+	return duplicateReviewDB{
+		ID:                     bus.ID,
+		SourceConstituentID:    bus.SourceConstituentID,
+		CandidateConstituentID: bus.CandidateConstituentID,
+		MatchType:              bus.MatchType.String(),
+		MatchScore:             bus.MatchScore,
+		MatchReason:            bus.MatchReason,
+		Status:                 bus.Status.String(),
+		ResolvedBy:             bus.ResolvedBy,
+		ResolvedAt:             utcTimePtr(bus.ResolvedAt),
+		ResolutionNote:         bus.ResolutionNote,
+		DateCreated:            bus.DateCreated.UTC(),
+		DateUpdated:            bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusDuplicateReview(db duplicateReviewDB) admissionsbus.DuplicateReview {
+	return admissionsbus.DuplicateReview{
+		ID:                     db.ID,
+		SourceConstituentID:    db.SourceConstituentID,
+		CandidateConstituentID: db.CandidateConstituentID,
+		MatchType:              admissionsbus.DuplicateReviewMatchType(db.MatchType),
+		MatchScore:             db.MatchScore,
+		MatchReason:            db.MatchReason,
+		Status:                 admissionsbus.DuplicateReviewStatus(db.Status),
+		ResolvedBy:             db.ResolvedBy,
+		ResolvedAt:             localTimePtr(db.ResolvedAt),
+		ResolutionNote:         db.ResolutionNote,
+		DateCreated:            db.DateCreated.In(time.Local),
+		DateUpdated:            db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusDuplicateReviews(dbs []duplicateReviewDB) []admissionsbus.DuplicateReview {
+	bus := make([]admissionsbus.DuplicateReview, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusDuplicateReview(db)
 	}
 
 	return bus

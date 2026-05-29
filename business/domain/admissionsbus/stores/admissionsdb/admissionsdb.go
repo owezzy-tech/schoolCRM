@@ -441,6 +441,131 @@ func (s *Store) QueryAcademicTermByExternalSISID(ctx context.Context, externalSI
 	return term, nil
 }
 
+// CreateDuplicateReview inserts a new duplicate review into the queue.
+func (s *Store) CreateDuplicateReview(ctx context.Context, review admissionsbus.DuplicateReview) error {
+	const q = `
+	INSERT INTO admissions_duplicate_reviews
+		(duplicate_review_id, source_constituent_id, candidate_constituent_id, match_type, match_score, match_reason, status, resolved_by, resolved_at, resolution_note, date_created, date_updated)
+	VALUES
+		(:duplicate_review_id, :source_constituent_id, :candidate_constituent_id, :match_type, :match_score, :match_reason, :status, :resolved_by, :resolved_at, :resolution_note, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBDuplicateReview(review)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateDuplicateReview replaces mutable duplicate review data in the database.
+func (s *Store) UpdateDuplicateReview(ctx context.Context, review admissionsbus.DuplicateReview) error {
+	const q = `
+	UPDATE
+		admissions_duplicate_reviews
+	SET
+		status = :status,
+		resolved_by = :resolved_by,
+		resolved_at = :resolved_at,
+		resolution_note = :resolution_note,
+		date_updated = :date_updated
+	WHERE
+		duplicate_review_id = :duplicate_review_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBDuplicateReview(review)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryDuplicateReviews retrieves a list of duplicate reviews from the database.
+func (s *Store) QueryDuplicateReviews(ctx context.Context, filter admissionsbus.DuplicateReviewQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.DuplicateReview, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		duplicate_review_id, source_constituent_id, candidate_constituent_id, match_type, match_score, match_reason, status, resolved_by, resolved_at, resolution_note, date_created, date_updated
+	FROM
+		admissions_duplicate_reviews`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDuplicateReviewFilter(filter, data, buf)
+
+	orderByClause, err := duplicateReviewOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbReviews []duplicateReviewDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbReviews); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusDuplicateReviews(dbReviews), nil
+}
+
+// CountDuplicateReviews returns the total number of duplicate reviews in the database.
+func (s *Store) CountDuplicateReviews(ctx context.Context, filter admissionsbus.DuplicateReviewQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_duplicate_reviews`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDuplicateReviewFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryDuplicateReviewByID finds a duplicate review by ID.
+func (s *Store) QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (admissionsbus.DuplicateReview, error) {
+	filter := admissionsbus.DuplicateReviewQueryFilter{ID: &reviewID}
+	review, err := s.queryDuplicateReview(ctx, filter)
+	if err != nil {
+		return admissionsbus.DuplicateReview{}, err
+	}
+
+	return review, nil
+}
+
+func (s *Store) queryDuplicateReview(ctx context.Context, filter admissionsbus.DuplicateReviewQueryFilter) (admissionsbus.DuplicateReview, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		duplicate_review_id, source_constituent_id, candidate_constituent_id, match_type, match_score, match_reason, status, resolved_by, resolved_at, resolution_note, date_created, date_updated
+	FROM
+		admissions_duplicate_reviews`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDuplicateReviewFilter(filter, data, buf)
+
+	var dbReview duplicateReviewDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbReview); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.DuplicateReview{}, fmt.Errorf("db: %w", admissionsbus.ErrDuplicateReviewNotFound)
+		}
+		return admissionsbus.DuplicateReview{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusDuplicateReview(dbReview), nil
+}
+
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {
 	data := map[string]any{}
 
