@@ -1,0 +1,241 @@
+package admissionsdb
+
+import (
+	"bytes"
+	"strings"
+
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+)
+
+func (s *Store) applyConstituentFilter(filter admissionsbus.ConstituentQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["constituent_id"] = filter.ID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.PrimaryEmail != nil {
+		data["primary_email"] = filter.PrimaryEmail.String()
+		wc = append(wc, "primary_email = :primary_email")
+	}
+
+	if filter.ExternalSISID != nil {
+		data["external_sis_id"] = filter.ExternalSISID
+		wc = append(wc, "external_sis_id = :external_sis_id")
+	}
+
+	if filter.LifecycleStage != nil {
+		data["lifecycle_stage"] = filter.LifecycleStage.String()
+		wc = append(wc, "lifecycle_stage = :lifecycle_stage")
+	}
+
+	if filter.DuplicateStatus != nil {
+		data["duplicate_status"] = filter.DuplicateStatus.String()
+		wc = append(wc, "duplicate_status = :duplicate_status")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyStaffProfileFilter(filter admissionsbus.StaffProfileQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["staff_profile_id"] = filter.ID
+		wc = append(wc, "staff_profile_id = :staff_profile_id")
+	}
+
+	if filter.UserID != nil {
+		data["user_id"] = filter.UserID
+		wc = append(wc, "user_id = :user_id")
+	}
+
+	if filter.Role != nil {
+		data["admissions_role"] = filter.Role.String()
+		wc = append(wc, ":admissions_role = ANY(admissions_roles)")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyProgramFilter(filter admissionsbus.ProgramQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["program_id"] = filter.ID
+		wc = append(wc, "program_id = :program_id")
+	}
+
+	if filter.ExternalSISID != nil {
+		data["external_sis_id"] = filter.ExternalSISID
+		wc = append(wc, "external_sis_id = :external_sis_id")
+	}
+
+	if filter.Code != nil {
+		data["code"] = filter.Code
+		wc = append(wc, "code = :code")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyAcademicTermFilter(filter admissionsbus.AcademicTermQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["academic_term_id"] = filter.ID
+		wc = append(wc, "academic_term_id = :academic_term_id")
+	}
+
+	if filter.ExternalSISID != nil {
+		data["external_sis_id"] = filter.ExternalSISID
+		wc = append(wc, "external_sis_id = :external_sis_id")
+	}
+
+	if filter.Code != nil {
+		data["code"] = filter.Code
+		wc = append(wc, "code = :code")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyDuplicateReviewFilter(filter admissionsbus.DuplicateReviewQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["duplicate_review_id"] = filter.ID
+		wc = append(wc, "duplicate_review_id = :duplicate_review_id")
+	}
+
+	if filter.SourceConstituentID != nil {
+		data["source_constituent_id"] = filter.SourceConstituentID
+		wc = append(wc, "source_constituent_id = :source_constituent_id")
+	}
+
+	if filter.CandidateConstituentID != nil {
+		data["candidate_constituent_id"] = filter.CandidateConstituentID
+		wc = append(wc, "candidate_constituent_id = :candidate_constituent_id")
+	}
+
+	if filter.MatchType != nil {
+		data["match_type"] = filter.MatchType.String()
+		wc = append(wc, "match_type = :match_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyApplicationFilter(filter admissionsbus.ApplicationQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["application_id"] = filter.ID
+		wc = append(wc, "application_id = :application_id")
+	}
+
+	if filter.ConstituentID != nil {
+		data["constituent_id"] = filter.ConstituentID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.ProgramID != nil {
+		data["program_id"] = filter.ProgramID
+		wc = append(wc, "program_id = :program_id")
+	}
+
+	if filter.AcademicTermID != nil {
+		data["academic_term_id"] = filter.AcademicTermID
+		wc = append(wc, "academic_term_id = :academic_term_id")
+	}
+
+	if filter.ApplicationType != nil {
+		data["application_type"] = filter.ApplicationType.String()
+		wc = append(wc, "application_type = :application_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.ActiveOnly != nil && *filter.ActiveOnly {
+		// Keep this predicate aligned with admissionsbus.isApplicationActive.
+		wc = append(wc, "status NOT IN ('DENIED', 'WITHDRAWN', 'ENROLLED')")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyApplicationTransitionFilter(filter admissionsbus.ApplicationTransitionQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["application_transition_id"] = filter.ID
+		wc = append(wc, "application_transition_id = :application_transition_id")
+	}
+
+	if filter.ApplicationID != nil {
+		data["application_id"] = filter.ApplicationID
+		wc = append(wc, "application_id = :application_id")
+	}
+
+	if filter.ActorID != nil {
+		data["actor_id"] = filter.ActorID
+		wc = append(wc, "actor_id = :actor_id")
+	}
+
+	if filter.FromStatus != nil {
+		data["from_status"] = filter.FromStatus.String()
+		wc = append(wc, "from_status = :from_status")
+	}
+
+	if filter.ToStatus != nil {
+		data["to_status"] = filter.ToStatus.String()
+		wc = append(wc, "to_status = :to_status")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}

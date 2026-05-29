@@ -2,6 +2,8 @@ module github.com/owezzy/schoolCRM
 
 go 1.26.0
 
+toolchain go1.26.3
+
 require (
 	github.com/ardanlabs/conf/v3 v3.11.0
 	github.com/ardanlabs/darwin/v3 v3.3.1

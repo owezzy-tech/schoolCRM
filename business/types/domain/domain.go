@@ -5,9 +5,10 @@ import "fmt"
 
 // The set of roles that can be used.
 var (
-	User    = newDomain("USER")
-	Product = newDomain("PRODUCT")
-	Home    = newDomain("HOME")
+	User       = newDomain("USER")
+	Product    = newDomain("PRODUCT")
+	Home       = newDomain("HOME")
+	Admissions = newDomain("ADMISSIONS")
 )
 
 // =============================================================================

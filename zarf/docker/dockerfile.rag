@@ -4,9 +4,12 @@ ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 RUN python -m venv ${VIRTUAL_ENV}
 
-COPY api/services/RAG /service/api/services/RAG
 WORKDIR /service/api/services/RAG
-RUN pip install --upgrade pip && pip install .
+COPY api/services/RAG/pyproject.toml api/services/RAG/README.md ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && pip install -e .
+
+COPY api/services/RAG /service/api/services/RAG
 
 
 # Run the Python service in slim runtime.
@@ -16,7 +19,7 @@ ARG BUILD_TAG
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 RUN addgroup --gid 1000 rag && \
-    adduser --uid 1000 --home /service --ingroup rag --disabled-password rag
+    adduser --uid 1000 --home /service --ingroup rag --disabled-password --gecos "" rag
 COPY --from=build_rag /opt/venv /opt/venv
 COPY --from=build_rag --chown=rag:rag /service/api/services/RAG /service
 WORKDIR /service

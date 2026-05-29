@@ -1,29 +1,36 @@
-import { TestBed, waitForAsync } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, RouterOutlet } from '@angular/router';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { AppComponent } from './app.component';
+
+@Component({
+    selector: 'router-outlet',
+    template: '',
+})
+class RouterOutletStubComponent {}
+
 describe('AppComponent', () => {
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [RouterTestingModule],
-      declarations: [AppComponent]
-    }).compileComponents();
-  }));
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
-  });
-  it(`should have as title 'angulardark'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('angulardark');
-  });
-  it('should render title in a h1 tag', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain(
-      'Welcome to angulardark!'
-    );
-  });
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [AppComponent],
+            providers: [provideRouter([])],
+        })
+            .overrideComponent(AppComponent, {
+                remove: {
+                    imports: [RouterOutlet],
+                },
+                add: {
+                    imports: [RouterOutletStubComponent],
+                },
+            })
+            .compileComponents();
+    });
+
+    it('creates the app component', () => {
+        const fixture = TestBed.createComponent(AppComponent);
+
+        expect(fixture.componentInstance).toBeTruthy();
+    });
 });

@@ -6,4 +6,7 @@ class NoopDocumentParser(IDocumentParser):
         if content_type == "text/plain":
             return payload.decode("utf-8", errors="ignore")
 
-        return f"Scaffold parser placeholder for {filename} ({content_type}). Replace with a LangChain-backed parser."
+        return (
+            f"Scaffold parser placeholder for {filename} ({content_type}). "
+            "Replace with a LangChain-backed parser."
+        )

@@ -2,7 +2,7 @@ edition = "2024";
 
 package grpcauthapp;
 
-option go_package = "github.com/ardanlabs/service/app/domain/grpcauthapp";
+option go_package = "github.com/owezzy/schoolCRM/app/domain/grpcauthapp";
 
 // The authentication service definition.
 service Auth {

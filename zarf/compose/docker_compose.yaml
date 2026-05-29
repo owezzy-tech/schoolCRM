@@ -3,7 +3,7 @@ services:
     image: postgres:18.3-alpine3.22
     container_name: database
     ports:
-      - "5432:5432"
+      - "5454:5432"
     environment:
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -18,22 +18,22 @@ services:
       start_period: 30s
     cpu_count: 2
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.2
 
   init-migrate-seed:
-    image: localhost/ardanlabs/sales:0.0.1
+    image: localhost/schoolcrm/schoolcrm:0.0.1
     pull_policy: never
     container_name: init-migrate-seed
     restart: unless-stopped
     entrypoint: ["./admin", "migrate-seed"]
     environment:
-      - SALES_DB_USER=postgres
-      - SALES_DB_PASSWORD=postgres
-      - SALES_DB_HOST=database
-      - SALES_DB_DISABLE_TLS=true
+      - SCHOOLCRM_DB_USER=postgres
+      - SCHOOLCRM_DB_PASSWORD=postgres
+      - SCHOOLCRM_DB_HOST=database
+      - SCHOOLCRM_DB_DISABLE_TLS=true
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.10
     deploy:
       restart_policy:
@@ -42,7 +42,7 @@ services:
       - database
 
   auth:
-    image: localhost/ardanlabs/auth:0.0.1
+    image: localhost/schoolcrm/auth:0.0.1
     pull_policy: never
     container_name: auth
     restart: unless-stopped
@@ -65,19 +65,19 @@ services:
       - AUTH_DB_HOST=database
       - AUTH_DB_DISABLE_TLS=true
       - KUBERNETES_NAMESPACE=compose
-      - KUBERNETES_NAME=sales-system
+      - KUBERNETES_NAME=schoolcrm-system
       - KUBERNETES_POD_IP=10.5.0.5
       - KUBERNETES_NODE_NAME=auth
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.5
     depends_on:
       - database
 
-  sales:
-    image: localhost/ardanlabs/sales:0.0.1
+  schoolcrm:
+    image: localhost/schoolcrm/schoolcrm:0.0.1
     pull_policy: never
-    container_name: sales
+    container_name: schoolcrm
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -86,11 +86,11 @@ services:
       - GOMAXPROCS
       - GOGC=off
       - GOMEMLIMIT
-      - SALES_DB_USER=postgres
-      - SALES_DB_PASSWORD=postgres
-      - SALES_DB_HOST=database
-      - SALES_DB_DISABLE_TLS=true
-      - SALES_AUTH_HOST=http://auth:6000
+      - SCHOOLCRM_DB_USER=postgres
+      - SCHOOLCRM_DB_PASSWORD=postgres
+      - SCHOOLCRM_DB_HOST=database
+      - SCHOOLCRM_DB_DISABLE_TLS=true
+      - SCHOOLCRM_AUTH_HOST=http://auth:6000
       - KUBERNETES_NAMESPACE
       - KUBERNETES_NAME
       - KUBERNETES_POD_IP
@@ -103,18 +103,18 @@ services:
       retries: 2
       start_period: 2s
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.15
     depends_on:
       - init-migrate-seed
 
   rag:
-    image: localhost/ardanlabs/rag:0.0.1
+    image: localhost/schoolcrm/rag:0.0.1
     pull_policy: never
     container_name: rag
     restart: unless-stopped
     ports:
-      - "7000:7000"
+      - "4545:7000"
     environment:
       - RAG_API_HOST=0.0.0.0
       - RAG_API_PORT=7000
@@ -128,13 +128,36 @@ services:
       retries: 2
       start_period: 2s
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.25
     depends_on:
       - auth
 
+  web-admin:
+    image: localhost/schoolcrm/web-admin:0.0.1
+    pull_policy: never
+    container_name: web-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - GOOGLE_MAPS_API_KEY=
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+      start_period: 2s
+    networks:
+      schoolcrm-system-network:
+        ipv4_address: 10.5.0.30
+    depends_on:
+      - auth
+      - schoolcrm
+
   metrics:
-    image: localhost/ardanlabs/metrics:0.0.1
+    image: localhost/schoolcrm/metrics:0.0.1
     pull_policy: never
     container_name: metrics
     restart: unless-stopped
@@ -145,18 +168,18 @@ services:
     cpus: 1
     environment:
       - GOMAXPROCS=1
-      - METRICS_COLLECT_FROM=http://sales:3010/debug/vars
+      - METRICS_COLLECT_FROM=http://schoolcrm:3010/debug/vars
     networks:
-      sales-system-network:
+      schoolcrm-system-network:
         ipv4_address: 10.5.0.20
     depends_on:
-      - sales
+      - schoolcrm
 
 volumes:
   database: {}
 
 networks:
-  sales-system-network:
+  schoolcrm-system-network:
     driver: bridge
     ipam:
       config:

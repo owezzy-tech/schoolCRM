@@ -28,7 +28,11 @@ class InMemoryVectorStore(IVectorStore):
         return ranked[:limit]
 
     async def delete_document(self, document_id: str) -> None:
-        self._chunks = [stored for stored in self._chunks if stored.chunk.document_id != document_id]
+        self._chunks = [
+            stored
+            for stored in self._chunks
+            if stored.chunk.document_id != document_id
+        ]
 
     @staticmethod
     def _dot(left: Embedding, right: Embedding) -> float:

@@ -431,7 +431,7 @@ type Config struct {
     DB          *sqlx.DB
     Tracer      trace.Tracer
     BusConfig   BusConfig       // All business domain instances
-    SalesConfig SalesConfig     // Sales-service specific config (auth client)
+    SchoolCRMConfig SchoolCRMConfig     // SchoolCRM-service specific config (auth client)
     AuthConfig  AuthConfig      // Auth-service specific config (auth instance)
 }
 ```
@@ -447,7 +447,7 @@ Errors implement `web.Encoder` so they flow through the same response path:
 
 - **Authentication**: JWT tokens (RS256) validated via the auth service. The auth service is a separate microservice.
 - **Authorization**: OPA (Open Policy Agent) rules evaluated locally. Rules are defined in `.rego` files embedded in the binary.
-- **Auth Client**: The sales service communicates with the auth service via HTTP or gRPC to validate tokens and check authorization.
+- **Auth Client**: The SchoolCRM service communicates with the auth service via HTTP or gRPC to validate tokens and check authorization.
 
 ---
 
@@ -467,7 +467,7 @@ api/
 │   │   ├── collector/
 │   │   ├── publisher/
 │   │   └── main.go
-│   └── sales/          # Primary API service
+│   └── schoolcrm/          # Primary API service
 │       ├── build/          # Route composition using build tags
 │       │   ├── all.go          # Default build: all routes
 │       │   ├── crud.go         # `crud` build tag: CRUD routes only
@@ -504,7 +504,7 @@ Each service `main.go` follows the same pattern:
 
 ### Build Tags
 
-The sales service uses Go build tags to control which routes are included in a build:
+The SchoolCRM service uses Go build tags to control which routes are included in a build:
 - Default (no tags): All routes (`all.go`)
 - `-tags crud`: Only CRUD routes (`crud.go`)
 - `-tags reporting`: Only reporting routes (`reporting.go`)
@@ -521,7 +521,7 @@ zarf/
 ├── docker/         # Dockerfiles
 │   ├── dockerfile.auth
 │   ├── dockerfile.metrics
-│   └── dockerfile.sales
+│   └── dockerfile.schoolcrm
 ├── helm/           # Helm charts for Kubernetes deployment
 ├── k8s/            # Kubernetes manifests
 │   ├── base/           # Base kustomize manifests
@@ -590,7 +590,7 @@ Routes are registered via a `Routes()` function in each app domain package. Buil
 
 ### 7. Configuration via Environment
 
-All configuration is driven by environment variables using the `ardanlabs/conf` package. Config is defined as a struct with `conf` tags providing defaults. Each service uses a unique prefix (e.g., `SALES`, `AUTH`).
+All configuration is driven by environment variables using the `ardanlabs/conf` package. Config is defined as a struct with `conf` tags providing defaults. Each service uses a unique prefix (e.g., `SCHOOLCRM`, `AUTH`).
 
 ---
 
@@ -602,7 +602,7 @@ All configuration is driven by environment variables using the `ardanlabs/conf` 
 - Test business logic against a real database using Docker
 
 ### Integration/API Tests
-- Located in: `api/services/sales/tests/`
+- Located in: `api/services/schoolcrm/tests/`
 - Organized by domain: `userapi/`, `homeapi/`, `productapi/`, etc.
 - Use helpers in `app/sdk/apitest/`
 - Test the full HTTP request/response cycle
@@ -662,14 +662,14 @@ To add a new domain (e.g., `order`):
 3. **Mux wiring** (`app/sdk/mux/mux.go`):
    - Add `OrderBus` field to `BusConfig` struct
 
-4. **Service wiring** (`api/services/sales/main.go`):
+4. **Service wiring** (`api/services/schoolcrm/main.go`):
    - Instantiate store, extensions, and business
    - Add to `mux.BusConfig`
 
-5. **Build registration** (`api/services/sales/build/all.go`):
+5. **Build registration** (`api/services/schoolcrm/build/all.go`):
    - Add `orderapp.Routes(app, ...)` call
 
-6. **Tests** (`api/services/sales/tests/orderapi/`):
+6. **Tests** (`api/services/schoolcrm/tests/orderapi/`):
    - API integration tests
 
 7. **Database migration** (`business/sdk/migrate/sql/`):

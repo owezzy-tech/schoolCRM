@@ -238,7 +238,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 			UserBus: userBus,
 		},
 		AuthConfig: mux.AuthConfig{
-			Auth: ath,
+			Auth:     ath,
+			TokenKey: cfg.Auth.ActiveKID,
 		},
 	}
 

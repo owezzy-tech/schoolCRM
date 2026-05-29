@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990.2774999999999 1012" width="990.2774999999999" height="1012" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<polyline points="719.4074999999998,76 719.4074999999998,116" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="719.4074999999998,152 719.4074999999998,180.5 638.2074999999999,180.5 638.2074999999999,209" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="638.2074999999999,245 638.2074999999999,273.5 193.8399999999998,273.5 193.8399999999998,302" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="638.2074999999999,245 638.2074999999999,273.5 514.4949999999999,273.5 514.4949999999999,395" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="193.8399999999998,338 193.8399999999998,366.5 106.91999999999996,366.5 106.91999999999996,413 441.2949999999999,413" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="514.4949999999999,431 514.4949999999999,459.5 385.97999999999985,459.5 385.97999999999985,488" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="385.97999999999985,524 385.97999999999985,552.5 271.3449999999999,552.5 271.3449999999999,599 333.9399999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="260.7399999999999,617 260.7399999999999,645.5 61.089999999999804,645.5 61.089999999999804,785 111.96499999999983,785" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="260.7399999999999,617 260.7399999999999,645.5 149.26499999999976,645.5 149.26499999999976,674" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="260.7399999999999,617 260.7399999999999,645.5 262.4649999999998,645.5 262.4649999999998,674" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="260.7399999999999,617 260.7399999999999,645.5 355.22999999999985,645.5 355.22999999999985,692 454.71999999999974,692" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="156.56499999999983,803 156.56499999999983,860" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="719.4074999999998,152 719.4074999999998,180.5 891.9374999999999,180.5 891.9374999999999,599 639.4399999999998,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="638.2074999999999,245 638.2074999999999,273.5 729.5374999999998,273.5 729.5374999999998,599 639.4399999999998,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="193.8399999999998,338 193.8399999999998,599 543.0899999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="514.4949999999999,431 514.4949999999999,459.5 613.5974999999999,459.5 613.5974999999999,599 639.4399999999998,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="385.97999999999985,524 385.97999999999985,552.5 510.1699999999998,552.5 510.1699999999998,599 543.0899999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="262.4649999999998,710 262.4649999999998,785 201.16499999999982,785" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="499.31999999999977,674 499.31999999999977,645.5 810.7374999999998,645.5 810.7374999999998,227 686.3824999999998,227" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="149.26499999999976,710 149.26499999999976,777.7632241603786 238.6838266362168,777.7632241603786" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="591.2649999999999,617 591.2649999999999,675.774286946082 605.8047959832983,675.774286946082" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="156.56499999999983,896 156.56499999999983,936" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="581.5874999999999" y="167" width="113.24000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="638.2074999999999" y="180.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant submits</text>
+<rect x="128.63999999999982" y="260" width="130.4" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="193.8399999999998" y="273.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">checklist incomplete</text>
+<rect x="455.0149999999999" y="306.5" width="118.96000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="514.4949999999999" y="320" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">checklist complete</text>
+<rect x="35.99999999999996" y="353" width="141.84" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="106.91999999999996" y="366.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">required docs accepted</text>
+<rect x="335.07999999999987" y="446" width="101.8" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="385.97999999999985" y="459.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">reviewer starts</text>
+<rect x="220.4449999999999" y="539" width="101.8" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="271.3449999999999" y="552.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">review complete</text>
+<rect x="38.78999999999981" y="678.5" width="44.6" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="61.089999999999804" y="692" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">admit</text>
+<rect x="129.82499999999976" y="632" width="38.88" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="149.26499999999976" y="645.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">deny</text>
+<rect x="231.5849999999998" y="632" width="61.760000000000005" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="262.4649999999998" y="645.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">waitlist</text>
+<rect x="332.92999999999984" y="632" width="44.6" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="355.22999999999985" y="645.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">defer</text>
+<rect x="91.36499999999982" y="818" width="130.4" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="156.56499999999983" y="831.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">enrollment confirmed</text>
+<rect x="829.5974999999999" y="353" width="124.68" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="891.9374999999999" y="366.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant withdraws</text>
+<rect x="667.1974999999998" y="399.5" width="124.68" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="729.5374999999998" y="413" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant withdraws</text>
+<rect x="131.4999999999998" y="446" width="124.68" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="193.8399999999998" y="459.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant withdraws</text>
+<rect x="551.2574999999998" y="492.5" width="124.68" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="613.5974999999999" y="506" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant withdraws</text>
+<rect x="447.8299999999998" y="539" width="124.68" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="510.1699999999998" y="552.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">applicant withdraws</text>
+<rect x="225.8649999999998" y="725" width="73.2" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="262.4649999999998" y="738.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">offer seat</text>
+<rect x="745.5374999999998" y="446" width="130.4" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="810.7374999999998" y="459.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">reactivate next term</text>
+<circle cx="719.4074999999998" cy="58" r="16" fill="var(--_text)" stroke="none" />
+<rect x="685.5324999999998" y="116" width="67.75" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="590.0324999999999" y="209" width="96.35000000000001" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="113.4899999999998" y="302" width="160.70000000000002" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="441.2949999999999" y="395" width="146.4" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="337.80499999999984" y="488" width="96.35000000000001" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="187.5399999999999" y="581" width="146.4" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="111.96499999999983" y="767" width="89.2" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="111.81499999999976" y="674" width="74.9" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="210.7149999999998" y="674" width="103.5" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="454.71999999999974" y="674" width="89.2" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="111.96499999999983" y="860" width="89.2" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="543.0899999999999" y="581" width="96.35000000000001" height="36" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<circle cx="255.16499999999985" cy="785" r="16" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+<circle cx="255.16499999999985" cy="785" r="12" fill="var(--_text)" stroke="none" />
+<circle cx="613.5974999999999" cy="692" r="16" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+<circle cx="613.5974999999999" cy="692" r="12" fill="var(--_text)" stroke="none" />
+<circle cx="156.56499999999983" cy="954" r="16" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+<circle cx="156.56499999999983" cy="954" r="12" fill="var(--_text)" stroke="none" />
+
+<text x="719.4074999999998" y="134" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">DRAFT</text>
+<text x="638.2074999999999" y="227" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">SUBMITTED</text>
+<text x="193.8399999999998" y="320" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">AWAITING_DOCUMENTS</text>
+<text x="514.4949999999999" y="413" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">READY_FOR_REVIEW</text>
+<text x="385.97999999999985" y="506" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">IN_REVIEW</text>
+<text x="260.7399999999999" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">DECISION_PENDING</text>
+<text x="156.56499999999983" y="785" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">ADMITTED</text>
+<text x="149.26499999999976" y="692" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">DENIED</text>
+<text x="262.4649999999998" y="692" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">WAITLISTED</text>
+<text x="499.31999999999977" y="692" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">DEFERRED</text>
+<text x="156.56499999999983" y="878" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">ENROLLED</text>
+<text x="591.2649999999999" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">WITHDRAWN</text>
+
+
+
+</svg>

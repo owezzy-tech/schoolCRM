@@ -21,7 +21,11 @@ async def query_documents(
     use_case: QueryDocumentsUseCase = Depends(get_query_documents_use_case),
 ) -> dict[str, str | list[str]]:
     result = await use_case.execute(
-        QueryDocumentsCommand(question=dto.question, requested_by=auth.subject, top_k=dto.top_k)
+        QueryDocumentsCommand(
+            question=dto.question,
+            requested_by=auth.subject,
+            top_k=dto.top_k,
+        )
     )
 
     return {

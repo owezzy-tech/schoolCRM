@@ -1,0 +1,30 @@
+{
+    auto_https off
+}
+
+:80 {
+    root * /srv
+    encode gzip zstd
+
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    handle /v1/auth/* {
+        reverse_proxy {$AUTH_API_UPSTREAM:auth:6000}
+    }
+
+    handle /v1/* {
+        reverse_proxy {$SCHOOLCRM_API_UPSTREAM:schoolcrm:3000}
+    }
+
+    handle {
+        route {
+            try_files {path} /index.html
+            header /index.html Cache-Control "public, max-age=0, must-revalidate"
+            file_server
+        }
+    }
+}

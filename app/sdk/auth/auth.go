@@ -8,13 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/owezzy/schoolCRM/business/domain/userbus"
-	"github.com/owezzy/schoolCRM/foundation/logger"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/open-policy-agent/opa/v1/rego"
+	"github.com/owezzy/schoolCRM/business/domain/userbus"
+	"github.com/owezzy/schoolCRM/foundation/logger"
 )
+
+const TokenExpiry = 8 * time.Hour
 
 // Specific error variables for auth failures.
 var (

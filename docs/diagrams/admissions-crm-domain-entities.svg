@@ -1,0 +1,281 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1239.6200000000001 846" width="1239.6200000000001" height="846" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+</defs>
+<polyline points="229,100 293.74,100 293.74,78.5 386.28000000000003,78.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="229,100 293.74,100 293.74,182.5 383.505,182.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="222.39999999999998,516 293.74,516 293.74,341.5 358.48,341.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="222.39999999999998,516 293.74,516 293.74,500.5 386.28000000000003,500.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="222.39999999999998,516 293.74,516 293.74,571 456.28000000000003,571 456.28000000000003,608" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="222.39999999999998,516 293.74,516 293.74,721 456.28000000000003,721 456.28000000000003,736.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="554.08,341.5 630.26,341.5 630.26,133.5 727.09,133.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="867.09,133.5 1017.22,133.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="554.08,341.5 630.26,341.5 630.26,237.5 706.44,237.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="554.08,341.5 727.09,341.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="554.08,341.5 630.26,341.5 630.26,445.5 727.09,445.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="554.08,341.5 630.26,341.5 630.26,549.5 727.09,549.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="204.5,779 456.28000000000003,779 456.28000000000003,790.5" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<polyline points="204.5,675 293.74,675 293.74,669 456.28000000000003,669 456.28000000000003,662" fill="none" stroke="var(--_line)" stroke-width="0.75" />
+<rect x="40" y="40" width="189" height="120" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="189" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="134.5" y="56" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">IDENTITY_USER</text>
+<line x1="40" y1="72" x2="229" y2="72" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="46" y="76" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="55.22" y="83" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+<text x="72.44" y="83" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="221" y="83" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">id</tspan></text>
+<text x="48" y="105" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="221" y="105" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">email</tspan></text>
+<text x="48" y="127" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="221" y="127" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">identity_provider</tspan></text>
+<text x="48" y="149" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="221" y="149" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">external_subject</tspan></text>
+<rect x="386.28000000000003" y="51.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="386.28000000000003" y="51.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28000000000003" y="67.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">STAFF_PROFILE</text>
+<line x1="386.28000000000003" y1="83.5" x2="526.28" y2="83.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="456.28000000000003" y="94.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="383.505" y="155.5" width="145.55" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="383.505" y="155.5" width="145.55" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28" y="171.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">APPLICANT_PROFILE</text>
+<line x1="383.505" y1="187.5" x2="529.0550000000001" y2="187.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="456.28" y="198.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="46.60000000000001" y="434" width="175.79999999999998" height="164" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="46.60000000000001" y="434" width="175.79999999999998" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="134.5" y="450" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">CONSTITUENT</text>
+<line x1="46.60000000000001" y1="466" x2="222.39999999999998" y2="466" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="52.60000000000001" y="470" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="61.82000000000001" y="477" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+<text x="79.04" y="477" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="214.39999999999998" y="477" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">id</tspan></text>
+<text x="54.60000000000001" y="499" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="214.39999999999998" y="499" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">first_name</tspan></text>
+<text x="54.60000000000001" y="521" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="214.39999999999998" y="521" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">last_name</tspan></text>
+<text x="54.60000000000001" y="543" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">date</tspan></text>
+<text x="214.39999999999998" y="543" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">date_of_birth</tspan></text>
+<text x="54.60000000000001" y="565" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="214.39999999999998" y="565" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">lifecycle_stage</tspan></text>
+<text x="54.60000000000001" y="587" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="214.39999999999998" y="587" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">external_sis_id</tspan></text>
+<rect x="358.48" y="259.5" width="195.6" height="164" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="358.48" y="259.5" width="195.6" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28000000000003" y="275.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">APPLICATION</text>
+<line x1="358.48" y1="291.5" x2="554.08" y2="291.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="364.48" y="295.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="373.70000000000005" y="302.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+<text x="390.92" y="302.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="546.08" y="302.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">id</tspan></text>
+<rect x="364.48" y="317.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="373.70000000000005" y="324.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+<text x="390.92" y="324.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="546.08" y="324.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">constituent_id</tspan></text>
+<rect x="364.48" y="339.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="373.70000000000005" y="346.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+<text x="390.92" y="346.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="546.08" y="346.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">academic_term_id</tspan></text>
+<rect x="364.48" y="361.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="373.70000000000005" y="368.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+<text x="390.92" y="368.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="546.08" y="368.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">program_id</tspan></text>
+<text x="366.48" y="390.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="546.08" y="390.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">application_type</tspan></text>
+<text x="366.48" y="412.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="546.08" y="412.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status_state</tspan></text>
+<rect x="386.28000000000003" y="473.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="386.28000000000003" y="473.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28000000000003" y="489.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">INQUIRY</text>
+<line x1="386.28000000000003" y1="505.5" x2="526.28" y2="505.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="456.28000000000003" y="516.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="379.93" y="608" width="152.70000000000002" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="379.93" y="608" width="152.70000000000002" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28000000000003" y="624" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">EVENT_REGISTRATION</text>
+<line x1="379.93" y1="640" x2="532.63" y2="640" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="456.28000000000003" y="651" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="386.28000000000003" y="736.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="386.28000000000003" y="736.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="456.28000000000003" y="752.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">COMMUNICATION</text>
+<line x1="386.28000000000003" y1="768.5" x2="526.28" y2="768.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="456.28000000000003" y="779.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="727.09" y="106.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="727.09" y="106.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="797.09" y="122.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">CHECKLIST_ITEM</text>
+<line x1="727.09" y1="138.5" x2="867.09" y2="138.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="797.09" y="149.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="1017.22" y="62.5" width="182.4" height="142" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1017.22" y="62.5" width="182.4" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1108.42" y="78.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">DOCUMENT</text>
+<line x1="1017.22" y1="94.5" x2="1199.6200000000001" y2="94.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1023.22" y="98.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="1032.44" y="105.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+<text x="1049.66" y="105.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="1191.6200000000001" y="105.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">id</tspan></text>
+<rect x="1023.22" y="120.5" width="18.439999999999998" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+<text x="1032.44" y="127.5" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+<text x="1049.66" y="127.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+<text x="1191.6200000000001" y="127.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">application_id</tspan></text>
+<text x="1025.22" y="149.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="1191.6200000000001" y="149.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">file_key</tspan></text>
+<text x="1025.22" y="171.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="1191.6200000000001" y="171.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+<text x="1025.22" y="193.5" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+<text x="1191.6200000000001" y="193.5" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">sis_sync_status</tspan></text>
+<rect x="706.44" y="210.5" width="181.3" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="706.44" y="210.5" width="181.3" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="797.09" y="226.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">APPLICATION_TRANSITION</text>
+<line x1="706.44" y1="242.5" x2="887.74" y2="242.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="797.09" y="253.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="727.09" y="314.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="727.09" y="314.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="797.09" y="330.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">APPLICATION_FEE</text>
+<line x1="727.09" y1="346.5" x2="867.09" y2="346.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="797.09" y="357.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="727.09" y="418.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="727.09" y="418.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="797.09" y="434.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">DECISION</text>
+<line x1="727.09" y1="450.5" x2="867.09" y2="450.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="797.09" y="461.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="727.09" y="522.5" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="727.09" y="522.5" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="797.09" y="538.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">SIS_SYNC_EVENT</text>
+<line x1="727.09" y1="554.5" x2="867.09" y2="554.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="797.09" y="565.5" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="64.5" y="752" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="64.5" y="752" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="134.5" y="768" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">CAMPAIGN</text>
+<line x1="64.5" y1="784" x2="204.5" y2="784" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="134.5" y="795" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<rect x="64.5" y="648" width="140" height="54" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="64.5" y="648" width="140" height="32" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="134.5" y="664" text-anchor="middle" dy="0.35em" font-size="13" font-weight="700" fill="var(--_text)">EVENT</text>
+<line x1="64.5" y1="680" x2="204.5" y2="680" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="134.5" y="691" text-anchor="middle" dy="0.35em" font-size="11" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>
+<line x1="233" y1="94" x2="233" y2="106" stroke="var(--_line)" stroke-width="1" />
+<line x1="237" y1="94" x2="237" y2="106" stroke="var(--_line)" stroke-width="1" />
+<line x1="382.28000000000003" y1="84.5" x2="382.28000000000003" y2="72.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="378.28000000000003" y1="84.5" x2="378.28000000000003" y2="72.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="374.28000000000003" cy="78.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="233" y1="94" x2="233" y2="106" stroke="var(--_line)" stroke-width="1" />
+<line x1="237" y1="94" x2="237" y2="106" stroke="var(--_line)" stroke-width="1" />
+<line x1="379.505" y1="188.5" x2="379.505" y2="176.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="375.505" y1="188.5" x2="375.505" y2="176.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="371.505" cy="182.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="226.39999999999998" y1="510" x2="226.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="230.39999999999998" y1="510" x2="230.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="354.48" y1="348.5" x2="342.48" y2="341.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="354.48" y1="341.5" x2="342.48" y2="341.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="354.48" y1="334.5" x2="342.48" y2="341.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="338.48" cy="341.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="226.39999999999998" y1="510" x2="226.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="230.39999999999998" y1="510" x2="230.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="382.28000000000003" y1="507.5" x2="370.28000000000003" y2="500.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="382.28000000000003" y1="500.5" x2="370.28000000000003" y2="500.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="382.28000000000003" y1="493.5" x2="370.28000000000003" y2="500.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="366.28000000000003" cy="500.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="226.39999999999998" y1="510" x2="226.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="230.39999999999998" y1="510" x2="230.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="449.28000000000003" y1="604" x2="456.28000000000003" y2="592" stroke="var(--_line)" stroke-width="1" />
+<line x1="456.28000000000003" y1="604" x2="456.28000000000003" y2="592" stroke="var(--_line)" stroke-width="1" />
+<line x1="463.28000000000003" y1="604" x2="456.28000000000003" y2="592" stroke="var(--_line)" stroke-width="1" />
+<circle cx="456.28000000000003" cy="588" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="226.39999999999998" y1="510" x2="226.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="230.39999999999998" y1="510" x2="230.39999999999998" y2="522" stroke="var(--_line)" stroke-width="1" />
+<line x1="449.28000000000003" y1="732.5" x2="456.28000000000003" y2="720.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="456.28000000000003" y1="732.5" x2="456.28000000000003" y2="720.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="463.28000000000003" y1="732.5" x2="456.28000000000003" y2="720.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="456.28000000000003" cy="716.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="558.08" y1="335.5" x2="558.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="562.08" y1="335.5" x2="562.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="140.5" x2="711.09" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="133.5" x2="711.09" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="126.5" x2="711.09" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="707.09" cy="133.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="871.09" y1="127.5" x2="871.09" y2="139.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="875.09" y1="127.5" x2="875.09" y2="139.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="1013.22" y1="140.5" x2="1001.22" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="1013.22" y1="133.5" x2="1001.22" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="1013.22" y1="126.5" x2="1001.22" y2="133.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="997.22" cy="133.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="558.08" y1="335.5" x2="558.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="562.08" y1="335.5" x2="562.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="702.44" y1="244.5" x2="690.44" y2="237.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="702.44" y1="237.5" x2="690.44" y2="237.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="702.44" y1="230.5" x2="690.44" y2="237.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="686.44" cy="237.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="558.08" y1="335.5" x2="558.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="562.08" y1="335.5" x2="562.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="347.5" x2="723.09" y2="335.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="719.09" y1="347.5" x2="719.09" y2="335.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="715.09" cy="341.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="558.08" y1="335.5" x2="558.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="562.08" y1="335.5" x2="562.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="451.5" x2="723.09" y2="439.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="719.09" y1="451.5" x2="719.09" y2="439.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="715.09" cy="445.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="558.08" y1="335.5" x2="558.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="562.08" y1="335.5" x2="562.08" y2="347.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="556.5" x2="711.09" y2="549.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="549.5" x2="711.09" y2="549.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="723.09" y1="542.5" x2="711.09" y2="549.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="707.09" cy="549.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="208.5" y1="773" x2="208.5" y2="785" stroke="var(--_line)" stroke-width="1" />
+<line x1="212.5" y1="773" x2="212.5" y2="785" stroke="var(--_line)" stroke-width="1" />
+<line x1="449.28000000000003" y1="786.5" x2="456.28000000000003" y2="774.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="456.28000000000003" y1="786.5" x2="456.28000000000003" y2="774.5" stroke="var(--_line)" stroke-width="1" />
+<line x1="463.28000000000003" y1="786.5" x2="456.28000000000003" y2="774.5" stroke="var(--_line)" stroke-width="1" />
+<circle cx="456.28000000000003" cy="770.5" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<line x1="208.5" y1="669" x2="208.5" y2="681" stroke="var(--_line)" stroke-width="1" />
+<line x1="212.5" y1="669" x2="212.5" y2="681" stroke="var(--_line)" stroke-width="1" />
+<line x1="463.28000000000003" y1="666" x2="456.28000000000003" y2="678" stroke="var(--_line)" stroke-width="1" />
+<line x1="456.28000000000003" y1="666" x2="456.28000000000003" y2="678" stroke="var(--_line)" stroke-width="1" />
+<line x1="449.28000000000003" y1="666" x2="456.28000000000003" y2="678" stroke="var(--_line)" stroke-width="1" />
+<circle cx="456.28000000000003" cy="682" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1" />
+<rect x="284.31" y="70" width="25.16" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="296.89" y="78.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">has</text>
+<rect x="281.16" y="145.2625" width="25.16" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="293.74" y="153.7625" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">has</text>
+<rect x="269.72" y="423.55" width="48.04" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="293.74" y="432.05" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">submits</text>
+<rect x="272.57000000000005" y="492" width="48.04" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="296.59000000000003" y="500.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">creates</text>
+<rect x="300.6" y="562.5" width="59.480000000000004" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="330.34000000000003" y="571" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">registers</text>
+<rect x="266.86" y="663.35" width="53.760000000000005" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="293.74" y="671.85" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">receives</text>
+<rect x="603.38" y="218.67499999999995" width="53.760000000000005" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="630.26" y="227.17499999999995" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">requires</text>
+<rect x="912.415" y="125" width="59.480000000000004" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="942.155" y="133.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">satisfies</text>
+<rect x="589.08" y="280.99999999999994" width="82.36" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="630.26" y="289.49999999999994" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">changes_state</text>
+<rect x="613.705" y="333" width="53.760000000000005" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="640.585" y="341.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">requires</text>
+<rect x="603.38" y="395.32500000000005" width="53.760000000000005" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="630.26" y="403.82500000000005" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">receives</text>
+<rect x="611.96" y="447.32500000000005" width="36.6" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="630.26" y="455.82500000000005" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">syncs</text>
+<rect x="317.84" y="770.5" width="36.6" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="336.14" y="779" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">sends</text>
+<rect x="318.31" y="660.5" width="25.16" height="17" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="330.89" y="669" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">has</text>
+</svg>

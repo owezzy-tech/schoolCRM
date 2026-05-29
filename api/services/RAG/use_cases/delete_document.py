@@ -12,7 +12,13 @@ class DeleteDocumentResult:
 
 
 class DeleteDocumentUseCase:
-    def __init__(self, *, vector_store: IVectorStore, document_repository: IDocumentRepository, file_store: IFileStore) -> None:
+    def __init__(
+        self,
+        *,
+        vector_store: IVectorStore,
+        document_repository: IDocumentRepository,
+        file_store: IFileStore,
+    ) -> None:
         self._vector_store = vector_store
         self._document_repository = document_repository
         self._file_store = file_store

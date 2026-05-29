@@ -43,7 +43,7 @@ func UserAdd(log *logger.Logger, cfg sqldb.Config, nme string, email string, pas
 		Name:     name.MustParse(nme),
 		Email:    *addr,
 		Password: password.MustParse(pass),
-		Roles:    []role.Role{role.Admin, role.User},
+		Roles:    []role.Role{role.SchoolAdmin, role.Student},
 	}
 
 	usr, err := userBus.Create(ctx, uuid.UUID{}, nu)

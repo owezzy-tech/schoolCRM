@@ -52,7 +52,7 @@ The committed contract lives in `openapi.yaml` and exposes:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-uvicorn main:app --reload --host 0.0.0.0 --port 7000
+uvicorn main:app --reload --host 0.0.0.0 --port 4545
 ```
 
 ### Notes
