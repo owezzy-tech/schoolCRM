@@ -124,6 +124,25 @@ export const appRoutes: Route[] = [
                     import('app/modules/admin/calendar/calendar.routes'),
             },
             {
+                path: 'admin/users',
+                loadChildren: () =>
+                    import('app/modules/admin/admin-users/admin-users.routes'),
+            },
+            {
+                path: 'admin/admissions/leads',
+                loadChildren: () =>
+                    import(
+                        'app/modules/admin/admissions/leads/admissions-leads.routes'
+                    ),
+            },
+            {
+                path: 'admin/admissions/settings',
+                loadChildren: () =>
+                    import(
+                        'app/modules/admin/admissions/settings/admissions-settings.routes'
+                    ),
+            },
+            {
                 path: '404-not-found',
                 pathMatch: 'full',
                 loadChildren: () =>

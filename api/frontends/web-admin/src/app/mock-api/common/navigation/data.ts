@@ -15,6 +15,43 @@ export const defaultNavigation: FuseNavigationItem[] = [
         type : 'basic',
         icon : 'heroicons_outline:calendar',
         link : '/calendar'
+    },
+    {
+        id      : 'admin',
+        title   : 'Administration',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:cog-6-tooth',
+        children: [
+            {
+                id   : 'admin.users',
+                title: 'User Roles',
+                type : 'basic',
+                icon : 'heroicons_outline:users',
+                link : '/admin/users'
+            }
+        ]
+    },
+    {
+        id      : 'admissions',
+        title   : 'Admissions',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:academic-cap',
+        children: [
+            {
+                id   : 'admissions.leads',
+                title: 'Leads',
+                type : 'basic',
+                icon : 'heroicons_outline:queue-list',
+                link : '/admin/admissions/leads'
+            },
+            {
+                id   : 'admissions.settings',
+                title: 'Settings',
+                type : 'basic',
+                icon : 'heroicons_outline:adjustments-horizontal',
+                link : '/admin/admissions/settings'
+            }
+        ]
     }
 ];
 export const compactNavigation: FuseNavigationItem[] = [
@@ -31,6 +68,27 @@ export const compactNavigation: FuseNavigationItem[] = [
         type : 'basic',
         icon : 'heroicons_outline:calendar',
         link : '/calendar'
+    },
+    {
+        id   : 'admin.users',
+        title: 'User Roles',
+        type : 'basic',
+        icon : 'heroicons_outline:users',
+        link : '/admin/users'
+    },
+    {
+        id   : 'admissions.leads',
+        title: 'Leads',
+        type : 'basic',
+        icon : 'heroicons_outline:queue-list',
+        link : '/admin/admissions/leads'
+    },
+    {
+        id   : 'admissions.settings',
+        title: 'Settings',
+        type : 'basic',
+        icon : 'heroicons_outline:adjustments-horizontal',
+        link : '/admin/admissions/settings'
     }
 ];
 export const futuristicNavigation: FuseNavigationItem[] = [
@@ -47,6 +105,43 @@ export const futuristicNavigation: FuseNavigationItem[] = [
         type : 'basic',
         icon : 'heroicons_outline:calendar',
         link : '/calendar'
+    },
+    {
+        id      : 'admin',
+        title   : 'Administration',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:cog-6-tooth',
+        children: [
+            {
+                id   : 'admin.users',
+                title: 'User Roles',
+                type : 'basic',
+                icon : 'heroicons_outline:users',
+                link : '/admin/users'
+            }
+        ]
+    },
+    {
+        id      : 'admissions',
+        title   : 'Admissions',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:academic-cap',
+        children: [
+            {
+                id   : 'admissions.leads',
+                title: 'Leads',
+                type : 'basic',
+                icon : 'heroicons_outline:queue-list',
+                link : '/admin/admissions/leads'
+            },
+            {
+                id   : 'admissions.settings',
+                title: 'Settings',
+                type : 'basic',
+                icon : 'heroicons_outline:adjustments-horizontal',
+                link : '/admin/admissions/settings'
+            }
+        ]
     }
 ];
 export const horizontalNavigation: FuseNavigationItem[] = [
@@ -63,5 +158,26 @@ export const horizontalNavigation: FuseNavigationItem[] = [
         type : 'basic',
         icon : 'heroicons_outline:calendar',
         link : '/calendar'
+    },
+    {
+        id   : 'admin.users',
+        title: 'User Roles',
+        type : 'basic',
+        icon : 'heroicons_outline:users',
+        link : '/admin/users'
+    },
+    {
+        id   : 'admissions.leads',
+        title: 'Leads',
+        type : 'basic',
+        icon : 'heroicons_outline:queue-list',
+        link : '/admin/admissions/leads'
+    },
+    {
+        id   : 'admissions.settings',
+        title: 'Settings',
+        type : 'basic',
+        icon : 'heroicons_outline:adjustments-horizontal',
+        link : '/admin/admissions/settings'
     }
 ];

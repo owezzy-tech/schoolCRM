@@ -48,7 +48,11 @@ export const authInterceptor = (
     return next(newReq).pipe(
         catchError((error) => {
             // Catch "401 Unauthorized" responses
-            if (error instanceof HttpErrorResponse && error.status === 401) {
+            if (
+                error instanceof HttpErrorResponse &&
+                error.status === 401 &&
+                shouldEndSession(newReq, authService)
+            ) {
                 // Sign out
                 authService.signOut();
 
@@ -60,3 +64,14 @@ export const authInterceptor = (
         })
     );
 };
+
+function shouldEndSession(
+    req: HttpRequest<unknown>,
+    authService: AuthService
+): boolean {
+    if (!authService.accessToken || AuthUtils.isTokenExpired(authService.accessToken)) {
+        return true;
+    }
+
+    return req.url.startsWith('/v1/auth/');
+}
