@@ -1,0 +1,145 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <!-- Header -->
+            <div class="flex items-center mb-4">
+                <a routerLink="/applications" class="inline-flex items-center text-secondary hover:text-primary transition-colors">
+                    <mat-icon class="icon-size-5 mr-1" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                    Back to applications
+                </a>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl font-semibold tracking-tight">{{ applicantName }}</h1>
+                    <span class="font-mono text-sm text-secondary bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ applicationId }}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500">{{ status }}</span>
+                </div>
+                <div class="flex gap-3">
+                    <button mat-stroked-button>Reject</button>
+                    <button mat-flat-button color="primary">Advance</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                @for (card of summaryCards; track card.label) {
+                    <div class="bg-card border rounded-2xl p-5 shadow-sm">
+                        <div class="text-sm font-medium text-secondary">{{ card.label }}</div>
+                        <div class="text-lg font-semibold mt-1">{{ card.value }}</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-card border rounded-2xl shadow-sm">
+                <mat-tab-group animationDuration="0ms" class="fuse-mat-no-header-borders">
+                    <mat-tab label="Application">
+                        @defer (on viewport) {
+                            <div class="p-6">
+                                <h2 class="text-lg font-semibold mb-4">Applicant Information</h2>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
+                                    @for (info of applicantInfo; track info.label) {
+                                        <div>
+                                            <div class="text-sm text-secondary">{{ info.label }}</div>
+                                            <div class="font-medium mt-1">{{ info.value }}</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        } @placeholder {
+                            <div class="p-6"><div class="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded-lg"></div></div>
+                        }
+                    </mat-tab>
+                    
+                    <mat-tab label="Documents">
+                        @defer (on viewport) {
+                            <div class="p-6">
+                                <app-application-documents></app-application-documents>
+                            </div>
+                        } @placeholder {
+                            <div class="p-6"><div class="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded-lg"></div></div>
+                        }
+                    </mat-tab>
+                    
+                    <mat-tab label="Notes">
+                        @defer (on viewport) {
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h2 class="text-lg font-semibold">Notes</h2>
+                                    <button mat-stroked-button>
+                                        <mat-icon class="icon-size-4 mr-2" svgIcon="heroicons_outline:plus"></mat-icon>
+                                        Add note
+                                    </button>
+                                </div>
+                                <div class="space-y-6">
+                                    @for (note of notes; track note.timestamp) {
+                                        <div class="flex gap-4">
+                                            <div class="flex-none w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900 text-primary flex items-center justify-center font-medium">
+                                                {{ note.authorInitials }}
+                                            </div>
+                                            <div class="flex-auto">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-medium">{{ note.authorName }}</span>
+                                                    <span class="text-sm text-secondary">{{ note.timestamp }}</span>
+                                                </div>
+                                                <div class="mt-1 text-gray-700 dark:text-gray-300">{{ note.body }}</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        } @placeholder {
+                            <div class="p-6"><div class="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded-lg"></div></div>
+                        }
+                    </mat-tab>
+
+                    <mat-tab label="Timeline">
+                        @defer (on viewport) {
+                            <div class="p-6">
+                                <h2 class="text-lg font-semibold mb-6">Timeline</h2>
+                                <div class="relative ml-4">
+                                    <div class="absolute inset-y-0 left-0 w-px bg-gray-200 dark:bg-gray-700"></div>
+                                    <div class="space-y-6">
+                                        @for (event of timelineEvents; track event.title) {
+                                            <div class="relative pl-6">
+                                                <div class="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-card border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                                                    <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                                </div>
+                                                <div class="font-medium">{{ event.title }}</div>
+                                                <div class="text-sm text-secondary">{{ event.date }}</div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        } @placeholder {
+                            <div class="p-6"><div class="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded-lg"></div></div>
+                        }
+                    </mat-tab>
+
+                    <mat-tab label="AI Insights">
+                        @defer (on viewport) {
+                            <div class="p-6">
+                                <div class="flex items-center gap-2 mb-6">
+                                    <mat-icon class="icon-size-6 text-primary" svgIcon="heroicons_outline:sparkles"></mat-icon>
+                                    <h2 class="text-lg font-semibold">AI Insights</h2>
+                                </div>
+                                <div class="space-y-4">
+                                    @for (insight of insights; track insight.title) {
+                                        <div class="p-4 border rounded-xl bg-gray-50 dark:bg-gray-900">
+                                            <div class="font-medium mb-1">{{ insight.title }}</div>
+                                            <div class="text-sm text-gray-700 dark:text-gray-300">{{ insight.description }}</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        } @placeholder {
+                            <div class="p-6"><div class="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded-lg"></div></div>
+                        }
+                    </mat-tab>
+                </mat-tab-group>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,64 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Campaigns</h1>
+                </div>
+                <div>
+                    <button mat-flat-button color="primary">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                        <span class="ml-2">New campaign</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @for (campaign of campaigns; track campaign.id) {
+                    <div class="bg-card border rounded-2xl p-6 shadow-sm flex flex-col">
+                        <div class="flex items-start justify-between mb-4">
+                            <h2 class="text-lg font-semibold leading-tight line-clamp-2 mr-2">{{ campaign.title }}</h2>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                  [class.bg-green-100]="campaign.status === 'Active'"
+                                  [class.text-green-800]="campaign.status === 'Active'"
+                                  [class.dark:bg-green-900]="campaign.status === 'Active'"
+                                  [class.dark:text-green-300]="campaign.status === 'Active'"
+                                  [class.bg-gray-100]="campaign.status === 'Draft' || campaign.status === 'Completed'"
+                                  [class.text-secondary]="campaign.status === 'Draft' || campaign.status === 'Completed'"
+                                  [class.dark:bg-gray-800]="campaign.status === 'Draft' || campaign.status === 'Completed'">
+                                {{ campaign.status }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mb-6 text-sm text-secondary">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800">
+                                {{ campaign.channel }}
+                            </span>
+                            <span>&middot;</span>
+                            <span>{{ campaign.dateRange }}</span>
+                        </div>
+                        
+                        <div class="mt-auto grid grid-cols-4 gap-2 pt-4 border-t">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-secondary">Sent</span>
+                                <span class="font-medium mt-0.5">{{ campaign.stats.sent }}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-secondary">Opened</span>
+                                <span class="font-medium mt-0.5">{{ campaign.stats.opened }}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-secondary">Clicked</span>
+                                <span class="font-medium mt-0.5">{{ campaign.stats.clicked }}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-secondary">Replied</span>
+                                <span class="font-medium mt-0.5">{{ campaign.stats.replied }}</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,65 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h1 class="text-3xl font-semibold tracking-tight">Inquiries</h1>
+                <button mat-flat-button color="primary">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:adjustments-horizontal"></mat-icon>
+                    <span class="ml-2">Auto-assign rules</span>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+                @for (filter of filters; track filter) {
+                    <button mat-stroked-button>
+                        {{ filter }}
+                        <mat-icon class="icon-size-4 ml-1" svgIcon="heroicons_outline:chevron-down"></mat-icon>
+                    </button>
+                }
+            </div>
+
+            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
+                        <tr>
+                            <th class="px-4 py-3 font-medium">ID</th>
+                            <th class="px-4 py-3 font-medium">From</th>
+                            <th class="px-4 py-3 font-medium">Program</th>
+                            <th class="px-4 py-3 font-medium">Source</th>
+                            <th class="px-4 py-3 font-medium">Priority</th>
+                            <th class="px-4 py-3 font-medium">Status</th>
+                            <th class="px-4 py-3 font-medium">Assigned</th>
+                            <th class="px-4 py-3 font-medium">Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (i of inquiries; track i.id) {
+                            <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900">
+                                <td class="px-4 py-3 font-mono text-xs">{{ i.id }}</td>
+                                <td class="px-4 py-3">{{ i.from }}</td>
+                                <td class="px-4 py-3">{{ i.program }}</td>
+                                <td class="px-4 py-3">{{ i.source }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
+                                          [class.bg-red-100]="i.priority === 'High'"
+                                          [class.text-red-900]="i.priority === 'High'"
+                                          [class.bg-amber-100]="i.priority === 'Medium'"
+                                          [class.text-amber-900]="i.priority === 'Medium'"
+                                          [class.bg-gray-100]="i.priority === 'Low'"
+                                          [class.text-gray-700]="i.priority === 'Low'">
+                                        {{ i.priority }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ i.status }}</span>
+                                </td>
+                                <td class="px-4 py-3">{{ i.assigned }}</td>
+                                <td class="px-4 py-3 text-secondary">{{ i.submitted }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
