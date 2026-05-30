@@ -77,6 +77,70 @@ func (a *app) createConstituent(ctx context.Context, r *http.Request) web.Encode
 	return toAppConstituent(cst)
 }
 
+func (a *app) createInquiry(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewInquiry
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	ni, err := toBusNewInquiry(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	inquiry, err := a.admissionsBus.CreateInquiry(ctx, ni)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create inquiry: %s", err)
+	}
+
+	return toAppInquiry(inquiry)
+}
+
+func (a *app) queryInquiries(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseInquiryQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseInquiryFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(inquiryOrderByFields, qp.OrderBy, admissionsbus.DefaultInquiryOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	inquiries, err := a.admissionsBus.QueryInquiries(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query inquiries: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountInquiries(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count inquiries: %s", err)
+	}
+
+	return query.NewResult(toAppInquiries(inquiries), total, page)
+}
+
+func (a *app) queryInquiryByID(ctx context.Context, r *http.Request) web.Encoder {
+	inquiryID, err := uuid.Parse(web.Param(r, "inquiry_id"))
+	if err != nil {
+		return errs.NewFieldErrors("inquiry_id", err)
+	}
+
+	inquiry, err := a.admissionsBus.QueryInquiryByID(ctx, inquiryID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query inquiry: %s", err)
+	}
+
+	return toAppInquiry(inquiry)
+}
+
 func (a *app) createStaffProfile(ctx context.Context, r *http.Request) web.Encoder {
 	var app NewStaffProfile
 	if err := web.Decode(r, &app); err != nil {

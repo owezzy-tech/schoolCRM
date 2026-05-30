@@ -144,6 +144,38 @@ func (ext *Extension) QueryApplicantProfileByConstituentID(ctx context.Context, 
 	return ext.bus.QueryApplicantProfileByConstituentID(ctx, constituentID)
 }
 
+// CreateInquiry applies otel to admissions inquiry creation.
+func (ext *Extension) CreateInquiry(ctx context.Context, ni admissionsbus.NewInquiry) (admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createinquiry")
+	defer span.End()
+
+	return ext.bus.CreateInquiry(ctx, ni)
+}
+
+// QueryInquiries applies otel to admissions inquiry queries.
+func (ext *Extension) QueryInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryinquiries")
+	defer span.End()
+
+	return ext.bus.QueryInquiries(ctx, filter, orderBy, page)
+}
+
+// CountInquiries applies otel to admissions inquiry counts.
+func (ext *Extension) CountInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countinquiries")
+	defer span.End()
+
+	return ext.bus.CountInquiries(ctx, filter)
+}
+
+// QueryInquiryByID applies otel to admissions inquiry ID lookups.
+func (ext *Extension) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryinquirybyid")
+	defer span.End()
+
+	return ext.bus.QueryInquiryByID(ctx, inquiryID)
+}
+
 // CreateLeadScoreRule applies otel to lead score rule creation.
 func (ext *Extension) CreateLeadScoreRule(ctx context.Context, nr admissionsbus.NewLeadScoreRule) (admissionsbus.LeadScoreRule, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createleadscorerule")

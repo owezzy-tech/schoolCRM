@@ -40,7 +40,10 @@ func Routes(app *web.App, cfg Config) {
 
 	api := newApp(cfg.AdmissionsBus, cfg.AuditBus)
 
+	app.HandlerFunc(http.MethodPost, version, "/admissions/inquiries", api.createInquiry, transaction)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/health", api.health, authen, ruleRead)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/inquiries", api.queryInquiries, authen, ruleRead)
+	app.HandlerFunc(http.MethodGet, version, "/admissions/inquiries/{inquiry_id}", api.queryInquiryByID, authen, ruleRead)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/staff-profiles", api.queryStaffProfiles, authen, ruleManageStaff)
 	app.HandlerFunc(http.MethodGet, version, "/admissions/staff-profiles/{staff_profile_id}", api.queryStaffProfileByID, authen, ruleManageStaff)
 	app.HandlerFunc(http.MethodPost, version, "/admissions/staff-profiles", api.createStaffProfile, authen, ruleManageStaff)

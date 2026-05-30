@@ -289,6 +289,148 @@ func TestCreateApplicantProfileValidatesIdentityAndConstituent(t *testing.T) {
 	}
 }
 
+func TestCreateInquiryCreatesConstituentWithSourceAttribution(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	utmSource := "google"
+	utmMedium := "cpc"
+	utmCampaign := "fall-open-house"
+	message := "Please send me admissions deadlines."
+	email := mail.Address{Address: "new.inquiry@example.com"}
+
+	inquiry, err := bus.CreateInquiry(context.Background(), NewInquiry{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+		Source:       "website",
+		UTMSource:    &utmSource,
+		UTMMedium:    &utmMedium,
+		UTMCampaign:  &utmCampaign,
+		Message:      &message,
+	})
+	if err != nil {
+		t.Fatalf("CreateInquiry returned error: %v", err)
+	}
+
+	if inquiry.ConstituentID == uuid.Nil {
+		t.Fatal("ConstituentID is nil, want linked constituent")
+	}
+
+	if inquiry.Status != InquiryStatusNew {
+		t.Fatalf("Status = %s, want %s", inquiry.Status, InquiryStatusNew)
+	}
+
+	if inquiry.Source != "website" {
+		t.Fatalf("Source = %q, want website", inquiry.Source)
+	}
+
+	if inquiry.UTMSource == nil || *inquiry.UTMSource != utmSource {
+		t.Fatalf("UTMSource = %v, want %q", inquiry.UTMSource, utmSource)
+	}
+
+	constituent, err := bus.QueryConstituentByID(context.Background(), inquiry.ConstituentID)
+	if err != nil {
+		t.Fatalf("QueryConstituentByID returned error: %v", err)
+	}
+
+	if constituent.LifecycleStage != LifecycleStageInquiry {
+		t.Fatalf("LifecycleStage = %s, want %s", constituent.LifecycleStage, LifecycleStageInquiry)
+	}
+}
+
+func TestCreateInquiryLinksExistingConstituentBeforeCreate(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	email := mail.Address{Address: "existing.inquiry@example.com"}
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {
+				ID:             constituentID,
+				FirstName:      "Existing",
+				LastName:       "Applicant",
+				DateOfBirth:    time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail:   email,
+				PrimaryPhone:   "+15555550100",
+				LifecycleStage: LifecycleStageProspect,
+			},
+		},
+		constituentByEmail: map[string]Constituent{},
+	}
+	store.constituentByEmail[email.String()] = store.constituents[constituentID]
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	inquiry, err := bus.CreateInquiry(context.Background(), NewInquiry{
+		FirstName:    "Existing",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+		Source:       "referral",
+	})
+	if err != nil {
+		t.Fatalf("CreateInquiry returned error: %v", err)
+	}
+
+	if inquiry.ConstituentID != constituentID {
+		t.Fatalf("ConstituentID = %s, want %s", inquiry.ConstituentID, constituentID)
+	}
+
+	if len(store.constituents) != 1 {
+		t.Fatalf("constituents stored = %d, want 1", len(store.constituents))
+	}
+}
+
+func TestCreateInquiryRequiresSourceAndIdentityFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	email := mail.Address{Address: "inquiry@example.com"}
+
+	tests := []struct {
+		name string
+		ni   NewInquiry
+		want error
+	}{
+		{
+			name: "first name",
+			ni: NewInquiry{
+				LastName:     "Applicant",
+				DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail: email,
+				PrimaryPhone: "+15555550100",
+				Source:       "website",
+			},
+			want: ErrFirstNameRequired,
+		},
+		{
+			name: "source",
+			ni: NewInquiry{
+				FirstName:    "Ada",
+				LastName:     "Applicant",
+				DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail: email,
+				PrimaryPhone: "+15555550100",
+			},
+			want: ErrInquirySourceRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateInquiry(context.Background(), tt.ni)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T) {
 	t.Parallel()
 
@@ -850,7 +992,10 @@ func TestTransitionApplicationStatusRequiresActor(t *testing.T) {
 }
 
 func newTestBusiness() ExtBusiness {
-	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{})
+	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{
+		constituents:       map[uuid.UUID]Constituent{},
+		constituentByEmail: map[string]Constituent{},
+	})
 }
 
 func newApplicationStubStore(constituentID uuid.UUID, programID uuid.UUID, termID uuid.UUID) *stubStore {
@@ -876,6 +1021,7 @@ func (ioDiscard) Write(p []byte) (int, error) {
 type stubStore struct {
 	staffProfiles          []StaffProfile
 	applicantProfiles      []ApplicantProfile
+	inquiries              []Inquiry
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	constituents           map[uuid.UUID]Constituent
@@ -986,6 +1132,39 @@ func (s *stubStore) QueryApplicantProfileByConstituentID(_ context.Context, cons
 		}
 	}
 	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) CreateInquiry(_ context.Context, inquiry Inquiry) error {
+	s.inquiries = append(s.inquiries, inquiry)
+	return nil
+}
+
+func (s *stubStore) UpdateInquiry(_ context.Context, inquiry Inquiry) error {
+	for i, existing := range s.inquiries {
+		if existing.ID == inquiry.ID {
+			s.inquiries[i] = inquiry
+			return nil
+		}
+	}
+	s.inquiries = append(s.inquiries, inquiry)
+	return nil
+}
+
+func (s *stubStore) QueryInquiries(context.Context, InquiryQueryFilter, order.By, page.Page) ([]Inquiry, error) {
+	return s.inquiries, nil
+}
+
+func (s *stubStore) CountInquiries(context.Context, InquiryQueryFilter) (int, error) {
+	return len(s.inquiries), nil
+}
+
+func (s *stubStore) QueryInquiryByID(_ context.Context, inquiryID uuid.UUID) (Inquiry, error) {
+	for _, inquiry := range s.inquiries {
+		if inquiry.ID == inquiryID {
+			return inquiry, nil
+		}
+	}
+	return Inquiry{}, ErrInquiryNotFound
 }
 
 func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {

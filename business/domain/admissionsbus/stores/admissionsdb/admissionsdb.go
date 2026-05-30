@@ -759,6 +759,141 @@ func (s *Store) queryConstituent(ctx context.Context, filter admissionsbus.Const
 	return toBusConstituent(dbConstituent)
 }
 
+// CreateInquiry inserts a new Inquiry into the database.
+func (s *Store) CreateInquiry(ctx context.Context, inquiry admissionsbus.Inquiry) error {
+	const q = `
+	INSERT INTO admissions_inquiries
+		(inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated)
+	VALUES
+		(:inquiry_id, :constituent_id, :first_name, :last_name, :date_of_birth, :primary_email, :primary_phone, :program_of_interest, :term_of_interest, :source, :utm_source, :utm_medium, :utm_campaign, :message, :status, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBInquiry(inquiry)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateInquiry replaces mutable inquiry data in the database.
+func (s *Store) UpdateInquiry(ctx context.Context, inquiry admissionsbus.Inquiry) error {
+	const q = `
+	UPDATE
+		admissions_inquiries
+	SET
+		constituent_id = :constituent_id,
+		first_name = :first_name,
+		last_name = :last_name,
+		date_of_birth = :date_of_birth,
+		primary_email = :primary_email,
+		primary_phone = :primary_phone,
+		program_of_interest = :program_of_interest,
+		term_of_interest = :term_of_interest,
+		source = :source,
+		utm_source = :utm_source,
+		utm_medium = :utm_medium,
+		utm_campaign = :utm_campaign,
+		message = :message,
+		status = :status,
+		date_updated = :date_updated
+	WHERE
+		inquiry_id = :inquiry_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBInquiry(inquiry)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryInquiries retrieves a list of Inquiries from the database.
+func (s *Store) QueryInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Inquiry, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	orderByClause, err := inquiryOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbInquiries []inquiryDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbInquiries); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusInquiries(dbInquiries)
+}
+
+// CountInquiries returns the total number of Inquiries in the database.
+func (s *Store) CountInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryInquiryByID finds an Inquiry by ID.
+func (s *Store) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (admissionsbus.Inquiry, error) {
+	filter := admissionsbus.InquiryQueryFilter{ID: &inquiryID}
+	inquiry, err := s.queryInquiry(ctx, filter)
+	if err != nil {
+		return admissionsbus.Inquiry{}, err
+	}
+
+	return inquiry, nil
+}
+
+func (s *Store) queryInquiry(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (admissionsbus.Inquiry, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	var dbInquiry inquiryDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbInquiry); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Inquiry{}, fmt.Errorf("db: %w", admissionsbus.ErrInquiryNotFound)
+		}
+		return admissionsbus.Inquiry{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusInquiry(dbInquiry)
+}
+
 // UpsertProgram creates or updates a Program by immutable external SIS ID.
 func (s *Store) UpsertProgram(ctx context.Context, prg admissionsbus.Program) error {
 	const q = `

@@ -29,6 +29,9 @@ var (
 	ErrInvalidDuplicateStatus       = errors.New("invalid duplicate status")
 	ErrInvalidDuplicateLink         = errors.New("duplicate status does not match duplicate link")
 	ErrInvalidLifecycleChange       = errors.New("invalid lifecycle stage change")
+	ErrInquiryNotFound              = errors.New("inquiry not found")
+	ErrInquirySourceRequired        = errors.New("inquiry source required")
+	ErrInvalidInquiryStatus         = errors.New("invalid inquiry status")
 	ErrProgramNotFound              = errors.New("program not found")
 	ErrAcademicTermNotFound         = errors.New("academic term not found")
 	ErrInvalidTermDateRange         = errors.New("term start date must be before end date")
@@ -87,6 +90,11 @@ type Storer interface {
 	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
 	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
 	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
+	CreateInquiry(ctx context.Context, inquiry Inquiry) error
+	UpdateInquiry(ctx context.Context, inquiry Inquiry) error
+	QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error)
+	CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error)
+	QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error)
 	CreateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
 	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
 	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
@@ -148,6 +156,10 @@ type ExtBusiness interface {
 	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
 	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
 	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
+	CreateInquiry(ctx context.Context, ni NewInquiry) (Inquiry, error)
+	QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error)
+	CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error)
+	QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error)
 	CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error)
 	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error)
 	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
@@ -357,6 +369,96 @@ func (b *Business) QueryApplicantProfileByConstituentID(ctx context.Context, con
 	}
 
 	return profile, nil
+}
+
+// CreateInquiry records an anonymous inquiry and links it to a matched or new constituent.
+func (b *Business) CreateInquiry(ctx context.Context, ni NewInquiry) (Inquiry, error) {
+	if err := validateNewInquiry(ni); err != nil {
+		return Inquiry{}, err
+	}
+
+	constituent, err := b.createOrMatchInquiryConstituent(ctx, ni)
+	if err != nil {
+		return Inquiry{}, err
+	}
+
+	now := time.Now()
+	inquiry := Inquiry{
+		ID:                uuid.New(),
+		ConstituentID:     constituent.ID,
+		FirstName:         strings.TrimSpace(ni.FirstName),
+		LastName:          strings.TrimSpace(ni.LastName),
+		DateOfBirth:       ni.DateOfBirth,
+		PrimaryEmail:      ni.PrimaryEmail,
+		PrimaryPhone:      strings.TrimSpace(ni.PrimaryPhone),
+		ProgramOfInterest: ni.ProgramOfInterest,
+		TermOfInterest:    ni.TermOfInterest,
+		Source:            strings.TrimSpace(ni.Source),
+		UTMSource:         trimStringPtr(ni.UTMSource),
+		UTMMedium:         trimStringPtr(ni.UTMMedium),
+		UTMCampaign:       trimStringPtr(ni.UTMCampaign),
+		Message:           trimStringPtr(ni.Message),
+		Status:            InquiryStatusNew,
+		DateCreated:       now,
+		DateUpdated:       now,
+	}
+
+	if err := b.storer.CreateInquiry(ctx, inquiry); err != nil {
+		return Inquiry{}, fmt.Errorf("create inquiry: %w", err)
+	}
+
+	return inquiry, nil
+}
+
+// QueryInquiries retrieves admissions inquiries.
+func (b *Business) QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error) {
+	inquiries, err := b.storer.QueryInquiries(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query inquiries: %w", err)
+	}
+
+	return inquiries, nil
+}
+
+// CountInquiries returns the total number of admissions inquiries.
+func (b *Business) CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error) {
+	return b.storer.CountInquiries(ctx, filter)
+}
+
+// QueryInquiryByID finds an admissions inquiry by ID.
+func (b *Business) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error) {
+	inquiry, err := b.storer.QueryInquiryByID(ctx, inquiryID)
+	if err != nil {
+		return Inquiry{}, fmt.Errorf("query inquiry: inquiryID[%s]: %w", inquiryID, err)
+	}
+
+	return inquiry, nil
+}
+
+func (b *Business) createOrMatchInquiryConstituent(ctx context.Context, ni NewInquiry) (Constituent, error) {
+	matched, err := b.storer.QueryConstituentByPrimaryEmail(ctx, ni.PrimaryEmail.String())
+	if err != nil && !errors.Is(err, ErrConstituentNotFound) {
+		return Constituent{}, fmt.Errorf("query inquiry constituent match: %w", err)
+	}
+
+	if err == nil {
+		return matched, nil
+	}
+
+	constituent, err := b.CreateConstituent(ctx, NewConstituent{
+		FirstName:       ni.FirstName,
+		LastName:        ni.LastName,
+		DateOfBirth:     ni.DateOfBirth,
+		PrimaryEmail:    ni.PrimaryEmail,
+		PrimaryPhone:    ni.PrimaryPhone,
+		LifecycleStage:  LifecycleStageInquiry,
+		DuplicateStatus: DuplicateStatusActive,
+	})
+	if err != nil {
+		return Constituent{}, fmt.Errorf("create inquiry constituent: %w", err)
+	}
+
+	return constituent, nil
 }
 
 // CreateLeadScoreRule adds an explainable lead scoring rule.
@@ -1210,6 +1312,30 @@ func validateNewApplicantProfile(np NewApplicantProfile) error {
 	}
 
 	return nil
+}
+
+func validateNewInquiry(ni NewInquiry) error {
+	if err := validateRequiredConstituentFields(ni.FirstName, ni.LastName, ni.DateOfBirth, ni.PrimaryPhone); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(ni.Source) == "" {
+		return ErrInquirySourceRequired
+	}
+
+	return nil
+}
+
+func validateInquiryStatus(status InquiryStatus) error {
+	switch status {
+	case InquiryStatusNew,
+		InquiryStatusContacted,
+		InquiryStatusConverted,
+		InquiryStatusClosed:
+		return nil
+	default:
+		return ErrInvalidInquiryStatus
+	}
 }
 
 func validateAdmissionsRole(role AdmissionsRole) error {

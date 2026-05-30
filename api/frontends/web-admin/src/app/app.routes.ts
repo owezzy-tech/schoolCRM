@@ -100,6 +100,11 @@ export const appRoutes: Route[] = [
                 loadChildren: () =>
                     import('app/modules/landing/home/home.routes'),
             },
+            {
+                path: 'inquiry',
+                loadChildren: () =>
+                    import('app/modules/landing/inquiry/inquiry.routes'),
+            },
         ],
     },
 

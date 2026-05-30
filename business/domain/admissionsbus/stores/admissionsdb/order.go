@@ -48,6 +48,14 @@ var constituentOrderByFields = map[string]string{
 	admissionsbus.OrderByConstituentLifecycleStage: "lifecycle_stage",
 }
 
+var inquiryOrderByFields = map[string]string{
+	admissionsbus.OrderByInquiryID:          "inquiry_id",
+	admissionsbus.OrderByInquiryEmail:       "primary_email",
+	admissionsbus.OrderByInquirySource:      "source",
+	admissionsbus.OrderByInquiryStatus:      "status",
+	admissionsbus.OrderByInquiryDateCreated: "date_created",
+}
+
 var academicTermOrderByFields = map[string]string{
 	admissionsbus.OrderByAcademicTermID:        "academic_term_id",
 	admissionsbus.OrderByAcademicTermName:      "name",
@@ -126,6 +134,15 @@ func leadScoreOrderByClause(orderBy order.By) (string, error) {
 
 func constituentOrderByClause(orderBy order.By) (string, error) {
 	by, exists := constituentOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func inquiryOrderByClause(orderBy order.By) (string, error) {
+	by, exists := inquiryOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

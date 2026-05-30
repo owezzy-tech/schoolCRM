@@ -164,6 +164,41 @@ CREATE INDEX idx_admissions_constituents_lifecycle ON admissions_constituents (l
 CREATE INDEX idx_admissions_constituents_duplicate_status ON admissions_constituents (duplicate_status);
 
 -- Version: 1.08
+-- Description: Create admissions inquiries table
+CREATE TABLE admissions_inquiries (
+    inquiry_id           UUID      NOT NULL,
+    constituent_id       UUID      NOT NULL,
+    first_name           TEXT      NOT NULL,
+    last_name            TEXT      NOT NULL,
+    date_of_birth        TIMESTAMP NOT NULL,
+    primary_email        TEXT      NOT NULL,
+    primary_phone        TEXT      NOT NULL,
+    program_of_interest  UUID      NULL,
+    term_of_interest     UUID      NULL,
+    source               TEXT      NOT NULL,
+    utm_source           TEXT      NULL,
+    utm_medium           TEXT      NULL,
+    utm_campaign         TEXT      NULL,
+    message              TEXT      NULL,
+    status               TEXT      NOT NULL,
+    date_created         TIMESTAMP NOT NULL,
+    date_updated         TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (inquiry_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id),
+    FOREIGN KEY (program_of_interest) REFERENCES admissions_programs(program_id),
+    FOREIGN KEY (term_of_interest) REFERENCES admissions_academic_terms(academic_term_id),
+    CONSTRAINT admissions_inquiries_status CHECK (status IN ('NEW', 'CONTACTED', 'CONVERTED', 'CLOSED')),
+    CONSTRAINT admissions_inquiries_source_not_empty CHECK (trim(source) <> '')
+);
+
+CREATE INDEX idx_admissions_inquiries_constituent ON admissions_inquiries (constituent_id);
+CREATE INDEX idx_admissions_inquiries_email ON admissions_inquiries (primary_email);
+CREATE INDEX idx_admissions_inquiries_source ON admissions_inquiries (source);
+CREATE INDEX idx_admissions_inquiries_status ON admissions_inquiries (status);
+CREATE INDEX idx_admissions_inquiries_created ON admissions_inquiries (date_created);
+
+-- Version: 1.09
 -- Description: Create admissions duplicate review queue
 CREATE TABLE admissions_duplicate_reviews (
     duplicate_review_id       UUID      NOT NULL,
@@ -198,7 +233,7 @@ CREATE INDEX idx_admissions_duplicate_reviews_candidate ON admissions_duplicate_
 CREATE INDEX idx_admissions_duplicate_reviews_status ON admissions_duplicate_reviews (status);
 CREATE INDEX idx_admissions_duplicate_reviews_match_type ON admissions_duplicate_reviews (match_type);
 
--- Version: 1.09
+-- Version: 1.10
 -- Description: Create admissions applications table
 CREATE TABLE admissions_applications (
     application_id        UUID      NOT NULL,
@@ -228,7 +263,7 @@ CREATE INDEX idx_admissions_applications_program ON admissions_applications (pro
 CREATE INDEX idx_admissions_applications_academic_term ON admissions_applications (academic_term_id);
 CREATE INDEX idx_admissions_applications_status ON admissions_applications (status);
 
--- Version: 1.10
+-- Version: 1.11
 -- Description: Create admissions application transition history table
 CREATE TABLE admissions_application_transitions (
     application_transition_id UUID      NOT NULL,
@@ -251,7 +286,7 @@ CREATE INDEX idx_admissions_application_transitions_application ON admissions_ap
 CREATE INDEX idx_admissions_application_transitions_actor ON admissions_application_transitions (actor_id);
 CREATE INDEX idx_admissions_application_transitions_created ON admissions_application_transitions (date_created);
 
--- Version: 1.11
+-- Version: 1.12
 -- Description: Create admissions staff profiles
 CREATE TABLE admissions_staff_profiles (
     staff_profile_id  UUID      NOT NULL,
@@ -280,7 +315,7 @@ CREATE INDEX idx_admissions_staff_profiles_user ON admissions_staff_profiles (us
 CREATE INDEX idx_admissions_staff_profiles_roles ON admissions_staff_profiles USING GIN (admissions_roles);
 CREATE INDEX idx_admissions_staff_profiles_active ON admissions_staff_profiles (is_active);
 
--- Version: 1.12
+-- Version: 1.13
 -- Description: Create admissions applicant profiles
 CREATE TABLE admissions_applicant_profiles (
     applicant_profile_id  UUID      NOT NULL,
@@ -301,7 +336,7 @@ CREATE INDEX idx_admissions_applicant_profiles_user ON admissions_applicant_prof
 CREATE INDEX idx_admissions_applicant_profiles_constituent ON admissions_applicant_profiles (constituent_id);
 CREATE INDEX idx_admissions_applicant_profiles_active ON admissions_applicant_profiles (is_active);
 
--- Version: 1.13
+-- Version: 1.14
 -- Description: Create admissions lead scoring rules and scores
 CREATE TABLE admissions_lead_score_rules (
     lead_score_rule_id  UUID      NOT NULL,

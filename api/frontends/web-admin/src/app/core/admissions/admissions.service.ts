@@ -13,6 +13,8 @@ import {
     LeadScoreRule,
     LeadScoreRuleQuery,
     LeadScoreRuleRequest,
+    Inquiry,
+    InquiryRequest,
 } from 'app/core/admissions/admissions.types';
 import { map, Observable, ReplaySubject, tap } from 'rxjs';
 
@@ -77,6 +79,12 @@ export class AdmissionsService {
                 `/v1/admissions/lead-score-rules/${ruleID}`,
                 request
             )
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createInquiry(request: InquiryRequest): Observable<Inquiry> {
+        return this.httpClient
+            .post<JsonApiDocument<Inquiry>>('/v1/admissions/inquiries', request)
             .pipe(map(unwrapJsonApiResource));
     }
 

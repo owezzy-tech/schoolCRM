@@ -11,6 +11,9 @@ var DefaultStaffProfileOrderBy = order.NewBy(OrderByStaffProfileID, order.ASC)
 // DefaultApplicantProfileOrderBy represents the default way we sort applicant profiles.
 var DefaultApplicantProfileOrderBy = order.NewBy(OrderByApplicantProfileID, order.ASC)
 
+// DefaultInquiryOrderBy represents the default way we sort inquiries.
+var DefaultInquiryOrderBy = order.NewBy(OrderByInquiryDateCreated, order.DESC)
+
 // DefaultLeadScoreRuleOrderBy represents the default way we sort lead score rules.
 var DefaultLeadScoreRuleOrderBy = order.NewBy(OrderByLeadScoreRulePriority, order.ASC)
 
@@ -45,6 +48,15 @@ const (
 	OrderByApplicantProfileUser        = "b"
 	OrderByApplicantProfileConstituent = "c"
 	OrderByApplicantProfileDateCreated = "d"
+)
+
+// Set of fields that inquiries can be ordered by.
+const (
+	OrderByInquiryID          = "a"
+	OrderByInquiryEmail       = "b"
+	OrderByInquirySource      = "c"
+	OrderByInquiryStatus      = "d"
+	OrderByInquiryDateCreated = "e"
 )
 
 // Set of fields that lead score rules can be ordered by.

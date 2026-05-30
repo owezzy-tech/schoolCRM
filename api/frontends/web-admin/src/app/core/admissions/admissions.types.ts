@@ -118,3 +118,38 @@ export interface LeadScoreRuleQuery {
     orderBy?: string;
     active?: boolean;
 }
+
+export interface Inquiry {
+    id: string;
+    constituentID: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    primaryEmail: string;
+    primaryPhone: string;
+    programOfInterest?: string;
+    termOfInterest?: string;
+    source: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    message?: string;
+    status: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface InquiryRequest {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    primaryEmail: string;
+    primaryPhone: string;
+    programOfInterest?: string | null;
+    termOfInterest?: string | null;
+    source: string;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+    message?: string | null;
+}

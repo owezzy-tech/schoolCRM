@@ -70,6 +70,26 @@ type constituentDB struct {
 	DateUpdated     time.Time  `db:"date_updated"`
 }
 
+type inquiryDB struct {
+	ID                uuid.UUID  `db:"inquiry_id"`
+	ConstituentID     uuid.UUID  `db:"constituent_id"`
+	FirstName         string     `db:"first_name"`
+	LastName          string     `db:"last_name"`
+	DateOfBirth       time.Time  `db:"date_of_birth"`
+	PrimaryEmail      string     `db:"primary_email"`
+	PrimaryPhone      string     `db:"primary_phone"`
+	ProgramOfInterest *uuid.UUID `db:"program_of_interest"`
+	TermOfInterest    *uuid.UUID `db:"term_of_interest"`
+	Source            string     `db:"source"`
+	UTMSource         *string    `db:"utm_source"`
+	UTMMedium         *string    `db:"utm_medium"`
+	UTMCampaign       *string    `db:"utm_campaign"`
+	Message           *string    `db:"message"`
+	Status            string     `db:"status"`
+	DateCreated       time.Time  `db:"date_created"`
+	DateUpdated       time.Time  `db:"date_updated"`
+}
+
 type programDB struct {
 	ID            uuid.UUID  `db:"program_id"`
 	ExternalSISID string     `db:"external_sis_id"`
@@ -346,6 +366,68 @@ func toBusConstituents(dbs []constituentDB) ([]admissionsbus.Constituent, error)
 	for i, db := range dbs {
 		var err error
 		bus[i], err = toBusConstituent(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBInquiry(bus admissionsbus.Inquiry) inquiryDB {
+	return inquiryDB{
+		ID:                bus.ID,
+		ConstituentID:     bus.ConstituentID,
+		FirstName:         bus.FirstName,
+		LastName:          bus.LastName,
+		DateOfBirth:       bus.DateOfBirth.UTC(),
+		PrimaryEmail:      bus.PrimaryEmail.String(),
+		PrimaryPhone:      bus.PrimaryPhone,
+		ProgramOfInterest: bus.ProgramOfInterest,
+		TermOfInterest:    bus.TermOfInterest,
+		Source:            bus.Source,
+		UTMSource:         bus.UTMSource,
+		UTMMedium:         bus.UTMMedium,
+		UTMCampaign:       bus.UTMCampaign,
+		Message:           bus.Message,
+		Status:            bus.Status.String(),
+		DateCreated:       bus.DateCreated.UTC(),
+		DateUpdated:       bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusInquiry(db inquiryDB) (admissionsbus.Inquiry, error) {
+	email, err := mail.ParseAddress(db.PrimaryEmail)
+	if err != nil {
+		return admissionsbus.Inquiry{}, err
+	}
+
+	return admissionsbus.Inquiry{
+		ID:                db.ID,
+		ConstituentID:     db.ConstituentID,
+		FirstName:         db.FirstName,
+		LastName:          db.LastName,
+		DateOfBirth:       db.DateOfBirth.In(time.Local),
+		PrimaryEmail:      *email,
+		PrimaryPhone:      db.PrimaryPhone,
+		ProgramOfInterest: db.ProgramOfInterest,
+		TermOfInterest:    db.TermOfInterest,
+		Source:            db.Source,
+		UTMSource:         db.UTMSource,
+		UTMMedium:         db.UTMMedium,
+		UTMCampaign:       db.UTMCampaign,
+		Message:           db.Message,
+		Status:            admissionsbus.InquiryStatus(db.Status),
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusInquiries(dbs []inquiryDB) ([]admissionsbus.Inquiry, error) {
+	bus := make([]admissionsbus.Inquiry, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusInquiry(db)
 		if err != nil {
 			return nil, err
 		}

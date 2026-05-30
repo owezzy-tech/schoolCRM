@@ -467,6 +467,128 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 	}, nil
 }
 
+// Inquiry represents a public admissions inquiry submission.
+type Inquiry struct {
+	ID                string  `json:"id"`
+	ConstituentID     string  `json:"constituentID"`
+	FirstName         string  `json:"firstName"`
+	LastName          string  `json:"lastName"`
+	DateOfBirth       string  `json:"dateOfBirth"`
+	PrimaryEmail      string  `json:"primaryEmail"`
+	PrimaryPhone      string  `json:"primaryPhone"`
+	ProgramOfInterest *string `json:"programOfInterest,omitempty"`
+	TermOfInterest    *string `json:"termOfInterest,omitempty"`
+	Source            string  `json:"source"`
+	UTMSource         *string `json:"utmSource,omitempty"`
+	UTMMedium         *string `json:"utmMedium,omitempty"`
+	UTMCampaign       *string `json:"utmCampaign,omitempty"`
+	Message           *string `json:"message,omitempty"`
+	Status            string  `json:"status"`
+	DateCreated       string  `json:"dateCreated"`
+	DateUpdated       string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Inquiry) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppInquiry(inquiry admissionsbus.Inquiry) Inquiry {
+	return Inquiry{
+		ID:                inquiry.ID.String(),
+		ConstituentID:     inquiry.ConstituentID.String(),
+		FirstName:         inquiry.FirstName,
+		LastName:          inquiry.LastName,
+		DateOfBirth:       inquiry.DateOfBirth.Format(time.RFC3339),
+		PrimaryEmail:      inquiry.PrimaryEmail.String(),
+		PrimaryPhone:      inquiry.PrimaryPhone,
+		ProgramOfInterest: uuidStringPtr(inquiry.ProgramOfInterest),
+		TermOfInterest:    uuidStringPtr(inquiry.TermOfInterest),
+		Source:            inquiry.Source,
+		UTMSource:         inquiry.UTMSource,
+		UTMMedium:         inquiry.UTMMedium,
+		UTMCampaign:       inquiry.UTMCampaign,
+		Message:           inquiry.Message,
+		Status:            inquiry.Status.String(),
+		DateCreated:       inquiry.DateCreated.Format(time.RFC3339),
+		DateUpdated:       inquiry.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppInquiries(inquiries []admissionsbus.Inquiry) []Inquiry {
+	app := make([]Inquiry, len(inquiries))
+	for i, inquiry := range inquiries {
+		app[i] = toAppInquiry(inquiry)
+	}
+
+	return app
+}
+
+// NewInquiry defines the data needed to submit a public inquiry form.
+type NewInquiry struct {
+	FirstName         string  `json:"firstName"`
+	LastName          string  `json:"lastName"`
+	DateOfBirth       string  `json:"dateOfBirth"`
+	PrimaryEmail      string  `json:"primaryEmail"`
+	PrimaryPhone      string  `json:"primaryPhone"`
+	ProgramOfInterest *string `json:"programOfInterest"`
+	TermOfInterest    *string `json:"termOfInterest"`
+	Source            string  `json:"source"`
+	UTMSource         *string `json:"utmSource"`
+	UTMMedium         *string `json:"utmMedium"`
+	UTMCampaign       *string `json:"utmCampaign"`
+	Message           *string `json:"message"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewInquiry) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewInquiry(app NewInquiry) (admissionsbus.NewInquiry, error) {
+	var fieldErrors errs.FieldErrors
+
+	dob, err := time.Parse(time.RFC3339, app.DateOfBirth)
+	if err != nil {
+		fieldErrors.Add("dateOfBirth", err)
+	}
+
+	email, err := mail.ParseAddress(app.PrimaryEmail)
+	if err != nil {
+		fieldErrors.Add("primaryEmail", err)
+	}
+
+	programID, err := parseUUIDPtr(app.ProgramOfInterest)
+	if err != nil {
+		fieldErrors.Add("programOfInterest", err)
+	}
+
+	termID, err := parseUUIDPtr(app.TermOfInterest)
+	if err != nil {
+		fieldErrors.Add("termOfInterest", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewInquiry{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewInquiry{
+		FirstName:         app.FirstName,
+		LastName:          app.LastName,
+		DateOfBirth:       dob,
+		PrimaryEmail:      *email,
+		PrimaryPhone:      app.PrimaryPhone,
+		ProgramOfInterest: programID,
+		TermOfInterest:    termID,
+		Source:            app.Source,
+		UTMSource:         app.UTMSource,
+		UTMMedium:         app.UTMMedium,
+		UTMCampaign:       app.UTMCampaign,
+		Message:           app.Message,
+	}, nil
+}
+
 // UpdateConstituent defines the data needed to update a constituent.
 type UpdateConstituent struct {
 	PreferredName  *string `json:"preferredName"`
@@ -896,4 +1018,17 @@ func uuidStringPtr(id *uuid.UUID) *string {
 
 	formatted := id.String()
 	return &formatted
+}
+
+func parseUUIDPtr(value *string) (*uuid.UUID, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	id, err := uuid.Parse(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &id, nil
 }

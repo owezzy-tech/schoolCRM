@@ -183,8 +183,58 @@ type UpdateConstituent struct {
 	SISSyncedAt     *time.Time
 }
 
+// InquiryStatus represents staff follow-up state for an inquiry.
+type InquiryStatus string
+
+// Set of valid inquiry statuses.
+const (
+	InquiryStatusNew       InquiryStatus = "NEW"
+	InquiryStatusContacted InquiryStatus = "CONTACTED"
+	InquiryStatusConverted InquiryStatus = "CONVERTED"
+	InquiryStatusClosed    InquiryStatus = "CLOSED"
+)
+
+// String returns the inquiry status as a string.
+func (status InquiryStatus) String() string {
+	return string(status)
+}
+
 // Inquiry captures pre-application interest in the school.
-type Inquiry struct{}
+type Inquiry struct {
+	ID                uuid.UUID
+	ConstituentID     uuid.UUID
+	FirstName         string
+	LastName          string
+	DateOfBirth       time.Time
+	PrimaryEmail      mail.Address
+	PrimaryPhone      string
+	ProgramOfInterest *uuid.UUID
+	TermOfInterest    *uuid.UUID
+	Source            string
+	UTMSource         *string
+	UTMMedium         *string
+	UTMCampaign       *string
+	Message           *string
+	Status            InquiryStatus
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
+// NewInquiry is what we require from anonymous prospects when submitting an inquiry.
+type NewInquiry struct {
+	FirstName         string
+	LastName          string
+	DateOfBirth       time.Time
+	PrimaryEmail      mail.Address
+	PrimaryPhone      string
+	ProgramOfInterest *uuid.UUID
+	TermOfInterest    *uuid.UUID
+	Source            string
+	UTMSource         *string
+	UTMMedium         *string
+	UTMCampaign       *string
+	Message           *string
+}
 
 // ApplicationType represents the admissions category for an application.
 type ApplicationType string
@@ -536,6 +586,16 @@ type ApplicantProfileQueryFilter struct {
 	UserID        *uuid.UUID
 	ConstituentID *uuid.UUID
 	Active        *bool
+}
+
+// InquiryQueryFilter holds the available fields an inquiry query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type InquiryQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	PrimaryEmail  *mail.Address
+	Source        *string
+	Status        *InquiryStatus
 }
 
 // LeadScoreRuleQueryFilter holds the available fields a lead score rule query can be filtered on.

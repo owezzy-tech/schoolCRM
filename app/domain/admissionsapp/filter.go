@@ -69,6 +69,17 @@ type constituentQueryParams struct {
 	DuplicateStatus string
 }
 
+type inquiryQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ConstituentID string
+	PrimaryEmail  string
+	Source        string
+	Status        string
+}
+
 type academicTermQueryParams struct {
 	Page          string
 	Rows          string
@@ -194,6 +205,21 @@ func parseConstituentQueryParams(r *http.Request) constituentQueryParams {
 		ExternalSISID:   values.Get("external_sis_id"),
 		LifecycleStage:  values.Get("lifecycle_stage"),
 		DuplicateStatus: values.Get("duplicate_status"),
+	}
+}
+
+func parseInquiryQueryParams(r *http.Request) inquiryQueryParams {
+	values := r.URL.Query()
+
+	return inquiryQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("inquiry_id"),
+		ConstituentID: values.Get("constituent_id"),
+		PrimaryEmail:  values.Get("primary_email"),
+		Source:        values.Get("source"),
+		Status:        values.Get("status"),
 	}
 }
 
@@ -495,6 +521,53 @@ func parseConstituentFilter(qp constituentQueryParams) (admissionsbus.Constituen
 
 	if fieldErrors != nil {
 		return admissionsbus.ConstituentQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseInquiryFilter(qp inquiryQueryParams) (admissionsbus.InquiryQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.InquiryQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("inquiry_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		constituentID, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &constituentID
+		}
+	}
+
+	if qp.PrimaryEmail != "" {
+		email, err := mail.ParseAddress(qp.PrimaryEmail)
+		if err != nil {
+			fieldErrors.Add("primary_email", err)
+		} else {
+			filter.PrimaryEmail = email
+		}
+	}
+
+	if qp.Source != "" {
+		filter.Source = &qp.Source
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.InquiryStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.InquiryQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil
