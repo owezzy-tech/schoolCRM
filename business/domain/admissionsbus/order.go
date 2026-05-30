@@ -8,6 +8,9 @@ var DefaultProgramOrderBy = order.NewBy(OrderByProgramID, order.ASC)
 // DefaultStaffProfileOrderBy represents the default way we sort staff profiles.
 var DefaultStaffProfileOrderBy = order.NewBy(OrderByStaffProfileID, order.ASC)
 
+// DefaultApplicantProfileOrderBy represents the default way we sort applicant profiles.
+var DefaultApplicantProfileOrderBy = order.NewBy(OrderByApplicantProfileID, order.ASC)
+
 // DefaultLeadScoreRuleOrderBy represents the default way we sort lead score rules.
 var DefaultLeadScoreRuleOrderBy = order.NewBy(OrderByLeadScoreRulePriority, order.ASC)
 
@@ -34,6 +37,14 @@ const (
 	OrderByStaffProfileID          = "a"
 	OrderByStaffProfileUser        = "b"
 	OrderByStaffProfileDateCreated = "c"
+)
+
+// Set of fields that applicant profiles can be ordered by.
+const (
+	OrderByApplicantProfileID          = "a"
+	OrderByApplicantProfileUser        = "b"
+	OrderByApplicantProfileConstituent = "c"
+	OrderByApplicantProfileDateCreated = "d"
 )
 
 // Set of fields that lead score rules can be ordered by.

@@ -95,6 +95,78 @@ func toBusNewStaffProfile(app NewStaffProfile) (admissionsbus.NewStaffProfile, e
 	}, nil
 }
 
+// ApplicantProfile represents an admissions applicant context profile.
+type ApplicantProfile struct {
+	ID            string `json:"id"`
+	UserID        string `json:"userID"`
+	ConstituentID string `json:"constituentID"`
+	Active        bool   `json:"active"`
+	DateCreated   string `json:"dateCreated"`
+	DateUpdated   string `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ApplicantProfile) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplicantProfile(profile admissionsbus.ApplicantProfile) ApplicantProfile {
+	return ApplicantProfile{
+		ID:            profile.ID.String(),
+		UserID:        profile.UserID.String(),
+		ConstituentID: profile.ConstituentID.String(),
+		Active:        profile.Active,
+		DateCreated:   profile.DateCreated.Format(time.RFC3339),
+		DateUpdated:   profile.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplicantProfiles(profiles []admissionsbus.ApplicantProfile) []ApplicantProfile {
+	app := make([]ApplicantProfile, len(profiles))
+	for i, profile := range profiles {
+		app[i] = toAppApplicantProfile(profile)
+	}
+
+	return app
+}
+
+// NewApplicantProfile defines the data needed to create or update an admissions applicant profile.
+type NewApplicantProfile struct {
+	UserID        string `json:"userID"`
+	ConstituentID string `json:"constituentID"`
+	Active        bool   `json:"active"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplicantProfile) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewApplicantProfile(app NewApplicantProfile) (admissionsbus.NewApplicantProfile, error) {
+	var fieldErrors errs.FieldErrors
+
+	userID, err := uuid.Parse(app.UserID)
+	if err != nil {
+		fieldErrors.Add("userID", err)
+	}
+
+	constituentID, err := uuid.Parse(app.ConstituentID)
+	if err != nil {
+		fieldErrors.Add("constituentID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewApplicantProfile{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewApplicantProfile{
+		UserID:        userID,
+		ConstituentID: constituentID,
+		Active:        app.Active,
+	}, nil
+}
+
 // LeadScoreCriterion represents a single condition in a lead score rule.
 type LeadScoreCriterion struct {
 	Field    string   `json:"field"`

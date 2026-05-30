@@ -30,6 +30,16 @@ type staffProfileQueryParams struct {
 	Active  string
 }
 
+type applicantProfileQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	UserID        string
+	ConstituentID string
+	Active        string
+}
+
 type leadScoreRuleQueryParams struct {
 	Page    string
 	Rows    string
@@ -129,6 +139,20 @@ func parseStaffProfileQueryParams(r *http.Request) staffProfileQueryParams {
 		UserID:  values.Get("user_id"),
 		Role:    values.Get("role"),
 		Active:  values.Get("active"),
+	}
+}
+
+func parseApplicantProfileQueryParams(r *http.Request) applicantProfileQueryParams {
+	values := r.URL.Query()
+
+	return applicantProfileQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("applicant_profile_id"),
+		UserID:        values.Get("user_id"),
+		ConstituentID: values.Get("constituent_id"),
+		Active:        values.Get("active"),
 	}
 }
 
@@ -309,6 +333,53 @@ func parseStaffProfileFilter(qp staffProfileQueryParams) (admissionsbus.StaffPro
 
 	if len(fieldErrors) > 0 {
 		return admissionsbus.StaffProfileQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseApplicantProfileFilter(qp applicantProfileQueryParams) (admissionsbus.ApplicantProfileQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicantProfileQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("applicant_profile_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.UserID != "" {
+		userID, err := uuid.Parse(qp.UserID)
+		if err != nil {
+			fieldErrors.Add("user_id", err)
+		} else {
+			filter.UserID = &userID
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		constituentID, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &constituentID
+		}
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.ApplicantProfileQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

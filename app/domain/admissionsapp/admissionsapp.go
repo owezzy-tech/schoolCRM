@@ -170,6 +170,113 @@ func (a *app) queryStaffProfileByID(ctx context.Context, r *http.Request) web.En
 	return toAppStaffProfile(profile)
 }
 
+func (a *app) createApplicantProfile(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicantProfile
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	np, err := toBusNewApplicantProfile(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profile, err := a.admissionsBus.CreateApplicantProfile(ctx, np)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create applicant profile: %s", err)
+	}
+
+	return toAppApplicantProfile(profile)
+}
+
+func (a *app) updateApplicantProfile(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicantProfile
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profileID, err := uuid.Parse(web.Param(r, "applicant_profile_id"))
+	if err != nil {
+		return errs.NewFieldErrors("applicant_profile_id", err)
+	}
+
+	profile, err := a.admissionsBus.QueryApplicantProfileByID(ctx, profileID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant profile: %s", err)
+	}
+
+	np, err := toBusNewApplicantProfile(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateApplicantProfile(ctx, profile, np)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update applicant profile: %s", err)
+	}
+
+	return toAppApplicantProfile(updated)
+}
+
+func (a *app) queryApplicantProfiles(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicantProfileQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicantProfileFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(applicantProfileOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicantProfileOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	profiles, err := a.admissionsBus.QueryApplicantProfiles(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant profiles: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplicantProfiles(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant profiles: %s", err)
+	}
+
+	return query.NewResult(toAppApplicantProfiles(profiles), total, page)
+}
+
+func (a *app) queryApplicantProfileByID(ctx context.Context, r *http.Request) web.Encoder {
+	profileID, err := uuid.Parse(web.Param(r, "applicant_profile_id"))
+	if err != nil {
+		return errs.NewFieldErrors("applicant_profile_id", err)
+	}
+
+	profile, err := a.admissionsBus.QueryApplicantProfileByID(ctx, profileID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant profile: %s", err)
+	}
+
+	return toAppApplicantProfile(profile)
+}
+
+func (a *app) queryCurrentApplicantProfile(ctx context.Context, _ *http.Request) web.Encoder {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return errs.New(errs.Unauthenticated, err)
+	}
+
+	profile, err := a.admissionsBus.QueryApplicantProfileByUserID(ctx, userID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant profile: %s", err)
+	}
+
+	return toAppApplicantProfile(profile)
+}
+
 func (a *app) createLeadScoreRule(ctx context.Context, r *http.Request) web.Encoder {
 	var app NewLeadScoreRule
 	if err := web.Decode(r, &app); err != nil {

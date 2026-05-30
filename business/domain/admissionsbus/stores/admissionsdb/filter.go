@@ -70,6 +70,35 @@ func (s *Store) applyStaffProfileFilter(filter admissionsbus.StaffProfileQueryFi
 	}
 }
 
+func (s *Store) applyApplicantProfileFilter(filter admissionsbus.ApplicantProfileQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["applicant_profile_id"] = filter.ID
+		wc = append(wc, "applicant_profile_id = :applicant_profile_id")
+	}
+
+	if filter.UserID != nil {
+		data["user_id"] = filter.UserID
+		wc = append(wc, "user_id = :user_id")
+	}
+
+	if filter.ConstituentID != nil {
+		data["constituent_id"] = filter.ConstituentID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
 func (s *Store) applyLeadScoreRuleFilter(filter admissionsbus.LeadScoreRuleQueryFilter, data map[string]any, buf *bytes.Buffer) {
 	var wc []string
 

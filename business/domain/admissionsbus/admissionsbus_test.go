@@ -207,6 +207,88 @@ func TestCreateStaffProfileStoresAdmissionsContextRoles(t *testing.T) {
 	}
 }
 
+func TestCreateApplicantProfileLinksIdentityToConstituent(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant},
+		},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	userID := uuid.New()
+
+	profile, err := bus.CreateApplicantProfile(context.Background(), NewApplicantProfile{
+		UserID:        userID,
+		ConstituentID: constituentID,
+		Active:        true,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicantProfile returned error: %v", err)
+	}
+
+	if profile.UserID != userID {
+		t.Fatalf("UserID = %s, want %s", profile.UserID, userID)
+	}
+
+	if profile.ConstituentID != constituentID {
+		t.Fatalf("ConstituentID = %s, want %s", profile.ConstituentID, constituentID)
+	}
+
+	if !profile.Active {
+		t.Fatal("Active = false, want true")
+	}
+
+	stored, err := bus.QueryApplicantProfileByUserID(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("QueryApplicantProfileByUserID returned error: %v", err)
+	}
+
+	if stored.ID != profile.ID {
+		t.Fatalf("stored profile ID = %s, want %s", stored.ID, profile.ID)
+	}
+}
+
+func TestCreateApplicantProfileValidatesIdentityAndConstituent(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		np   NewApplicantProfile
+		want error
+	}{
+		{
+			name: "user id",
+			np:   NewApplicantProfile{ConstituentID: uuid.New()},
+			want: ErrApplicantProfileUserRequired,
+		},
+		{
+			name: "constituent id",
+			np:   NewApplicantProfile{UserID: uuid.New()},
+			want: ErrConstituentIDRequired,
+		},
+		{
+			name: "missing constituent",
+			np:   NewApplicantProfile{UserID: uuid.New(), ConstituentID: uuid.New()},
+			want: ErrConstituentNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateApplicantProfile(context.Background(), tt.np)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T) {
 	t.Parallel()
 
@@ -793,6 +875,7 @@ func (ioDiscard) Write(p []byte) (int, error) {
 
 type stubStore struct {
 	staffProfiles          []StaffProfile
+	applicantProfiles      []ApplicantProfile
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	constituents           map[uuid.UUID]Constituent
@@ -852,6 +935,57 @@ func (s *stubStore) QueryStaffProfileByUserID(_ context.Context, userID uuid.UUI
 		}
 	}
 	return StaffProfile{}, ErrStaffProfileNotFound
+}
+
+func (s *stubStore) CreateApplicantProfile(_ context.Context, profile ApplicantProfile) error {
+	s.applicantProfiles = append(s.applicantProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) UpdateApplicantProfile(_ context.Context, profile ApplicantProfile) error {
+	for i, existing := range s.applicantProfiles {
+		if existing.ID == profile.ID {
+			s.applicantProfiles[i] = profile
+			return nil
+		}
+	}
+	s.applicantProfiles = append(s.applicantProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) QueryApplicantProfiles(context.Context, ApplicantProfileQueryFilter, order.By, page.Page) ([]ApplicantProfile, error) {
+	return s.applicantProfiles, nil
+}
+
+func (s *stubStore) CountApplicantProfiles(context.Context, ApplicantProfileQueryFilter) (int, error) {
+	return len(s.applicantProfiles), nil
+}
+
+func (s *stubStore) QueryApplicantProfileByID(_ context.Context, profileID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.ID == profileID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) QueryApplicantProfileByUserID(_ context.Context, userID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.UserID == userID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) QueryApplicantProfileByConstituentID(_ context.Context, constituentID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.ConstituentID == constituentID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
 }
 
 func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {

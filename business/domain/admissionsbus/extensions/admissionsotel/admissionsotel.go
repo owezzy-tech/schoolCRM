@@ -88,6 +88,62 @@ func (ext *Extension) QueryStaffProfileByUserID(ctx context.Context, userID uuid
 	return ext.bus.QueryStaffProfileByUserID(ctx, userID)
 }
 
+// CreateApplicantProfile applies otel to admissions applicant profile creation.
+func (ext *Extension) CreateApplicantProfile(ctx context.Context, np admissionsbus.NewApplicantProfile) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplicantprofile")
+	defer span.End()
+
+	return ext.bus.CreateApplicantProfile(ctx, np)
+}
+
+// UpdateApplicantProfile applies otel to admissions applicant profile updates.
+func (ext *Extension) UpdateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile, np admissionsbus.NewApplicantProfile) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicantprofile")
+	defer span.End()
+
+	return ext.bus.UpdateApplicantProfile(ctx, profile, np)
+}
+
+// QueryApplicantProfiles applies otel to admissions applicant profile queries.
+func (ext *Extension) QueryApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofiles")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfiles(ctx, filter, orderBy, page)
+}
+
+// CountApplicantProfiles applies otel to admissions applicant profile counts.
+func (ext *Extension) CountApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplicantprofiles")
+	defer span.End()
+
+	return ext.bus.CountApplicantProfiles(ctx, filter)
+}
+
+// QueryApplicantProfileByID applies otel to admissions applicant profile ID lookups.
+func (ext *Extension) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByID(ctx, profileID)
+}
+
+// QueryApplicantProfileByUserID applies otel to admissions applicant profile user lookups.
+func (ext *Extension) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyuserid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByUserID(ctx, userID)
+}
+
+// QueryApplicantProfileByConstituentID applies otel to admissions applicant profile constituent lookups.
+func (ext *Extension) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyconstituentid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByConstituentID(ctx, constituentID)
+}
+
 // CreateLeadScoreRule applies otel to lead score rule creation.
 func (ext *Extension) CreateLeadScoreRule(ctx context.Context, nr admissionsbus.NewLeadScoreRule) (admissionsbus.LeadScoreRule, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createleadscorerule")

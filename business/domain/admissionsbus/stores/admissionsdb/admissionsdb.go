@@ -193,6 +193,152 @@ func (s *Store) queryStaffProfile(ctx context.Context, filter admissionsbus.Staf
 	return toBusStaffProfile(dbProfile)
 }
 
+// CreateApplicantProfile inserts a new admissions applicant profile into the database.
+func (s *Store) CreateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile) error {
+	const q = `
+	INSERT INTO admissions_applicant_profiles
+		(applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated)
+	VALUES
+		(:applicant_profile_id, :user_id, :constituent_id, :is_active, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplicantProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateApplicantProfile replaces mutable admissions applicant profile data in the database.
+func (s *Store) UpdateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile) error {
+	const q = `
+	UPDATE
+		admissions_applicant_profiles
+	SET
+		user_id = :user_id,
+		constituent_id = :constituent_id,
+		is_active = :is_active,
+		date_updated = :date_updated
+	WHERE
+		applicant_profile_id = :applicant_profile_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplicantProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplicantProfiles retrieves a list of admissions applicant profiles from the database.
+func (s *Store) QueryApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicantProfile, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	orderByClause, err := applicantProfileOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbProfiles []applicantProfileDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbProfiles); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplicantProfiles(dbProfiles), nil
+}
+
+// CountApplicantProfiles returns the total number of admissions applicant profiles in the database.
+func (s *Store) CountApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryApplicantProfileByID finds an admissions applicant profile by ID.
+func (s *Store) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{ID: &profileID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByUserID finds an admissions applicant profile by identity user ID.
+func (s *Store) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{UserID: &userID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByConstituentID finds an admissions applicant profile by constituent ID.
+func (s *Store) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{ConstituentID: &constituentID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+func (s *Store) queryApplicantProfile(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (admissionsbus.ApplicantProfile, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	var dbProfile applicantProfileDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbProfile); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ApplicantProfile{}, fmt.Errorf("db: %w", admissionsbus.ErrApplicantProfileNotFound)
+		}
+		return admissionsbus.ApplicantProfile{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusApplicantProfile(dbProfile), nil
+}
+
 // CreateLeadScoreRule inserts a new admissions lead score rule into the database.
 func (s *Store) CreateLeadScoreRule(ctx context.Context, rule admissionsbus.LeadScoreRule) error {
 	const q = `

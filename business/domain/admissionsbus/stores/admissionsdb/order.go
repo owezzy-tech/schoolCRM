@@ -20,6 +20,13 @@ var staffProfileOrderByFields = map[string]string{
 	admissionsbus.OrderByStaffProfileDateCreated: "date_created",
 }
 
+var applicantProfileOrderByFields = map[string]string{
+	admissionsbus.OrderByApplicantProfileID:          "applicant_profile_id",
+	admissionsbus.OrderByApplicantProfileUser:        "user_id",
+	admissionsbus.OrderByApplicantProfileConstituent: "constituent_id",
+	admissionsbus.OrderByApplicantProfileDateCreated: "date_created",
+}
+
 var leadScoreRuleOrderByFields = map[string]string{
 	admissionsbus.OrderByLeadScoreRuleID:          "lead_score_rule_id",
 	admissionsbus.OrderByLeadScoreRuleName:        "name",
@@ -83,6 +90,15 @@ func programOrderByClause(orderBy order.By) (string, error) {
 
 func staffProfileOrderByClause(orderBy order.By) (string, error) {
 	by, exists := staffProfileOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func applicantProfileOrderByClause(orderBy order.By) (string, error) {
+	by, exists := applicantProfileOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

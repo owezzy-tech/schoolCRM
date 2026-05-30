@@ -19,6 +19,15 @@ type staffProfileDB struct {
 	DateUpdated time.Time      `db:"date_updated"`
 }
 
+type applicantProfileDB struct {
+	ID            uuid.UUID `db:"applicant_profile_id"`
+	UserID        uuid.UUID `db:"user_id"`
+	ConstituentID uuid.UUID `db:"constituent_id"`
+	Active        bool      `db:"is_active"`
+	DateCreated   time.Time `db:"date_created"`
+	DateUpdated   time.Time `db:"date_updated"`
+}
+
 type leadScoreRuleDB struct {
 	ID          uuid.UUID       `db:"lead_score_rule_id"`
 	Name        string          `db:"name"`
@@ -152,6 +161,37 @@ func toBusStaffProfiles(dbs []staffProfileDB) ([]admissionsbus.StaffProfile, err
 	}
 
 	return bus, nil
+}
+
+func toDBApplicantProfile(bus admissionsbus.ApplicantProfile) applicantProfileDB {
+	return applicantProfileDB{
+		ID:            bus.ID,
+		UserID:        bus.UserID,
+		ConstituentID: bus.ConstituentID,
+		Active:        bus.Active,
+		DateCreated:   bus.DateCreated.UTC(),
+		DateUpdated:   bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusApplicantProfile(db applicantProfileDB) admissionsbus.ApplicantProfile {
+	return admissionsbus.ApplicantProfile{
+		ID:            db.ID,
+		UserID:        db.UserID,
+		ConstituentID: db.ConstituentID,
+		Active:        db.Active,
+		DateCreated:   db.DateCreated.In(time.Local),
+		DateUpdated:   db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusApplicantProfiles(dbs []applicantProfileDB) []admissionsbus.ApplicantProfile {
+	bus := make([]admissionsbus.ApplicantProfile, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusApplicantProfile(db)
+	}
+
+	return bus
 }
 
 func toDBLeadScoreRule(bus admissionsbus.LeadScoreRule) (leadScoreRuleDB, error) {

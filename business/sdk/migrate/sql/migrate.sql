@@ -281,6 +281,27 @@ CREATE INDEX idx_admissions_staff_profiles_roles ON admissions_staff_profiles US
 CREATE INDEX idx_admissions_staff_profiles_active ON admissions_staff_profiles (is_active);
 
 -- Version: 1.12
+-- Description: Create admissions applicant profiles
+CREATE TABLE admissions_applicant_profiles (
+    applicant_profile_id  UUID      NOT NULL,
+    user_id               UUID      NOT NULL,
+    constituent_id        UUID      NOT NULL,
+    is_active             BOOLEAN   NOT NULL,
+    date_created          TIMESTAMP NOT NULL,
+    date_updated          TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (applicant_profile_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_applicant_profiles_unique_user UNIQUE (user_id),
+    CONSTRAINT admissions_applicant_profiles_unique_constituent UNIQUE (constituent_id)
+);
+
+CREATE INDEX idx_admissions_applicant_profiles_user ON admissions_applicant_profiles (user_id);
+CREATE INDEX idx_admissions_applicant_profiles_constituent ON admissions_applicant_profiles (constituent_id);
+CREATE INDEX idx_admissions_applicant_profiles_active ON admissions_applicant_profiles (is_active);
+
+-- Version: 1.13
 -- Description: Create admissions lead scoring rules and scores
 CREATE TABLE admissions_lead_score_rules (
     lead_score_rule_id  UUID      NOT NULL,

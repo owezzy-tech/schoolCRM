@@ -367,6 +367,23 @@ type NewStaffProfile struct {
 	Active bool
 }
 
+// ApplicantProfile connects an authenticated identity user to a constituent record.
+type ApplicantProfile struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	ConstituentID uuid.UUID
+	Active        bool
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewApplicantProfile is what we require to create an admissions applicant profile.
+type NewApplicantProfile struct {
+	UserID        uuid.UUID
+	ConstituentID uuid.UUID
+	Active        bool
+}
+
 // NewApplicationTransition is what we require to change an application status.
 type NewApplicationTransition struct {
 	ToStatus ApplicationStatus
@@ -488,6 +505,7 @@ type ResolveDuplicateReview struct {
 func AggregateNames() []string {
 	return []string{
 		"staffProfile",
+		"applicantProfile",
 		"constituent",
 		"inquiry",
 		"application",
@@ -509,6 +527,15 @@ type StaffProfileQueryFilter struct {
 	UserID *uuid.UUID
 	Role   *AdmissionsRole
 	Active *bool
+}
+
+// ApplicantProfileQueryFilter holds the available fields an applicant profile query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicantProfileQueryFilter struct {
+	ID            *uuid.UUID
+	UserID        *uuid.UUID
+	ConstituentID *uuid.UUID
+	Active        *bool
 }
 
 // LeadScoreRuleQueryFilter holds the available fields a lead score rule query can be filtered on.

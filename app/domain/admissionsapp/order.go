@@ -15,6 +15,13 @@ var staffProfileOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByStaffProfileDateCreated,
 }
 
+var applicantProfileOrderByFields = map[string]string{
+	"applicant_profile_id": admissionsbus.OrderByApplicantProfileID,
+	"user_id":              admissionsbus.OrderByApplicantProfileUser,
+	"constituent_id":       admissionsbus.OrderByApplicantProfileConstituent,
+	"date_created":         admissionsbus.OrderByApplicantProfileDateCreated,
+}
+
 var leadScoreRuleOrderByFields = map[string]string{
 	"lead_score_rule_id": admissionsbus.OrderByLeadScoreRuleID,
 	"name":               admissionsbus.OrderByLeadScoreRuleName,

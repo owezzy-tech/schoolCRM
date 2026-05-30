@@ -56,6 +56,8 @@ var (
 	ErrStaffProfileNotFound         = errors.New("staff profile not found")
 	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
 	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
+	ErrApplicantProfileNotFound     = errors.New("applicant profile not found")
+	ErrApplicantProfileUserRequired = errors.New("applicant profile user id required")
 	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
 	ErrLeadScoreRuleNotFound        = errors.New("lead score rule not found")
 	ErrLeadScoreNotFound            = errors.New("lead score not found")
@@ -78,6 +80,13 @@ type Storer interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateApplicantProfile(ctx context.Context, profile ApplicantProfile) error
+	UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile) error
+	QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error)
+	CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error)
+	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
 	CreateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
 	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
 	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
@@ -132,6 +141,13 @@ type ExtBusiness interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateApplicantProfile(ctx context.Context, np NewApplicantProfile) (ApplicantProfile, error)
+	UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile, np NewApplicantProfile) (ApplicantProfile, error)
+	QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error)
+	CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error)
+	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
 	CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error)
 	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error)
 	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
@@ -244,6 +260,100 @@ func (b *Business) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UU
 	profile, err := b.storer.QueryStaffProfileByUserID(ctx, userID)
 	if err != nil {
 		return StaffProfile{}, fmt.Errorf("query staff profile: userID[%s]: %w", userID, err)
+	}
+
+	return profile, nil
+}
+
+// CreateApplicantProfile adds a portal applicant context profile for an identity user.
+func (b *Business) CreateApplicantProfile(ctx context.Context, np NewApplicantProfile) (ApplicantProfile, error) {
+	if err := validateNewApplicantProfile(np); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	if _, err := b.QueryConstituentByID(ctx, np.ConstituentID); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	now := time.Now()
+	profile := ApplicantProfile{
+		ID:            uuid.New(),
+		UserID:        np.UserID,
+		ConstituentID: np.ConstituentID,
+		Active:        np.Active,
+		DateCreated:   now,
+		DateUpdated:   now,
+	}
+
+	if err := b.storer.CreateApplicantProfile(ctx, profile); err != nil {
+		return ApplicantProfile{}, fmt.Errorf("create applicant profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// UpdateApplicantProfile replaces mutable admissions applicant profile data.
+func (b *Business) UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile, np NewApplicantProfile) (ApplicantProfile, error) {
+	if err := validateNewApplicantProfile(np); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	if _, err := b.QueryConstituentByID(ctx, np.ConstituentID); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	profile.UserID = np.UserID
+	profile.ConstituentID = np.ConstituentID
+	profile.Active = np.Active
+	profile.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateApplicantProfile(ctx, profile); err != nil {
+		return ApplicantProfile{}, fmt.Errorf("update applicant profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfiles retrieves a list of admissions applicant profiles.
+func (b *Business) QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error) {
+	profiles, err := b.storer.QueryApplicantProfiles(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query applicant profiles: %w", err)
+	}
+
+	return profiles, nil
+}
+
+// CountApplicantProfiles returns the total number of admissions applicant profiles.
+func (b *Business) CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error) {
+	return b.storer.CountApplicantProfiles(ctx, filter)
+}
+
+// QueryApplicantProfileByID finds an admissions applicant profile by ID.
+func (b *Business) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByID(ctx, profileID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: profileID[%s]: %w", profileID, err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByUserID finds an admissions applicant profile by identity user ID.
+func (b *Business) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByUserID(ctx, userID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: userID[%s]: %w", userID, err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByConstituentID finds an admissions applicant profile by constituent ID.
+func (b *Business) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByConstituentID(ctx, constituentID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: constituentID[%s]: %w", constituentID, err)
 	}
 
 	return profile, nil
@@ -1085,6 +1195,18 @@ func validateNewStaffProfile(np NewStaffProfile) error {
 		if err := validateAdmissionsRole(role); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func validateNewApplicantProfile(np NewApplicantProfile) error {
+	if np.UserID == uuid.Nil {
+		return ErrApplicantProfileUserRequired
+	}
+
+	if np.ConstituentID == uuid.Nil {
+		return ErrConstituentIDRequired
 	}
 
 	return nil
