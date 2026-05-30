@@ -1,4 +1,4 @@
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +31,18 @@ interface DocumentUploadForm {
     storageKey: string;
 }
 
+interface ApplicationStep {
+    label: string;
+    description: string;
+    complete: boolean;
+}
+
+interface WorkspaceTab {
+    label: string;
+    icon: string;
+    active: boolean;
+}
+
 const emptyReviewForm: DocumentReviewForm = {
     documentID: '',
     status: 'ACCEPTED',
@@ -49,6 +61,7 @@ const emptyUploadForm: DocumentUploadForm = {
     selector: 'app-admissions-documents',
     imports: [
         AsyncPipe,
+        DatePipe,
         FormsModule,
         MatButtonModule,
         MatFormFieldModule,
@@ -70,11 +83,76 @@ export class AdmissionsDocumentsComponent {
         'REJECTED',
         'WAIVED',
     ];
+    readonly workspaceTabs: WorkspaceTab[] = [
+        {
+            label: 'Application',
+            icon: 'heroicons_outline:user-circle',
+            active: false,
+        },
+        {
+            label: 'Documents',
+            icon: 'heroicons_outline:document-check',
+            active: true,
+        },
+        {
+            label: 'Notes',
+            icon: 'heroicons_outline:pencil-square',
+            active: false,
+        },
+        {
+            label: 'Timeline',
+            icon: 'heroicons_outline:clock',
+            active: false,
+        },
+        {
+            label: 'AI Insights',
+            icon: 'heroicons_outline:sparkles',
+            active: false,
+        },
+    ];
+    readonly applicationSteps: ApplicationStep[] = [
+        {
+            label: 'Draft',
+            description: 'Applicant started',
+            complete: true,
+        },
+        {
+            label: 'Submitted',
+            description: 'Form received',
+            complete: true,
+        },
+        {
+            label: 'Awaiting Docs',
+            description: 'Checklist active',
+            complete: true,
+        },
+        {
+            label: 'Ready for Review',
+            description: 'Documents in queue',
+            complete: true,
+        },
+        {
+            label: 'In Review',
+            description: 'Reviewer assigned',
+            complete: true,
+        },
+        {
+            label: 'Decision Pending',
+            description: 'Committee action',
+            complete: false,
+        },
+        {
+            label: 'Final',
+            description: 'Outcome recorded',
+            complete: false,
+        },
+    ];
 
     applicationID = '';
     errorMessage = '';
     saving = false;
     reviewForm: DocumentReviewForm = { ...emptyReviewForm };
+    selectedDocumentName = '';
     uploadForm: DocumentUploadForm = { ...emptyUploadForm };
 
     loadApplicationDocuments(): void {
@@ -118,11 +196,35 @@ export class AdmissionsDocumentsComponent {
     }
 
     selectDocument(document: AdmissionsDocument): void {
+        this.selectedDocumentName = document.fileName;
         this.reviewForm = {
             documentID: document.id,
             status: this.toReviewStatus(document.status),
             reviewerNotes: document.reviewerNotes ?? '',
         };
+    }
+
+    documentForItem(
+        item: ChecklistItem,
+        documents: AdmissionsDocument[]
+    ): AdmissionsDocument | undefined {
+        return documents.find(
+            (document) => document.checklistItemID === item.id
+        );
+    }
+
+    reviewDocument(
+        document: AdmissionsDocument,
+        status: DocumentReviewForm['status'],
+        defaultNotes: string
+    ): void {
+        this.reviewForm = {
+            documentID: document.id,
+            status,
+            reviewerNotes: document.reviewerNotes || defaultNotes,
+        };
+        this.selectedDocumentName = document.fileName;
+        this.saveReview();
     }
 
     saveUpload(): void {
@@ -186,6 +288,7 @@ export class AdmissionsDocumentsComponent {
                 this.saving = false;
                 if (document) {
                     this.reviewForm = { ...emptyReviewForm };
+                    this.selectedDocumentName = '';
                     this.loadApplicationDocuments();
                 }
             });
@@ -221,6 +324,36 @@ export class AdmissionsDocumentsComponent {
             default:
                 return 'bg-slate-100 text-secondary';
         }
+    }
+
+    formatStatus(status: DocumentStatus): string {
+        return status.replaceAll('_', ' ');
+    }
+
+    requiredLabel(required: boolean): string {
+        return required ? 'Y' : 'N';
+    }
+
+    completionText(items: ChecklistItem[]): string {
+        const complete = items.filter((item) =>
+            ['ACCEPTED', 'WAIVED', 'SYNCED_TO_SIS'].includes(item.status)
+        ).length;
+
+        return `${complete}/${items.length}`;
+    }
+
+    completionPercent(items: ChecklistItem[]): number {
+        if (items.length === 0) {
+            return 0;
+        }
+
+        return Math.round(
+            (items.filter((item) =>
+                ['ACCEPTED', 'WAIVED', 'SYNCED_TO_SIS'].includes(item.status)
+            ).length /
+                items.length) *
+                100
+        );
     }
 
     private toReviewStatus(
