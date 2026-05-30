@@ -1,0 +1,46 @@
+<div class="flex w-full min-h-screen flex-auto flex-col bg-default">
+    <header class="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-6">
+        <div class="flex items-center gap-8">
+            <a routerLink="/portal" class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-on-primary">
+                    <span class="text-xl font-bold">N</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold leading-tight text-default">Northbrook University</span>
+                    <span class="text-xs text-secondary">Applicant Portal</span>
+                </div>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-6">
+                <a routerLink="/portal"
+                   routerLinkActive="text-primary font-medium"
+                   [routerLinkActiveOptions]="{exact: true}"
+                   class="text-sm text-secondary hover:text-primary transition-colors">Home</a>
+                <a routerLink="/portal/apply"
+                   routerLinkActive="text-primary font-medium"
+                   class="text-sm text-secondary hover:text-primary transition-colors">Apply</a>
+                <a routerLink="/portal/status"
+                   routerLinkActive="text-primary font-medium"
+                   class="text-sm text-secondary hover:text-primary transition-colors">Status</a>
+                <a routerLink="/portal/events"
+                   routerLinkActive="text-primary font-medium"
+                   class="text-sm text-secondary hover:text-primary transition-colors">Events</a>
+                <a routerLink="/portal/inquiry"
+                   routerLinkActive="text-primary font-medium"
+                   class="text-sm text-secondary hover:text-primary transition-colors">Inquiry</a>
+            </nav>
+        </div>
+
+        <div class="flex items-center">
+            <a routerLink="/" class="text-sm font-medium text-primary hover:underline">Staff sign in</a>
+        </div>
+    </header>
+
+    <main class="flex-auto flex flex-col">
+        <router-outlet></router-outlet>
+    </main>
+
+    <footer class="border-t bg-card py-8 text-center text-sm text-secondary">
+        <p>&copy; Northbrook University &middot; Admissions</p>
+    </footer>
+</div>

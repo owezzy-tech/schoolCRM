@@ -1,0 +1,61 @@
+<div class="flex flex-col flex-auto">
+    <section class="flex flex-col items-center justify-center py-20 px-6 sm:py-32 text-center max-w-4xl mx-auto w-full">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-8">
+            <mat-icon svgIcon="heroicons_outline:calendar" class="icon-size-4"></mat-icon>
+            <span>Fall 2026 applications open</span>
+        </div>
+        
+        <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight text-default mb-6 leading-tight">
+            Your future, starts here.
+        </h1>
+        
+        <p class="text-lg sm:text-xl text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
+            Apply to one of 40+ programs, follow your application status in real time, and reach our admissions team in one click.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+            <a routerLink="/portal/apply" mat-flat-button color="primary" class="w-full sm:w-auto px-8 py-6 rounded-full text-base">
+                Start application
+                <mat-icon svgIcon="heroicons_outline:arrow-right" class="icon-size-5 ml-2"></mat-icon>
+            </a>
+            <a routerLink="/portal/status" mat-stroked-button class="w-full sm:w-auto px-8 py-6 rounded-full text-base border-2">
+                Check status
+            </a>
+        </div>
+    </section>
+
+    <section class="py-16 px-6 bg-default">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                @for (card of cards; track card.title) {
+                    <div class="flex flex-col p-8 rounded-2xl bg-card shadow-sm border hover:shadow-md transition-shadow">
+                        <div class="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+                            <mat-icon [svgIcon]="card.icon" class="icon-size-6"></mat-icon>
+                        </div>
+                        <h3 class="text-xl font-bold text-default mb-3">{{card.title}}</h3>
+                        <p class="text-secondary leading-relaxed">{{card.description}}</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 bg-card">
+        <div class="max-w-6xl mx-auto w-full">
+            <h2 class="text-3xl font-bold text-default mb-10 text-center">Important deadlines</h2>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-12">
+                @for (deadline of deadlines; track deadline.title; let last = $last) {
+                    <div class="flex flex-col items-center text-center">
+                        <span class="text-2xl font-extrabold text-primary mb-2">{{deadline.date}}</span>
+                        <span class="text-secondary font-medium">{{deadline.title}}</span>
+                    </div>
+                    @if (!last) {
+                        <div class="hidden md:block w-px h-12" style="background-color: var(--fuse-border)"></div>
+                        <div class="md:hidden h-px w-12" style="background-color: var(--fuse-border)"></div>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+</div>
