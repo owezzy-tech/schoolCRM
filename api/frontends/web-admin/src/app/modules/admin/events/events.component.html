@@ -1,0 +1,49 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Events</h1>
+                </div>
+                <div>
+                    <button mat-flat-button color="primary">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                        <span class="ml-2">Create event</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @for (event of events; track event.id) {
+                    <div class="bg-card border rounded-2xl p-6 shadow-sm flex flex-col">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="flex-none w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
+                                <mat-icon class="icon-size-6 text-primary" svgIcon="heroicons_outline:calendar-days"></mat-icon>
+                            </div>
+                            <h2 class="text-lg font-semibold leading-tight">{{ event.title }}</h2>
+                        </div>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-start text-sm">
+                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:clock"></mat-icon>
+                                <span>{{ event.datetime }}</span>
+                            </div>
+                            <div class="flex items-start text-sm">
+                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:map-pin"></mat-icon>
+                                <span>{{ event.location }}</span>
+                            </div>
+                            <div class="flex items-start text-sm">
+                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:users"></mat-icon>
+                                <span>{{ event.attendeeCount }} expected attendees</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-auto pt-4 border-t flex justify-end">
+                            <button mat-stroked-button>Manage</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

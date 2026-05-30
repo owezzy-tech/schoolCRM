@@ -1,0 +1,38 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Reports</h1>
+                </div>
+                <div>
+                    <button mat-stroked-button>
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:arrow-down-tray"></mat-icon>
+                        <span class="ml-2">Export PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                @for (panel of panels; track panel.id) {
+                    <div class="bg-card border rounded-2xl p-6 shadow-sm">
+                        <h2 class="text-lg font-semibold mb-6">{{ panel.title }}</h2>
+                        
+                        <div class="h-48 bg-gray-50 dark:bg-gray-900 rounded-lg flex items-center justify-center text-secondary text-sm mb-6 border border-dashed border-gray-200 dark:border-gray-700">
+                            Chart placeholder
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 pt-4 border-t">
+                            @for (stat of panel.stats; track stat.label) {
+                                <div>
+                                    <div class="text-sm text-secondary">{{ stat.label }}</div>
+                                    <div class="text-xl font-semibold mt-1">{{ stat.value }}</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

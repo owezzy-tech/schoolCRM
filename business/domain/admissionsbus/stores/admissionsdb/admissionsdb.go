@@ -193,6 +193,152 @@ func (s *Store) queryStaffProfile(ctx context.Context, filter admissionsbus.Staf
 	return toBusStaffProfile(dbProfile)
 }
 
+// CreateApplicantProfile inserts a new admissions applicant profile into the database.
+func (s *Store) CreateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile) error {
+	const q = `
+	INSERT INTO admissions_applicant_profiles
+		(applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated)
+	VALUES
+		(:applicant_profile_id, :user_id, :constituent_id, :is_active, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplicantProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateApplicantProfile replaces mutable admissions applicant profile data in the database.
+func (s *Store) UpdateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile) error {
+	const q = `
+	UPDATE
+		admissions_applicant_profiles
+	SET
+		user_id = :user_id,
+		constituent_id = :constituent_id,
+		is_active = :is_active,
+		date_updated = :date_updated
+	WHERE
+		applicant_profile_id = :applicant_profile_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplicantProfile(profile)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplicantProfiles retrieves a list of admissions applicant profiles from the database.
+func (s *Store) QueryApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicantProfile, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	orderByClause, err := applicantProfileOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbProfiles []applicantProfileDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbProfiles); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplicantProfiles(dbProfiles), nil
+}
+
+// CountApplicantProfiles returns the total number of admissions applicant profiles in the database.
+func (s *Store) CountApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryApplicantProfileByID finds an admissions applicant profile by ID.
+func (s *Store) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{ID: &profileID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByUserID finds an admissions applicant profile by identity user ID.
+func (s *Store) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{UserID: &userID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByConstituentID finds an admissions applicant profile by constituent ID.
+func (s *Store) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	filter := admissionsbus.ApplicantProfileQueryFilter{ConstituentID: &constituentID}
+	profile, err := s.queryApplicantProfile(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, err
+	}
+
+	return profile, nil
+}
+
+func (s *Store) queryApplicantProfile(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (admissionsbus.ApplicantProfile, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated
+	FROM
+		admissions_applicant_profiles`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicantProfileFilter(filter, data, buf)
+
+	var dbProfile applicantProfileDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbProfile); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ApplicantProfile{}, fmt.Errorf("db: %w", admissionsbus.ErrApplicantProfileNotFound)
+		}
+		return admissionsbus.ApplicantProfile{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusApplicantProfile(dbProfile), nil
+}
+
 // CreateLeadScoreRule inserts a new admissions lead score rule into the database.
 func (s *Store) CreateLeadScoreRule(ctx context.Context, rule admissionsbus.LeadScoreRule) error {
 	const q = `
@@ -611,6 +757,141 @@ func (s *Store) queryConstituent(ctx context.Context, filter admissionsbus.Const
 	}
 
 	return toBusConstituent(dbConstituent)
+}
+
+// CreateInquiry inserts a new Inquiry into the database.
+func (s *Store) CreateInquiry(ctx context.Context, inquiry admissionsbus.Inquiry) error {
+	const q = `
+	INSERT INTO admissions_inquiries
+		(inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated)
+	VALUES
+		(:inquiry_id, :constituent_id, :first_name, :last_name, :date_of_birth, :primary_email, :primary_phone, :program_of_interest, :term_of_interest, :source, :utm_source, :utm_medium, :utm_campaign, :message, :status, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBInquiry(inquiry)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateInquiry replaces mutable inquiry data in the database.
+func (s *Store) UpdateInquiry(ctx context.Context, inquiry admissionsbus.Inquiry) error {
+	const q = `
+	UPDATE
+		admissions_inquiries
+	SET
+		constituent_id = :constituent_id,
+		first_name = :first_name,
+		last_name = :last_name,
+		date_of_birth = :date_of_birth,
+		primary_email = :primary_email,
+		primary_phone = :primary_phone,
+		program_of_interest = :program_of_interest,
+		term_of_interest = :term_of_interest,
+		source = :source,
+		utm_source = :utm_source,
+		utm_medium = :utm_medium,
+		utm_campaign = :utm_campaign,
+		message = :message,
+		status = :status,
+		date_updated = :date_updated
+	WHERE
+		inquiry_id = :inquiry_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBInquiry(inquiry)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryInquiries retrieves a list of Inquiries from the database.
+func (s *Store) QueryInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Inquiry, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	orderByClause, err := inquiryOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbInquiries []inquiryDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbInquiries); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusInquiries(dbInquiries)
+}
+
+// CountInquiries returns the total number of Inquiries in the database.
+func (s *Store) CountInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryInquiryByID finds an Inquiry by ID.
+func (s *Store) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (admissionsbus.Inquiry, error) {
+	filter := admissionsbus.InquiryQueryFilter{ID: &inquiryID}
+	inquiry, err := s.queryInquiry(ctx, filter)
+	if err != nil {
+		return admissionsbus.Inquiry{}, err
+	}
+
+	return inquiry, nil
+}
+
+func (s *Store) queryInquiry(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (admissionsbus.Inquiry, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		inquiry_id, constituent_id, first_name, last_name, date_of_birth, primary_email, primary_phone, program_of_interest, term_of_interest, source, utm_source, utm_medium, utm_campaign, message, status, date_created, date_updated
+	FROM
+		admissions_inquiries`
+
+	buf := bytes.NewBufferString(q)
+	s.applyInquiryFilter(filter, data, buf)
+
+	var dbInquiry inquiryDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbInquiry); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Inquiry{}, fmt.Errorf("db: %w", admissionsbus.ErrInquiryNotFound)
+		}
+		return admissionsbus.Inquiry{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusInquiry(dbInquiry)
 }
 
 // UpsertProgram creates or updates a Program by immutable external SIS ID.
@@ -1111,6 +1392,147 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 	return toBusApplication(dbApplication), nil
 }
 
+// CreateApplicationFormTemplate inserts a new application form template.
+func (s *Store) CreateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate) error {
+	const q = `
+	INSERT INTO admissions_application_form_templates
+		(form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated)
+	VALUES
+		(:form_template_id, :program_id, :academic_term_id, :application_type, :name, :description, :version, :required_fields, :checklist_items, :is_active, :priority, :date_created, :date_updated)`
+
+	dbTemplate, err := toDBApplicationFormTemplate(template)
+	if err != nil {
+		return fmt.Errorf("to db application form template: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbTemplate); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateApplicationFormTemplate replaces mutable application form template data.
+func (s *Store) UpdateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate) error {
+	const q = `
+	UPDATE
+		admissions_application_form_templates
+	SET
+		program_id = :program_id,
+		academic_term_id = :academic_term_id,
+		application_type = :application_type,
+		name = :name,
+		description = :description,
+		version = :version,
+		required_fields = :required_fields,
+		checklist_items = :checklist_items,
+		is_active = :is_active,
+		priority = :priority,
+		date_updated = :date_updated
+	WHERE
+		form_template_id = :form_template_id`
+
+	dbTemplate, err := toDBApplicationFormTemplate(template)
+	if err != nil {
+		return fmt.Errorf("to db application form template: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbTemplate); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplicationFormTemplates retrieves application form templates.
+func (s *Store) QueryApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationFormTemplate, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	orderByClause, err := applicationFormTemplateOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbTemplates []applicationFormTemplateDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbTemplates); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplicationFormTemplates(dbTemplates)
+}
+
+// CountApplicationFormTemplates returns the total number of application form templates.
+func (s *Store) CountApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryApplicationFormTemplateByID finds an application form template by ID.
+func (s *Store) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (admissionsbus.ApplicationFormTemplate, error) {
+	filter := admissionsbus.ApplicationFormTemplateQueryFilter{ID: &templateID}
+	template, err := s.queryApplicationFormTemplate(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	return template, nil
+}
+
+func (s *Store) queryApplicationFormTemplate(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (admissionsbus.ApplicationFormTemplate, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	var dbTemplate applicationFormTemplateDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbTemplate); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ApplicationFormTemplate{}, fmt.Errorf("db: %w", admissionsbus.ErrFormTemplateNotFound)
+		}
+		return admissionsbus.ApplicationFormTemplate{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusApplicationFormTemplate(dbTemplate)
+}
+
 // CreateApplicationTransition inserts immutable Application transition history.
 func (s *Store) CreateApplicationTransition(ctx context.Context, transition admissionsbus.ApplicationTransition) error {
 	const q = `
@@ -1179,6 +1601,267 @@ func (s *Store) CountApplicationTransitions(ctx context.Context, filter admissio
 	}
 
 	return count.Count, nil
+}
+
+// CreateChecklistItem inserts a new application checklist item.
+func (s *Store) CreateChecklistItem(ctx context.Context, item admissionsbus.ChecklistItem) error {
+	const q = `
+	INSERT INTO admissions_checklist_items
+		(checklist_item_id, application_id, item_key, document_name, description, is_required, status, display_order, date_created, date_updated)
+	VALUES
+		(:checklist_item_id, :application_id, :item_key, :document_name, :description, :is_required, :status, :display_order, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBChecklistItem(item)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateChecklistItem replaces mutable application checklist item data.
+func (s *Store) UpdateChecklistItem(ctx context.Context, item admissionsbus.ChecklistItem) error {
+	const q = `
+	UPDATE
+		admissions_checklist_items
+	SET
+		application_id = :application_id,
+		item_key = :item_key,
+		document_name = :document_name,
+		description = :description,
+		is_required = :is_required,
+		status = :status,
+		display_order = :display_order,
+		date_updated = :date_updated
+	WHERE
+		checklist_item_id = :checklist_item_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBChecklistItem(item)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryChecklistItems retrieves application checklist items.
+func (s *Store) QueryChecklistItems(ctx context.Context, filter admissionsbus.ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ChecklistItem, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		checklist_item_id, application_id, item_key, document_name, description, is_required, status, display_order, date_created, date_updated
+	FROM
+		admissions_checklist_items`
+
+	buf := bytes.NewBufferString(q)
+	s.applyChecklistItemFilter(filter, data, buf)
+
+	orderByClause, err := checklistItemOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbItems []checklistItemDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbItems); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusChecklistItems(dbItems), nil
+}
+
+// CountChecklistItems returns the total number of application checklist items.
+func (s *Store) CountChecklistItems(ctx context.Context, filter admissionsbus.ChecklistItemQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_checklist_items`
+
+	buf := bytes.NewBufferString(q)
+	s.applyChecklistItemFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryChecklistItemByID finds an application checklist item by ID.
+func (s *Store) QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (admissionsbus.ChecklistItem, error) {
+	filter := admissionsbus.ChecklistItemQueryFilter{ID: &itemID}
+	item, err := s.queryChecklistItem(ctx, filter)
+	if err != nil {
+		return admissionsbus.ChecklistItem{}, err
+	}
+
+	return item, nil
+}
+
+func (s *Store) queryChecklistItem(ctx context.Context, filter admissionsbus.ChecklistItemQueryFilter) (admissionsbus.ChecklistItem, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		checklist_item_id, application_id, item_key, document_name, description, is_required, status, display_order, date_created, date_updated
+	FROM
+		admissions_checklist_items`
+
+	buf := bytes.NewBufferString(q)
+	s.applyChecklistItemFilter(filter, data, buf)
+
+	var dbItem checklistItemDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbItem); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ChecklistItem{}, fmt.Errorf("db: %w", admissionsbus.ErrChecklistItemNotFound)
+		}
+		return admissionsbus.ChecklistItem{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusChecklistItem(dbItem), nil
+}
+
+// CreateDocument inserts uploaded document metadata.
+func (s *Store) CreateDocument(ctx context.Context, document admissionsbus.Document) error {
+	const q = `
+	INSERT INTO admissions_documents
+		(document_id, application_id, checklist_item_id, file_name, content_type, size_bytes, storage_key, status, reviewer_id, reviewer_notes, uploaded_by_id, uploaded_at, reviewed_at, date_created, date_updated)
+	VALUES
+		(:document_id, :application_id, :checklist_item_id, :file_name, :content_type, :size_bytes, :storage_key, :status, :reviewer_id, :reviewer_notes, :uploaded_by_id, :uploaded_at, :reviewed_at, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBDocument(document)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateDocument replaces mutable uploaded document metadata.
+func (s *Store) UpdateDocument(ctx context.Context, document admissionsbus.Document) error {
+	const q = `
+	UPDATE
+		admissions_documents
+	SET
+		application_id = :application_id,
+		checklist_item_id = :checklist_item_id,
+		file_name = :file_name,
+		content_type = :content_type,
+		size_bytes = :size_bytes,
+		storage_key = :storage_key,
+		status = :status,
+		reviewer_id = :reviewer_id,
+		reviewer_notes = :reviewer_notes,
+		uploaded_by_id = :uploaded_by_id,
+		uploaded_at = :uploaded_at,
+		reviewed_at = :reviewed_at,
+		date_updated = :date_updated
+	WHERE
+		document_id = :document_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBDocument(document)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryDocuments retrieves uploaded document metadata.
+func (s *Store) QueryDocuments(ctx context.Context, filter admissionsbus.DocumentQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Document, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		document_id, application_id, checklist_item_id, file_name, content_type, size_bytes, storage_key, status, reviewer_id, reviewer_notes, uploaded_by_id, uploaded_at, reviewed_at, date_created, date_updated
+	FROM
+		admissions_documents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDocumentFilter(filter, data, buf)
+
+	orderByClause, err := documentOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbDocuments []documentDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbDocuments); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusDocuments(dbDocuments), nil
+}
+
+// CountDocuments returns the total number of uploaded document metadata records.
+func (s *Store) CountDocuments(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_documents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDocumentFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryDocumentByID finds uploaded document metadata by ID.
+func (s *Store) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (admissionsbus.Document, error) {
+	filter := admissionsbus.DocumentQueryFilter{ID: &documentID}
+	document, err := s.queryDocument(ctx, filter)
+	if err != nil {
+		return admissionsbus.Document{}, err
+	}
+
+	return document, nil
+}
+
+func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (admissionsbus.Document, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		document_id, application_id, checklist_item_id, file_name, content_type, size_bytes, storage_key, status, reviewer_id, reviewer_notes, uploaded_by_id, uploaded_at, reviewed_at, date_created, date_updated
+	FROM
+		admissions_documents`
+
+	buf := bytes.NewBufferString(q)
+	s.applyDocumentFilter(filter, data, buf)
+
+	var dbDocument documentDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbDocument); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Document{}, fmt.Errorf("db: %w", admissionsbus.ErrDocumentNotFound)
+		}
+		return admissionsbus.Document{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusDocument(dbDocument), nil
 }
 
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {

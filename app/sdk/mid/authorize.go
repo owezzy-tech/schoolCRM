@@ -38,7 +38,7 @@ func Authorize(client authclient.Authenticator, rule string) web.MidFunc {
 			defer cancel()
 
 			if err := client.Authorize(ctx, auth); err != nil {
-				return errs.New(errs.Unauthenticated, err)
+				return authorizationError(err)
 			}
 
 			return next(ctx, r)
@@ -48,6 +48,15 @@ func Authorize(client authclient.Authenticator, rule string) web.MidFunc {
 	}
 
 	return m
+}
+
+func authorizationError(err error) *errs.Error {
+	var appErr *errs.Error
+	if errors.As(err, &appErr) {
+		return errs.New(appErr.Code, appErr)
+	}
+
+	return errs.New(errs.Unauthenticated, err)
 }
 
 // AuthorizeUser executes the specified role and extracts the specified

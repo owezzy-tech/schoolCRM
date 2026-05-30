@@ -79,6 +79,7 @@ npm test           # Karma + Jasmine (no tests exist yet)
 - **Build budgets**: 3MB warn / 5MB error (initial), 75KB / 90KB (component styles)
 - **Auth tokens**: Stored in localStorage, validated via `AuthUtils.isTokenExpired()`
 - **API responses**: Backend REST APIs return JSON:API v1.1 envelopes. Read resource payloads from `data.attributes`, collection payloads from `data` plus `meta`, and error messages from `errors[0].detail`.
+- **Angular Material native input fix**: In `src/@fuse/styles/overrides/angular-material.scss`, keep MDC native inputs visually hidden for selection controls. The checkbox fix (`.mdc-checkbox__native-control { opacity: 0 !important; }`) should also cover radio, slide-toggle/switch, and slider selectors (`.mdc-radio__native-control`, `.mdc-switch__native-control`, `.mdc-slider__input`, `input[type='range']`) when native inputs render visibly.
 - **Dark mode**: CSS class-based (`.dark` selector on body)
 - **Tailwind breakpoints**: Non-standard — sm:600, md:960, lg:1280, xl:1440
 

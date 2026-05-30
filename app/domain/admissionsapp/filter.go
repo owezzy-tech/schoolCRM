@@ -30,6 +30,16 @@ type staffProfileQueryParams struct {
 	Active  string
 }
 
+type applicantProfileQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	UserID        string
+	ConstituentID string
+	Active        string
+}
+
 type leadScoreRuleQueryParams struct {
 	Page    string
 	Rows    string
@@ -57,6 +67,17 @@ type constituentQueryParams struct {
 	ExternalSISID   string
 	LifecycleStage  string
 	DuplicateStatus string
+}
+
+type inquiryQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ConstituentID string
+	PrimaryEmail  string
+	Source        string
+	Status        string
 }
 
 type academicTermQueryParams struct {
@@ -93,6 +114,18 @@ type applicationQueryParams struct {
 	ActiveOnly      string
 }
 
+type applicationFormTemplateQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	ProgramID       string
+	AcademicTermID  string
+	ApplicationType string
+	Active          string
+	Version         string
+}
+
 type applicationTransitionQueryParams struct {
 	Page          string
 	Rows          string
@@ -102,6 +135,28 @@ type applicationTransitionQueryParams struct {
 	ActorID       string
 	FromStatus    string
 	ToStatus      string
+}
+
+type checklistItemQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ApplicationID string
+	Status        string
+	Required      string
+}
+
+type documentQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	ApplicationID   string
+	ChecklistItemID string
+	Status          string
+	UploadedByID    string
+	ReviewerID      string
 }
 
 func parseProgramQueryParams(r *http.Request) programQueryParams {
@@ -129,6 +184,20 @@ func parseStaffProfileQueryParams(r *http.Request) staffProfileQueryParams {
 		UserID:  values.Get("user_id"),
 		Role:    values.Get("role"),
 		Active:  values.Get("active"),
+	}
+}
+
+func parseApplicantProfileQueryParams(r *http.Request) applicantProfileQueryParams {
+	values := r.URL.Query()
+
+	return applicantProfileQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("applicant_profile_id"),
+		UserID:        values.Get("user_id"),
+		ConstituentID: values.Get("constituent_id"),
+		Active:        values.Get("active"),
 	}
 }
 
@@ -170,6 +239,21 @@ func parseConstituentQueryParams(r *http.Request) constituentQueryParams {
 		ExternalSISID:   values.Get("external_sis_id"),
 		LifecycleStage:  values.Get("lifecycle_stage"),
 		DuplicateStatus: values.Get("duplicate_status"),
+	}
+}
+
+func parseInquiryQueryParams(r *http.Request) inquiryQueryParams {
+	values := r.URL.Query()
+
+	return inquiryQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("inquiry_id"),
+		ConstituentID: values.Get("constituent_id"),
+		PrimaryEmail:  values.Get("primary_email"),
+		Source:        values.Get("source"),
+		Status:        values.Get("status"),
 	}
 }
 
@@ -219,6 +303,22 @@ func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
 	}
 }
 
+func parseApplicationFormTemplateQueryParams(r *http.Request) applicationFormTemplateQueryParams {
+	values := r.URL.Query()
+
+	return applicationFormTemplateQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("form_template_id"),
+		ProgramID:       values.Get("program_id"),
+		AcademicTermID:  values.Get("academic_term_id"),
+		ApplicationType: values.Get("application_type"),
+		Active:          values.Get("active"),
+		Version:         values.Get("version"),
+	}
+}
+
 func parseApplicationTransitionQueryParams(r *http.Request) applicationTransitionQueryParams {
 	values := r.URL.Query()
 
@@ -231,6 +331,36 @@ func parseApplicationTransitionQueryParams(r *http.Request) applicationTransitio
 		ActorID:       values.Get("actor_id"),
 		FromStatus:    values.Get("from_status"),
 		ToStatus:      values.Get("to_status"),
+	}
+}
+
+func parseChecklistItemQueryParams(r *http.Request) checklistItemQueryParams {
+	values := r.URL.Query()
+
+	return checklistItemQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("checklist_item_id"),
+		ApplicationID: values.Get("application_id"),
+		Status:        values.Get("status"),
+		Required:      values.Get("required"),
+	}
+}
+
+func parseDocumentQueryParams(r *http.Request) documentQueryParams {
+	values := r.URL.Query()
+
+	return documentQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("document_id"),
+		ApplicationID:   values.Get("application_id"),
+		ChecklistItemID: values.Get("checklist_item_id"),
+		Status:          values.Get("status"),
+		UploadedByID:    values.Get("uploaded_by_id"),
+		ReviewerID:      values.Get("reviewer_id"),
 	}
 }
 
@@ -309,6 +439,53 @@ func parseStaffProfileFilter(qp staffProfileQueryParams) (admissionsbus.StaffPro
 
 	if len(fieldErrors) > 0 {
 		return admissionsbus.StaffProfileQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseApplicantProfileFilter(qp applicantProfileQueryParams) (admissionsbus.ApplicantProfileQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicantProfileQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("applicant_profile_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.UserID != "" {
+		userID, err := uuid.Parse(qp.UserID)
+		if err != nil {
+			fieldErrors.Add("user_id", err)
+		} else {
+			filter.UserID = &userID
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		constituentID, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &constituentID
+		}
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.ApplicantProfileQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil
@@ -424,6 +601,53 @@ func parseConstituentFilter(qp constituentQueryParams) (admissionsbus.Constituen
 
 	if fieldErrors != nil {
 		return admissionsbus.ConstituentQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseInquiryFilter(qp inquiryQueryParams) (admissionsbus.InquiryQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.InquiryQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("inquiry_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		constituentID, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &constituentID
+		}
+	}
+
+	if qp.PrimaryEmail != "" {
+		email, err := mail.ParseAddress(qp.PrimaryEmail)
+		if err != nil {
+			fieldErrors.Add("primary_email", err)
+		} else {
+			filter.PrimaryEmail = email
+		}
+	}
+
+	if qp.Source != "" {
+		filter.Source = &qp.Source
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.InquiryStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.InquiryQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil
@@ -580,6 +804,67 @@ func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.Applicatio
 	return filter, nil
 }
 
+func parseApplicationFormTemplateFilter(qp applicationFormTemplateQueryParams) (admissionsbus.ApplicationFormTemplateQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicationFormTemplateQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("form_template_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ProgramID != "" {
+		id, err := uuid.Parse(qp.ProgramID)
+		if err != nil {
+			fieldErrors.Add("program_id", err)
+		} else {
+			filter.ProgramID = &id
+		}
+	}
+
+	if qp.AcademicTermID != "" {
+		id, err := uuid.Parse(qp.AcademicTermID)
+		if err != nil {
+			fieldErrors.Add("academic_term_id", err)
+		} else {
+			filter.AcademicTermID = &id
+		}
+	}
+
+	if qp.ApplicationType != "" {
+		applicationType := admissionsbus.ApplicationType(qp.ApplicationType)
+		filter.ApplicationType = &applicationType
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if qp.Version != "" {
+		version, err := strconv.Atoi(qp.Version)
+		if err != nil {
+			fieldErrors.Add("version", err)
+		} else {
+			filter.Version = &version
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ApplicationFormTemplateQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
 func parseApplicationTransitionFilter(qp applicationTransitionQueryParams) (admissionsbus.ApplicationTransitionQueryFilter, error) {
 	var fieldErrors errs.FieldErrors
 	var filter admissionsbus.ApplicationTransitionQueryFilter
@@ -623,6 +908,110 @@ func parseApplicationTransitionFilter(qp applicationTransitionQueryParams) (admi
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationTransitionQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseChecklistItemFilter(qp checklistItemQueryParams) (admissionsbus.ChecklistItemQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ChecklistItemQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("checklist_item_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.DocumentStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Required != "" {
+		required, err := strconv.ParseBool(qp.Required)
+		if err != nil {
+			fieldErrors.Add("required", err)
+		} else {
+			filter.Required = &required
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ChecklistItemQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseDocumentFilter(qp documentQueryParams) (admissionsbus.DocumentQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.DocumentQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("document_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.ChecklistItemID != "" {
+		id, err := uuid.Parse(qp.ChecklistItemID)
+		if err != nil {
+			fieldErrors.Add("checklist_item_id", err)
+		} else {
+			filter.ChecklistItemID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.DocumentStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.UploadedByID != "" {
+		id, err := uuid.Parse(qp.UploadedByID)
+		if err != nil {
+			fieldErrors.Add("uploaded_by_id", err)
+		} else {
+			filter.UploadedByID = &id
+		}
+	}
+
+	if qp.ReviewerID != "" {
+		id, err := uuid.Parse(qp.ReviewerID)
+		if err != nil {
+			fieldErrors.Add("reviewer_id", err)
+		} else {
+			filter.ReviewerID = &id
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.DocumentQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

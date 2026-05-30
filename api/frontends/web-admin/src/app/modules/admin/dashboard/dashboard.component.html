@@ -1,0 +1,91 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Welcome back, {{ userName }}</h1>
+                    <p class="text-secondary mt-1">Here's what's happening across admissions today.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button mat-stroked-button [routerLink]="['/campaigns']">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:megaphone"></mat-icon>
+                        <span class="ml-2">New campaign</span>
+                    </button>
+                    <button mat-flat-button color="primary" [routerLink]="['/constituents']">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                        <span class="ml-2">Add constituent</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                @for (kpi of kpis; track kpi.label) {
+                    <div class="bg-card border rounded-2xl p-5 shadow-sm">
+                        <div class="text-sm font-medium text-secondary">{{ kpi.label }}</div>
+                        <div class="text-3xl font-semibold mt-2">{{ kpi.value }}</div>
+                        <div class="text-sm mt-2"
+                             [class.text-green-600]="kpi.trend === 'up'"
+                             [class.text-red-600]="kpi.trend === 'down'">
+                            {{ kpi.delta }}
+                            <span class="text-secondary"> vs last month</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="xl:col-span-2 bg-card border rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Recent applications</h2>
+                        <a [routerLink]="['/applications']" class="text-primary text-sm font-medium">View all</a>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="text-left text-secondary border-b">
+                            <tr>
+                                <th class="py-2 font-medium">ID</th>
+                                <th class="py-2 font-medium">Applicant</th>
+                                <th class="py-2 font-medium">Program</th>
+                                <th class="py-2 font-medium">Status</th>
+                                <th class="py-2 font-medium text-right">Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (app of recentApplications; track app.id) {
+                                <tr class="border-b last:border-0">
+                                    <td class="py-3 font-mono text-xs">{{ app.id }}</td>
+                                    <td class="py-3">{{ app.applicant }}</td>
+                                    <td class="py-3">{{ app.program }}</td>
+                                    <td class="py-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ app.status }}</span>
+                                    </td>
+                                    <td class="py-3 text-right text-secondary">{{ app.submitted }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-card border rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Upcoming events</h2>
+                        <a [routerLink]="['/events']" class="text-primary text-sm font-medium">View all</a>
+                    </div>
+                    <ul class="space-y-4">
+                        @for (event of upcomingEvents; track event.title) {
+                            <li class="flex gap-3">
+                                <div class="flex-none w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
+                                    <mat-icon class="icon-size-5 text-primary" svgIcon="heroicons_outline:calendar-days"></mat-icon>
+                                </div>
+                                <div class="flex-auto">
+                                    <div class="font-medium">{{ event.title }}</div>
+                                    <div class="text-sm text-secondary">{{ event.date }}</div>
+                                    <div class="text-sm text-secondary">{{ event.location }}</div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}

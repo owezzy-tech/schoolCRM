@@ -52,6 +52,26 @@
     --mat-checkbox-unselected-focus-state-layer-opacity: 0.12;
     --mat-checkbox-unselected-hover-state-layer-opacity: 0.08;
     --mat-checkbox-unselected-pressed-state-layer-opacity: 0.12;
+    --mat-radio-checked-focus-state-layer-opacity: 0.12;
+    --mat-radio-checked-hover-state-layer-opacity: 0.08;
+    --mat-radio-checked-pressed-state-layer-opacity: 0.12;
+    --mat-radio-unchecked-focus-state-layer-opacity: 0.12;
+    --mat-radio-unchecked-hover-state-layer-opacity: 0.08;
+    --mat-radio-unchecked-pressed-state-layer-opacity: 0.12;
+    --mat-slider-ripple-color: rgb(var(--fuse-primary-rgb) / 0.12);
+    --mat-slider-focus-state-layer-color: rgb(var(--fuse-primary-rgb) / 0.12);
+    --mat-slider-hover-state-layer-color: rgb(var(--fuse-primary-rgb) / 0.08);
+    --mat-slider-handle-color: var(--fuse-primary);
+    --mat-slider-focus-handle-color: var(--fuse-primary);
+    --mat-slider-hover-handle-color: var(--fuse-primary);
+    --mat-slider-active-track-color: var(--fuse-primary);
+    --mat-slider-inactive-track-color: var(--fuse-border);
+    --mat-slide-toggle-selected-focus-state-layer-opacity: 0.12;
+    --mat-slide-toggle-selected-hover-state-layer-opacity: 0.08;
+    --mat-slide-toggle-selected-pressed-state-layer-opacity: 0.12;
+    --mat-slide-toggle-unselected-focus-state-layer-opacity: 0.12;
+    --mat-slide-toggle-unselected-hover-state-layer-opacity: 0.08;
+    --mat-slide-toggle-unselected-pressed-state-layer-opacity: 0.12;
     --mat-dialog-container-color: var(--fuse-bg-dialog);
     --mat-dialog-subhead-color: var(--fuse-text-default);
     --mat-dialog-supporting-text-color: var(--fuse-text-secondary);
@@ -378,6 +398,28 @@
 
 .mdc-checkbox__native-control {
     opacity: 0 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  @ Selection Controls
+/* -------------------------------------------------------------------------- */
+.mat-mdc-radio-button,
+.mat-mdc-slide-toggle,
+.mat-mdc-slider {
+    .mdc-radio__native-control,
+    .mdc-switch__native-control,
+    .mdc-slider__input,
+    input[type='range'] {
+        opacity: 0 !important;
+    }
+}
+
+.mat-mdc-slider {
+    --mdc-slider-handle-color: var(--fuse-primary);
+    --mdc-slider-focus-handle-color: var(--fuse-primary);
+    --mdc-slider-hover-handle-color: var(--fuse-primary);
+    --mdc-slider-active-track-color: var(--fuse-primary);
+    --mdc-slider-inactive-track-color: var(--fuse-border);
 }
 
 /* -------------------------------------------------------------------------- */

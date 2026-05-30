@@ -19,6 +19,15 @@ type staffProfileDB struct {
 	DateUpdated time.Time      `db:"date_updated"`
 }
 
+type applicantProfileDB struct {
+	ID            uuid.UUID `db:"applicant_profile_id"`
+	UserID        uuid.UUID `db:"user_id"`
+	ConstituentID uuid.UUID `db:"constituent_id"`
+	Active        bool      `db:"is_active"`
+	DateCreated   time.Time `db:"date_created"`
+	DateUpdated   time.Time `db:"date_updated"`
+}
+
 type leadScoreRuleDB struct {
 	ID          uuid.UUID       `db:"lead_score_rule_id"`
 	Name        string          `db:"name"`
@@ -59,6 +68,26 @@ type constituentDB struct {
 	SISSyncedAt     *time.Time `db:"sis_synced_at"`
 	DateCreated     time.Time  `db:"date_created"`
 	DateUpdated     time.Time  `db:"date_updated"`
+}
+
+type inquiryDB struct {
+	ID                uuid.UUID  `db:"inquiry_id"`
+	ConstituentID     uuid.UUID  `db:"constituent_id"`
+	FirstName         string     `db:"first_name"`
+	LastName          string     `db:"last_name"`
+	DateOfBirth       time.Time  `db:"date_of_birth"`
+	PrimaryEmail      string     `db:"primary_email"`
+	PrimaryPhone      string     `db:"primary_phone"`
+	ProgramOfInterest *uuid.UUID `db:"program_of_interest"`
+	TermOfInterest    *uuid.UUID `db:"term_of_interest"`
+	Source            string     `db:"source"`
+	UTMSource         *string    `db:"utm_source"`
+	UTMMedium         *string    `db:"utm_medium"`
+	UTMCampaign       *string    `db:"utm_campaign"`
+	Message           *string    `db:"message"`
+	Status            string     `db:"status"`
+	DateCreated       time.Time  `db:"date_created"`
+	DateUpdated       time.Time  `db:"date_updated"`
 }
 
 type programDB struct {
@@ -102,6 +131,22 @@ type applicationDB struct {
 	DateUpdated        time.Time  `db:"date_updated"`
 }
 
+type applicationFormTemplateDB struct {
+	ID              uuid.UUID       `db:"form_template_id"`
+	ProgramID       uuid.UUID       `db:"program_id"`
+	AcademicTermID  uuid.UUID       `db:"academic_term_id"`
+	ApplicationType string          `db:"application_type"`
+	Name            string          `db:"name"`
+	Description     *string         `db:"description"`
+	Version         int             `db:"version"`
+	RequiredFields  json.RawMessage `db:"required_fields"`
+	ChecklistItems  json.RawMessage `db:"checklist_items"`
+	Active          bool            `db:"is_active"`
+	Priority        int             `db:"priority"`
+	DateCreated     time.Time       `db:"date_created"`
+	DateUpdated     time.Time       `db:"date_updated"`
+}
+
 type applicationTransitionDB struct {
 	ID            uuid.UUID       `db:"application_transition_id"`
 	ApplicationID uuid.UUID       `db:"application_id"`
@@ -112,6 +157,37 @@ type applicationTransitionDB struct {
 	Note          *string         `db:"note"`
 	Metadata      json.RawMessage `db:"metadata"`
 	DateCreated   time.Time       `db:"date_created"`
+}
+
+type checklistItemDB struct {
+	ID            uuid.UUID `db:"checklist_item_id"`
+	ApplicationID uuid.UUID `db:"application_id"`
+	ItemKey       string    `db:"item_key"`
+	DocumentName  string    `db:"document_name"`
+	Description   *string   `db:"description"`
+	Required      bool      `db:"is_required"`
+	Status        string    `db:"status"`
+	DisplayOrder  int       `db:"display_order"`
+	DateCreated   time.Time `db:"date_created"`
+	DateUpdated   time.Time `db:"date_updated"`
+}
+
+type documentDB struct {
+	ID              uuid.UUID  `db:"document_id"`
+	ApplicationID   uuid.UUID  `db:"application_id"`
+	ChecklistItemID uuid.UUID  `db:"checklist_item_id"`
+	FileName        string     `db:"file_name"`
+	ContentType     string     `db:"content_type"`
+	SizeBytes       int64      `db:"size_bytes"`
+	StorageKey      string     `db:"storage_key"`
+	Status          string     `db:"status"`
+	ReviewerID      *uuid.UUID `db:"reviewer_id"`
+	ReviewerNotes   *string    `db:"reviewer_notes"`
+	UploadedByID    uuid.UUID  `db:"uploaded_by_id"`
+	UploadedAt      time.Time  `db:"uploaded_at"`
+	ReviewedAt      *time.Time `db:"reviewed_at"`
+	DateCreated     time.Time  `db:"date_created"`
+	DateUpdated     time.Time  `db:"date_updated"`
 }
 
 func toDBStaffProfile(bus admissionsbus.StaffProfile) staffProfileDB {
@@ -152,6 +228,37 @@ func toBusStaffProfiles(dbs []staffProfileDB) ([]admissionsbus.StaffProfile, err
 	}
 
 	return bus, nil
+}
+
+func toDBApplicantProfile(bus admissionsbus.ApplicantProfile) applicantProfileDB {
+	return applicantProfileDB{
+		ID:            bus.ID,
+		UserID:        bus.UserID,
+		ConstituentID: bus.ConstituentID,
+		Active:        bus.Active,
+		DateCreated:   bus.DateCreated.UTC(),
+		DateUpdated:   bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusApplicantProfile(db applicantProfileDB) admissionsbus.ApplicantProfile {
+	return admissionsbus.ApplicantProfile{
+		ID:            db.ID,
+		UserID:        db.UserID,
+		ConstituentID: db.ConstituentID,
+		Active:        db.Active,
+		DateCreated:   db.DateCreated.In(time.Local),
+		DateUpdated:   db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusApplicantProfiles(dbs []applicantProfileDB) []admissionsbus.ApplicantProfile {
+	bus := make([]admissionsbus.ApplicantProfile, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusApplicantProfile(db)
+	}
+
+	return bus
 }
 
 func toDBLeadScoreRule(bus admissionsbus.LeadScoreRule) (leadScoreRuleDB, error) {
@@ -306,6 +413,68 @@ func toBusConstituents(dbs []constituentDB) ([]admissionsbus.Constituent, error)
 	for i, db := range dbs {
 		var err error
 		bus[i], err = toBusConstituent(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBInquiry(bus admissionsbus.Inquiry) inquiryDB {
+	return inquiryDB{
+		ID:                bus.ID,
+		ConstituentID:     bus.ConstituentID,
+		FirstName:         bus.FirstName,
+		LastName:          bus.LastName,
+		DateOfBirth:       bus.DateOfBirth.UTC(),
+		PrimaryEmail:      bus.PrimaryEmail.String(),
+		PrimaryPhone:      bus.PrimaryPhone,
+		ProgramOfInterest: bus.ProgramOfInterest,
+		TermOfInterest:    bus.TermOfInterest,
+		Source:            bus.Source,
+		UTMSource:         bus.UTMSource,
+		UTMMedium:         bus.UTMMedium,
+		UTMCampaign:       bus.UTMCampaign,
+		Message:           bus.Message,
+		Status:            bus.Status.String(),
+		DateCreated:       bus.DateCreated.UTC(),
+		DateUpdated:       bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusInquiry(db inquiryDB) (admissionsbus.Inquiry, error) {
+	email, err := mail.ParseAddress(db.PrimaryEmail)
+	if err != nil {
+		return admissionsbus.Inquiry{}, err
+	}
+
+	return admissionsbus.Inquiry{
+		ID:                db.ID,
+		ConstituentID:     db.ConstituentID,
+		FirstName:         db.FirstName,
+		LastName:          db.LastName,
+		DateOfBirth:       db.DateOfBirth.In(time.Local),
+		PrimaryEmail:      *email,
+		PrimaryPhone:      db.PrimaryPhone,
+		ProgramOfInterest: db.ProgramOfInterest,
+		TermOfInterest:    db.TermOfInterest,
+		Source:            db.Source,
+		UTMSource:         db.UTMSource,
+		UTMMedium:         db.UTMMedium,
+		UTMCampaign:       db.UTMCampaign,
+		Message:           db.Message,
+		Status:            admissionsbus.InquiryStatus(db.Status),
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusInquiries(dbs []inquiryDB) ([]admissionsbus.Inquiry, error) {
+	bus := make([]admissionsbus.Inquiry, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusInquiry(db)
 		if err != nil {
 			return nil, err
 		}
@@ -496,6 +665,75 @@ func toBusApplications(dbs []applicationDB) []admissionsbus.Application {
 	return bus
 }
 
+func toDBApplicationFormTemplate(bus admissionsbus.ApplicationFormTemplate) (applicationFormTemplateDB, error) {
+	requiredFields, err := json.Marshal(bus.RequiredFields)
+	if err != nil {
+		return applicationFormTemplateDB{}, err
+	}
+
+	checklistItems, err := json.Marshal(bus.ChecklistItems)
+	if err != nil {
+		return applicationFormTemplateDB{}, err
+	}
+
+	return applicationFormTemplateDB{
+		ID:              bus.ID,
+		ProgramID:       bus.ProgramID,
+		AcademicTermID:  bus.AcademicTermID,
+		ApplicationType: bus.ApplicationType.String(),
+		Name:            bus.Name,
+		Description:     bus.Description,
+		Version:         bus.Version,
+		RequiredFields:  requiredFields,
+		ChecklistItems:  checklistItems,
+		Active:          bus.Active,
+		Priority:        bus.Priority,
+		DateCreated:     bus.DateCreated.UTC(),
+		DateUpdated:     bus.DateUpdated.UTC(),
+	}, nil
+}
+
+func toBusApplicationFormTemplate(db applicationFormTemplateDB) (admissionsbus.ApplicationFormTemplate, error) {
+	var requiredFields []admissionsbus.ApplicationFormField
+	if err := json.Unmarshal(db.RequiredFields, &requiredFields); err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	var checklistItems []admissionsbus.ApplicationChecklistTemplateItem
+	if err := json.Unmarshal(db.ChecklistItems, &checklistItems); err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	return admissionsbus.ApplicationFormTemplate{
+		ID:              db.ID,
+		ProgramID:       db.ProgramID,
+		AcademicTermID:  db.AcademicTermID,
+		ApplicationType: admissionsbus.ApplicationType(db.ApplicationType),
+		Name:            db.Name,
+		Description:     db.Description,
+		Version:         db.Version,
+		RequiredFields:  requiredFields,
+		ChecklistItems:  checklistItems,
+		Active:          db.Active,
+		Priority:        db.Priority,
+		DateCreated:     db.DateCreated.In(time.Local),
+		DateUpdated:     db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusApplicationFormTemplates(dbs []applicationFormTemplateDB) ([]admissionsbus.ApplicationFormTemplate, error) {
+	bus := make([]admissionsbus.ApplicationFormTemplate, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusApplicationFormTemplate(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
 func toDBApplicationTransition(bus admissionsbus.ApplicationTransition) applicationTransitionDB {
 	return applicationTransitionDB{
 		ID:            bus.ID,
@@ -528,6 +766,94 @@ func toBusApplicationTransitions(dbs []applicationTransitionDB) []admissionsbus.
 	bus := make([]admissionsbus.ApplicationTransition, len(dbs))
 	for i, db := range dbs {
 		bus[i] = toBusApplicationTransition(db)
+	}
+
+	return bus
+}
+
+func toDBChecklistItem(bus admissionsbus.ChecklistItem) checklistItemDB {
+	return checklistItemDB{
+		ID:            bus.ID,
+		ApplicationID: bus.ApplicationID,
+		ItemKey:       bus.ItemKey,
+		DocumentName:  bus.DocumentName,
+		Description:   bus.Description,
+		Required:      bus.Required,
+		Status:        bus.Status.String(),
+		DisplayOrder:  bus.DisplayOrder,
+		DateCreated:   bus.DateCreated.UTC(),
+		DateUpdated:   bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusChecklistItem(db checklistItemDB) admissionsbus.ChecklistItem {
+	return admissionsbus.ChecklistItem{
+		ID:            db.ID,
+		ApplicationID: db.ApplicationID,
+		ItemKey:       db.ItemKey,
+		DocumentName:  db.DocumentName,
+		Description:   db.Description,
+		Required:      db.Required,
+		Status:        admissionsbus.DocumentStatus(db.Status),
+		DisplayOrder:  db.DisplayOrder,
+		DateCreated:   db.DateCreated.In(time.Local),
+		DateUpdated:   db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusChecklistItems(dbs []checklistItemDB) []admissionsbus.ChecklistItem {
+	bus := make([]admissionsbus.ChecklistItem, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusChecklistItem(db)
+	}
+
+	return bus
+}
+
+func toDBDocument(bus admissionsbus.Document) documentDB {
+	return documentDB{
+		ID:              bus.ID,
+		ApplicationID:   bus.ApplicationID,
+		ChecklistItemID: bus.ChecklistItemID,
+		FileName:        bus.FileName,
+		ContentType:     bus.ContentType,
+		SizeBytes:       bus.SizeBytes,
+		StorageKey:      bus.StorageKey,
+		Status:          bus.Status.String(),
+		ReviewerID:      bus.ReviewerID,
+		ReviewerNotes:   bus.ReviewerNotes,
+		UploadedByID:    bus.UploadedByID,
+		UploadedAt:      bus.UploadedAt.UTC(),
+		ReviewedAt:      utcTimePtr(bus.ReviewedAt),
+		DateCreated:     bus.DateCreated.UTC(),
+		DateUpdated:     bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusDocument(db documentDB) admissionsbus.Document {
+	return admissionsbus.Document{
+		ID:              db.ID,
+		ApplicationID:   db.ApplicationID,
+		ChecklistItemID: db.ChecklistItemID,
+		FileName:        db.FileName,
+		ContentType:     db.ContentType,
+		SizeBytes:       db.SizeBytes,
+		StorageKey:      db.StorageKey,
+		Status:          admissionsbus.DocumentStatus(db.Status),
+		ReviewerID:      db.ReviewerID,
+		ReviewerNotes:   db.ReviewerNotes,
+		UploadedByID:    db.UploadedByID,
+		UploadedAt:      db.UploadedAt.In(time.Local),
+		ReviewedAt:      localTimePtr(db.ReviewedAt),
+		DateCreated:     db.DateCreated.In(time.Local),
+		DateUpdated:     db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusDocuments(dbs []documentDB) []admissionsbus.Document {
+	bus := make([]admissionsbus.Document, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusDocument(db)
 	}
 
 	return bus

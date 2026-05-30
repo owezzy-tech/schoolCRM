@@ -88,6 +88,94 @@ func (ext *Extension) QueryStaffProfileByUserID(ctx context.Context, userID uuid
 	return ext.bus.QueryStaffProfileByUserID(ctx, userID)
 }
 
+// CreateApplicantProfile applies otel to admissions applicant profile creation.
+func (ext *Extension) CreateApplicantProfile(ctx context.Context, np admissionsbus.NewApplicantProfile) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplicantprofile")
+	defer span.End()
+
+	return ext.bus.CreateApplicantProfile(ctx, np)
+}
+
+// UpdateApplicantProfile applies otel to admissions applicant profile updates.
+func (ext *Extension) UpdateApplicantProfile(ctx context.Context, profile admissionsbus.ApplicantProfile, np admissionsbus.NewApplicantProfile) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicantprofile")
+	defer span.End()
+
+	return ext.bus.UpdateApplicantProfile(ctx, profile, np)
+}
+
+// QueryApplicantProfiles applies otel to admissions applicant profile queries.
+func (ext *Extension) QueryApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofiles")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfiles(ctx, filter, orderBy, page)
+}
+
+// CountApplicantProfiles applies otel to admissions applicant profile counts.
+func (ext *Extension) CountApplicantProfiles(ctx context.Context, filter admissionsbus.ApplicantProfileQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplicantprofiles")
+	defer span.End()
+
+	return ext.bus.CountApplicantProfiles(ctx, filter)
+}
+
+// QueryApplicantProfileByID applies otel to admissions applicant profile ID lookups.
+func (ext *Extension) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByID(ctx, profileID)
+}
+
+// QueryApplicantProfileByUserID applies otel to admissions applicant profile user lookups.
+func (ext *Extension) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyuserid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByUserID(ctx, userID)
+}
+
+// QueryApplicantProfileByConstituentID applies otel to admissions applicant profile constituent lookups.
+func (ext *Extension) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (admissionsbus.ApplicantProfile, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicantprofilebyconstituentid")
+	defer span.End()
+
+	return ext.bus.QueryApplicantProfileByConstituentID(ctx, constituentID)
+}
+
+// CreateInquiry applies otel to admissions inquiry creation.
+func (ext *Extension) CreateInquiry(ctx context.Context, ni admissionsbus.NewInquiry) (admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createinquiry")
+	defer span.End()
+
+	return ext.bus.CreateInquiry(ctx, ni)
+}
+
+// QueryInquiries applies otel to admissions inquiry queries.
+func (ext *Extension) QueryInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryinquiries")
+	defer span.End()
+
+	return ext.bus.QueryInquiries(ctx, filter, orderBy, page)
+}
+
+// CountInquiries applies otel to admissions inquiry counts.
+func (ext *Extension) CountInquiries(ctx context.Context, filter admissionsbus.InquiryQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countinquiries")
+	defer span.End()
+
+	return ext.bus.CountInquiries(ctx, filter)
+}
+
+// QueryInquiryByID applies otel to admissions inquiry ID lookups.
+func (ext *Extension) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (admissionsbus.Inquiry, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryinquirybyid")
+	defer span.End()
+
+	return ext.bus.QueryInquiryByID(ctx, inquiryID)
+}
+
 // CreateLeadScoreRule applies otel to lead score rule creation.
 func (ext *Extension) CreateLeadScoreRule(ctx context.Context, nr admissionsbus.NewLeadScoreRule) (admissionsbus.LeadScoreRule, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createleadscorerule")
@@ -376,6 +464,46 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
 }
 
+// CreateApplicationFormTemplate applies otel to Application form template creation.
+func (ext *Extension) CreateApplicationFormTemplate(ctx context.Context, nt admissionsbus.NewApplicationFormTemplate) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplicationformtemplate")
+	defer span.End()
+
+	return ext.bus.CreateApplicationFormTemplate(ctx, nt)
+}
+
+// UpdateApplicationFormTemplate applies otel to Application form template updates.
+func (ext *Extension) UpdateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate, nt admissionsbus.NewApplicationFormTemplate) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationformtemplate")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationFormTemplate(ctx, template, nt)
+}
+
+// QueryApplicationFormTemplates applies otel to Application form template queries.
+func (ext *Extension) QueryApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationformtemplates")
+	defer span.End()
+
+	return ext.bus.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+}
+
+// CountApplicationFormTemplates applies otel to Application form template counts.
+func (ext *Extension) CountApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplicationformtemplates")
+	defer span.End()
+
+	return ext.bus.CountApplicationFormTemplates(ctx, filter)
+}
+
+// QueryApplicationFormTemplateByID applies otel to Application form template ID lookups.
+func (ext *Extension) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationformtemplatebyid")
+	defer span.End()
+
+	return ext.bus.QueryApplicationFormTemplateByID(ctx, templateID)
+}
+
 // TransitionApplicationStatus applies otel to Application status transitions.
 func (ext *Extension) TransitionApplicationStatus(ctx context.Context, app admissionsbus.Application, nt admissionsbus.NewApplicationTransition) (admissionsbus.Application, admissionsbus.ApplicationTransition, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.transitionapplicationstatus")
@@ -398,4 +526,84 @@ func (ext *Extension) CountApplicationTransitions(ctx context.Context, filter ad
 	defer span.End()
 
 	return ext.bus.CountApplicationTransitions(ctx, filter)
+}
+
+// CreateChecklistItem applies otel to checklist item creation.
+func (ext *Extension) CreateChecklistItem(ctx context.Context, ni admissionsbus.NewChecklistItem) (admissionsbus.ChecklistItem, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createchecklistitem")
+	defer span.End()
+
+	return ext.bus.CreateChecklistItem(ctx, ni)
+}
+
+// UpdateChecklistItem applies otel to checklist item updates.
+func (ext *Extension) UpdateChecklistItem(ctx context.Context, item admissionsbus.ChecklistItem, ni admissionsbus.NewChecklistItem) (admissionsbus.ChecklistItem, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updatechecklistitem")
+	defer span.End()
+
+	return ext.bus.UpdateChecklistItem(ctx, item, ni)
+}
+
+// QueryChecklistItems applies otel to checklist item queries.
+func (ext *Extension) QueryChecklistItems(ctx context.Context, filter admissionsbus.ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ChecklistItem, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querychecklistitems")
+	defer span.End()
+
+	return ext.bus.QueryChecklistItems(ctx, filter, orderBy, page)
+}
+
+// CountChecklistItems applies otel to checklist item counts.
+func (ext *Extension) CountChecklistItems(ctx context.Context, filter admissionsbus.ChecklistItemQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countchecklistitems")
+	defer span.End()
+
+	return ext.bus.CountChecklistItems(ctx, filter)
+}
+
+// QueryChecklistItemByID applies otel to checklist item ID lookups.
+func (ext *Extension) QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (admissionsbus.ChecklistItem, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querychecklistitembyid")
+	defer span.End()
+
+	return ext.bus.QueryChecklistItemByID(ctx, itemID)
+}
+
+// CreateDocument applies otel to document metadata creation.
+func (ext *Extension) CreateDocument(ctx context.Context, nd admissionsbus.NewDocument) (admissionsbus.Document, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createdocument")
+	defer span.End()
+
+	return ext.bus.CreateDocument(ctx, nd)
+}
+
+// VerifyDocument applies otel to document verification.
+func (ext *Extension) VerifyDocument(ctx context.Context, document admissionsbus.Document, nv admissionsbus.NewDocumentVerification) (admissionsbus.Document, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.verifydocument")
+	defer span.End()
+
+	return ext.bus.VerifyDocument(ctx, document, nv)
+}
+
+// QueryDocuments applies otel to document metadata queries.
+func (ext *Extension) QueryDocuments(ctx context.Context, filter admissionsbus.DocumentQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Document, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querydocuments")
+	defer span.End()
+
+	return ext.bus.QueryDocuments(ctx, filter, orderBy, page)
+}
+
+// CountDocuments applies otel to document metadata counts.
+func (ext *Extension) CountDocuments(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countdocuments")
+	defer span.End()
+
+	return ext.bus.CountDocuments(ctx, filter)
+}
+
+// QueryDocumentByID applies otel to document metadata ID lookups.
+func (ext *Extension) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (admissionsbus.Document, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querydocumentbyid")
+	defer span.End()
+
+	return ext.bus.QueryDocumentByID(ctx, documentID)
 }

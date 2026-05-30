@@ -207,6 +207,388 @@ func TestCreateStaffProfileStoresAdmissionsContextRoles(t *testing.T) {
 	}
 }
 
+func TestCreateApplicantProfileLinksIdentityToConstituent(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant},
+		},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	userID := uuid.New()
+
+	profile, err := bus.CreateApplicantProfile(context.Background(), NewApplicantProfile{
+		UserID:        userID,
+		ConstituentID: constituentID,
+		Active:        true,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicantProfile returned error: %v", err)
+	}
+
+	if profile.UserID != userID {
+		t.Fatalf("UserID = %s, want %s", profile.UserID, userID)
+	}
+
+	if profile.ConstituentID != constituentID {
+		t.Fatalf("ConstituentID = %s, want %s", profile.ConstituentID, constituentID)
+	}
+
+	if !profile.Active {
+		t.Fatal("Active = false, want true")
+	}
+
+	stored, err := bus.QueryApplicantProfileByUserID(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("QueryApplicantProfileByUserID returned error: %v", err)
+	}
+
+	if stored.ID != profile.ID {
+		t.Fatalf("stored profile ID = %s, want %s", stored.ID, profile.ID)
+	}
+}
+
+func TestCreateApplicantProfileValidatesIdentityAndConstituent(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		np   NewApplicantProfile
+		want error
+	}{
+		{
+			name: "user id",
+			np:   NewApplicantProfile{ConstituentID: uuid.New()},
+			want: ErrApplicantProfileUserRequired,
+		},
+		{
+			name: "constituent id",
+			np:   NewApplicantProfile{UserID: uuid.New()},
+			want: ErrConstituentIDRequired,
+		},
+		{
+			name: "missing constituent",
+			np:   NewApplicantProfile{UserID: uuid.New(), ConstituentID: uuid.New()},
+			want: ErrConstituentNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateApplicantProfile(context.Background(), tt.np)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateInquiryCreatesConstituentWithSourceAttribution(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	utmSource := "google"
+	utmMedium := "cpc"
+	utmCampaign := "fall-open-house"
+	message := "Please send me admissions deadlines."
+	email := mail.Address{Address: "new.inquiry@example.com"}
+
+	inquiry, err := bus.CreateInquiry(context.Background(), NewInquiry{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+		Source:       "website",
+		UTMSource:    &utmSource,
+		UTMMedium:    &utmMedium,
+		UTMCampaign:  &utmCampaign,
+		Message:      &message,
+	})
+	if err != nil {
+		t.Fatalf("CreateInquiry returned error: %v", err)
+	}
+
+	if inquiry.ConstituentID == uuid.Nil {
+		t.Fatal("ConstituentID is nil, want linked constituent")
+	}
+
+	if inquiry.Status != InquiryStatusNew {
+		t.Fatalf("Status = %s, want %s", inquiry.Status, InquiryStatusNew)
+	}
+
+	if inquiry.Source != "website" {
+		t.Fatalf("Source = %q, want website", inquiry.Source)
+	}
+
+	if inquiry.UTMSource == nil || *inquiry.UTMSource != utmSource {
+		t.Fatalf("UTMSource = %v, want %q", inquiry.UTMSource, utmSource)
+	}
+
+	constituent, err := bus.QueryConstituentByID(context.Background(), inquiry.ConstituentID)
+	if err != nil {
+		t.Fatalf("QueryConstituentByID returned error: %v", err)
+	}
+
+	if constituent.LifecycleStage != LifecycleStageInquiry {
+		t.Fatalf("LifecycleStage = %s, want %s", constituent.LifecycleStage, LifecycleStageInquiry)
+	}
+}
+
+func TestCreateInquiryLinksExistingConstituentBeforeCreate(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	email := mail.Address{Address: "existing.inquiry@example.com"}
+	store := &stubStore{
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {
+				ID:             constituentID,
+				FirstName:      "Existing",
+				LastName:       "Applicant",
+				DateOfBirth:    time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail:   email,
+				PrimaryPhone:   "+15555550100",
+				LifecycleStage: LifecycleStageProspect,
+			},
+		},
+		constituentByEmail: map[string]Constituent{},
+	}
+	store.constituentByEmail[email.String()] = store.constituents[constituentID]
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	inquiry, err := bus.CreateInquiry(context.Background(), NewInquiry{
+		FirstName:    "Existing",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+15555550100",
+		Source:       "referral",
+	})
+	if err != nil {
+		t.Fatalf("CreateInquiry returned error: %v", err)
+	}
+
+	if inquiry.ConstituentID != constituentID {
+		t.Fatalf("ConstituentID = %s, want %s", inquiry.ConstituentID, constituentID)
+	}
+
+	if len(store.constituents) != 1 {
+		t.Fatalf("constituents stored = %d, want 1", len(store.constituents))
+	}
+}
+
+func TestCreateInquiryRequiresSourceAndIdentityFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	email := mail.Address{Address: "inquiry@example.com"}
+
+	tests := []struct {
+		name string
+		ni   NewInquiry
+		want error
+	}{
+		{
+			name: "first name",
+			ni: NewInquiry{
+				LastName:     "Applicant",
+				DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail: email,
+				PrimaryPhone: "+15555550100",
+				Source:       "website",
+			},
+			want: ErrFirstNameRequired,
+		},
+		{
+			name: "source",
+			ni: NewInquiry{
+				FirstName:    "Ada",
+				LastName:     "Applicant",
+				DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail: email,
+				PrimaryPhone: "+15555550100",
+			},
+			want: ErrInquirySourceRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateInquiry(context.Background(), tt.ni)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateApplicationFormTemplateCreatesVersionedConfig(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	description := "Freshman application requirements"
+	validation := `{"maxLength":120}`
+	itemDescription := "Official high school transcript"
+
+	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeFreshman,
+		Name:            " Freshman v1 ",
+		Description:     &description,
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1, Validation: &validation},
+		},
+		ChecklistItems: []ApplicationChecklistTemplateItem{
+			{ItemKey: "transcript", DocumentName: "High school transcript", Description: &itemDescription, Required: true, DisplayOrder: 1},
+		},
+		Active:   true,
+		Priority: 10,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicationFormTemplate returned error: %v", err)
+	}
+
+	if template.Version != 1 {
+		t.Fatalf("Version = %d, want 1", template.Version)
+	}
+
+	if template.Name != "Freshman v1" {
+		t.Fatalf("Name = %q, want trimmed Freshman v1", template.Name)
+	}
+
+	if len(template.RequiredFields) != 1 || template.RequiredFields[0].FieldName != "personal_statement" {
+		t.Fatalf("RequiredFields = %#v, want personal_statement", template.RequiredFields)
+	}
+
+	if len(template.ChecklistItems) != 1 || template.ChecklistItems[0].ItemKey != "transcript" {
+		t.Fatalf("ChecklistItems = %#v, want transcript", template.ChecklistItems)
+	}
+}
+
+func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeTransfer,
+		Name:            "Transfer v1",
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
+		},
+		Active:   true,
+		Priority: 20,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicationFormTemplate returned error: %v", err)
+	}
+
+	updated, err := bus.UpdateApplicationFormTemplate(context.Background(), template, NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeTransfer,
+		Name:            "Transfer v2",
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
+			{FieldName: "college_gpa", FieldType: "number", Required: true, DisplayOrder: 2},
+		},
+		Active:   true,
+		Priority: 5,
+	})
+	if err != nil {
+		t.Fatalf("UpdateApplicationFormTemplate returned error: %v", err)
+	}
+
+	if updated.Version != 2 {
+		t.Fatalf("Version = %d, want 2", updated.Version)
+	}
+
+	if len(updated.RequiredFields) != 2 {
+		t.Fatalf("RequiredFields count = %d, want 2", len(updated.RequiredFields))
+	}
+}
+
+func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	tests := []struct {
+		name string
+		nt   NewApplicationFormTemplate
+		want error
+	}{
+		{
+			name: "name required",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				RequiredFields: []ApplicationFormField{
+					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
+				},
+			},
+			want: ErrFormTemplateNameRequired,
+		},
+		{
+			name: "fields required",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				Name:            "Freshman",
+			},
+			want: ErrFormTemplateFieldsRequired,
+		},
+		{
+			name: "checklist invalid",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				Name:            "Freshman",
+				RequiredFields: []ApplicationFormField{
+					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
+				},
+				ChecklistItems: []ApplicationChecklistTemplateItem{{ItemKey: "", DocumentName: "Transcript", Required: true}},
+			},
+			want: ErrFormTemplateChecklistInvalid,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateApplicationFormTemplate(context.Background(), tt.nt)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T) {
 	t.Parallel()
 
@@ -767,8 +1149,150 @@ func TestTransitionApplicationStatusRequiresActor(t *testing.T) {
 	}
 }
 
+func TestCreateChecklistItemTiesItemToApplication(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	store := &stubStore{
+		applications: []Application{{ID: applicationID, Status: ApplicationStatusAwaitingDocuments}},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	item, err := bus.CreateChecklistItem(context.Background(), NewChecklistItem{
+		ApplicationID: applicationID,
+		ItemKey:       "transcript",
+		DocumentName:  "Official transcript",
+		Required:      true,
+		DisplayOrder:  1,
+	})
+	if err != nil {
+		t.Fatalf("CreateChecklistItem returned error: %v", err)
+	}
+
+	if item.ApplicationID != applicationID {
+		t.Fatalf("ApplicationID = %s, want %s", item.ApplicationID, applicationID)
+	}
+
+	if item.Status != DocumentStatusPendingReview {
+		t.Fatalf("Status = %s, want %s", item.Status, DocumentStatusPendingReview)
+	}
+
+	if len(store.checklistItems) != 1 {
+		t.Fatalf("stored checklist items = %d, want 1", len(store.checklistItems))
+	}
+}
+
+func TestCreateDocumentTiesDocumentToApplicationChecklistItem(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	checklistItemID := uuid.New()
+	uploadedByID := uuid.New()
+	store := &stubStore{
+		checklistItems: []ChecklistItem{{ID: checklistItemID, ApplicationID: applicationID, Status: DocumentStatusPendingReview}},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	document, err := bus.CreateDocument(context.Background(), NewDocument{
+		ApplicationID:   applicationID,
+		ChecklistItemID: checklistItemID,
+		FileName:        "transcript.pdf",
+		ContentType:     "application/pdf",
+		SizeBytes:       2048,
+		StorageKey:      "admissions/applications/app/transcript.pdf",
+		UploadedByID:    uploadedByID,
+	})
+	if err != nil {
+		t.Fatalf("CreateDocument returned error: %v", err)
+	}
+
+	if document.ApplicationID != applicationID || document.ChecklistItemID != checklistItemID {
+		t.Fatalf("document linkage = (%s, %s), want (%s, %s)", document.ApplicationID, document.ChecklistItemID, applicationID, checklistItemID)
+	}
+
+	if document.Status != DocumentStatusPendingReview {
+		t.Fatalf("Status = %s, want %s", document.Status, DocumentStatusPendingReview)
+	}
+
+	if document.StorageKey == "" {
+		t.Fatal("StorageKey is empty")
+	}
+
+	if len(store.documents) != 1 {
+		t.Fatalf("stored documents = %d, want 1", len(store.documents))
+	}
+}
+
+func TestVerifyDocumentSupportsAcceptedRejectedWaived(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	checklistItemID := uuid.New()
+	reviewerID := uuid.New()
+	statuses := []DocumentStatus{DocumentStatusAccepted, DocumentStatusRejected, DocumentStatusWaived}
+
+	for _, status := range statuses {
+		status := status
+		t.Run(status.String(), func(t *testing.T) {
+			t.Parallel()
+
+			documentID := uuid.New()
+			store := &stubStore{
+				checklistItems: []ChecklistItem{{ID: checklistItemID, ApplicationID: applicationID, Status: DocumentStatusPendingReview}},
+				documents: []Document{{
+					ID:              documentID,
+					ApplicationID:   applicationID,
+					ChecklistItemID: checklistItemID,
+					Status:          DocumentStatusPendingReview,
+				}},
+			}
+			bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+			updated, err := bus.VerifyDocument(context.Background(), store.documents[0], NewDocumentVerification{
+				Status:     status,
+				ReviewerID: reviewerID,
+			})
+			if err != nil {
+				t.Fatalf("VerifyDocument returned error: %v", err)
+			}
+
+			if updated.Status != status {
+				t.Fatalf("Status = %s, want %s", updated.Status, status)
+			}
+
+			if updated.ReviewerID == nil || *updated.ReviewerID != reviewerID {
+				t.Fatalf("ReviewerID = %v, want %s", updated.ReviewerID, reviewerID)
+			}
+
+			if updated.ReviewedAt == nil {
+				t.Fatal("ReviewedAt is nil")
+			}
+
+			if store.checklistItems[0].Status != status {
+				t.Fatalf("checklist item status = %s, want %s", store.checklistItems[0].Status, status)
+			}
+		})
+	}
+}
+
+func TestVerifyDocumentRejectsNonReviewStatus(t *testing.T) {
+	t.Parallel()
+
+	_, err := newTestBusiness().VerifyDocument(context.Background(), Document{ID: uuid.New()}, NewDocumentVerification{
+		Status:     DocumentStatusPendingReview,
+		ReviewerID: uuid.New(),
+	})
+
+	if !errors.Is(err, ErrDocumentStatusNotReviewable) {
+		t.Fatalf("err = %v, want %v", err, ErrDocumentStatusNotReviewable)
+	}
+}
+
 func newTestBusiness() ExtBusiness {
-	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{})
+	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{
+		constituents:       map[uuid.UUID]Constituent{},
+		constituentByEmail: map[string]Constituent{},
+	})
 }
 
 func newApplicationStubStore(constituentID uuid.UUID, programID uuid.UUID, termID uuid.UUID) *stubStore {
@@ -793,8 +1317,11 @@ func (ioDiscard) Write(p []byte) (int, error) {
 
 type stubStore struct {
 	staffProfiles          []StaffProfile
+	applicantProfiles      []ApplicantProfile
+	inquiries              []Inquiry
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
+	applicationTemplates   []ApplicationFormTemplate
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -802,6 +1329,8 @@ type stubStore struct {
 	terms                  map[uuid.UUID]AcademicTerm
 	applications           []Application
 	applicationTransitions []ApplicationTransition
+	checklistItems         []ChecklistItem
+	documents              []Document
 }
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
@@ -852,6 +1381,90 @@ func (s *stubStore) QueryStaffProfileByUserID(_ context.Context, userID uuid.UUI
 		}
 	}
 	return StaffProfile{}, ErrStaffProfileNotFound
+}
+
+func (s *stubStore) CreateApplicantProfile(_ context.Context, profile ApplicantProfile) error {
+	s.applicantProfiles = append(s.applicantProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) UpdateApplicantProfile(_ context.Context, profile ApplicantProfile) error {
+	for i, existing := range s.applicantProfiles {
+		if existing.ID == profile.ID {
+			s.applicantProfiles[i] = profile
+			return nil
+		}
+	}
+	s.applicantProfiles = append(s.applicantProfiles, profile)
+	return nil
+}
+
+func (s *stubStore) QueryApplicantProfiles(context.Context, ApplicantProfileQueryFilter, order.By, page.Page) ([]ApplicantProfile, error) {
+	return s.applicantProfiles, nil
+}
+
+func (s *stubStore) CountApplicantProfiles(context.Context, ApplicantProfileQueryFilter) (int, error) {
+	return len(s.applicantProfiles), nil
+}
+
+func (s *stubStore) QueryApplicantProfileByID(_ context.Context, profileID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.ID == profileID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) QueryApplicantProfileByUserID(_ context.Context, userID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.UserID == userID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) QueryApplicantProfileByConstituentID(_ context.Context, constituentID uuid.UUID) (ApplicantProfile, error) {
+	for _, profile := range s.applicantProfiles {
+		if profile.ConstituentID == constituentID {
+			return profile, nil
+		}
+	}
+	return ApplicantProfile{}, ErrApplicantProfileNotFound
+}
+
+func (s *stubStore) CreateInquiry(_ context.Context, inquiry Inquiry) error {
+	s.inquiries = append(s.inquiries, inquiry)
+	return nil
+}
+
+func (s *stubStore) UpdateInquiry(_ context.Context, inquiry Inquiry) error {
+	for i, existing := range s.inquiries {
+		if existing.ID == inquiry.ID {
+			s.inquiries[i] = inquiry
+			return nil
+		}
+	}
+	s.inquiries = append(s.inquiries, inquiry)
+	return nil
+}
+
+func (s *stubStore) QueryInquiries(context.Context, InquiryQueryFilter, order.By, page.Page) ([]Inquiry, error) {
+	return s.inquiries, nil
+}
+
+func (s *stubStore) CountInquiries(context.Context, InquiryQueryFilter) (int, error) {
+	return len(s.inquiries), nil
+}
+
+func (s *stubStore) QueryInquiryByID(_ context.Context, inquiryID uuid.UUID) (Inquiry, error) {
+	for _, inquiry := range s.inquiries {
+		if inquiry.ID == inquiryID {
+			return inquiry, nil
+		}
+	}
+	return Inquiry{}, ErrInquiryNotFound
 }
 
 func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {
@@ -1100,6 +1713,39 @@ func (s *stubStore) QueryActiveApplicationByTuple(_ context.Context, constituent
 	return Application{}, ErrApplicationNotFound
 }
 
+func (s *stubStore) CreateApplicationFormTemplate(_ context.Context, template ApplicationFormTemplate) error {
+	s.applicationTemplates = append(s.applicationTemplates, template)
+	return nil
+}
+
+func (s *stubStore) UpdateApplicationFormTemplate(_ context.Context, template ApplicationFormTemplate) error {
+	for i, existing := range s.applicationTemplates {
+		if existing.ID == template.ID {
+			s.applicationTemplates[i] = template
+			return nil
+		}
+	}
+	s.applicationTemplates = append(s.applicationTemplates, template)
+	return nil
+}
+
+func (s *stubStore) QueryApplicationFormTemplates(context.Context, ApplicationFormTemplateQueryFilter, order.By, page.Page) ([]ApplicationFormTemplate, error) {
+	return s.applicationTemplates, nil
+}
+
+func (s *stubStore) CountApplicationFormTemplates(context.Context, ApplicationFormTemplateQueryFilter) (int, error) {
+	return len(s.applicationTemplates), nil
+}
+
+func (s *stubStore) QueryApplicationFormTemplateByID(_ context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error) {
+	for _, template := range s.applicationTemplates {
+		if template.ID == templateID {
+			return template, nil
+		}
+	}
+	return ApplicationFormTemplate{}, ErrFormTemplateNotFound
+}
+
 func (s *stubStore) CreateApplicationTransition(_ context.Context, transition ApplicationTransition) error {
 	s.applicationTransitions = append(s.applicationTransitions, transition)
 	return nil
@@ -1111,4 +1757,70 @@ func (s *stubStore) QueryApplicationTransitions(context.Context, ApplicationTran
 
 func (s *stubStore) CountApplicationTransitions(context.Context, ApplicationTransitionQueryFilter) (int, error) {
 	return len(s.applicationTransitions), nil
+}
+
+func (s *stubStore) CreateChecklistItem(_ context.Context, item ChecklistItem) error {
+	s.checklistItems = append(s.checklistItems, item)
+	return nil
+}
+
+func (s *stubStore) UpdateChecklistItem(_ context.Context, item ChecklistItem) error {
+	for i, existing := range s.checklistItems {
+		if existing.ID == item.ID {
+			s.checklistItems[i] = item
+			return nil
+		}
+	}
+	s.checklistItems = append(s.checklistItems, item)
+	return nil
+}
+
+func (s *stubStore) QueryChecklistItems(context.Context, ChecklistItemQueryFilter, order.By, page.Page) ([]ChecklistItem, error) {
+	return s.checklistItems, nil
+}
+
+func (s *stubStore) CountChecklistItems(context.Context, ChecklistItemQueryFilter) (int, error) {
+	return len(s.checklistItems), nil
+}
+
+func (s *stubStore) QueryChecklistItemByID(_ context.Context, itemID uuid.UUID) (ChecklistItem, error) {
+	for _, item := range s.checklistItems {
+		if item.ID == itemID {
+			return item, nil
+		}
+	}
+	return ChecklistItem{}, ErrChecklistItemNotFound
+}
+
+func (s *stubStore) CreateDocument(_ context.Context, document Document) error {
+	s.documents = append(s.documents, document)
+	return nil
+}
+
+func (s *stubStore) UpdateDocument(_ context.Context, document Document) error {
+	for i, existing := range s.documents {
+		if existing.ID == document.ID {
+			s.documents[i] = document
+			return nil
+		}
+	}
+	s.documents = append(s.documents, document)
+	return nil
+}
+
+func (s *stubStore) QueryDocuments(context.Context, DocumentQueryFilter, order.By, page.Page) ([]Document, error) {
+	return s.documents, nil
+}
+
+func (s *stubStore) CountDocuments(context.Context, DocumentQueryFilter) (int, error) {
+	return len(s.documents), nil
+}
+
+func (s *stubStore) QueryDocumentByID(_ context.Context, documentID uuid.UUID) (Document, error) {
+	for _, document := range s.documents {
+		if document.ID == documentID {
+			return document, nil
+		}
+	}
+	return Document{}, ErrDocumentNotFound
 }

@@ -14,7 +14,7 @@ export class FuseLoadingService {
     private _show$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
         false
     );
-    private _urlMap: Map<string, boolean> = new Map<string, boolean>();
+    private _activeRequests = 0;
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -112,15 +112,40 @@ export class FuseLoadingService {
         }
 
         if (status === true) {
-            this._urlMap.set(url, status);
+            this._activeRequests += 1;
             this._show$.next(true);
-        } else if (status === false && this._urlMap.has(url)) {
-            this._urlMap.delete(url);
+            return;
         }
 
-        // Only set the status to 'false' if all outgoing requests are completed
-        if (this._urlMap.size === 0) {
-            this._show$.next(false);
+        queueMicrotask(() => {
+            this._activeRequests = Math.max(0, this._activeRequests - 1);
+
+            // Only set the status to 'false' if all outgoing requests are completed
+            if (this._activeRequests === 0) {
+                this._show$.next(false);
+            }
+        });
+    }
+
+    _resetLoadingStatus(): void {
+        this._activeRequests = 0;
+        this._show$.next(false);
+    }
+
+    _getActiveRequests(): number {
+        return this._activeRequests;
+    }
+
+    _hasActiveRequests(): boolean {
+        return this._activeRequests > 0;
+    }
+
+    _setLoadingStatusFromInterceptor(status: boolean, url: string): void {
+        if (status) {
+            this._setLoadingStatus(true, url);
+            return;
         }
+
+        this._setLoadingStatus(false, url);
     }
 }

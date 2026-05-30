@@ -15,6 +15,13 @@ var staffProfileOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByStaffProfileDateCreated,
 }
 
+var applicantProfileOrderByFields = map[string]string{
+	"applicant_profile_id": admissionsbus.OrderByApplicantProfileID,
+	"user_id":              admissionsbus.OrderByApplicantProfileUser,
+	"constituent_id":       admissionsbus.OrderByApplicantProfileConstituent,
+	"date_created":         admissionsbus.OrderByApplicantProfileDateCreated,
+}
+
 var leadScoreRuleOrderByFields = map[string]string{
 	"lead_score_rule_id": admissionsbus.OrderByLeadScoreRuleID,
 	"name":               admissionsbus.OrderByLeadScoreRuleName,
@@ -34,6 +41,14 @@ var constituentOrderByFields = map[string]string{
 	"last_name":       admissionsbus.OrderByConstituentLastName,
 	"primary_email":   admissionsbus.OrderByConstituentPrimaryEmail,
 	"lifecycle_stage": admissionsbus.OrderByConstituentLifecycleStage,
+}
+
+var inquiryOrderByFields = map[string]string{
+	"inquiry_id":    admissionsbus.OrderByInquiryID,
+	"primary_email": admissionsbus.OrderByInquiryEmail,
+	"source":        admissionsbus.OrderByInquirySource,
+	"status":        admissionsbus.OrderByInquiryStatus,
+	"date_created":  admissionsbus.OrderByInquiryDateCreated,
 }
 
 var academicTermOrderByFields = map[string]string{
@@ -60,9 +75,35 @@ var applicationOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
 }
 
+var applicationFormTemplateOrderByFields = map[string]string{
+	"form_template_id": admissionsbus.OrderByApplicationFormTemplateID,
+	"name":             admissionsbus.OrderByApplicationFormTemplateName,
+	"application_type": admissionsbus.OrderByApplicationFormTemplateType,
+	"version":          admissionsbus.OrderByApplicationFormTemplateVersion,
+	"priority":         admissionsbus.OrderByApplicationFormTemplatePriority,
+	"date_created":     admissionsbus.OrderByApplicationFormTemplateDateCreated,
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	"application_transition_id": admissionsbus.OrderByApplicationTransitionID,
 	"application_id":            admissionsbus.OrderByApplicationTransitionApplication,
 	"actor_id":                  admissionsbus.OrderByApplicationTransitionActor,
 	"date_created":              admissionsbus.OrderByApplicationTransitionDateCreated,
+}
+
+var checklistItemOrderByFields = map[string]string{
+	"checklist_item_id": admissionsbus.OrderByChecklistItemID,
+	"application_id":    admissionsbus.OrderByChecklistItemApplication,
+	"status":            admissionsbus.OrderByChecklistItemStatus,
+	"display_order":     admissionsbus.OrderByChecklistItemDisplayOrder,
+	"date_created":      admissionsbus.OrderByChecklistItemDateCreated,
+}
+
+var documentOrderByFields = map[string]string{
+	"document_id":       admissionsbus.OrderByDocumentID,
+	"application_id":    admissionsbus.OrderByDocumentApplication,
+	"checklist_item_id": admissionsbus.OrderByDocumentChecklistItem,
+	"status":            admissionsbus.OrderByDocumentStatus,
+	"uploaded_at":       admissionsbus.OrderByDocumentUploadedAt,
+	"reviewed_at":       admissionsbus.OrderByDocumentReviewedAt,
 }

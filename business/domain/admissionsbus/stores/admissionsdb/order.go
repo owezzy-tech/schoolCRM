@@ -20,6 +20,13 @@ var staffProfileOrderByFields = map[string]string{
 	admissionsbus.OrderByStaffProfileDateCreated: "date_created",
 }
 
+var applicantProfileOrderByFields = map[string]string{
+	admissionsbus.OrderByApplicantProfileID:          "applicant_profile_id",
+	admissionsbus.OrderByApplicantProfileUser:        "user_id",
+	admissionsbus.OrderByApplicantProfileConstituent: "constituent_id",
+	admissionsbus.OrderByApplicantProfileDateCreated: "date_created",
+}
+
 var leadScoreRuleOrderByFields = map[string]string{
 	admissionsbus.OrderByLeadScoreRuleID:          "lead_score_rule_id",
 	admissionsbus.OrderByLeadScoreRuleName:        "name",
@@ -39,6 +46,14 @@ var constituentOrderByFields = map[string]string{
 	admissionsbus.OrderByConstituentLastName:       "last_name",
 	admissionsbus.OrderByConstituentPrimaryEmail:   "primary_email",
 	admissionsbus.OrderByConstituentLifecycleStage: "lifecycle_stage",
+}
+
+var inquiryOrderByFields = map[string]string{
+	admissionsbus.OrderByInquiryID:          "inquiry_id",
+	admissionsbus.OrderByInquiryEmail:       "primary_email",
+	admissionsbus.OrderByInquirySource:      "source",
+	admissionsbus.OrderByInquiryStatus:      "status",
+	admissionsbus.OrderByInquiryDateCreated: "date_created",
 }
 
 var academicTermOrderByFields = map[string]string{
@@ -65,11 +80,37 @@ var applicationOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationDateCreated: "date_created",
 }
 
+var applicationFormTemplateOrderByFields = map[string]string{
+	admissionsbus.OrderByApplicationFormTemplateID:          "form_template_id",
+	admissionsbus.OrderByApplicationFormTemplateName:        "name",
+	admissionsbus.OrderByApplicationFormTemplateType:        "application_type",
+	admissionsbus.OrderByApplicationFormTemplateVersion:     "version",
+	admissionsbus.OrderByApplicationFormTemplatePriority:    "priority",
+	admissionsbus.OrderByApplicationFormTemplateDateCreated: "date_created",
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationTransitionID:          "application_transition_id",
 	admissionsbus.OrderByApplicationTransitionApplication: "application_id",
 	admissionsbus.OrderByApplicationTransitionActor:       "actor_id",
 	admissionsbus.OrderByApplicationTransitionDateCreated: "date_created",
+}
+
+var checklistItemOrderByFields = map[string]string{
+	admissionsbus.OrderByChecklistItemID:           "checklist_item_id",
+	admissionsbus.OrderByChecklistItemApplication:  "application_id",
+	admissionsbus.OrderByChecklistItemStatus:       "status",
+	admissionsbus.OrderByChecklistItemDisplayOrder: "display_order",
+	admissionsbus.OrderByChecklistItemDateCreated:  "date_created",
+}
+
+var documentOrderByFields = map[string]string{
+	admissionsbus.OrderByDocumentID:            "document_id",
+	admissionsbus.OrderByDocumentApplication:   "application_id",
+	admissionsbus.OrderByDocumentChecklistItem: "checklist_item_id",
+	admissionsbus.OrderByDocumentStatus:        "status",
+	admissionsbus.OrderByDocumentUploadedAt:    "uploaded_at",
+	admissionsbus.OrderByDocumentReviewedAt:    "reviewed_at",
 }
 
 func programOrderByClause(orderBy order.By) (string, error) {
@@ -83,6 +124,15 @@ func programOrderByClause(orderBy order.By) (string, error) {
 
 func staffProfileOrderByClause(orderBy order.By) (string, error) {
 	by, exists := staffProfileOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func applicantProfileOrderByClause(orderBy order.By) (string, error) {
+	by, exists := applicantProfileOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}
@@ -117,6 +167,15 @@ func constituentOrderByClause(orderBy order.By) (string, error) {
 	return " ORDER BY " + by + " " + orderBy.Direction, nil
 }
 
+func inquiryOrderByClause(orderBy order.By) (string, error) {
+	by, exists := inquiryOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
 func academicTermOrderByClause(orderBy order.By) (string, error) {
 	by, exists := academicTermOrderByFields[orderBy.Field]
 	if !exists {
@@ -144,8 +203,35 @@ func applicationOrderByClause(orderBy order.By) (string, error) {
 	return " ORDER BY " + by + " " + orderBy.Direction, nil
 }
 
+func applicationFormTemplateOrderByClause(orderBy order.By) (string, error) {
+	by, exists := applicationFormTemplateOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
 func applicationTransitionOrderByClause(orderBy order.By) (string, error) {
 	by, exists := applicationTransitionOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func checklistItemOrderByClause(orderBy order.By) (string, error) {
+	by, exists := checklistItemOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func documentOrderByClause(orderBy order.By) (string, error) {
+	by, exists := documentOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

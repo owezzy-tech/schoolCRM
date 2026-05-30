@@ -164,6 +164,41 @@ CREATE INDEX idx_admissions_constituents_lifecycle ON admissions_constituents (l
 CREATE INDEX idx_admissions_constituents_duplicate_status ON admissions_constituents (duplicate_status);
 
 -- Version: 1.08
+-- Description: Create admissions inquiries table
+CREATE TABLE admissions_inquiries (
+    inquiry_id           UUID      NOT NULL,
+    constituent_id       UUID      NOT NULL,
+    first_name           TEXT      NOT NULL,
+    last_name            TEXT      NOT NULL,
+    date_of_birth        TIMESTAMP NOT NULL,
+    primary_email        TEXT      NOT NULL,
+    primary_phone        TEXT      NOT NULL,
+    program_of_interest  UUID      NULL,
+    term_of_interest     UUID      NULL,
+    source               TEXT      NOT NULL,
+    utm_source           TEXT      NULL,
+    utm_medium           TEXT      NULL,
+    utm_campaign         TEXT      NULL,
+    message              TEXT      NULL,
+    status               TEXT      NOT NULL,
+    date_created         TIMESTAMP NOT NULL,
+    date_updated         TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (inquiry_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id),
+    FOREIGN KEY (program_of_interest) REFERENCES admissions_programs(program_id),
+    FOREIGN KEY (term_of_interest) REFERENCES admissions_academic_terms(academic_term_id),
+    CONSTRAINT admissions_inquiries_status CHECK (status IN ('NEW', 'CONTACTED', 'CONVERTED', 'CLOSED')),
+    CONSTRAINT admissions_inquiries_source_not_empty CHECK (trim(source) <> '')
+);
+
+CREATE INDEX idx_admissions_inquiries_constituent ON admissions_inquiries (constituent_id);
+CREATE INDEX idx_admissions_inquiries_email ON admissions_inquiries (primary_email);
+CREATE INDEX idx_admissions_inquiries_source ON admissions_inquiries (source);
+CREATE INDEX idx_admissions_inquiries_status ON admissions_inquiries (status);
+CREATE INDEX idx_admissions_inquiries_created ON admissions_inquiries (date_created);
+
+-- Version: 1.09
 -- Description: Create admissions duplicate review queue
 CREATE TABLE admissions_duplicate_reviews (
     duplicate_review_id       UUID      NOT NULL,
@@ -198,7 +233,7 @@ CREATE INDEX idx_admissions_duplicate_reviews_candidate ON admissions_duplicate_
 CREATE INDEX idx_admissions_duplicate_reviews_status ON admissions_duplicate_reviews (status);
 CREATE INDEX idx_admissions_duplicate_reviews_match_type ON admissions_duplicate_reviews (match_type);
 
--- Version: 1.09
+-- Version: 1.10
 -- Description: Create admissions applications table
 CREATE TABLE admissions_applications (
     application_id        UUID      NOT NULL,
@@ -228,7 +263,7 @@ CREATE INDEX idx_admissions_applications_program ON admissions_applications (pro
 CREATE INDEX idx_admissions_applications_academic_term ON admissions_applications (academic_term_id);
 CREATE INDEX idx_admissions_applications_status ON admissions_applications (status);
 
--- Version: 1.10
+-- Version: 1.11
 -- Description: Create admissions application transition history table
 CREATE TABLE admissions_application_transitions (
     application_transition_id UUID      NOT NULL,
@@ -251,7 +286,7 @@ CREATE INDEX idx_admissions_application_transitions_application ON admissions_ap
 CREATE INDEX idx_admissions_application_transitions_actor ON admissions_application_transitions (actor_id);
 CREATE INDEX idx_admissions_application_transitions_created ON admissions_application_transitions (date_created);
 
--- Version: 1.11
+-- Version: 1.12
 -- Description: Create admissions staff profiles
 CREATE TABLE admissions_staff_profiles (
     staff_profile_id  UUID      NOT NULL,
@@ -280,7 +315,126 @@ CREATE INDEX idx_admissions_staff_profiles_user ON admissions_staff_profiles (us
 CREATE INDEX idx_admissions_staff_profiles_roles ON admissions_staff_profiles USING GIN (admissions_roles);
 CREATE INDEX idx_admissions_staff_profiles_active ON admissions_staff_profiles (is_active);
 
--- Version: 1.12
+-- Version: 1.13
+-- Description: Create admissions applicant profiles
+CREATE TABLE admissions_applicant_profiles (
+    applicant_profile_id  UUID      NOT NULL,
+    user_id               UUID      NOT NULL,
+    constituent_id        UUID      NOT NULL,
+    is_active             BOOLEAN   NOT NULL,
+    date_created          TIMESTAMP NOT NULL,
+    date_updated          TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (applicant_profile_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_applicant_profiles_unique_user UNIQUE (user_id),
+    CONSTRAINT admissions_applicant_profiles_unique_constituent UNIQUE (constituent_id)
+);
+
+CREATE INDEX idx_admissions_applicant_profiles_user ON admissions_applicant_profiles (user_id);
+CREATE INDEX idx_admissions_applicant_profiles_constituent ON admissions_applicant_profiles (constituent_id);
+CREATE INDEX idx_admissions_applicant_profiles_active ON admissions_applicant_profiles (is_active);
+
+-- Version: 1.14
+-- Description: Create admissions application form templates
+CREATE TABLE admissions_application_form_templates (
+    form_template_id  UUID      NOT NULL,
+    program_id        UUID      NOT NULL,
+    academic_term_id  UUID      NOT NULL,
+    application_type  TEXT      NOT NULL,
+    name              TEXT      NOT NULL,
+    description       TEXT      NULL,
+    version           INT       NOT NULL,
+    required_fields   JSONB     NOT NULL,
+    checklist_items   JSONB     NOT NULL,
+    is_active         BOOLEAN   NOT NULL,
+    priority          INT       NOT NULL,
+    date_created      TIMESTAMP NOT NULL,
+    date_updated      TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (form_template_id),
+    FOREIGN KEY (program_id) REFERENCES admissions_programs(program_id),
+    FOREIGN KEY (academic_term_id) REFERENCES admissions_academic_terms(academic_term_id),
+    CONSTRAINT admissions_form_templates_type CHECK (application_type IN ('FRESHMAN', 'TRANSFER', 'GRADUATE')),
+    CONSTRAINT admissions_form_templates_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT admissions_form_templates_version_positive CHECK (version >= 1),
+    CONSTRAINT admissions_form_templates_required_fields_array CHECK (jsonb_typeof(required_fields) = 'array'),
+    CONSTRAINT admissions_form_templates_checklist_items_array CHECK (jsonb_typeof(checklist_items) = 'array'),
+    CONSTRAINT admissions_form_templates_priority_non_negative CHECK (priority >= 0)
+);
+
+CREATE INDEX idx_admissions_form_templates_program ON admissions_application_form_templates (program_id);
+CREATE INDEX idx_admissions_form_templates_term ON admissions_application_form_templates (academic_term_id);
+CREATE INDEX idx_admissions_form_templates_type ON admissions_application_form_templates (application_type);
+CREATE INDEX idx_admissions_form_templates_active ON admissions_application_form_templates (is_active);
+CREATE INDEX idx_admissions_form_templates_priority ON admissions_application_form_templates (priority);
+
+-- Version: 1.15
+-- Description: Create admissions checklist and document intake tables
+CREATE TABLE admissions_checklist_items (
+    checklist_item_id  UUID      NOT NULL,
+    application_id     UUID      NOT NULL,
+    item_key           TEXT      NOT NULL,
+    document_name      TEXT      NOT NULL,
+    description        TEXT      NULL,
+    is_required        BOOLEAN   NOT NULL,
+    status             TEXT      NOT NULL,
+    display_order      INT       NOT NULL,
+    date_created       TIMESTAMP NOT NULL,
+    date_updated       TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (checklist_item_id),
+    FOREIGN KEY (application_id) REFERENCES admissions_applications(application_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_checklist_items_item_key_not_empty CHECK (trim(item_key) <> ''),
+    CONSTRAINT admissions_checklist_items_document_name_not_empty CHECK (trim(document_name) <> ''),
+    CONSTRAINT admissions_checklist_items_order_non_negative CHECK (display_order >= 0),
+    CONSTRAINT admissions_checklist_items_status CHECK (status IN ('UPLOADED', 'PENDING_REVIEW', 'ACCEPTED', 'REJECTED', 'WAIVED', 'EXPIRED', 'SYNCED_TO_SIS')),
+    CONSTRAINT admissions_checklist_items_unique_key UNIQUE (application_id, item_key)
+);
+
+CREATE INDEX idx_admissions_checklist_items_application ON admissions_checklist_items (application_id);
+CREATE INDEX idx_admissions_checklist_items_status ON admissions_checklist_items (status);
+CREATE INDEX idx_admissions_checklist_items_required ON admissions_checklist_items (is_required);
+CREATE INDEX idx_admissions_checklist_items_order ON admissions_checklist_items (display_order);
+
+CREATE TABLE admissions_documents (
+    document_id        UUID      NOT NULL,
+    application_id     UUID      NOT NULL,
+    checklist_item_id  UUID      NOT NULL,
+    file_name          TEXT      NOT NULL,
+    content_type       TEXT      NOT NULL,
+    size_bytes         BIGINT    NOT NULL,
+    storage_key        TEXT      NOT NULL,
+    status             TEXT      NOT NULL,
+    reviewer_id        UUID      NULL,
+    reviewer_notes     TEXT      NULL,
+    uploaded_by_id     UUID      NOT NULL,
+    uploaded_at        TIMESTAMP NOT NULL,
+    reviewed_at        TIMESTAMP NULL,
+    date_created       TIMESTAMP NOT NULL,
+    date_updated       TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (document_id),
+    FOREIGN KEY (application_id) REFERENCES admissions_applications(application_id) ON DELETE CASCADE,
+    FOREIGN KEY (checklist_item_id) REFERENCES admissions_checklist_items(checklist_item_id) ON DELETE CASCADE,
+    FOREIGN KEY (uploaded_by_id) REFERENCES users(user_id),
+    FOREIGN KEY (reviewer_id) REFERENCES users(user_id),
+    CONSTRAINT admissions_documents_file_name_not_empty CHECK (trim(file_name) <> ''),
+    CONSTRAINT admissions_documents_content_type_not_empty CHECK (trim(content_type) <> ''),
+    CONSTRAINT admissions_documents_size_positive CHECK (size_bytes > 0),
+    CONSTRAINT admissions_documents_storage_key_not_empty CHECK (trim(storage_key) <> ''),
+    CONSTRAINT admissions_documents_status CHECK (status IN ('UPLOADED', 'PENDING_REVIEW', 'ACCEPTED', 'REJECTED', 'WAIVED', 'EXPIRED', 'SYNCED_TO_SIS'))
+);
+
+CREATE INDEX idx_admissions_documents_application ON admissions_documents (application_id);
+CREATE INDEX idx_admissions_documents_checklist_item ON admissions_documents (checklist_item_id);
+CREATE INDEX idx_admissions_documents_status ON admissions_documents (status);
+CREATE INDEX idx_admissions_documents_uploaded_by ON admissions_documents (uploaded_by_id);
+CREATE INDEX idx_admissions_documents_reviewer ON admissions_documents (reviewer_id);
+CREATE INDEX idx_admissions_documents_uploaded_at ON admissions_documents (uploaded_at);
+
+-- Version: 1.16
 -- Description: Create admissions lead scoring rules and scores
 CREATE TABLE admissions_lead_score_rules (
     lead_score_rule_id  UUID      NOT NULL,
