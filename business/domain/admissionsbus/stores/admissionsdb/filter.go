@@ -181,6 +181,45 @@ func (s *Store) applyLeadScoreFilter(filter admissionsbus.LeadScoreQueryFilter, 
 	}
 }
 
+func (s *Store) applyApplicationFormTemplateFilter(filter admissionsbus.ApplicationFormTemplateQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["form_template_id"] = filter.ID
+		wc = append(wc, "form_template_id = :form_template_id")
+	}
+
+	if filter.ProgramID != nil {
+		data["program_id"] = filter.ProgramID
+		wc = append(wc, "program_id = :program_id")
+	}
+
+	if filter.AcademicTermID != nil {
+		data["academic_term_id"] = filter.AcademicTermID
+		wc = append(wc, "academic_term_id = :academic_term_id")
+	}
+
+	if filter.ApplicationType != nil {
+		data["application_type"] = filter.ApplicationType.String()
+		wc = append(wc, "application_type = :application_type")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if filter.Version != nil {
+		data["version"] = filter.Version
+		wc = append(wc, "version = :version")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
 func (s *Store) applyProgramFilter(filter admissionsbus.ProgramQueryFilter, data map[string]any, buf *bytes.Buffer) {
 	var wc []string
 

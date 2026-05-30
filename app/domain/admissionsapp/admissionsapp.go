@@ -838,6 +838,99 @@ func (a *app) queryApplicationByID(ctx context.Context, r *http.Request) web.Enc
 	return toAppApplication(application)
 }
 
+func (a *app) createApplicationFormTemplate(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicationFormTemplate
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nt, err := toBusNewApplicationFormTemplate(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	template, err := a.admissionsBus.CreateApplicationFormTemplate(ctx, nt)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create application form template: %s", err)
+	}
+
+	return toAppApplicationFormTemplate(template)
+}
+
+func (a *app) updateApplicationFormTemplate(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicationFormTemplate
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	templateID, err := uuid.Parse(web.Param(r, "form_template_id"))
+	if err != nil {
+		return errs.NewFieldErrors("form_template_id", err)
+	}
+
+	template, err := a.admissionsBus.QueryApplicationFormTemplateByID(ctx, templateID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application form template: %s", err)
+	}
+
+	nt, err := toBusNewApplicationFormTemplate(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateApplicationFormTemplate(ctx, template, nt)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update application form template: %s", err)
+	}
+
+	return toAppApplicationFormTemplate(updated)
+}
+
+func (a *app) queryApplicationFormTemplates(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicationFormTemplateQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicationFormTemplateFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(applicationFormTemplateOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicationFormTemplateOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	templates, err := a.admissionsBus.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application form templates: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplicationFormTemplates(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count application form templates: %s", err)
+	}
+
+	return query.NewResult(toAppApplicationFormTemplates(templates), total, page)
+}
+
+func (a *app) queryApplicationFormTemplateByID(ctx context.Context, r *http.Request) web.Encoder {
+	templateID, err := uuid.Parse(web.Param(r, "form_template_id"))
+	if err != nil {
+		return errs.NewFieldErrors("form_template_id", err)
+	}
+
+	template, err := a.admissionsBus.QueryApplicationFormTemplateByID(ctx, templateID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query application form template: %s", err)
+	}
+
+	return toAppApplicationFormTemplate(template)
+}
+
 func (a *app) transitionApplicationStatus(ctx context.Context, r *http.Request) web.Encoder {
 	var app NewApplicationTransition
 	if err := web.Decode(r, &app); err != nil {

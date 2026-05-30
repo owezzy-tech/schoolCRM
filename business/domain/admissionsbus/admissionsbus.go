@@ -56,6 +56,12 @@ var (
 	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
 	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
 	ErrApplicationActorRequired     = errors.New("application transition actor required")
+	ErrFormTemplateNotFound         = errors.New("application form template not found")
+	ErrFormTemplateNameRequired     = errors.New("application form template name required")
+	ErrFormTemplateFieldsRequired   = errors.New("application form template required fields required")
+	ErrFormTemplateFieldInvalid     = errors.New("application form template field invalid")
+	ErrFormTemplateChecklistInvalid = errors.New("application form template checklist item invalid")
+	ErrFormTemplatePriorityInvalid  = errors.New("application form template priority must be greater than or equal to zero")
 	ErrStaffProfileNotFound         = errors.New("staff profile not found")
 	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
 	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
@@ -133,6 +139,11 @@ type Storer interface {
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 	QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error)
 	UpdateApplication(ctx context.Context, app Application) error
+	CreateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate) error
+	UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate) error
+	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
+	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
+	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
 	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
@@ -197,6 +208,11 @@ type ExtBusiness interface {
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 	TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error)
+	CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
+	UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
+	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
+	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
+	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
 }
@@ -1201,6 +1217,118 @@ func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.
 	return app, nil
 }
 
+// CreateApplicationFormTemplate adds a configurable application form template.
+func (b *Business) CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error) {
+	if err := validateNewApplicationFormTemplate(nt); err != nil {
+		return ApplicationFormTemplate{}, err
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, nt.ProgramID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return ApplicationFormTemplate{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, nt.AcademicTermID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return ApplicationFormTemplate{}, ErrInactiveAcademicTerm
+	}
+
+	now := time.Now()
+	template := ApplicationFormTemplate{
+		ID:              uuid.New(),
+		ProgramID:       nt.ProgramID,
+		AcademicTermID:  nt.AcademicTermID,
+		ApplicationType: nt.ApplicationType,
+		Name:            strings.TrimSpace(nt.Name),
+		Description:     trimStringPtr(nt.Description),
+		Version:         1,
+		RequiredFields:  normalizeApplicationFormFields(nt.RequiredFields),
+		ChecklistItems:  normalizeChecklistTemplateItems(nt.ChecklistItems),
+		Active:          nt.Active,
+		Priority:        nt.Priority,
+		DateCreated:     now,
+		DateUpdated:     now,
+	}
+
+	if err := b.storer.CreateApplicationFormTemplate(ctx, template); err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("create application form template: %w", err)
+	}
+
+	return template, nil
+}
+
+// UpdateApplicationFormTemplate creates a new template version and updates the mutable template configuration.
+func (b *Business) UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error) {
+	if err := validateNewApplicationFormTemplate(nt); err != nil {
+		return ApplicationFormTemplate{}, err
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, nt.ProgramID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return ApplicationFormTemplate{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, nt.AcademicTermID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return ApplicationFormTemplate{}, ErrInactiveAcademicTerm
+	}
+
+	template.ProgramID = nt.ProgramID
+	template.AcademicTermID = nt.AcademicTermID
+	template.ApplicationType = nt.ApplicationType
+	template.Name = strings.TrimSpace(nt.Name)
+	template.Description = trimStringPtr(nt.Description)
+	template.Version++
+	template.RequiredFields = normalizeApplicationFormFields(nt.RequiredFields)
+	template.ChecklistItems = normalizeChecklistTemplateItems(nt.ChecklistItems)
+	template.Active = nt.Active
+	template.Priority = nt.Priority
+	template.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateApplicationFormTemplate(ctx, template); err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("update application form template: %w", err)
+	}
+
+	return template, nil
+}
+
+// QueryApplicationFormTemplates retrieves configurable application form templates.
+func (b *Business) QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error) {
+	templates, err := b.storer.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query application form templates: %w", err)
+	}
+
+	return templates, nil
+}
+
+// CountApplicationFormTemplates returns the total number of application form templates.
+func (b *Business) CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error) {
+	return b.storer.CountApplicationFormTemplates(ctx, filter)
+}
+
+// QueryApplicationFormTemplateByID finds an application form template by ID.
+func (b *Business) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error) {
+	template, err := b.storer.QueryApplicationFormTemplateByID(ctx, templateID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query application form template: templateID[%s]: %w", templateID, err)
+	}
+
+	return template, nil
+}
+
 // TransitionApplicationStatus changes an Application status and records immutable transition history.
 func (b *Business) TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error) {
 	if nt.ActorID == uuid.Nil {
@@ -1336,6 +1464,92 @@ func validateInquiryStatus(status InquiryStatus) error {
 	default:
 		return ErrInvalidInquiryStatus
 	}
+}
+
+func validateNewApplicationFormTemplate(nt NewApplicationFormTemplate) error {
+	if nt.ProgramID == uuid.Nil {
+		return ErrProgramIDRequired
+	}
+
+	if nt.AcademicTermID == uuid.Nil {
+		return ErrAcademicTermIDRequired
+	}
+
+	if err := validateApplicationType(nt.ApplicationType); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nt.Name) == "" {
+		return ErrFormTemplateNameRequired
+	}
+
+	if len(nt.RequiredFields) == 0 {
+		return ErrFormTemplateFieldsRequired
+	}
+
+	for _, field := range nt.RequiredFields {
+		if err := validateApplicationFormField(field); err != nil {
+			return err
+		}
+	}
+
+	for _, item := range nt.ChecklistItems {
+		if err := validateChecklistTemplateItem(item); err != nil {
+			return err
+		}
+	}
+
+	if nt.Priority < 0 {
+		return ErrFormTemplatePriorityInvalid
+	}
+
+	return nil
+}
+
+func validateApplicationFormField(field ApplicationFormField) error {
+	if strings.TrimSpace(field.FieldName) == "" || strings.TrimSpace(field.FieldType) == "" || field.DisplayOrder < 0 {
+		return ErrFormTemplateFieldInvalid
+	}
+
+	return nil
+}
+
+func validateChecklistTemplateItem(item ApplicationChecklistTemplateItem) error {
+	if strings.TrimSpace(item.ItemKey) == "" || strings.TrimSpace(item.DocumentName) == "" || item.DisplayOrder < 0 {
+		return ErrFormTemplateChecklistInvalid
+	}
+
+	return nil
+}
+
+func normalizeApplicationFormFields(fields []ApplicationFormField) []ApplicationFormField {
+	normalized := make([]ApplicationFormField, len(fields))
+	for i, field := range fields {
+		normalized[i] = ApplicationFormField{
+			FieldName:    strings.TrimSpace(field.FieldName),
+			FieldType:    strings.TrimSpace(field.FieldType),
+			Required:     field.Required,
+			DisplayOrder: field.DisplayOrder,
+			Validation:   trimStringPtr(field.Validation),
+		}
+	}
+
+	return normalized
+}
+
+func normalizeChecklistTemplateItems(items []ApplicationChecklistTemplateItem) []ApplicationChecklistTemplateItem {
+	normalized := make([]ApplicationChecklistTemplateItem, len(items))
+	for i, item := range items {
+		normalized[i] = ApplicationChecklistTemplateItem{
+			ItemKey:      strings.TrimSpace(item.ItemKey),
+			DocumentName: strings.TrimSpace(item.DocumentName),
+			Description:  trimStringPtr(item.Description),
+			Required:     item.Required,
+			DisplayOrder: item.DisplayOrder,
+		}
+	}
+
+	return normalized
 }
 
 func validateAdmissionsRole(role AdmissionsRole) error {

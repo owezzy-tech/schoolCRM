@@ -337,6 +337,40 @@ CREATE INDEX idx_admissions_applicant_profiles_constituent ON admissions_applica
 CREATE INDEX idx_admissions_applicant_profiles_active ON admissions_applicant_profiles (is_active);
 
 -- Version: 1.14
+-- Description: Create admissions application form templates
+CREATE TABLE admissions_application_form_templates (
+    form_template_id  UUID      NOT NULL,
+    program_id        UUID      NOT NULL,
+    academic_term_id  UUID      NOT NULL,
+    application_type  TEXT      NOT NULL,
+    name              TEXT      NOT NULL,
+    description       TEXT      NULL,
+    version           INT       NOT NULL,
+    required_fields   JSONB     NOT NULL,
+    checklist_items   JSONB     NOT NULL,
+    is_active         BOOLEAN   NOT NULL,
+    priority          INT       NOT NULL,
+    date_created      TIMESTAMP NOT NULL,
+    date_updated      TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (form_template_id),
+    FOREIGN KEY (program_id) REFERENCES admissions_programs(program_id),
+    FOREIGN KEY (academic_term_id) REFERENCES admissions_academic_terms(academic_term_id),
+    CONSTRAINT admissions_form_templates_type CHECK (application_type IN ('FRESHMAN', 'TRANSFER', 'GRADUATE')),
+    CONSTRAINT admissions_form_templates_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT admissions_form_templates_version_positive CHECK (version >= 1),
+    CONSTRAINT admissions_form_templates_required_fields_array CHECK (jsonb_typeof(required_fields) = 'array'),
+    CONSTRAINT admissions_form_templates_checklist_items_array CHECK (jsonb_typeof(checklist_items) = 'array'),
+    CONSTRAINT admissions_form_templates_priority_non_negative CHECK (priority >= 0)
+);
+
+CREATE INDEX idx_admissions_form_templates_program ON admissions_application_form_templates (program_id);
+CREATE INDEX idx_admissions_form_templates_term ON admissions_application_form_templates (academic_term_id);
+CREATE INDEX idx_admissions_form_templates_type ON admissions_application_form_templates (application_type);
+CREATE INDEX idx_admissions_form_templates_active ON admissions_application_form_templates (is_active);
+CREATE INDEX idx_admissions_form_templates_priority ON admissions_application_form_templates (priority);
+
+-- Version: 1.15
 -- Description: Create admissions lead scoring rules and scores
 CREATE TABLE admissions_lead_score_rules (
     lead_score_rule_id  UUID      NOT NULL,

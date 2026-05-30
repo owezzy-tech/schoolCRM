@@ -12,6 +12,11 @@ import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
     APPLICATION_STATUSES,
     APPLICATION_TYPES,
+    ApplicationChecklistTemplateItem,
+    ApplicationFormField,
+    ApplicationFormTemplate,
+    ApplicationFormTemplateRequest,
+    ApplicationType,
     LEAD_SCORE_CRITERION_FIELDS,
     LEAD_SCORE_CRITERION_OPERATORS,
     LIFECYCLE_STAGES,
@@ -35,6 +40,19 @@ interface LeadScoreRuleForm {
     active: boolean;
 }
 
+interface ApplicationFormTemplateForm {
+    id: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    name: string;
+    description: string;
+    requiredFieldsText: string;
+    checklistItemsText: string;
+    priority: number;
+    active: boolean;
+}
+
 const emptyForm: LeadScoreRuleForm = {
     id: '',
     name: '',
@@ -43,6 +61,38 @@ const emptyForm: LeadScoreRuleForm = {
     operator: 'EQ',
     valuesText: 'INQUIRY',
     points: 10,
+    priority: 100,
+    active: true,
+};
+
+const defaultRequiredFields: ApplicationFormField[] = [
+    {
+        fieldName: 'personal_statement',
+        fieldType: 'textarea',
+        required: true,
+        displayOrder: 1,
+    },
+];
+
+const defaultChecklistItems: ApplicationChecklistTemplateItem[] = [
+    {
+        itemKey: 'transcript',
+        documentName: 'Transcript',
+        description: 'Official transcript for this application type.',
+        required: true,
+        displayOrder: 1,
+    },
+];
+
+const emptyTemplateForm: ApplicationFormTemplateForm = {
+    id: '',
+    programID: '',
+    academicTermID: '',
+    applicationType: 'FRESHMAN',
+    name: '',
+    description: '',
+    requiredFieldsText: JSON.stringify(defaultRequiredFields, null, 2),
+    checklistItemsText: JSON.stringify(defaultChecklistItems, null, 2),
     priority: 100,
     active: true,
 };
@@ -72,13 +122,17 @@ export class AdmissionsSettingsComponent {
     readonly applicationTypes = APPLICATION_TYPES;
     readonly applicationStatuses = APPLICATION_STATUSES;
     readonly rules$ = this.admissionsService.rules$;
+    readonly templates$ = this.admissionsService.templates$;
 
     errorMessage = '';
     saving = false;
     form: LeadScoreRuleForm = { ...emptyForm };
+    templateSaving = false;
+    templateForm: ApplicationFormTemplateForm = { ...emptyTemplateForm };
 
     constructor() {
         this.loadRules();
+        this.loadTemplates();
     }
 
     loadRules(): void {
@@ -94,6 +148,26 @@ export class AdmissionsSettingsComponent {
                     this.errorMessage = jsonApiErrorMessage(
                         error,
                         'Unable to load lead scoring rules.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe();
+    }
+
+    loadTemplates(): void {
+        this.errorMessage = '';
+        this.admissionsService
+            .queryApplicationFormTemplates({
+                page: 1,
+                rows: 50,
+                orderBy: 'priority,ASC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load application form templates.'
                     );
                     return of(undefined);
                 })
@@ -118,6 +192,33 @@ export class AdmissionsSettingsComponent {
 
     resetForm(): void {
         this.form = { ...emptyForm };
+    }
+
+    editTemplate(template: ApplicationFormTemplate): void {
+        this.templateForm = {
+            id: template.id,
+            programID: template.programID,
+            academicTermID: template.academicTermID,
+            applicationType: template.applicationType,
+            name: template.name,
+            description: template.description ?? '',
+            requiredFieldsText: JSON.stringify(
+                template.requiredFields,
+                null,
+                2
+            ),
+            checklistItemsText: JSON.stringify(
+                template.checklistItems,
+                null,
+                2
+            ),
+            priority: template.priority,
+            active: template.active,
+        };
+    }
+
+    resetTemplateForm(): void {
+        this.templateForm = { ...emptyTemplateForm };
     }
 
     saveRule(): void {
@@ -146,6 +247,44 @@ export class AdmissionsSettingsComponent {
             });
     }
 
+    saveTemplate(): void {
+        this.errorMessage = '';
+        this.templateSaving = true;
+
+        let request: ApplicationFormTemplateRequest;
+        try {
+            request = this.toTemplateRequest(this.templateForm);
+        } catch (error) {
+            this.errorMessage =
+                'Required fields and checklist items must be valid JSON arrays.';
+            this.templateSaving = false;
+            return;
+        }
+
+        const save$ = this.templateForm.id
+            ? this.admissionsService.updateApplicationFormTemplate(
+                  this.templateForm.id,
+                  request
+              )
+            : this.admissionsService.createApplicationFormTemplate(request);
+
+        save$
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to save application form template.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe(() => {
+                this.templateSaving = false;
+                this.resetTemplateForm();
+                this.loadTemplates();
+            });
+    }
+
     criterionSummary(rule: LeadScoreRule): string {
         return rule.criteria
             .map(
@@ -169,6 +308,10 @@ export class AdmissionsSettingsComponent {
         }
     }
 
+    templateSummary(template: ApplicationFormTemplate): string {
+        return `${template.requiredFields.length} fields · ${template.checklistItems.length} checklist items · v${template.version}`;
+    }
+
     private toRequest(form: LeadScoreRuleForm): LeadScoreRuleRequest {
         return {
             name: form.name,
@@ -184,6 +327,26 @@ export class AdmissionsSettingsComponent {
                 },
             ],
             points: Number(form.points),
+            priority: Number(form.priority),
+            active: form.active,
+        };
+    }
+
+    private toTemplateRequest(
+        form: ApplicationFormTemplateForm
+    ): ApplicationFormTemplateRequest {
+        return {
+            programID: form.programID.trim(),
+            academicTermID: form.academicTermID.trim(),
+            applicationType: form.applicationType,
+            name: form.name.trim(),
+            description: form.description.trim() || null,
+            requiredFields: JSON.parse(
+                form.requiredFieldsText
+            ) as ApplicationFormField[],
+            checklistItems: JSON.parse(
+                form.checklistItemsText
+            ) as ApplicationChecklistTemplateItem[],
             priority: Number(form.priority),
             active: form.active,
         };

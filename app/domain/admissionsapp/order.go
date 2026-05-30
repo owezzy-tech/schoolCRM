@@ -75,6 +75,15 @@ var applicationOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
 }
 
+var applicationFormTemplateOrderByFields = map[string]string{
+	"form_template_id": admissionsbus.OrderByApplicationFormTemplateID,
+	"name":             admissionsbus.OrderByApplicationFormTemplateName,
+	"application_type": admissionsbus.OrderByApplicationFormTemplateType,
+	"version":          admissionsbus.OrderByApplicationFormTemplateVersion,
+	"priority":         admissionsbus.OrderByApplicationFormTemplatePriority,
+	"date_created":     admissionsbus.OrderByApplicationFormTemplateDateCreated,
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	"application_transition_id": admissionsbus.OrderByApplicationTransitionID,
 	"application_id":            admissionsbus.OrderByApplicationTransitionApplication,

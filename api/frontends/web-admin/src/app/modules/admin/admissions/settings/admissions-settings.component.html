@@ -1,89 +1,395 @@
 <div class="flex min-w-0 flex-auto flex-col">
     <div class="flex-auto p-6 sm:p-10">
         <div class="mb-8 flex flex-col gap-2">
-            <div class="text-sm font-semibold uppercase tracking-wide text-primary">
+            <div
+                class="text-sm font-semibold uppercase tracking-wide text-primary"
+            >
                 Admissions / Settings
             </div>
             <h1 class="text-4xl font-extrabold leading-none tracking-tight">
                 Settings & configuration
             </h1>
             <p class="text-secondary max-w-3xl text-base">
-                The wireframe places lead scoring rules in the Admissions Settings hub. This screen configures explainable point rules used by the Lead Pipeline.
+                The wireframe places lead scoring rules in the Admissions
+                Settings hub. This screen configures explainable point rules
+                used by the Lead Pipeline.
             </p>
         </div>
 
         <div class="mb-6 flex flex-wrap gap-2">
-            @for (tab of ['Custom Fields', 'Checklist Templates', 'Lead Assignment Rules', 'Lead Scoring Rules', 'SIS Sync', 'Import/Export']; track tab) {
-                <span class="rounded-full px-4 py-2 text-sm font-semibold" [class.bg-primary]="tab === 'Lead Scoring Rules'" [class.text-white]="tab === 'Lead Scoring Rules'" [class.bg-card]="tab !== 'Lead Scoring Rules'" [class.text-secondary]="tab !== 'Lead Scoring Rules'">
+            @for (
+                tab of [
+                    'Custom Fields',
+                    'Checklist Templates',
+                    'Lead Assignment Rules',
+                    'Lead Scoring Rules',
+                    'SIS Sync',
+                    'Import/Export',
+                ];
+                track tab
+            ) {
+                <span
+                    class="rounded-full px-4 py-2 text-sm font-semibold"
+                    [class.bg-primary]="
+                        tab === 'Checklist Templates' ||
+                        tab === 'Lead Scoring Rules'
+                    "
+                    [class.text-white]="
+                        tab === 'Checklist Templates' ||
+                        tab === 'Lead Scoring Rules'
+                    "
+                    [class.bg-card]="
+                        tab !== 'Checklist Templates' &&
+                        tab !== 'Lead Scoring Rules'
+                    "
+                    [class.text-secondary]="
+                        tab !== 'Checklist Templates' &&
+                        tab !== 'Lead Scoring Rules'
+                    "
+                >
                     {{ tab }}
                 </span>
             }
         </div>
 
         @if (errorMessage) {
-            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            <div
+                class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
+            >
                 {{ errorMessage }}
             </div>
         }
 
+        <div
+            class="mb-10 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]"
+        >
+            <section class="bg-card overflow-hidden rounded-2xl shadow">
+                <div class="border-b p-6">
+                    <h2 class="text-xl font-bold">
+                        Application form templates
+                    </h2>
+                    <p class="text-secondary mt-2 text-sm">
+                        Configure versioned required fields and checklist items
+                        per program, term, and application type. Core identity,
+                        program, term, and status fields stay first-class.
+                    </p>
+                </div>
+
+                @if (templates$ | async; as result) {
+                    @for (template of result.items; track template.id) {
+                        <div
+                            class="grid grid-cols-1 gap-4 border-b p-6 last:border-b-0 lg:grid-cols-[130px_minmax(0,1fr)_120px_100px] lg:items-center"
+                        >
+                            <div>
+                                <div
+                                    class="text-secondary text-xs uppercase tracking-wide"
+                                >
+                                    Type
+                                </div>
+                                <div class="mt-1 font-semibold">
+                                    {{ template.applicationType }}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="font-semibold">
+                                    {{ template.name }}
+                                </div>
+                                <div class="text-secondary mt-1 text-sm">
+                                    {{ templateSummary(template) }}
+                                </div>
+                                @if (template.description) {
+                                    <div class="text-secondary mt-2 text-xs">
+                                        {{ template.description }}
+                                    </div>
+                                }
+                                <div class="text-secondary mt-2 text-xs">
+                                    Program {{ template.programID }} · Term
+                                    {{ template.academicTermID }}
+                                </div>
+                            </div>
+                            <div>
+                                <span
+                                    class="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700"
+                                >
+                                    Priority {{ template.priority }}
+                                </span>
+                            </div>
+                            <div
+                                class="flex items-center justify-between gap-3 lg:justify-end"
+                            >
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class.bg-green-100]="template.active"
+                                    [class.text-green-700]="template.active"
+                                    [class.bg-slate-100]="!template.active"
+                                    [class.text-secondary]="!template.active"
+                                >
+                                    {{
+                                        template.active ? 'Active' : 'Inactive'
+                                    }}
+                                </span>
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    [attr.aria-label]="'Edit ' + template.name"
+                                    (click)="editTemplate(template)"
+                                >
+                                    <mat-icon
+                                        svgIcon="heroicons_outline:pencil-square"
+                                    ></mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    } @empty {
+                        <div class="text-secondary p-8 text-center">
+                            No application form templates have been configured.
+                        </div>
+                    }
+                }
+            </section>
+
+            <aside class="bg-card rounded-2xl p-6 shadow">
+                <h2 class="text-xl font-bold">
+                    {{ templateForm.id ? 'Edit template' : 'Create template' }}
+                </h2>
+                <p class="text-secondary mt-2 text-sm">
+                    Required field and checklist arrays are stored as
+                    configuration so changes apply without deployment.
+                </p>
+
+                <form class="mt-6 space-y-4" (ngSubmit)="saveTemplate()">
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Template name</mat-label>
+                        <input
+                            matInput
+                            required
+                            name="templateName"
+                            [(ngModel)]="templateForm.name"
+                        />
+                    </mat-form-field>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Application type</mat-label>
+                            <mat-select
+                                name="templateApplicationType"
+                                [(ngModel)]="templateForm.applicationType"
+                            >
+                                @for (type of applicationTypes; track type) {
+                                    <mat-option [value]="type">{{
+                                        type
+                                    }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Priority</mat-label>
+                            <input
+                                matInput
+                                required
+                                type="number"
+                                name="templatePriority"
+                                [(ngModel)]="templateForm.priority"
+                            />
+                        </mat-form-field>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Program ID</mat-label>
+                        <input
+                            matInput
+                            required
+                            name="templateProgramID"
+                            [(ngModel)]="templateForm.programID"
+                        />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Academic term ID</mat-label>
+                        <input
+                            matInput
+                            required
+                            name="templateAcademicTermID"
+                            [(ngModel)]="templateForm.academicTermID"
+                        />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Description</mat-label>
+                        <textarea
+                            matInput
+                            name="templateDescription"
+                            rows="2"
+                            [(ngModel)]="templateForm.description"
+                        ></textarea>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Required fields JSON</mat-label>
+                        <textarea
+                            matInput
+                            required
+                            name="requiredFieldsText"
+                            rows="7"
+                            [(ngModel)]="templateForm.requiredFieldsText"
+                        ></textarea>
+                        <mat-hint
+                            >Non-core fields only: fieldName, fieldType,
+                            required, displayOrder.</mat-hint
+                        >
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Checklist items JSON</mat-label>
+                        <textarea
+                            matInput
+                            name="checklistItemsText"
+                            rows="7"
+                            [(ngModel)]="templateForm.checklistItemsText"
+                        ></textarea>
+                        <mat-hint
+                            >Document requirements: itemKey, documentName,
+                            required, displayOrder.</mat-hint
+                        >
+                    </mat-form-field>
+
+                    <mat-slide-toggle
+                        name="templateActive"
+                        [(ngModel)]="templateForm.active"
+                        >Active</mat-slide-toggle
+                    >
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button
+                            mat-stroked-button
+                            type="button"
+                            (click)="resetTemplateForm()"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="submit"
+                            [disabled]="
+                                templateSaving ||
+                                !templateForm.name ||
+                                !templateForm.programID ||
+                                !templateForm.academicTermID
+                            "
+                        >
+                            {{ templateSaving ? 'Saving...' : 'Save template' }}
+                        </button>
+                    </div>
+                </form>
+            </aside>
+        </div>
+
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-            <section class="overflow-hidden rounded-2xl bg-card shadow">
+            <section class="bg-card overflow-hidden rounded-2xl shadow">
                 <div class="border-b p-6">
                     <h2 class="text-xl font-bold">Lead scoring rules</h2>
                     <p class="text-secondary mt-2 text-sm">
-                        Ordered by priority. Matching rules add points, and score bands derive from the total.
+                        Ordered by priority. Matching rules add points, and
+                        score bands derive from the total.
                     </p>
                 </div>
 
                 @if (rules$ | async; as result) {
                     @for (rule of result.items; track rule.id) {
-                        <div class="grid grid-cols-1 gap-4 border-b p-6 last:border-b-0 lg:grid-cols-[90px_minmax(0,1fr)_110px_100px] lg:items-center">
+                        <div
+                            class="grid grid-cols-1 gap-4 border-b p-6 last:border-b-0 lg:grid-cols-[90px_minmax(0,1fr)_110px_100px] lg:items-center"
+                        >
                             <div>
-                                <div class="text-secondary text-xs uppercase tracking-wide">Priority</div>
-                                <div class="mt-1 text-2xl font-extrabold">{{ rule.priority }}</div>
+                                <div
+                                    class="text-secondary text-xs uppercase tracking-wide"
+                                >
+                                    Priority
+                                </div>
+                                <div class="mt-1 text-2xl font-extrabold">
+                                    {{ rule.priority }}
+                                </div>
                             </div>
                             <div>
                                 <div class="font-semibold">{{ rule.name }}</div>
-                                <div class="text-secondary mt-1 text-sm">{{ criterionSummary(rule) }}</div>
+                                <div class="text-secondary mt-1 text-sm">
+                                    {{ criterionSummary(rule) }}
+                                </div>
                                 @if (rule.description) {
-                                    <div class="text-secondary mt-2 text-xs">{{ rule.description }}</div>
+                                    <div class="text-secondary mt-2 text-xs">
+                                        {{ rule.description }}
+                                    </div>
                                 }
                             </div>
                             <div>
-                                <span class="rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
+                                <span
+                                    class="rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700"
+                                >
                                     +{{ rule.points }} pts
                                 </span>
                             </div>
-                            <div class="flex items-center justify-between gap-3 lg:justify-end">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold" [class.bg-green-100]="rule.active" [class.text-green-700]="rule.active" [class.bg-slate-100]="!rule.active" [class.text-secondary]="!rule.active">
+                            <div
+                                class="flex items-center justify-between gap-3 lg:justify-end"
+                            >
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class.bg-green-100]="rule.active"
+                                    [class.text-green-700]="rule.active"
+                                    [class.bg-slate-100]="!rule.active"
+                                    [class.text-secondary]="!rule.active"
+                                >
                                     {{ rule.active ? 'Active' : 'Inactive' }}
                                 </span>
-                                <button mat-icon-button type="button" [attr.aria-label]="'Edit ' + rule.name" (click)="editRule(rule)">
-                                    <mat-icon svgIcon="heroicons_outline:pencil-square"></mat-icon>
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    [attr.aria-label]="'Edit ' + rule.name"
+                                    (click)="editRule(rule)"
+                                >
+                                    <mat-icon
+                                        svgIcon="heroicons_outline:pencil-square"
+                                    ></mat-icon>
                                 </button>
                             </div>
                         </div>
                     } @empty {
-                        <div class="p-8 text-center text-secondary">No lead scoring rules have been configured.</div>
+                        <div class="text-secondary p-8 text-center">
+                            No lead scoring rules have been configured.
+                        </div>
                     }
                 }
             </section>
 
-            <aside class="rounded-2xl bg-card p-6 shadow">
-                <h2 class="text-xl font-bold">{{ form.id ? 'Edit rule' : 'Create rule' }}</h2>
+            <aside class="bg-card rounded-2xl p-6 shadow">
+                <h2 class="text-xl font-bold">
+                    {{ form.id ? 'Edit rule' : 'Create rule' }}
+                </h2>
                 <p class="text-secondary mt-2 text-sm">
-                    Define one explainable criterion and the points it contributes. Use comma-separated values for multi-value matches.
+                    Define one explainable criterion and the points it
+                    contributes. Use comma-separated values for multi-value
+                    matches.
                 </p>
 
                 <form class="mt-6 space-y-4" (ngSubmit)="saveRule()">
                     <mat-form-field appearance="outline" class="w-full">
                         <mat-label>Rule name</mat-label>
-                        <input matInput required name="name" [(ngModel)]="form.name" />
+                        <input
+                            matInput
+                            required
+                            name="name"
+                            [(ngModel)]="form.name"
+                        />
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="w-full">
                         <mat-label>Description</mat-label>
-                        <textarea matInput name="description" rows="3" [(ngModel)]="form.description"></textarea>
+                        <textarea
+                            matInput
+                            name="description"
+                            rows="3"
+                            [(ngModel)]="form.description"
+                        ></textarea>
                     </mat-form-field>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -91,16 +397,23 @@
                             <mat-label>Field</mat-label>
                             <mat-select name="field" [(ngModel)]="form.field">
                                 @for (field of fields; track field) {
-                                    <mat-option [value]="field">{{ field }}</mat-option>
+                                    <mat-option [value]="field">{{
+                                        field
+                                    }}</mat-option>
                                 }
                             </mat-select>
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="w-full">
                             <mat-label>Operator</mat-label>
-                            <mat-select name="operator" [(ngModel)]="form.operator">
+                            <mat-select
+                                name="operator"
+                                [(ngModel)]="form.operator"
+                            >
                                 @for (operator of operators; track operator) {
-                                    <mat-option [value]="operator">{{ operator }}</mat-option>
+                                    <mat-option [value]="operator">{{
+                                        operator
+                                    }}</mat-option>
                                 }
                             </mat-select>
                         </mat-form-field>
@@ -108,27 +421,64 @@
 
                     <mat-form-field appearance="outline" class="w-full">
                         <mat-label>Values</mat-label>
-                        <input matInput required name="valuesText" [(ngModel)]="form.valuesText" />
-                        <mat-hint>Examples: {{ suggestedValues().join(', ') || 'UUID values' }}</mat-hint>
+                        <input
+                            matInput
+                            required
+                            name="valuesText"
+                            [(ngModel)]="form.valuesText"
+                        />
+                        <mat-hint
+                            >Examples:
+                            {{
+                                suggestedValues().join(', ') || 'UUID values'
+                            }}</mat-hint
+                        >
                     </mat-form-field>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <mat-form-field appearance="outline" class="w-full">
                             <mat-label>Points</mat-label>
-                            <input matInput required type="number" name="points" [(ngModel)]="form.points" />
+                            <input
+                                matInput
+                                required
+                                type="number"
+                                name="points"
+                                [(ngModel)]="form.points"
+                            />
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="w-full">
                             <mat-label>Priority</mat-label>
-                            <input matInput required type="number" name="priority" [(ngModel)]="form.priority" />
+                            <input
+                                matInput
+                                required
+                                type="number"
+                                name="priority"
+                                [(ngModel)]="form.priority"
+                            />
                         </mat-form-field>
                     </div>
 
-                    <mat-slide-toggle name="active" [(ngModel)]="form.active">Active</mat-slide-toggle>
+                    <mat-slide-toggle name="active" [(ngModel)]="form.active"
+                        >Active</mat-slide-toggle
+                    >
 
                     <div class="flex justify-end gap-3 pt-2">
-                        <button mat-stroked-button type="button" (click)="resetForm()">Reset</button>
-                        <button mat-flat-button color="primary" type="submit" [disabled]="saving || !form.name || !form.valuesText">
+                        <button
+                            mat-stroked-button
+                            type="button"
+                            (click)="resetForm()"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="submit"
+                            [disabled]="
+                                saving || !form.name || !form.valuesText
+                            "
+                        >
                             {{ saving ? 'Saving...' : 'Save rule' }}
                         </button>
                     </div>

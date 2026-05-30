@@ -431,6 +431,164 @@ func TestCreateInquiryRequiresSourceAndIdentityFields(t *testing.T) {
 	}
 }
 
+func TestCreateApplicationFormTemplateCreatesVersionedConfig(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	description := "Freshman application requirements"
+	validation := `{"maxLength":120}`
+	itemDescription := "Official high school transcript"
+
+	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeFreshman,
+		Name:            " Freshman v1 ",
+		Description:     &description,
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1, Validation: &validation},
+		},
+		ChecklistItems: []ApplicationChecklistTemplateItem{
+			{ItemKey: "transcript", DocumentName: "High school transcript", Description: &itemDescription, Required: true, DisplayOrder: 1},
+		},
+		Active:   true,
+		Priority: 10,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicationFormTemplate returned error: %v", err)
+	}
+
+	if template.Version != 1 {
+		t.Fatalf("Version = %d, want 1", template.Version)
+	}
+
+	if template.Name != "Freshman v1" {
+		t.Fatalf("Name = %q, want trimmed Freshman v1", template.Name)
+	}
+
+	if len(template.RequiredFields) != 1 || template.RequiredFields[0].FieldName != "personal_statement" {
+		t.Fatalf("RequiredFields = %#v, want personal_statement", template.RequiredFields)
+	}
+
+	if len(template.ChecklistItems) != 1 || template.ChecklistItems[0].ItemKey != "transcript" {
+		t.Fatalf("ChecklistItems = %#v, want transcript", template.ChecklistItems)
+	}
+}
+
+func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeTransfer,
+		Name:            "Transfer v1",
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
+		},
+		Active:   true,
+		Priority: 20,
+	})
+	if err != nil {
+		t.Fatalf("CreateApplicationFormTemplate returned error: %v", err)
+	}
+
+	updated, err := bus.UpdateApplicationFormTemplate(context.Background(), template, NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeTransfer,
+		Name:            "Transfer v2",
+		RequiredFields: []ApplicationFormField{
+			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
+			{FieldName: "college_gpa", FieldType: "number", Required: true, DisplayOrder: 2},
+		},
+		Active:   true,
+		Priority: 5,
+	})
+	if err != nil {
+		t.Fatalf("UpdateApplicationFormTemplate returned error: %v", err)
+	}
+
+	if updated.Version != 2 {
+		t.Fatalf("Version = %d, want 2", updated.Version)
+	}
+
+	if len(updated.RequiredFields) != 2 {
+		t.Fatalf("RequiredFields count = %d, want 2", len(updated.RequiredFields))
+	}
+}
+
+func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
+	t.Parallel()
+
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(uuid.New(), programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	tests := []struct {
+		name string
+		nt   NewApplicationFormTemplate
+		want error
+	}{
+		{
+			name: "name required",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				RequiredFields: []ApplicationFormField{
+					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
+				},
+			},
+			want: ErrFormTemplateNameRequired,
+		},
+		{
+			name: "fields required",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				Name:            "Freshman",
+			},
+			want: ErrFormTemplateFieldsRequired,
+		},
+		{
+			name: "checklist invalid",
+			nt: NewApplicationFormTemplate{
+				ProgramID:       programID,
+				AcademicTermID:  termID,
+				ApplicationType: ApplicationTypeFreshman,
+				Name:            "Freshman",
+				RequiredFields: []ApplicationFormField{
+					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
+				},
+				ChecklistItems: []ApplicationChecklistTemplateItem{{ItemKey: "", DocumentName: "Transcript", Required: true}},
+			},
+			want: ErrFormTemplateChecklistInvalid,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateApplicationFormTemplate(context.Background(), tt.nt)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestAdmissionsPermissionsForRolesKeepsActionsSeparateFromMenus(t *testing.T) {
 	t.Parallel()
 
@@ -1024,6 +1182,7 @@ type stubStore struct {
 	inquiries              []Inquiry
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
+	applicationTemplates   []ApplicationFormTemplate
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -1411,6 +1570,39 @@ func (s *stubStore) QueryActiveApplicationByTuple(_ context.Context, constituent
 		}
 	}
 	return Application{}, ErrApplicationNotFound
+}
+
+func (s *stubStore) CreateApplicationFormTemplate(_ context.Context, template ApplicationFormTemplate) error {
+	s.applicationTemplates = append(s.applicationTemplates, template)
+	return nil
+}
+
+func (s *stubStore) UpdateApplicationFormTemplate(_ context.Context, template ApplicationFormTemplate) error {
+	for i, existing := range s.applicationTemplates {
+		if existing.ID == template.ID {
+			s.applicationTemplates[i] = template
+			return nil
+		}
+	}
+	s.applicationTemplates = append(s.applicationTemplates, template)
+	return nil
+}
+
+func (s *stubStore) QueryApplicationFormTemplates(context.Context, ApplicationFormTemplateQueryFilter, order.By, page.Page) ([]ApplicationFormTemplate, error) {
+	return s.applicationTemplates, nil
+}
+
+func (s *stubStore) CountApplicationFormTemplates(context.Context, ApplicationFormTemplateQueryFilter) (int, error) {
+	return len(s.applicationTemplates), nil
+}
+
+func (s *stubStore) QueryApplicationFormTemplateByID(_ context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error) {
+	for _, template := range s.applicationTemplates {
+		if template.ID == templateID {
+			return template, nil
+		}
+	}
+	return ApplicationFormTemplate{}, ErrFormTemplateNotFound
 }
 
 func (s *stubStore) CreateApplicationTransition(_ context.Context, transition ApplicationTransition) error {

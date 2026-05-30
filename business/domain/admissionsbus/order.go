@@ -32,6 +32,9 @@ var DefaultDuplicateReviewOrderBy = order.NewBy(OrderByDuplicateReviewDateCreate
 // DefaultApplicationOrderBy represents the default way we sort applications.
 var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order.ASC)
 
+// DefaultApplicationFormTemplateOrderBy represents the default way we sort application form templates.
+var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTemplatePriority, order.ASC)
+
 // DefaultApplicationTransitionOrderBy represents the default way we sort application transitions.
 var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
 
@@ -116,6 +119,16 @@ const (
 	OrderByApplicationType        = "c"
 	OrderByApplicationSubmittedAt = "d"
 	OrderByApplicationDateCreated = "e"
+)
+
+// Set of fields that application form templates can be ordered by.
+const (
+	OrderByApplicationFormTemplateID          = "a"
+	OrderByApplicationFormTemplateName        = "b"
+	OrderByApplicationFormTemplateType        = "c"
+	OrderByApplicationFormTemplateVersion     = "d"
+	OrderByApplicationFormTemplatePriority    = "e"
+	OrderByApplicationFormTemplateDateCreated = "f"
 )
 
 // Set of fields that application transitions can be ordered by.

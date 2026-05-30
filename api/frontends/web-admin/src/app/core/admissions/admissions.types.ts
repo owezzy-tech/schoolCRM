@@ -57,6 +57,7 @@ export type LeadScoreCriterionField =
 export type LeadScoreCriterionOperator =
     (typeof LEAD_SCORE_CRITERION_OPERATORS)[number];
 export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
+export type ApplicationType = (typeof APPLICATION_TYPES)[number];
 
 export interface LeadScoreCriterion {
     field: LeadScoreCriterionField;
@@ -116,6 +117,58 @@ export interface LeadScoreRuleQuery {
     page?: number;
     rows?: number;
     orderBy?: string;
+    active?: boolean;
+}
+
+export interface ApplicationFormField {
+    fieldName: string;
+    fieldType: string;
+    required: boolean;
+    displayOrder: number;
+    validation?: string;
+}
+
+export interface ApplicationChecklistTemplateItem {
+    itemKey: string;
+    documentName: string;
+    description?: string;
+    required: boolean;
+    displayOrder: number;
+}
+
+export interface ApplicationFormTemplate {
+    id: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    name: string;
+    description?: string;
+    version: number;
+    requiredFields: ApplicationFormField[];
+    checklistItems: ApplicationChecklistTemplateItem[];
+    active: boolean;
+    priority: number;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ApplicationFormTemplateRequest {
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    name: string;
+    description?: string | null;
+    requiredFields: ApplicationFormField[];
+    checklistItems: ApplicationChecklistTemplateItem[];
+    active: boolean;
+    priority: number;
+}
+
+export interface ApplicationFormTemplateQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    application_type?: ApplicationType;
     active?: boolean;
 }
 

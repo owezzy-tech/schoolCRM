@@ -114,6 +114,18 @@ type applicationQueryParams struct {
 	ActiveOnly      string
 }
 
+type applicationFormTemplateQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	ProgramID       string
+	AcademicTermID  string
+	ApplicationType string
+	Active          string
+	Version         string
+}
+
 type applicationTransitionQueryParams struct {
 	Page          string
 	Rows          string
@@ -266,6 +278,22 @@ func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
 		ApplicationType: values.Get("application_type"),
 		Status:          values.Get("status"),
 		ActiveOnly:      values.Get("active_only"),
+	}
+}
+
+func parseApplicationFormTemplateQueryParams(r *http.Request) applicationFormTemplateQueryParams {
+	values := r.URL.Query()
+
+	return applicationFormTemplateQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("form_template_id"),
+		ProgramID:       values.Get("program_id"),
+		AcademicTermID:  values.Get("academic_term_id"),
+		ApplicationType: values.Get("application_type"),
+		Active:          values.Get("active"),
+		Version:         values.Get("version"),
 	}
 }
 
@@ -719,6 +747,67 @@ func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.Applicatio
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseApplicationFormTemplateFilter(qp applicationFormTemplateQueryParams) (admissionsbus.ApplicationFormTemplateQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ApplicationFormTemplateQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("form_template_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ProgramID != "" {
+		id, err := uuid.Parse(qp.ProgramID)
+		if err != nil {
+			fieldErrors.Add("program_id", err)
+		} else {
+			filter.ProgramID = &id
+		}
+	}
+
+	if qp.AcademicTermID != "" {
+		id, err := uuid.Parse(qp.AcademicTermID)
+		if err != nil {
+			fieldErrors.Add("academic_term_id", err)
+		} else {
+			filter.AcademicTermID = &id
+		}
+	}
+
+	if qp.ApplicationType != "" {
+		applicationType := admissionsbus.ApplicationType(qp.ApplicationType)
+		filter.ApplicationType = &applicationType
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if qp.Version != "" {
+		version, err := strconv.Atoi(qp.Version)
+		if err != nil {
+			fieldErrors.Add("version", err)
+		} else {
+			filter.Version = &version
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ApplicationFormTemplateQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

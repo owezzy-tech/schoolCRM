@@ -1392,6 +1392,147 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 	return toBusApplication(dbApplication), nil
 }
 
+// CreateApplicationFormTemplate inserts a new application form template.
+func (s *Store) CreateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate) error {
+	const q = `
+	INSERT INTO admissions_application_form_templates
+		(form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated)
+	VALUES
+		(:form_template_id, :program_id, :academic_term_id, :application_type, :name, :description, :version, :required_fields, :checklist_items, :is_active, :priority, :date_created, :date_updated)`
+
+	dbTemplate, err := toDBApplicationFormTemplate(template)
+	if err != nil {
+		return fmt.Errorf("to db application form template: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbTemplate); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateApplicationFormTemplate replaces mutable application form template data.
+func (s *Store) UpdateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate) error {
+	const q = `
+	UPDATE
+		admissions_application_form_templates
+	SET
+		program_id = :program_id,
+		academic_term_id = :academic_term_id,
+		application_type = :application_type,
+		name = :name,
+		description = :description,
+		version = :version,
+		required_fields = :required_fields,
+		checklist_items = :checklist_items,
+		is_active = :is_active,
+		priority = :priority,
+		date_updated = :date_updated
+	WHERE
+		form_template_id = :form_template_id`
+
+	dbTemplate, err := toDBApplicationFormTemplate(template)
+	if err != nil {
+		return fmt.Errorf("to db application form template: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbTemplate); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryApplicationFormTemplates retrieves application form templates.
+func (s *Store) QueryApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationFormTemplate, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	orderByClause, err := applicationFormTemplateOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbTemplates []applicationFormTemplateDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbTemplates); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusApplicationFormTemplates(dbTemplates)
+}
+
+// CountApplicationFormTemplates returns the total number of application form templates.
+func (s *Store) CountApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryApplicationFormTemplateByID finds an application form template by ID.
+func (s *Store) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (admissionsbus.ApplicationFormTemplate, error) {
+	filter := admissionsbus.ApplicationFormTemplateQueryFilter{ID: &templateID}
+	template, err := s.queryApplicationFormTemplate(ctx, filter)
+	if err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	return template, nil
+}
+
+func (s *Store) queryApplicationFormTemplate(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (admissionsbus.ApplicationFormTemplate, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		form_template_id, program_id, academic_term_id, application_type, name, description, version, required_fields, checklist_items, is_active, priority, date_created, date_updated
+	FROM
+		admissions_application_form_templates`
+
+	buf := bytes.NewBufferString(q)
+	s.applyApplicationFormTemplateFilter(filter, data, buf)
+
+	var dbTemplate applicationFormTemplateDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbTemplate); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ApplicationFormTemplate{}, fmt.Errorf("db: %w", admissionsbus.ErrFormTemplateNotFound)
+		}
+		return admissionsbus.ApplicationFormTemplate{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusApplicationFormTemplate(dbTemplate)
+}
+
 // CreateApplicationTransition inserts immutable Application transition history.
 func (s *Store) CreateApplicationTransition(ctx context.Context, transition admissionsbus.ApplicationTransition) error {
 	const q = `

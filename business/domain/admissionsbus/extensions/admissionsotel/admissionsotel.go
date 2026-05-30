@@ -464,6 +464,46 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
 }
 
+// CreateApplicationFormTemplate applies otel to Application form template creation.
+func (ext *Extension) CreateApplicationFormTemplate(ctx context.Context, nt admissionsbus.NewApplicationFormTemplate) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplicationformtemplate")
+	defer span.End()
+
+	return ext.bus.CreateApplicationFormTemplate(ctx, nt)
+}
+
+// UpdateApplicationFormTemplate applies otel to Application form template updates.
+func (ext *Extension) UpdateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate, nt admissionsbus.NewApplicationFormTemplate) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationformtemplate")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationFormTemplate(ctx, template, nt)
+}
+
+// QueryApplicationFormTemplates applies otel to Application form template queries.
+func (ext *Extension) QueryApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationformtemplates")
+	defer span.End()
+
+	return ext.bus.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+}
+
+// CountApplicationFormTemplates applies otel to Application form template counts.
+func (ext *Extension) CountApplicationFormTemplates(ctx context.Context, filter admissionsbus.ApplicationFormTemplateQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countapplicationformtemplates")
+	defer span.End()
+
+	return ext.bus.CountApplicationFormTemplates(ctx, filter)
+}
+
+// QueryApplicationFormTemplateByID applies otel to Application form template ID lookups.
+func (ext *Extension) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (admissionsbus.ApplicationFormTemplate, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplicationformtemplatebyid")
+	defer span.End()
+
+	return ext.bus.QueryApplicationFormTemplateByID(ctx, templateID)
+}
+
 // TransitionApplicationStatus applies otel to Application status transitions.
 func (ext *Extension) TransitionApplicationStatus(ctx context.Context, app admissionsbus.Application, nt admissionsbus.NewApplicationTransition) (admissionsbus.Application, admissionsbus.ApplicationTransition, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.transitionapplicationstatus")

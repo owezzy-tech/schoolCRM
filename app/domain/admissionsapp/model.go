@@ -852,6 +852,112 @@ type Application struct {
 	DateUpdated        string  `json:"dateUpdated"`
 }
 
+// ApplicationFormField represents a configurable, non-core application form field.
+type ApplicationFormField struct {
+	FieldName    string  `json:"fieldName"`
+	FieldType    string  `json:"fieldType"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+	Validation   *string `json:"validation,omitempty"`
+}
+
+// ApplicationChecklistTemplateItem represents a checklist/document requirement in a form template.
+type ApplicationChecklistTemplateItem struct {
+	ItemKey      string  `json:"itemKey"`
+	DocumentName string  `json:"documentName"`
+	Description  *string `json:"description,omitempty"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+}
+
+// ApplicationFormTemplate represents configurable application form requirements.
+type ApplicationFormTemplate struct {
+	ID              string                             `json:"id"`
+	ProgramID       string                             `json:"programID"`
+	AcademicTermID  string                             `json:"academicTermID"`
+	ApplicationType string                             `json:"applicationType"`
+	Name            string                             `json:"name"`
+	Description     *string                            `json:"description,omitempty"`
+	Version         int                                `json:"version"`
+	RequiredFields  []ApplicationFormField             `json:"requiredFields"`
+	ChecklistItems  []ApplicationChecklistTemplateItem `json:"checklistItems"`
+	Active          bool                               `json:"active"`
+	Priority        int                                `json:"priority"`
+	DateCreated     string                             `json:"dateCreated"`
+	DateUpdated     string                             `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ApplicationFormTemplate) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplicationFormField(field admissionsbus.ApplicationFormField) ApplicationFormField {
+	return ApplicationFormField{
+		FieldName:    field.FieldName,
+		FieldType:    field.FieldType,
+		Required:     field.Required,
+		DisplayOrder: field.DisplayOrder,
+		Validation:   field.Validation,
+	}
+}
+
+func toAppApplicationFormFields(fields []admissionsbus.ApplicationFormField) []ApplicationFormField {
+	app := make([]ApplicationFormField, len(fields))
+	for i, field := range fields {
+		app[i] = toAppApplicationFormField(field)
+	}
+
+	return app
+}
+
+func toAppChecklistTemplateItem(item admissionsbus.ApplicationChecklistTemplateItem) ApplicationChecklistTemplateItem {
+	return ApplicationChecklistTemplateItem{
+		ItemKey:      item.ItemKey,
+		DocumentName: item.DocumentName,
+		Description:  item.Description,
+		Required:     item.Required,
+		DisplayOrder: item.DisplayOrder,
+	}
+}
+
+func toAppChecklistTemplateItems(items []admissionsbus.ApplicationChecklistTemplateItem) []ApplicationChecklistTemplateItem {
+	app := make([]ApplicationChecklistTemplateItem, len(items))
+	for i, item := range items {
+		app[i] = toAppChecklistTemplateItem(item)
+	}
+
+	return app
+}
+
+func toAppApplicationFormTemplate(template admissionsbus.ApplicationFormTemplate) ApplicationFormTemplate {
+	return ApplicationFormTemplate{
+		ID:              template.ID.String(),
+		ProgramID:       template.ProgramID.String(),
+		AcademicTermID:  template.AcademicTermID.String(),
+		ApplicationType: template.ApplicationType.String(),
+		Name:            template.Name,
+		Description:     template.Description,
+		Version:         template.Version,
+		RequiredFields:  toAppApplicationFormFields(template.RequiredFields),
+		ChecklistItems:  toAppChecklistTemplateItems(template.ChecklistItems),
+		Active:          template.Active,
+		Priority:        template.Priority,
+		DateCreated:     template.DateCreated.Format(time.RFC3339),
+		DateUpdated:     template.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplicationFormTemplates(templates []admissionsbus.ApplicationFormTemplate) []ApplicationFormTemplate {
+	app := make([]ApplicationFormTemplate, len(templates))
+	for i, template := range templates {
+		app[i] = toAppApplicationFormTemplate(template)
+	}
+
+	return app
+}
+
 // ApplicationTransition represents immutable application status transition history.
 type ApplicationTransition struct {
 	ID            string          `json:"id"`
@@ -931,6 +1037,92 @@ type NewApplication struct {
 	AcademicTermID     string  `json:"academicTermID"`
 	ApplicationType    string  `json:"applicationType"`
 	AssignedReviewerID *string `json:"assignedReviewerID"`
+}
+
+// NewApplicationFormTemplate defines the data needed to create or update a form template.
+type NewApplicationFormTemplate struct {
+	ProgramID       string                             `json:"programID"`
+	AcademicTermID  string                             `json:"academicTermID"`
+	ApplicationType string                             `json:"applicationType"`
+	Name            string                             `json:"name"`
+	Description     *string                            `json:"description"`
+	RequiredFields  []ApplicationFormField             `json:"requiredFields"`
+	ChecklistItems  []ApplicationChecklistTemplateItem `json:"checklistItems"`
+	Active          bool                               `json:"active"`
+	Priority        int                                `json:"priority"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplicationFormTemplate) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusApplicationFormField(app ApplicationFormField) admissionsbus.ApplicationFormField {
+	return admissionsbus.ApplicationFormField{
+		FieldName:    app.FieldName,
+		FieldType:    app.FieldType,
+		Required:     app.Required,
+		DisplayOrder: app.DisplayOrder,
+		Validation:   app.Validation,
+	}
+}
+
+func toBusApplicationFormFields(app []ApplicationFormField) []admissionsbus.ApplicationFormField {
+	fields := make([]admissionsbus.ApplicationFormField, len(app))
+	for i, field := range app {
+		fields[i] = toBusApplicationFormField(field)
+	}
+
+	return fields
+}
+
+func toBusChecklistTemplateItem(app ApplicationChecklistTemplateItem) admissionsbus.ApplicationChecklistTemplateItem {
+	return admissionsbus.ApplicationChecklistTemplateItem{
+		ItemKey:      app.ItemKey,
+		DocumentName: app.DocumentName,
+		Description:  app.Description,
+		Required:     app.Required,
+		DisplayOrder: app.DisplayOrder,
+	}
+}
+
+func toBusChecklistTemplateItems(app []ApplicationChecklistTemplateItem) []admissionsbus.ApplicationChecklistTemplateItem {
+	items := make([]admissionsbus.ApplicationChecklistTemplateItem, len(app))
+	for i, item := range app {
+		items[i] = toBusChecklistTemplateItem(item)
+	}
+
+	return items
+}
+
+func toBusNewApplicationFormTemplate(app NewApplicationFormTemplate) (admissionsbus.NewApplicationFormTemplate, error) {
+	var fieldErrors errs.FieldErrors
+
+	programID, err := uuid.Parse(app.ProgramID)
+	if err != nil {
+		fieldErrors.Add("programID", err)
+	}
+
+	academicTermID, err := uuid.Parse(app.AcademicTermID)
+	if err != nil {
+		fieldErrors.Add("academicTermID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewApplicationFormTemplate{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  academicTermID,
+		ApplicationType: admissionsbus.ApplicationType(app.ApplicationType),
+		Name:            app.Name,
+		Description:     app.Description,
+		RequiredFields:  toBusApplicationFormFields(app.RequiredFields),
+		ChecklistItems:  toBusChecklistTemplateItems(app.ChecklistItems),
+		Active:          app.Active,
+		Priority:        app.Priority,
+	}, nil
 }
 
 // Decode implements the decoder interface.

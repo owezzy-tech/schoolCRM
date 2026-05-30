@@ -289,6 +289,54 @@ type Application struct {
 	DateUpdated        time.Time
 }
 
+// ApplicationFormField defines a configurable, non-core application form field.
+type ApplicationFormField struct {
+	FieldName    string
+	FieldType    string
+	Required     bool
+	DisplayOrder int
+	Validation   *string
+}
+
+// ApplicationChecklistTemplateItem defines a document/checklist requirement attached to a form template.
+type ApplicationChecklistTemplateItem struct {
+	ItemKey      string
+	DocumentName string
+	Description  *string
+	Required     bool
+	DisplayOrder int
+}
+
+// ApplicationFormTemplate defines configurable form requirements for a program, term, and application type.
+type ApplicationFormTemplate struct {
+	ID              uuid.UUID
+	ProgramID       uuid.UUID
+	AcademicTermID  uuid.UUID
+	ApplicationType ApplicationType
+	Name            string
+	Description     *string
+	Version         int
+	RequiredFields  []ApplicationFormField
+	ChecklistItems  []ApplicationChecklistTemplateItem
+	Active          bool
+	Priority        int
+	DateCreated     time.Time
+	DateUpdated     time.Time
+}
+
+// NewApplicationFormTemplate is what we require to create or update a form template.
+type NewApplicationFormTemplate struct {
+	ProgramID       uuid.UUID
+	AcademicTermID  uuid.UUID
+	ApplicationType ApplicationType
+	Name            string
+	Description     *string
+	RequiredFields  []ApplicationFormField
+	ChecklistItems  []ApplicationChecklistTemplateItem
+	Active          bool
+	Priority        int
+}
+
 // ApplicationTransition records an immutable application status transition.
 type ApplicationTransition struct {
 	ID            uuid.UUID
@@ -662,6 +710,17 @@ type ApplicationQueryFilter struct {
 	ApplicationType *ApplicationType
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
+}
+
+// ApplicationFormTemplateQueryFilter holds fields an application form template query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicationFormTemplateQueryFilter struct {
+	ID              *uuid.UUID
+	ProgramID       *uuid.UUID
+	AcademicTermID  *uuid.UUID
+	ApplicationType *ApplicationType
+	Active          *bool
+	Version         *int
 }
 
 // ApplicationTransitionQueryFilter holds the available fields an application transition query can be filtered on.

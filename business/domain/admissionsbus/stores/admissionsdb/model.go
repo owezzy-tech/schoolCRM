@@ -131,6 +131,22 @@ type applicationDB struct {
 	DateUpdated        time.Time  `db:"date_updated"`
 }
 
+type applicationFormTemplateDB struct {
+	ID              uuid.UUID       `db:"form_template_id"`
+	ProgramID       uuid.UUID       `db:"program_id"`
+	AcademicTermID  uuid.UUID       `db:"academic_term_id"`
+	ApplicationType string          `db:"application_type"`
+	Name            string          `db:"name"`
+	Description     *string         `db:"description"`
+	Version         int             `db:"version"`
+	RequiredFields  json.RawMessage `db:"required_fields"`
+	ChecklistItems  json.RawMessage `db:"checklist_items"`
+	Active          bool            `db:"is_active"`
+	Priority        int             `db:"priority"`
+	DateCreated     time.Time       `db:"date_created"`
+	DateUpdated     time.Time       `db:"date_updated"`
+}
+
 type applicationTransitionDB struct {
 	ID            uuid.UUID       `db:"application_transition_id"`
 	ApplicationID uuid.UUID       `db:"application_id"`
@@ -616,6 +632,75 @@ func toBusApplications(dbs []applicationDB) []admissionsbus.Application {
 	}
 
 	return bus
+}
+
+func toDBApplicationFormTemplate(bus admissionsbus.ApplicationFormTemplate) (applicationFormTemplateDB, error) {
+	requiredFields, err := json.Marshal(bus.RequiredFields)
+	if err != nil {
+		return applicationFormTemplateDB{}, err
+	}
+
+	checklistItems, err := json.Marshal(bus.ChecklistItems)
+	if err != nil {
+		return applicationFormTemplateDB{}, err
+	}
+
+	return applicationFormTemplateDB{
+		ID:              bus.ID,
+		ProgramID:       bus.ProgramID,
+		AcademicTermID:  bus.AcademicTermID,
+		ApplicationType: bus.ApplicationType.String(),
+		Name:            bus.Name,
+		Description:     bus.Description,
+		Version:         bus.Version,
+		RequiredFields:  requiredFields,
+		ChecklistItems:  checklistItems,
+		Active:          bus.Active,
+		Priority:        bus.Priority,
+		DateCreated:     bus.DateCreated.UTC(),
+		DateUpdated:     bus.DateUpdated.UTC(),
+	}, nil
+}
+
+func toBusApplicationFormTemplate(db applicationFormTemplateDB) (admissionsbus.ApplicationFormTemplate, error) {
+	var requiredFields []admissionsbus.ApplicationFormField
+	if err := json.Unmarshal(db.RequiredFields, &requiredFields); err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	var checklistItems []admissionsbus.ApplicationChecklistTemplateItem
+	if err := json.Unmarshal(db.ChecklistItems, &checklistItems); err != nil {
+		return admissionsbus.ApplicationFormTemplate{}, err
+	}
+
+	return admissionsbus.ApplicationFormTemplate{
+		ID:              db.ID,
+		ProgramID:       db.ProgramID,
+		AcademicTermID:  db.AcademicTermID,
+		ApplicationType: admissionsbus.ApplicationType(db.ApplicationType),
+		Name:            db.Name,
+		Description:     db.Description,
+		Version:         db.Version,
+		RequiredFields:  requiredFields,
+		ChecklistItems:  checklistItems,
+		Active:          db.Active,
+		Priority:        db.Priority,
+		DateCreated:     db.DateCreated.In(time.Local),
+		DateUpdated:     db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusApplicationFormTemplates(dbs []applicationFormTemplateDB) ([]admissionsbus.ApplicationFormTemplate, error) {
+	bus := make([]admissionsbus.ApplicationFormTemplate, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusApplicationFormTemplate(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
 }
 
 func toDBApplicationTransition(bus admissionsbus.ApplicationTransition) applicationTransitionDB {
