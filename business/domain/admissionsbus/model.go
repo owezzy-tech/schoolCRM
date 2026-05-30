@@ -500,11 +500,85 @@ type NewApplication struct {
 	AssignedReviewerID *uuid.UUID
 }
 
-// Checklist groups required admissions items for an application.
-type Checklist struct{}
+// DocumentStatus represents the review state of applicant-submitted evidence.
+type DocumentStatus string
+
+// Set of valid document statuses.
+const (
+	DocumentStatusUploaded      DocumentStatus = "UPLOADED"
+	DocumentStatusPendingReview DocumentStatus = "PENDING_REVIEW"
+	DocumentStatusAccepted      DocumentStatus = "ACCEPTED"
+	DocumentStatusRejected      DocumentStatus = "REJECTED"
+	DocumentStatusWaived        DocumentStatus = "WAIVED"
+	DocumentStatusExpired       DocumentStatus = "EXPIRED"
+	DocumentStatusSyncedToSIS   DocumentStatus = "SYNCED_TO_SIS"
+)
+
+// String returns the document status as a string.
+func (status DocumentStatus) String() string {
+	return string(status)
+}
+
+// ChecklistItem represents one document requirement for an application.
+type ChecklistItem struct {
+	ID            uuid.UUID
+	ApplicationID uuid.UUID
+	ItemKey       string
+	DocumentName  string
+	Description   *string
+	Required      bool
+	Status        DocumentStatus
+	DisplayOrder  int
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewChecklistItem is what we require to create a checklist item.
+type NewChecklistItem struct {
+	ApplicationID uuid.UUID
+	ItemKey       string
+	DocumentName  string
+	Description   *string
+	Required      bool
+	DisplayOrder  int
+}
 
 // Document represents applicant-submitted evidence for checklist items.
-type Document struct{}
+type Document struct {
+	ID              uuid.UUID
+	ApplicationID   uuid.UUID
+	ChecklistItemID uuid.UUID
+	FileName        string
+	ContentType     string
+	SizeBytes       int64
+	StorageKey      string
+	Status          DocumentStatus
+	ReviewerID      *uuid.UUID
+	ReviewerNotes   *string
+	UploadedByID    uuid.UUID
+	UploadedAt      time.Time
+	ReviewedAt      *time.Time
+	DateCreated     time.Time
+	DateUpdated     time.Time
+}
+
+// NewDocument is what we require to record uploaded document metadata.
+type NewDocument struct {
+	ApplicationID   uuid.UUID
+	ChecklistItemID uuid.UUID
+	FileName        string
+	ContentType     string
+	SizeBytes       int64
+	StorageKey      string
+	UploadedByID    uuid.UUID
+}
+
+// NewDocumentVerification is what we require to review document metadata.
+type NewDocumentVerification struct {
+	Status        DocumentStatus
+	ReviewerID    uuid.UUID
+	ReviewerNotes *string
+}
 
 // Decision represents the outcome of an application review.
 type Decision struct{}
@@ -731,4 +805,24 @@ type ApplicationTransitionQueryFilter struct {
 	ActorID       *uuid.UUID
 	FromStatus    *ApplicationStatus
 	ToStatus      *ApplicationStatus
+}
+
+// ChecklistItemQueryFilter holds fields a checklist item query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ChecklistItemQueryFilter struct {
+	ID            *uuid.UUID
+	ApplicationID *uuid.UUID
+	Status        *DocumentStatus
+	Required      *bool
+}
+
+// DocumentQueryFilter holds fields a document query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type DocumentQueryFilter struct {
+	ID              *uuid.UUID
+	ApplicationID   *uuid.UUID
+	ChecklistItemID *uuid.UUID
+	Status          *DocumentStatus
+	UploadedByID    *uuid.UUID
+	ReviewerID      *uuid.UUID
 }

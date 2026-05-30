@@ -41,6 +41,16 @@ export const APPLICATION_STATUSES = [
     'ENROLLED',
 ] as const;
 
+export const DOCUMENT_STATUSES = [
+    'UPLOADED',
+    'PENDING_REVIEW',
+    'ACCEPTED',
+    'REJECTED',
+    'WAIVED',
+    'EXPIRED',
+    'SYNCED_TO_SIS',
+] as const;
+
 export const ADMISSIONS_ROLES = [
     'ADMISSIONS_ADMIN',
     'RECRUITER',
@@ -58,6 +68,7 @@ export type LeadScoreCriterionOperator =
     (typeof LEAD_SCORE_CRITERION_OPERATORS)[number];
 export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
 export type ApplicationType = (typeof APPLICATION_TYPES)[number];
+export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
 export interface LeadScoreCriterion {
     field: LeadScoreCriterionField;
@@ -170,6 +181,74 @@ export interface ApplicationFormTemplateQuery {
     orderBy?: string;
     application_type?: ApplicationType;
     active?: boolean;
+}
+
+export interface ChecklistItem {
+    id: string;
+    applicationID: string;
+    itemKey: string;
+    documentName: string;
+    description?: string;
+    required: boolean;
+    status: DocumentStatus;
+    displayOrder: number;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ChecklistItemRequest {
+    itemKey: string;
+    documentName: string;
+    description?: string | null;
+    required: boolean;
+    displayOrder: number;
+}
+
+export interface ChecklistItemQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    status?: DocumentStatus;
+    required?: boolean;
+}
+
+export interface AdmissionsDocument {
+    id: string;
+    applicationID: string;
+    checklistItemID: string;
+    fileName: string;
+    contentType: string;
+    sizeBytes: number;
+    storageKey: string;
+    status: DocumentStatus;
+    reviewerID?: string;
+    reviewerNotes?: string;
+    uploadedByID: string;
+    uploadedAt: string;
+    reviewedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface AdmissionsDocumentRequest {
+    checklistItemID: string;
+    fileName: string;
+    contentType: string;
+    sizeBytes: number;
+    storageKey: string;
+}
+
+export interface AdmissionsDocumentVerificationRequest {
+    status: Extract<DocumentStatus, 'ACCEPTED' | 'REJECTED' | 'WAIVED'>;
+    reviewerNotes?: string | null;
+}
+
+export interface AdmissionsDocumentQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    checklist_item_id?: string;
+    status?: DocumentStatus;
 }
 
 export interface Inquiry {

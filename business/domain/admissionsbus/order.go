@@ -38,6 +38,12 @@ var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTe
 // DefaultApplicationTransitionOrderBy represents the default way we sort application transitions.
 var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
 
+// DefaultChecklistItemOrderBy represents the default way we sort checklist items.
+var DefaultChecklistItemOrderBy = order.NewBy(OrderByChecklistItemDisplayOrder, order.ASC)
+
+// DefaultDocumentOrderBy represents the default way we sort documents.
+var DefaultDocumentOrderBy = order.NewBy(OrderByDocumentUploadedAt, order.DESC)
+
 // Set of fields that programs can be ordered by.
 const (
 	OrderByStaffProfileID          = "a"
@@ -137,4 +143,23 @@ const (
 	OrderByApplicationTransitionApplication = "b"
 	OrderByApplicationTransitionActor       = "c"
 	OrderByApplicationTransitionDateCreated = "d"
+)
+
+// Set of fields that checklist items can be ordered by.
+const (
+	OrderByChecklistItemID           = "a"
+	OrderByChecklistItemApplication  = "b"
+	OrderByChecklistItemStatus       = "c"
+	OrderByChecklistItemDisplayOrder = "d"
+	OrderByChecklistItemDateCreated  = "e"
+)
+
+// Set of fields that documents can be ordered by.
+const (
+	OrderByDocumentID            = "a"
+	OrderByDocumentApplication   = "b"
+	OrderByDocumentChecklistItem = "c"
+	OrderByDocumentStatus        = "d"
+	OrderByDocumentUploadedAt    = "e"
+	OrderByDocumentReviewedAt    = "f"
 )

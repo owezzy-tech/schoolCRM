@@ -1013,3 +1013,263 @@ func (a *app) queryApplicationTransitions(ctx context.Context, r *http.Request) 
 
 	return query.NewResult(toAppApplicationTransitions(transitions), total, page)
 }
+
+func (a *app) createChecklistItem(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewChecklistItem
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	ni := toBusNewChecklistItem(app, applicationID)
+	item, err := a.admissionsBus.CreateChecklistItem(ctx, ni)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create checklist item: %s", err)
+	}
+
+	return toAppChecklistItem(item)
+}
+
+func (a *app) updateChecklistItem(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewChecklistItem
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	itemID, err := uuid.Parse(web.Param(r, "checklist_item_id"))
+	if err != nil {
+		return errs.NewFieldErrors("checklist_item_id", err)
+	}
+
+	item, err := a.admissionsBus.QueryChecklistItemByID(ctx, itemID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query checklist item: %s", err)
+	}
+
+	ni := toBusNewChecklistItem(app, applicationID)
+	updated, err := a.admissionsBus.UpdateChecklistItem(ctx, item, ni)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update checklist item: %s", err)
+	}
+
+	return toAppChecklistItem(updated)
+}
+
+func (a *app) queryChecklistItems(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseChecklistItemQueryParams(r)
+	if qp.ApplicationID == "" {
+		qp.ApplicationID = web.Param(r, "application_id")
+	}
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseChecklistItemFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(checklistItemOrderByFields, qp.OrderBy, admissionsbus.DefaultChecklistItemOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	items, err := a.admissionsBus.QueryChecklistItems(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query checklist items: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountChecklistItems(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count checklist items: %s", err)
+	}
+
+	return query.NewResult(toAppChecklistItems(items), total, page)
+}
+
+func (a *app) queryChecklistItemByID(ctx context.Context, r *http.Request) web.Encoder {
+	itemID, err := uuid.Parse(web.Param(r, "checklist_item_id"))
+	if err != nil {
+		return errs.NewFieldErrors("checklist_item_id", err)
+	}
+
+	item, err := a.admissionsBus.QueryChecklistItemByID(ctx, itemID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query checklist item: %s", err)
+	}
+
+	return toAppChecklistItem(item)
+}
+
+func (a *app) createDocument(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewDocument
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	nd, err := toBusNewDocument(app, applicationID, mid.GetSubjectID(ctx))
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	document, err := a.admissionsBus.CreateDocument(ctx, nd)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create document: %s", err)
+	}
+
+	if err := a.auditDocument(ctx, document, nd.UploadedByID, "document_upload", "admissions document uploaded"); err != nil {
+		return err
+	}
+
+	return toAppDocument(document)
+}
+
+func (a *app) verifyDocument(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewDocumentVerification
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	documentID, err := uuid.Parse(web.Param(r, "document_id"))
+	if err != nil {
+		return errs.NewFieldErrors("document_id", err)
+	}
+
+	document, err := a.admissionsBus.QueryDocumentByID(ctx, documentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query document: %s", err)
+	}
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	nv := toBusNewDocumentVerification(app, mid.GetSubjectID(ctx))
+	updated, err := a.admissionsBus.VerifyDocument(ctx, document, nv)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrDocumentStatusNotReviewable) {
+			return errs.New(errs.FailedPrecondition, admissionsbus.ErrDocumentStatusNotReviewable)
+		}
+		return errs.Errorf(errs.Internal, "verify document: %s", err)
+	}
+
+	if err := a.auditDocument(ctx, updated, nv.ReviewerID, "document_"+nv.Status.String(), "admissions document verification recorded"); err != nil {
+		return err
+	}
+
+	return toAppDocument(updated)
+}
+
+func (a *app) queryDocuments(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseDocumentQueryParams(r)
+	if qp.ApplicationID == "" {
+		qp.ApplicationID = web.Param(r, "application_id")
+	}
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseDocumentFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(documentOrderByFields, qp.OrderBy, admissionsbus.DefaultDocumentOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	documents, err := a.admissionsBus.QueryDocuments(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query documents: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountDocuments(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count documents: %s", err)
+	}
+
+	return query.NewResult(toAppDocuments(documents), total, page)
+}
+
+func (a *app) queryDocumentByID(ctx context.Context, r *http.Request) web.Encoder {
+	documentID, err := uuid.Parse(web.Param(r, "document_id"))
+	if err != nil {
+		return errs.NewFieldErrors("document_id", err)
+	}
+
+	document, err := a.admissionsBus.QueryDocumentByID(ctx, documentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query document: %s", err)
+	}
+
+	if err := a.auditDocument(ctx, document, mid.GetSubjectID(ctx), "document_view", "admissions document metadata viewed"); err != nil {
+		return err
+	}
+
+	return toAppDocument(document)
+}
+
+func (a *app) downloadDocument(ctx context.Context, r *http.Request) web.Encoder {
+	documentID, err := uuid.Parse(web.Param(r, "document_id"))
+	if err != nil {
+		return errs.NewFieldErrors("document_id", err)
+	}
+
+	document, err := a.admissionsBus.QueryDocumentByID(ctx, documentID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query document: %s", err)
+	}
+
+	if err := a.auditDocument(ctx, document, mid.GetSubjectID(ctx), "document_download", "admissions document download requested"); err != nil {
+		return err
+	}
+
+	return toAppDocument(document)
+}
+
+func (a *app) auditDocument(ctx context.Context, document admissionsbus.Document, actorID uuid.UUID, action string, message string) *errs.Error {
+	if a.auditBus == nil {
+		return nil
+	}
+
+	na := auditbus.NewAudit{
+		ObjID:     document.ID,
+		ObjDomain: domain.Admissions,
+		ObjName:   name.MustParse("Document"),
+		ActorID:   actorID,
+		Action:    action,
+		Data:      toAppDocument(document),
+		Message:   message,
+	}
+
+	if _, err := a.auditBus.Create(ctx, na); err != nil {
+		return errs.Errorf(errs.Internal, "audit document: %s", err)
+	}
+
+	return nil
+}

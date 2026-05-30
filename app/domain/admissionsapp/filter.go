@@ -137,6 +137,28 @@ type applicationTransitionQueryParams struct {
 	ToStatus      string
 }
 
+type checklistItemQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ApplicationID string
+	Status        string
+	Required      string
+}
+
+type documentQueryParams struct {
+	Page            string
+	Rows            string
+	OrderBy         string
+	ID              string
+	ApplicationID   string
+	ChecklistItemID string
+	Status          string
+	UploadedByID    string
+	ReviewerID      string
+}
+
 func parseProgramQueryParams(r *http.Request) programQueryParams {
 	values := r.URL.Query()
 
@@ -309,6 +331,36 @@ func parseApplicationTransitionQueryParams(r *http.Request) applicationTransitio
 		ActorID:       values.Get("actor_id"),
 		FromStatus:    values.Get("from_status"),
 		ToStatus:      values.Get("to_status"),
+	}
+}
+
+func parseChecklistItemQueryParams(r *http.Request) checklistItemQueryParams {
+	values := r.URL.Query()
+
+	return checklistItemQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("checklist_item_id"),
+		ApplicationID: values.Get("application_id"),
+		Status:        values.Get("status"),
+		Required:      values.Get("required"),
+	}
+}
+
+func parseDocumentQueryParams(r *http.Request) documentQueryParams {
+	values := r.URL.Query()
+
+	return documentQueryParams{
+		Page:            values.Get("page"),
+		Rows:            values.Get("rows"),
+		OrderBy:         values.Get("orderBy"),
+		ID:              values.Get("document_id"),
+		ApplicationID:   values.Get("application_id"),
+		ChecklistItemID: values.Get("checklist_item_id"),
+		Status:          values.Get("status"),
+		UploadedByID:    values.Get("uploaded_by_id"),
+		ReviewerID:      values.Get("reviewer_id"),
 	}
 }
 
@@ -856,6 +908,110 @@ func parseApplicationTransitionFilter(qp applicationTransitionQueryParams) (admi
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationTransitionQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseChecklistItemFilter(qp checklistItemQueryParams) (admissionsbus.ChecklistItemQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ChecklistItemQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("checklist_item_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.DocumentStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Required != "" {
+		required, err := strconv.ParseBool(qp.Required)
+		if err != nil {
+			fieldErrors.Add("required", err)
+		} else {
+			filter.Required = &required
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ChecklistItemQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseDocumentFilter(qp documentQueryParams) (admissionsbus.DocumentQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.DocumentQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("document_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.ChecklistItemID != "" {
+		id, err := uuid.Parse(qp.ChecklistItemID)
+		if err != nil {
+			fieldErrors.Add("checklist_item_id", err)
+		} else {
+			filter.ChecklistItemID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.DocumentStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.UploadedByID != "" {
+		id, err := uuid.Parse(qp.UploadedByID)
+		if err != nil {
+			fieldErrors.Add("uploaded_by_id", err)
+		} else {
+			filter.UploadedByID = &id
+		}
+	}
+
+	if qp.ReviewerID != "" {
+		id, err := uuid.Parse(qp.ReviewerID)
+		if err != nil {
+			fieldErrors.Add("reviewer_id", err)
+		} else {
+			filter.ReviewerID = &id
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.DocumentQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

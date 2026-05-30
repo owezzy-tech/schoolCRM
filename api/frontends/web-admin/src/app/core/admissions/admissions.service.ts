@@ -1,9 +1,16 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+    AdmissionsDocument,
+    AdmissionsDocumentQuery,
+    AdmissionsDocumentRequest,
+    AdmissionsDocumentVerificationRequest,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
     ApplicationFormTemplateRequest,
+    ChecklistItem,
+    ChecklistItemQuery,
+    ChecklistItemRequest,
     Inquiry,
     InquiryRequest,
     LeadScore,
@@ -33,10 +40,18 @@ export class AdmissionsService {
     private readonly templatesSubject = new ReplaySubject<
         PaginatedResult<ApplicationFormTemplate>
     >(1);
+    private readonly checklistItemsSubject = new ReplaySubject<
+        PaginatedResult<ChecklistItem>
+    >(1);
+    private readonly documentsSubject = new ReplaySubject<
+        PaginatedResult<AdmissionsDocument>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
+    readonly checklistItems$ = this.checklistItemsSubject.asObservable();
+    readonly documents$ = this.documentsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -125,11 +140,94 @@ export class AdmissionsService {
             .pipe(map(unwrapJsonApiResource));
     }
 
+    queryChecklistItems(
+        applicationID: string,
+        query: ChecklistItemQuery = {}
+    ): Observable<PaginatedResult<ChecklistItem>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ChecklistItem>
+            >(`/v1/admissions/applications/${applicationID}/checklist-items`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.checklistItemsSubject.next(result))
+            );
+    }
+
+    createChecklistItem(
+        applicationID: string,
+        request: ChecklistItemRequest
+    ): Observable<ChecklistItem> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<ChecklistItem>
+            >(`/v1/admissions/applications/${applicationID}/checklist-items`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateChecklistItem(
+        applicationID: string,
+        checklistItemID: string,
+        request: ChecklistItemRequest
+    ): Observable<ChecklistItem> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<ChecklistItem>
+            >(`/v1/admissions/applications/${applicationID}/checklist-items/${checklistItemID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryDocuments(
+        applicationID: string,
+        query: AdmissionsDocumentQuery = {}
+    ): Observable<PaginatedResult<AdmissionsDocument>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AdmissionsDocument>
+            >(`/v1/admissions/applications/${applicationID}/documents`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.documentsSubject.next(result))
+            );
+    }
+
+    createDocument(
+        applicationID: string,
+        request: AdmissionsDocumentRequest
+    ): Observable<AdmissionsDocument> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsDocument>
+            >(`/v1/admissions/applications/${applicationID}/documents`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    verifyDocument(
+        documentID: string,
+        request: AdmissionsDocumentVerificationRequest
+    ): Observable<AdmissionsDocument> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<AdmissionsDocument>
+            >(`/v1/admissions/documents/${documentID}/verification`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    downloadDocument(documentID: string): Observable<AdmissionsDocument> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsDocument>
+            >(`/v1/admissions/documents/${documentID}/download`, {})
+            .pipe(map(unwrapJsonApiResource));
+    }
+
     private queryParams(
         query:
             | LeadScoreQuery
             | LeadScoreRuleQuery
             | ApplicationFormTemplateQuery
+            | ChecklistItemQuery
+            | AdmissionsDocumentQuery
     ): HttpParams {
         let params = new HttpParams();
 

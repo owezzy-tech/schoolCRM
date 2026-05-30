@@ -1000,6 +1000,104 @@ func toAppApplicationTransitions(transitions []admissionsbus.ApplicationTransiti
 	return app
 }
 
+// ChecklistItem represents one document requirement for an application.
+type ChecklistItem struct {
+	ID            string  `json:"id"`
+	ApplicationID string  `json:"applicationID"`
+	ItemKey       string  `json:"itemKey"`
+	DocumentName  string  `json:"documentName"`
+	Description   *string `json:"description,omitempty"`
+	Required      bool    `json:"required"`
+	Status        string  `json:"status"`
+	DisplayOrder  int     `json:"displayOrder"`
+	DateCreated   string  `json:"dateCreated"`
+	DateUpdated   string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ChecklistItem) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppChecklistItem(item admissionsbus.ChecklistItem) ChecklistItem {
+	return ChecklistItem{
+		ID:            item.ID.String(),
+		ApplicationID: item.ApplicationID.String(),
+		ItemKey:       item.ItemKey,
+		DocumentName:  item.DocumentName,
+		Description:   item.Description,
+		Required:      item.Required,
+		Status:        item.Status.String(),
+		DisplayOrder:  item.DisplayOrder,
+		DateCreated:   item.DateCreated.Format(time.RFC3339),
+		DateUpdated:   item.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppChecklistItems(items []admissionsbus.ChecklistItem) []ChecklistItem {
+	app := make([]ChecklistItem, len(items))
+	for i, item := range items {
+		app[i] = toAppChecklistItem(item)
+	}
+
+	return app
+}
+
+// Document represents uploaded admissions document metadata.
+type Document struct {
+	ID              string  `json:"id"`
+	ApplicationID   string  `json:"applicationID"`
+	ChecklistItemID string  `json:"checklistItemID"`
+	FileName        string  `json:"fileName"`
+	ContentType     string  `json:"contentType"`
+	SizeBytes       int64   `json:"sizeBytes"`
+	StorageKey      string  `json:"storageKey"`
+	Status          string  `json:"status"`
+	ReviewerID      *string `json:"reviewerID,omitempty"`
+	ReviewerNotes   *string `json:"reviewerNotes,omitempty"`
+	UploadedByID    string  `json:"uploadedByID"`
+	UploadedAt      string  `json:"uploadedAt"`
+	ReviewedAt      *string `json:"reviewedAt,omitempty"`
+	DateCreated     string  `json:"dateCreated"`
+	DateUpdated     string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Document) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppDocument(document admissionsbus.Document) Document {
+	return Document{
+		ID:              document.ID.String(),
+		ApplicationID:   document.ApplicationID.String(),
+		ChecklistItemID: document.ChecklistItemID.String(),
+		FileName:        document.FileName,
+		ContentType:     document.ContentType,
+		SizeBytes:       document.SizeBytes,
+		StorageKey:      document.StorageKey,
+		Status:          document.Status.String(),
+		ReviewerID:      uuidStringPtr(document.ReviewerID),
+		ReviewerNotes:   document.ReviewerNotes,
+		UploadedByID:    document.UploadedByID.String(),
+		UploadedAt:      document.UploadedAt.Format(time.RFC3339),
+		ReviewedAt:      formatTimePtr(document.ReviewedAt),
+		DateCreated:     document.DateCreated.Format(time.RFC3339),
+		DateUpdated:     document.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppDocuments(documents []admissionsbus.Document) []Document {
+	app := make([]Document, len(documents))
+	for i, document := range documents {
+		app[i] = toAppDocument(document)
+	}
+
+	return app
+}
+
 // Encode implements the encoder interface.
 func (app Application) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
@@ -1050,6 +1148,87 @@ type NewApplicationFormTemplate struct {
 	ChecklistItems  []ApplicationChecklistTemplateItem `json:"checklistItems"`
 	Active          bool                               `json:"active"`
 	Priority        int                                `json:"priority"`
+}
+
+// NewChecklistItem defines the data needed to create or update an application checklist item.
+type NewChecklistItem struct {
+	ItemKey      string  `json:"itemKey"`
+	DocumentName string  `json:"documentName"`
+	Description  *string `json:"description"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewChecklistItem) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewChecklistItem(app NewChecklistItem, applicationID uuid.UUID) admissionsbus.NewChecklistItem {
+	return admissionsbus.NewChecklistItem{
+		ApplicationID: applicationID,
+		ItemKey:       app.ItemKey,
+		DocumentName:  app.DocumentName,
+		Description:   app.Description,
+		Required:      app.Required,
+		DisplayOrder:  app.DisplayOrder,
+	}
+}
+
+// NewDocument defines uploaded document metadata. File bytes are stored outside the CRM database.
+type NewDocument struct {
+	ChecklistItemID string `json:"checklistItemID"`
+	FileName        string `json:"fileName"`
+	ContentType     string `json:"contentType"`
+	SizeBytes       int64  `json:"sizeBytes"`
+	StorageKey      string `json:"storageKey"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewDocument) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewDocument(app NewDocument, applicationID uuid.UUID, uploadedByID uuid.UUID) (admissionsbus.NewDocument, error) {
+	var fieldErrors errs.FieldErrors
+
+	checklistItemID, err := uuid.Parse(app.ChecklistItemID)
+	if err != nil {
+		fieldErrors.Add("checklistItemID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewDocument{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewDocument{
+		ApplicationID:   applicationID,
+		ChecklistItemID: checklistItemID,
+		FileName:        app.FileName,
+		ContentType:     app.ContentType,
+		SizeBytes:       app.SizeBytes,
+		StorageKey:      app.StorageKey,
+		UploadedByID:    uploadedByID,
+	}, nil
+}
+
+// NewDocumentVerification defines reviewer action for uploaded document metadata.
+type NewDocumentVerification struct {
+	Status        string  `json:"status"`
+	ReviewerNotes *string `json:"reviewerNotes"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewDocumentVerification) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewDocumentVerification(app NewDocumentVerification, reviewerID uuid.UUID) admissionsbus.NewDocumentVerification {
+	return admissionsbus.NewDocumentVerification{
+		Status:        admissionsbus.DocumentStatus(app.Status),
+		ReviewerID:    reviewerID,
+		ReviewerNotes: app.ReviewerNotes,
+	}
 }
 
 // Decode implements the decoder interface.

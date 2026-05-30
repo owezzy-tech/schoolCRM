@@ -1,0 +1,329 @@
+<div class="flex min-w-0 flex-auto flex-col">
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="mb-8 flex flex-col gap-2">
+            <div
+                class="text-sm font-semibold uppercase tracking-wide text-primary"
+            >
+                Admissions / Documents
+            </div>
+            <h1 class="text-4xl font-extrabold leading-none tracking-tight">
+                Document checklist review
+            </h1>
+            <p class="text-secondary max-w-3xl text-base">
+                Review application checklist requirements, record uploaded
+                document metadata, and capture accepted, rejected, or waived
+                decisions with audited backend actions.
+            </p>
+        </div>
+
+        @if (errorMessage) {
+            <div
+                class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700"
+            >
+                {{ errorMessage }}
+            </div>
+        }
+
+        <section class="bg-card mb-6 rounded-2xl p-6 shadow">
+            <div
+                class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]"
+            >
+                <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Application ID</mat-label>
+                    <input
+                        matInput
+                        name="applicationID"
+                        [(ngModel)]="applicationID"
+                        placeholder="Paste application UUID"
+                    />
+                </mat-form-field>
+
+                <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    class="self-start lg:mt-2"
+                    (click)="loadApplicationDocuments()"
+                >
+                    Load checklist
+                </button>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
+            <section class="space-y-6">
+                <div class="bg-card overflow-hidden rounded-2xl shadow">
+                    <div class="border-b p-6">
+                        <h2 class="text-xl font-bold">Checklist items</h2>
+                        <p class="text-secondary mt-2 text-sm">
+                            Each row is tied to the selected application and can
+                            be satisfied by uploaded document metadata.
+                        </p>
+                    </div>
+
+                    @if (checklistItems$ | async; as result) {
+                        @for (item of result.items; track item.id) {
+                            <div
+                                class="grid grid-cols-1 gap-4 border-b p-6 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_150px_90px] lg:items-center"
+                            >
+                                <div>
+                                    <div class="font-semibold">
+                                        {{ item.documentName }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-sm">
+                                        {{ item.itemKey }} ·
+                                        {{
+                                            item.required
+                                                ? 'Required'
+                                                : 'Optional'
+                                        }}
+                                    </div>
+                                    @if (item.description) {
+                                        <div
+                                            class="text-secondary mt-2 text-xs"
+                                        >
+                                            {{ item.description }}
+                                        </div>
+                                    }
+                                </div>
+
+                                <span
+                                    class="w-max rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class]="statusClass(item.status)"
+                                >
+                                    {{ item.status }}
+                                </span>
+
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    [attr.aria-label]="
+                                        'Prepare upload metadata for ' +
+                                        item.documentName
+                                    "
+                                    (click)="selectChecklistItem(item)"
+                                >
+                                    <mat-icon
+                                        svgIcon="heroicons_outline:arrow-up-tray"
+                                    ></mat-icon>
+                                </button>
+                            </div>
+                        } @empty {
+                            <div class="text-secondary p-8 text-center">
+                                No checklist items found for this application.
+                            </div>
+                        }
+                    } @else {
+                        <div class="text-secondary p-8 text-center">
+                            Load an application to review checklist items.
+                        </div>
+                    }
+                </div>
+
+                <div class="bg-card overflow-hidden rounded-2xl shadow">
+                    <div class="border-b p-6">
+                        <h2 class="text-xl font-bold">Uploaded documents</h2>
+                        <p class="text-secondary mt-2 text-sm">
+                            Download requests and verification actions are
+                            audited by the backend.
+                        </p>
+                    </div>
+
+                    @if (documents$ | async; as result) {
+                        @for (document of result.items; track document.id) {
+                            <div
+                                class="grid grid-cols-1 gap-4 border-b p-6 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_150px_110px] lg:items-center"
+                            >
+                                <div>
+                                    <div class="font-semibold">
+                                        {{ document.fileName }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-sm">
+                                        {{ document.contentType }} ·
+                                        {{ document.sizeBytes }} bytes
+                                    </div>
+                                    <div class="text-secondary mt-1 text-xs">
+                                        {{ document.storageKey }}
+                                    </div>
+                                </div>
+
+                                <span
+                                    class="w-max rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class]="statusClass(document.status)"
+                                >
+                                    {{ document.status }}
+                                </span>
+
+                                <div
+                                    class="flex items-center gap-2 lg:justify-end"
+                                >
+                                    <button
+                                        mat-icon-button
+                                        type="button"
+                                        [attr.aria-label]="
+                                            'Audit download for ' +
+                                            document.fileName
+                                        "
+                                        (click)="requestDownload(document)"
+                                    >
+                                        <mat-icon
+                                            svgIcon="heroicons_outline:arrow-down-tray"
+                                        ></mat-icon>
+                                    </button>
+                                    <button
+                                        mat-icon-button
+                                        type="button"
+                                        [attr.aria-label]="
+                                            'Review ' + document.fileName
+                                        "
+                                        (click)="selectDocument(document)"
+                                    >
+                                        <mat-icon
+                                            svgIcon="heroicons_outline:check-circle"
+                                        ></mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        } @empty {
+                            <div class="text-secondary p-8 text-center">
+                                No document metadata has been recorded.
+                            </div>
+                        }
+                    } @else {
+                        <div class="text-secondary p-8 text-center">
+                            Load an application to review uploaded documents.
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <aside class="space-y-6">
+                <section class="bg-card rounded-2xl p-6 shadow">
+                    <h2 class="text-xl font-bold">Record upload metadata</h2>
+                    <p class="text-secondary mt-2 text-sm">
+                        The storage key points to external file/object storage;
+                        no file bytes are stored in CRM tables.
+                    </p>
+
+                    <form class="mt-6 space-y-4" (ngSubmit)="saveUpload()">
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Checklist item ID</mat-label>
+                            <input
+                                matInput
+                                required
+                                name="checklistItemID"
+                                [(ngModel)]="uploadForm.checklistItemID"
+                            />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>File name</mat-label>
+                            <input
+                                matInput
+                                required
+                                name="fileName"
+                                [(ngModel)]="uploadForm.fileName"
+                            />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Content type</mat-label>
+                            <input
+                                matInput
+                                required
+                                name="contentType"
+                                [(ngModel)]="uploadForm.contentType"
+                            />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Size bytes</mat-label>
+                            <input
+                                matInput
+                                required
+                                type="number"
+                                name="sizeBytes"
+                                [(ngModel)]="uploadForm.sizeBytes"
+                            />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Storage key</mat-label>
+                            <textarea
+                                matInput
+                                required
+                                rows="3"
+                                name="storageKey"
+                                [(ngModel)]="uploadForm.storageKey"
+                            ></textarea>
+                        </mat-form-field>
+
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="submit"
+                            class="w-full"
+                            [disabled]="saving"
+                        >
+                            Save upload metadata
+                        </button>
+                    </form>
+                </section>
+
+                <section class="bg-card rounded-2xl p-6 shadow">
+                    <h2 class="text-xl font-bold">Review document</h2>
+                    <p class="text-secondary mt-2 text-sm">
+                        Verification supports accepted, rejected, and waived
+                        states required by admissions review.
+                    </p>
+
+                    <form class="mt-6 space-y-4" (ngSubmit)="saveReview()">
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Document ID</mat-label>
+                            <input
+                                matInput
+                                required
+                                name="documentID"
+                                [(ngModel)]="reviewForm.documentID"
+                            />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Status</mat-label>
+                            <mat-select
+                                name="reviewStatus"
+                                [(ngModel)]="reviewForm.status"
+                            >
+                                @for (status of reviewStatuses; track status) {
+                                    <mat-option [value]="status">
+                                        {{ status }}
+                                    </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Reviewer notes</mat-label>
+                            <textarea
+                                matInput
+                                rows="4"
+                                name="reviewerNotes"
+                                [(ngModel)]="reviewForm.reviewerNotes"
+                            ></textarea>
+                        </mat-form-field>
+
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="submit"
+                            class="w-full"
+                            [disabled]="saving"
+                        >
+                            Save verification
+                        </button>
+                    </form>
+                </section>
+            </aside>
+        </div>
+    </div>
+</div>

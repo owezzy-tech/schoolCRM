@@ -90,3 +90,20 @@ var applicationTransitionOrderByFields = map[string]string{
 	"actor_id":                  admissionsbus.OrderByApplicationTransitionActor,
 	"date_created":              admissionsbus.OrderByApplicationTransitionDateCreated,
 }
+
+var checklistItemOrderByFields = map[string]string{
+	"checklist_item_id": admissionsbus.OrderByChecklistItemID,
+	"application_id":    admissionsbus.OrderByChecklistItemApplication,
+	"status":            admissionsbus.OrderByChecklistItemStatus,
+	"display_order":     admissionsbus.OrderByChecklistItemDisplayOrder,
+	"date_created":      admissionsbus.OrderByChecklistItemDateCreated,
+}
+
+var documentOrderByFields = map[string]string{
+	"document_id":       admissionsbus.OrderByDocumentID,
+	"application_id":    admissionsbus.OrderByDocumentApplication,
+	"checklist_item_id": admissionsbus.OrderByDocumentChecklistItem,
+	"status":            admissionsbus.OrderByDocumentStatus,
+	"uploaded_at":       admissionsbus.OrderByDocumentUploadedAt,
+	"reviewed_at":       admissionsbus.OrderByDocumentReviewedAt,
+}

@@ -159,6 +159,37 @@ type applicationTransitionDB struct {
 	DateCreated   time.Time       `db:"date_created"`
 }
 
+type checklistItemDB struct {
+	ID            uuid.UUID `db:"checklist_item_id"`
+	ApplicationID uuid.UUID `db:"application_id"`
+	ItemKey       string    `db:"item_key"`
+	DocumentName  string    `db:"document_name"`
+	Description   *string   `db:"description"`
+	Required      bool      `db:"is_required"`
+	Status        string    `db:"status"`
+	DisplayOrder  int       `db:"display_order"`
+	DateCreated   time.Time `db:"date_created"`
+	DateUpdated   time.Time `db:"date_updated"`
+}
+
+type documentDB struct {
+	ID              uuid.UUID  `db:"document_id"`
+	ApplicationID   uuid.UUID  `db:"application_id"`
+	ChecklistItemID uuid.UUID  `db:"checklist_item_id"`
+	FileName        string     `db:"file_name"`
+	ContentType     string     `db:"content_type"`
+	SizeBytes       int64      `db:"size_bytes"`
+	StorageKey      string     `db:"storage_key"`
+	Status          string     `db:"status"`
+	ReviewerID      *uuid.UUID `db:"reviewer_id"`
+	ReviewerNotes   *string    `db:"reviewer_notes"`
+	UploadedByID    uuid.UUID  `db:"uploaded_by_id"`
+	UploadedAt      time.Time  `db:"uploaded_at"`
+	ReviewedAt      *time.Time `db:"reviewed_at"`
+	DateCreated     time.Time  `db:"date_created"`
+	DateUpdated     time.Time  `db:"date_updated"`
+}
+
 func toDBStaffProfile(bus admissionsbus.StaffProfile) staffProfileDB {
 	return staffProfileDB{
 		ID:          bus.ID,
@@ -735,6 +766,94 @@ func toBusApplicationTransitions(dbs []applicationTransitionDB) []admissionsbus.
 	bus := make([]admissionsbus.ApplicationTransition, len(dbs))
 	for i, db := range dbs {
 		bus[i] = toBusApplicationTransition(db)
+	}
+
+	return bus
+}
+
+func toDBChecklistItem(bus admissionsbus.ChecklistItem) checklistItemDB {
+	return checklistItemDB{
+		ID:            bus.ID,
+		ApplicationID: bus.ApplicationID,
+		ItemKey:       bus.ItemKey,
+		DocumentName:  bus.DocumentName,
+		Description:   bus.Description,
+		Required:      bus.Required,
+		Status:        bus.Status.String(),
+		DisplayOrder:  bus.DisplayOrder,
+		DateCreated:   bus.DateCreated.UTC(),
+		DateUpdated:   bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusChecklistItem(db checklistItemDB) admissionsbus.ChecklistItem {
+	return admissionsbus.ChecklistItem{
+		ID:            db.ID,
+		ApplicationID: db.ApplicationID,
+		ItemKey:       db.ItemKey,
+		DocumentName:  db.DocumentName,
+		Description:   db.Description,
+		Required:      db.Required,
+		Status:        admissionsbus.DocumentStatus(db.Status),
+		DisplayOrder:  db.DisplayOrder,
+		DateCreated:   db.DateCreated.In(time.Local),
+		DateUpdated:   db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusChecklistItems(dbs []checklistItemDB) []admissionsbus.ChecklistItem {
+	bus := make([]admissionsbus.ChecklistItem, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusChecklistItem(db)
+	}
+
+	return bus
+}
+
+func toDBDocument(bus admissionsbus.Document) documentDB {
+	return documentDB{
+		ID:              bus.ID,
+		ApplicationID:   bus.ApplicationID,
+		ChecklistItemID: bus.ChecklistItemID,
+		FileName:        bus.FileName,
+		ContentType:     bus.ContentType,
+		SizeBytes:       bus.SizeBytes,
+		StorageKey:      bus.StorageKey,
+		Status:          bus.Status.String(),
+		ReviewerID:      bus.ReviewerID,
+		ReviewerNotes:   bus.ReviewerNotes,
+		UploadedByID:    bus.UploadedByID,
+		UploadedAt:      bus.UploadedAt.UTC(),
+		ReviewedAt:      utcTimePtr(bus.ReviewedAt),
+		DateCreated:     bus.DateCreated.UTC(),
+		DateUpdated:     bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusDocument(db documentDB) admissionsbus.Document {
+	return admissionsbus.Document{
+		ID:              db.ID,
+		ApplicationID:   db.ApplicationID,
+		ChecklistItemID: db.ChecklistItemID,
+		FileName:        db.FileName,
+		ContentType:     db.ContentType,
+		SizeBytes:       db.SizeBytes,
+		StorageKey:      db.StorageKey,
+		Status:          admissionsbus.DocumentStatus(db.Status),
+		ReviewerID:      db.ReviewerID,
+		ReviewerNotes:   db.ReviewerNotes,
+		UploadedByID:    db.UploadedByID,
+		UploadedAt:      db.UploadedAt.In(time.Local),
+		ReviewedAt:      localTimePtr(db.ReviewedAt),
+		DateCreated:     db.DateCreated.In(time.Local),
+		DateUpdated:     db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusDocuments(dbs []documentDB) []admissionsbus.Document {
+	bus := make([]admissionsbus.Document, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusDocument(db)
 	}
 
 	return bus

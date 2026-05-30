@@ -148,6 +148,13 @@ export const appRoutes: Route[] = [
                     ),
             },
             {
+                path: 'admin/admissions/documents',
+                loadChildren: () =>
+                    import(
+                        'app/modules/admin/admissions/documents/admissions-documents.routes'
+                    ),
+            },
+            {
                 path: '404-not-found',
                 pathMatch: 'full',
                 loadChildren: () =>

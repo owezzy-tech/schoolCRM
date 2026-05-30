@@ -1149,6 +1149,145 @@ func TestTransitionApplicationStatusRequiresActor(t *testing.T) {
 	}
 }
 
+func TestCreateChecklistItemTiesItemToApplication(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	store := &stubStore{
+		applications: []Application{{ID: applicationID, Status: ApplicationStatusAwaitingDocuments}},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	item, err := bus.CreateChecklistItem(context.Background(), NewChecklistItem{
+		ApplicationID: applicationID,
+		ItemKey:       "transcript",
+		DocumentName:  "Official transcript",
+		Required:      true,
+		DisplayOrder:  1,
+	})
+	if err != nil {
+		t.Fatalf("CreateChecklistItem returned error: %v", err)
+	}
+
+	if item.ApplicationID != applicationID {
+		t.Fatalf("ApplicationID = %s, want %s", item.ApplicationID, applicationID)
+	}
+
+	if item.Status != DocumentStatusPendingReview {
+		t.Fatalf("Status = %s, want %s", item.Status, DocumentStatusPendingReview)
+	}
+
+	if len(store.checklistItems) != 1 {
+		t.Fatalf("stored checklist items = %d, want 1", len(store.checklistItems))
+	}
+}
+
+func TestCreateDocumentTiesDocumentToApplicationChecklistItem(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	checklistItemID := uuid.New()
+	uploadedByID := uuid.New()
+	store := &stubStore{
+		checklistItems: []ChecklistItem{{ID: checklistItemID, ApplicationID: applicationID, Status: DocumentStatusPendingReview}},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	document, err := bus.CreateDocument(context.Background(), NewDocument{
+		ApplicationID:   applicationID,
+		ChecklistItemID: checklistItemID,
+		FileName:        "transcript.pdf",
+		ContentType:     "application/pdf",
+		SizeBytes:       2048,
+		StorageKey:      "admissions/applications/app/transcript.pdf",
+		UploadedByID:    uploadedByID,
+	})
+	if err != nil {
+		t.Fatalf("CreateDocument returned error: %v", err)
+	}
+
+	if document.ApplicationID != applicationID || document.ChecklistItemID != checklistItemID {
+		t.Fatalf("document linkage = (%s, %s), want (%s, %s)", document.ApplicationID, document.ChecklistItemID, applicationID, checklistItemID)
+	}
+
+	if document.Status != DocumentStatusPendingReview {
+		t.Fatalf("Status = %s, want %s", document.Status, DocumentStatusPendingReview)
+	}
+
+	if document.StorageKey == "" {
+		t.Fatal("StorageKey is empty")
+	}
+
+	if len(store.documents) != 1 {
+		t.Fatalf("stored documents = %d, want 1", len(store.documents))
+	}
+}
+
+func TestVerifyDocumentSupportsAcceptedRejectedWaived(t *testing.T) {
+	t.Parallel()
+
+	applicationID := uuid.New()
+	checklistItemID := uuid.New()
+	reviewerID := uuid.New()
+	statuses := []DocumentStatus{DocumentStatusAccepted, DocumentStatusRejected, DocumentStatusWaived}
+
+	for _, status := range statuses {
+		status := status
+		t.Run(status.String(), func(t *testing.T) {
+			t.Parallel()
+
+			documentID := uuid.New()
+			store := &stubStore{
+				checklistItems: []ChecklistItem{{ID: checklistItemID, ApplicationID: applicationID, Status: DocumentStatusPendingReview}},
+				documents: []Document{{
+					ID:              documentID,
+					ApplicationID:   applicationID,
+					ChecklistItemID: checklistItemID,
+					Status:          DocumentStatusPendingReview,
+				}},
+			}
+			bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+			updated, err := bus.VerifyDocument(context.Background(), store.documents[0], NewDocumentVerification{
+				Status:     status,
+				ReviewerID: reviewerID,
+			})
+			if err != nil {
+				t.Fatalf("VerifyDocument returned error: %v", err)
+			}
+
+			if updated.Status != status {
+				t.Fatalf("Status = %s, want %s", updated.Status, status)
+			}
+
+			if updated.ReviewerID == nil || *updated.ReviewerID != reviewerID {
+				t.Fatalf("ReviewerID = %v, want %s", updated.ReviewerID, reviewerID)
+			}
+
+			if updated.ReviewedAt == nil {
+				t.Fatal("ReviewedAt is nil")
+			}
+
+			if store.checklistItems[0].Status != status {
+				t.Fatalf("checklist item status = %s, want %s", store.checklistItems[0].Status, status)
+			}
+		})
+	}
+}
+
+func TestVerifyDocumentRejectsNonReviewStatus(t *testing.T) {
+	t.Parallel()
+
+	_, err := newTestBusiness().VerifyDocument(context.Background(), Document{ID: uuid.New()}, NewDocumentVerification{
+		Status:     DocumentStatusPendingReview,
+		ReviewerID: uuid.New(),
+	})
+
+	if !errors.Is(err, ErrDocumentStatusNotReviewable) {
+		t.Fatalf("err = %v, want %v", err, ErrDocumentStatusNotReviewable)
+	}
+}
+
 func newTestBusiness() ExtBusiness {
 	return NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, &stubStore{
 		constituents:       map[uuid.UUID]Constituent{},
@@ -1190,6 +1329,8 @@ type stubStore struct {
 	terms                  map[uuid.UUID]AcademicTerm
 	applications           []Application
 	applicationTransitions []ApplicationTransition
+	checklistItems         []ChecklistItem
+	documents              []Document
 }
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
@@ -1616,4 +1757,70 @@ func (s *stubStore) QueryApplicationTransitions(context.Context, ApplicationTran
 
 func (s *stubStore) CountApplicationTransitions(context.Context, ApplicationTransitionQueryFilter) (int, error) {
 	return len(s.applicationTransitions), nil
+}
+
+func (s *stubStore) CreateChecklistItem(_ context.Context, item ChecklistItem) error {
+	s.checklistItems = append(s.checklistItems, item)
+	return nil
+}
+
+func (s *stubStore) UpdateChecklistItem(_ context.Context, item ChecklistItem) error {
+	for i, existing := range s.checklistItems {
+		if existing.ID == item.ID {
+			s.checklistItems[i] = item
+			return nil
+		}
+	}
+	s.checklistItems = append(s.checklistItems, item)
+	return nil
+}
+
+func (s *stubStore) QueryChecklistItems(context.Context, ChecklistItemQueryFilter, order.By, page.Page) ([]ChecklistItem, error) {
+	return s.checklistItems, nil
+}
+
+func (s *stubStore) CountChecklistItems(context.Context, ChecklistItemQueryFilter) (int, error) {
+	return len(s.checklistItems), nil
+}
+
+func (s *stubStore) QueryChecklistItemByID(_ context.Context, itemID uuid.UUID) (ChecklistItem, error) {
+	for _, item := range s.checklistItems {
+		if item.ID == itemID {
+			return item, nil
+		}
+	}
+	return ChecklistItem{}, ErrChecklistItemNotFound
+}
+
+func (s *stubStore) CreateDocument(_ context.Context, document Document) error {
+	s.documents = append(s.documents, document)
+	return nil
+}
+
+func (s *stubStore) UpdateDocument(_ context.Context, document Document) error {
+	for i, existing := range s.documents {
+		if existing.ID == document.ID {
+			s.documents[i] = document
+			return nil
+		}
+	}
+	s.documents = append(s.documents, document)
+	return nil
+}
+
+func (s *stubStore) QueryDocuments(context.Context, DocumentQueryFilter, order.By, page.Page) ([]Document, error) {
+	return s.documents, nil
+}
+
+func (s *stubStore) CountDocuments(context.Context, DocumentQueryFilter) (int, error) {
+	return len(s.documents), nil
+}
+
+func (s *stubStore) QueryDocumentByID(_ context.Context, documentID uuid.UUID) (Document, error) {
+	for _, document := range s.documents {
+		if document.ID == documentID {
+			return document, nil
+		}
+	}
+	return Document{}, ErrDocumentNotFound
 }

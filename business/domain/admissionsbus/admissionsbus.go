@@ -76,6 +76,19 @@ var (
 	ErrInvalidLeadScorePoints       = errors.New("lead score points must be greater than or equal to zero")
 	ErrInvalidLeadScorePriority     = errors.New("lead score priority must be greater than or equal to zero")
 	ErrInvalidLeadScoreBand         = errors.New("invalid lead score band")
+	ErrChecklistItemNotFound        = errors.New("checklist item not found")
+	ErrChecklistItemKeyRequired     = errors.New("checklist item key required")
+	ErrChecklistItemNameRequired    = errors.New("checklist item document name required")
+	ErrChecklistItemOrderInvalid    = errors.New("checklist item display order must be greater than or equal to zero")
+	ErrDocumentNotFound             = errors.New("document not found")
+	ErrInvalidDocumentStatus        = errors.New("invalid document status")
+	ErrDocumentFileNameRequired     = errors.New("document file name required")
+	ErrDocumentContentTypeRequired  = errors.New("document content type required")
+	ErrDocumentSizeInvalid          = errors.New("document size must be greater than zero")
+	ErrDocumentStorageKeyRequired   = errors.New("document storage key required")
+	ErrDocumentUploaderRequired     = errors.New("document uploader required")
+	ErrDocumentReviewerRequired     = errors.New("document reviewer required")
+	ErrDocumentStatusNotReviewable  = errors.New("document status is not a review action")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -147,6 +160,16 @@ type Storer interface {
 	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
+	CreateChecklistItem(ctx context.Context, item ChecklistItem) error
+	UpdateChecklistItem(ctx context.Context, item ChecklistItem) error
+	QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error)
+	CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error)
+	QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error)
+	CreateDocument(ctx context.Context, document Document) error
+	UpdateDocument(ctx context.Context, document Document) error
+	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
+	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
+	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -215,6 +238,16 @@ type ExtBusiness interface {
 	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
+	CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error)
+	UpdateChecklistItem(ctx context.Context, item ChecklistItem, ni NewChecklistItem) (ChecklistItem, error)
+	QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error)
+	CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error)
+	QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error)
+	CreateDocument(ctx context.Context, nd NewDocument) (Document, error)
+	VerifyDocument(ctx context.Context, document Document, nv NewDocumentVerification) (Document, error)
+	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
+	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
+	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
 }
 
 // CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
@@ -1388,6 +1421,188 @@ func (b *Business) CountApplicationTransitions(ctx context.Context, filter Appli
 	return b.storer.CountApplicationTransitions(ctx, filter)
 }
 
+// CreateChecklistItem adds a document requirement to an application checklist.
+func (b *Business) CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error) {
+	if err := validateNewChecklistItem(ni); err != nil {
+		return ChecklistItem{}, err
+	}
+
+	if _, err := b.storer.QueryApplicationByID(ctx, ni.ApplicationID); err != nil {
+		return ChecklistItem{}, fmt.Errorf("query application: %w", err)
+	}
+
+	now := time.Now()
+	item := ChecklistItem{
+		ID:            uuid.New(),
+		ApplicationID: ni.ApplicationID,
+		ItemKey:       strings.TrimSpace(ni.ItemKey),
+		DocumentName:  strings.TrimSpace(ni.DocumentName),
+		Description:   trimStringPtr(ni.Description),
+		Required:      ni.Required,
+		Status:        DocumentStatusPendingReview,
+		DisplayOrder:  ni.DisplayOrder,
+		DateCreated:   now,
+		DateUpdated:   now,
+	}
+
+	if err := b.storer.CreateChecklistItem(ctx, item); err != nil {
+		return ChecklistItem{}, fmt.Errorf("create checklist item: %w", err)
+	}
+
+	return item, nil
+}
+
+// UpdateChecklistItem updates a document requirement while preserving its review status.
+func (b *Business) UpdateChecklistItem(ctx context.Context, item ChecklistItem, ni NewChecklistItem) (ChecklistItem, error) {
+	if err := validateNewChecklistItem(ni); err != nil {
+		return ChecklistItem{}, err
+	}
+
+	if _, err := b.storer.QueryApplicationByID(ctx, ni.ApplicationID); err != nil {
+		return ChecklistItem{}, fmt.Errorf("query application: %w", err)
+	}
+
+	item.ApplicationID = ni.ApplicationID
+	item.ItemKey = strings.TrimSpace(ni.ItemKey)
+	item.DocumentName = strings.TrimSpace(ni.DocumentName)
+	item.Description = trimStringPtr(ni.Description)
+	item.Required = ni.Required
+	item.DisplayOrder = ni.DisplayOrder
+	item.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return ChecklistItem{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return item, nil
+}
+
+// QueryChecklistItems retrieves application checklist requirements.
+func (b *Business) QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error) {
+	items, err := b.storer.QueryChecklistItems(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query checklist items: %w", err)
+	}
+
+	return items, nil
+}
+
+// CountChecklistItems returns the total number of checklist requirements.
+func (b *Business) CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error) {
+	return b.storer.CountChecklistItems(ctx, filter)
+}
+
+// QueryChecklistItemByID finds a checklist requirement by ID.
+func (b *Business) QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error) {
+	item, err := b.storer.QueryChecklistItemByID(ctx, itemID)
+	if err != nil {
+		return ChecklistItem{}, fmt.Errorf("query checklist item: itemID[%s]: %w", itemID, err)
+	}
+
+	return item, nil
+}
+
+// CreateDocument records uploaded document metadata for a checklist item.
+func (b *Business) CreateDocument(ctx context.Context, nd NewDocument) (Document, error) {
+	if err := validateNewDocument(nd); err != nil {
+		return Document{}, err
+	}
+
+	item, err := b.storer.QueryChecklistItemByID(ctx, nd.ChecklistItemID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query checklist item: %w", err)
+	}
+	if item.ApplicationID != nd.ApplicationID {
+		return Document{}, ErrApplicationNotFound
+	}
+
+	now := time.Now()
+	document := Document{
+		ID:              uuid.New(),
+		ApplicationID:   nd.ApplicationID,
+		ChecklistItemID: nd.ChecklistItemID,
+		FileName:        strings.TrimSpace(nd.FileName),
+		ContentType:     strings.TrimSpace(nd.ContentType),
+		SizeBytes:       nd.SizeBytes,
+		StorageKey:      strings.TrimSpace(nd.StorageKey),
+		Status:          DocumentStatusPendingReview,
+		UploadedByID:    nd.UploadedByID,
+		UploadedAt:      now,
+		DateCreated:     now,
+		DateUpdated:     now,
+	}
+
+	item.Status = DocumentStatusPendingReview
+	item.DateUpdated = now
+
+	if err := b.storer.CreateDocument(ctx, document); err != nil {
+		return Document{}, fmt.Errorf("create document: %w", err)
+	}
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return Document{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return document, nil
+}
+
+// VerifyDocument records reviewer action for uploaded document metadata.
+func (b *Business) VerifyDocument(ctx context.Context, document Document, nv NewDocumentVerification) (Document, error) {
+	if err := validateNewDocumentVerification(nv); err != nil {
+		return Document{}, err
+	}
+
+	item, err := b.storer.QueryChecklistItemByID(ctx, document.ChecklistItemID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query checklist item: %w", err)
+	}
+
+	now := time.Now()
+	document.Status = nv.Status
+	document.ReviewerID = &nv.ReviewerID
+	document.ReviewerNotes = trimStringPtr(nv.ReviewerNotes)
+	document.ReviewedAt = &now
+	document.DateUpdated = now
+
+	item.Status = nv.Status
+	item.DateUpdated = now
+
+	if err := b.storer.UpdateDocument(ctx, document); err != nil {
+		return Document{}, fmt.Errorf("update document: %w", err)
+	}
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return Document{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return document, nil
+}
+
+// QueryDocuments retrieves uploaded document metadata.
+func (b *Business) QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error) {
+	documents, err := b.storer.QueryDocuments(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query documents: %w", err)
+	}
+
+	return documents, nil
+}
+
+// CountDocuments returns the total number of uploaded document metadata records.
+func (b *Business) CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error) {
+	return b.storer.CountDocuments(ctx, filter)
+}
+
+// QueryDocumentByID finds uploaded document metadata by ID.
+func (b *Business) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error) {
+	document, err := b.storer.QueryDocumentByID(ctx, documentID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query document: documentID[%s]: %w", documentID, err)
+	}
+
+	return document, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -1517,6 +1732,70 @@ func validateApplicationFormField(field ApplicationFormField) error {
 func validateChecklistTemplateItem(item ApplicationChecklistTemplateItem) error {
 	if strings.TrimSpace(item.ItemKey) == "" || strings.TrimSpace(item.DocumentName) == "" || item.DisplayOrder < 0 {
 		return ErrFormTemplateChecklistInvalid
+	}
+
+	return nil
+}
+
+func validateNewChecklistItem(ni NewChecklistItem) error {
+	if ni.ApplicationID == uuid.Nil {
+		return ErrApplicationNotFound
+	}
+
+	if strings.TrimSpace(ni.ItemKey) == "" {
+		return ErrChecklistItemKeyRequired
+	}
+
+	if strings.TrimSpace(ni.DocumentName) == "" {
+		return ErrChecklistItemNameRequired
+	}
+
+	if ni.DisplayOrder < 0 {
+		return ErrChecklistItemOrderInvalid
+	}
+
+	return nil
+}
+
+func validateNewDocument(nd NewDocument) error {
+	if nd.ApplicationID == uuid.Nil {
+		return ErrApplicationNotFound
+	}
+
+	if nd.ChecklistItemID == uuid.Nil {
+		return ErrChecklistItemNotFound
+	}
+
+	if strings.TrimSpace(nd.FileName) == "" {
+		return ErrDocumentFileNameRequired
+	}
+
+	if strings.TrimSpace(nd.ContentType) == "" {
+		return ErrDocumentContentTypeRequired
+	}
+
+	if nd.SizeBytes <= 0 {
+		return ErrDocumentSizeInvalid
+	}
+
+	if strings.TrimSpace(nd.StorageKey) == "" {
+		return ErrDocumentStorageKeyRequired
+	}
+
+	if nd.UploadedByID == uuid.Nil {
+		return ErrDocumentUploaderRequired
+	}
+
+	return nil
+}
+
+func validateNewDocumentVerification(nv NewDocumentVerification) error {
+	if nv.ReviewerID == uuid.Nil {
+		return ErrDocumentReviewerRequired
+	}
+
+	if !isReviewDocumentStatus(nv.Status) {
+		return ErrDocumentStatusNotReviewable
 	}
 
 	return nil
@@ -1982,6 +2261,32 @@ func validateApplicationStatus(status ApplicationStatus) error {
 		return nil
 	default:
 		return ErrInvalidApplicationStatus
+	}
+}
+
+func validateDocumentStatus(status DocumentStatus) error {
+	switch status {
+	case DocumentStatusUploaded,
+		DocumentStatusPendingReview,
+		DocumentStatusAccepted,
+		DocumentStatusRejected,
+		DocumentStatusWaived,
+		DocumentStatusExpired,
+		DocumentStatusSyncedToSIS:
+		return nil
+	default:
+		return ErrInvalidDocumentStatus
+	}
+}
+
+func isReviewDocumentStatus(status DocumentStatus) bool {
+	switch status {
+	case DocumentStatusAccepted,
+		DocumentStatusRejected,
+		DocumentStatusWaived:
+		return true
+	default:
+		return false
 	}
 }
 

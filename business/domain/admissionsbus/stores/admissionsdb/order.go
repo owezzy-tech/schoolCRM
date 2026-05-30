@@ -96,6 +96,23 @@ var applicationTransitionOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationTransitionDateCreated: "date_created",
 }
 
+var checklistItemOrderByFields = map[string]string{
+	admissionsbus.OrderByChecklistItemID:           "checklist_item_id",
+	admissionsbus.OrderByChecklistItemApplication:  "application_id",
+	admissionsbus.OrderByChecklistItemStatus:       "status",
+	admissionsbus.OrderByChecklistItemDisplayOrder: "display_order",
+	admissionsbus.OrderByChecklistItemDateCreated:  "date_created",
+}
+
+var documentOrderByFields = map[string]string{
+	admissionsbus.OrderByDocumentID:            "document_id",
+	admissionsbus.OrderByDocumentApplication:   "application_id",
+	admissionsbus.OrderByDocumentChecklistItem: "checklist_item_id",
+	admissionsbus.OrderByDocumentStatus:        "status",
+	admissionsbus.OrderByDocumentUploadedAt:    "uploaded_at",
+	admissionsbus.OrderByDocumentReviewedAt:    "reviewed_at",
+}
+
 func programOrderByClause(orderBy order.By) (string, error) {
 	by, exists := programOrderByFields[orderBy.Field]
 	if !exists {
@@ -197,6 +214,24 @@ func applicationFormTemplateOrderByClause(orderBy order.By) (string, error) {
 
 func applicationTransitionOrderByClause(orderBy order.By) (string, error) {
 	by, exists := applicationTransitionOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func checklistItemOrderByClause(orderBy order.By) (string, error) {
+	by, exists := checklistItemOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func documentOrderByClause(orderBy order.By) (string, error) {
+	by, exists := documentOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}
