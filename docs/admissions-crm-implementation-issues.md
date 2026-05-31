@@ -362,6 +362,27 @@ Acceptance criteria:
 - PII-heavy exports require elevated permission.
 - Large exports run async.
 
+### Issue 21a: Integrate GA4 campaign and source attribution analytics
+
+Goal: connect Google Analytics 4 to campaign and reporting workflows without making GA4 the admissions system of record.
+
+Deliverables:
+
+- GA4 event taxonomy and UTM naming governance for admissions campaigns.
+- Consent-aware client-side tag integration for public inquiry, applicant portal, event registration, and application funnel pages.
+- Server-side Measurement Protocol or server-side Google Tag Manager integration for offline CRM events such as campaign provider clicks, application submission, decision posted, and enrollment intent confirmed.
+- GA4 Data API adapter for aggregate campaign/report widgets.
+- BigQuery export design for CRM-to-GA joins, long-range attribution, and funnel analysis.
+- PII guardrails that prevent applicant names, emails, phone numbers, dates of birth, documents, notes, or human-readable application identifiers from being sent to GA4.
+
+Acceptance criteria:
+
+- GA4 events use snake_case names and bounded parameters.
+- UTM values are normalized and preserved on inquiry/application attribution records.
+- GA4 user IDs are opaque CRM identifiers only.
+- Embedded reports can show aggregate source/medium/campaign attribution without exposing applicant PII.
+- CRM audit logs continue to record staff report/export access separately from GA telemetry.
+
 ### Issue 22: Implement custom fields for Constituent and Application
 
 Goal: support user-defined fields without making core fields dynamic.
