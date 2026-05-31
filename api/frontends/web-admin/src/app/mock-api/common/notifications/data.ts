@@ -7,90 +7,112 @@ const now = DateTime.now();
 export const notifications = [
     {
         id: '493190c9-5b61-4912-afe5-78c21f1044d7',
-        icon: 'heroicons_mini:star',
-        title: 'Daily challenges',
-        description: 'Your submission has been accepted',
-        time: now.minus({ minute: 25 }).toISO(), // 25 minutes ago
+        icon: 'heroicons_mini:document-check',
+        title: 'Application submitted',
+        description:
+            '<strong>Sofia Martinez</strong> submitted application <em>APP-3024</em> for Fall 2026 admission.',
+        time: now.minus({ minute: 12 }).toISO(),
         read: false,
+        link: '/applications/APP-3024',
+        useRouter: true,
     },
     {
         id: '6e3e97e5-effc-4fb7-b730-52a151f0b641',
-        image: 'images/avatars/male-04.jpg',
+        icon: 'heroicons_mini:user-plus',
+        title: 'Review assignment',
         description:
-            '<strong>Leo Gill</strong> added you to <em>Top Secret Project</em> group and assigned you as a <em>Project Manager</em>',
-        time: now.minus({ minute: 50 }).toISO(), // 50 minutes ago
-        read: true,
-        link: '/dashboards/project',
+            '<strong>Admissions Review</strong> assigned Liam Chen\'s application to your queue for first review.',
+        time: now.minus({ minute: 38 }).toISO(),
+        read: false,
+        link: '/applications',
         useRouter: true,
     },
     {
         id: 'b91ccb58-b06c-413b-b389-87010e03a120',
-        icon: 'heroicons_mini:envelope',
-        title: 'Mailbox',
-        description: 'You have 15 unread mails across 3 mailboxes',
-        time: now.minus({ hour: 3 }).toISO(), // 3 hours ago
+        icon: 'heroicons_mini:exclamation-triangle',
+        title: 'Document needs attention',
+        description:
+            '<strong>James Okoro</strong> has a rejected transcript. Applicant notification is ready for follow-up.',
+        time: now.minus({ hour: 2 }).toISO(),
         read: false,
-        link: '/dashboards/project',
+        link: '/applications/APP-3023',
         useRouter: true,
     },
     {
         id: '541416c9-84a7-408a-8d74-27a43c38d797',
-        icon: 'heroicons_mini:arrow-path',
-        title: 'Cron jobs',
-        description: 'Your <em>Docker container</em> is ready to publish',
-        time: now.minus({ hour: 5 }).toISO(), // 5 hours ago
+        icon: 'heroicons_mini:check-circle',
+        title: 'Transcript verified',
+        description:
+            'Your official transcript has been verified. The checklist for <em>APP-3024</em> is now 80% complete.',
+        time: now.minus({ hour: 4 }).toISO(),
         read: false,
-        link: '/dashboards/project',
+        link: '/portal/status',
         useRouter: true,
     },
     {
         id: 'ef7b95a7-8e8b-4616-9619-130d9533add9',
-        image: 'images/avatars/male-06.jpg',
+        icon: 'heroicons_mini:clock',
+        title: 'Decision pending',
         description:
-            '<strong>Roger Murray</strong> accepted your friend request',
-        time: now.minus({ hour: 7 }).toISO(), // 7 hours ago
+            '<strong>Amara Ndlovu</strong> is ready for final decision review after all required documents were accepted.',
+        time: now.minus({ hour: 7 }).toISO(),
         read: true,
-        link: '/dashboards/project',
+        link: '/applications',
         useRouter: true,
     },
     {
         id: 'eb8aa470-635e-461d-88e1-23d9ea2a5665',
-        image: 'images/avatars/female-04.jpg',
-        description: '<strong>Sophie Stone</strong> sent you a direct message',
-        time: now.minus({ hour: 9 }).toISO(), // 9 hours ago
+        icon: 'heroicons_mini:sparkles',
+        title: 'Decision posted',
+        description:
+            'Congratulations! Your admission decision for <em>APP-3018</em> has been posted in the applicant portal.',
+        time: now.minus({ hour: 9 }).toISO(),
         read: true,
-        link: '/dashboards/project',
+        link: '/portal/status',
         useRouter: true,
     },
     {
         id: 'b85c2338-cc98-4140-bbf8-c226ce4e395e',
-        icon: 'heroicons_mini:envelope',
-        title: 'Mailbox',
-        description: 'You have 3 new mails',
-        time: now.minus({ day: 1 }).toISO(), // 1 day ago
+        icon: 'heroicons_mini:arrow-path',
+        title: 'SIS sync completed',
+        description:
+            'The nightly SIS sync matched <strong>27 application updates</strong> and flagged 3 records for review.',
+        time: now.minus({ day: 1 }).toISO(),
         read: true,
-        link: '/dashboards/project',
+        link: '/reports',
         useRouter: true,
     },
     {
         id: '8f8e1bf9-4661-4939-9e43-390957b60f42',
-        icon: 'heroicons_mini:star',
-        title: 'Daily challenges',
+        icon: 'heroicons_mini:users',
+        title: 'Duplicate detected',
         description:
-            'Your submission has been accepted and you are ready to sign-up for the final assigment which will be ready in 2 days',
-        time: now.minus({ day: 3 }).toISO(), // 3 days ago
+            '<strong>Sofia Martinez</strong> has a 97% duplicate match with an existing constituent record.',
+        time: now.minus({ day: 2 }).toISO(),
         read: true,
-        link: '/dashboards/project',
+        link: '/duplicates',
         useRouter: true,
     },
     {
         id: '30af917b-7a6a-45d1-822f-9e7ad7f8bf69',
-        icon: 'heroicons_mini:arrow-path',
-        title: 'Cron jobs',
-        description: 'Your Vagrant container is ready to download',
-        time: now.minus({ day: 4 }).toISO(), // 4 days ago
+        icon: 'heroicons_mini:megaphone',
+        title: 'Campaign follow-up sent',
+        description:
+            '<strong>Missing Documents Reminder</strong> reached 342 applicants with pending checklist items.',
+        time: now.minus({ day: 3 }).toISO(),
         read: true,
-        link: '/dashboards/project',
+        link: '/campaigns',
+        useRouter: true,
+    },
+    {
+        id: '1c55dc97-d902-46b6-99b2-12812b480f8c',
+        icon: 'heroicons_mini:calendar-days',
+        title: 'Event registration milestone',
+        description:
+            '<strong>Spring Open Day</strong> reached 845 registrations. Capacity review is recommended.',
+        time: now.minus({ day: 4 }).toISO(),
+        read: true,
+        link: '/events',
         useRouter: true,
     },
 ];
