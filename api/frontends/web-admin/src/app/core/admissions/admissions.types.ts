@@ -67,6 +67,7 @@ export type LeadScoreCriterionField =
 export type LeadScoreCriterionOperator =
     (typeof LEAD_SCORE_CRITERION_OPERATORS)[number];
 export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationType = (typeof APPLICATION_TYPES)[number];
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
