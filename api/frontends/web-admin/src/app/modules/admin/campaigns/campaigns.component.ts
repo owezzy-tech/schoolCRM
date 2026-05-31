@@ -1,37 +1,86 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { TitleCasePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-
-interface CampaignStats {
-    sent: string;
-    opened: string;
-    clicked: string;
-    replied: string;
-}
-
-interface Campaign {
-    id: string;
-    title: string;
-    status: 'Active' | 'Draft' | 'Completed';
-    channel: 'Email' | 'SMS';
-    dateRange: string;
-    stats: CampaignStats;
-}
+import { CAMPAIGNS } from './data/campaigns.mock';
+import { Campaign } from './models/campaign.types';
 
 @Component({
     selector: 'app-campaigns',
     standalone: true,
-    imports: [MatButtonModule, MatIconModule],
+    imports: [MatButtonModule, MatIconModule, TitleCasePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './campaigns.component.html',
 })
 export class CampaignsComponent {
-    readonly campaigns: readonly Campaign[] = [
-        { id: '1', title: 'Fall 2026 Open House Invite', status: 'Active', channel: 'Email', dateRange: 'May 1 - Jun 6, 2026', stats: { sent: '2,450', opened: '45%', clicked: '12%', replied: '-' } },
-        { id: '2', title: 'Missing Documents Reminder', status: 'Active', channel: 'SMS', dateRange: 'May 15 - Aug 1, 2026', stats: { sent: '342', opened: '-', clicked: '28%', replied: '8%' } },
-        { id: '3', title: 'Financial Aid Deadline', status: 'Draft', channel: 'Email', dateRange: 'Jun 15 - Jul 1, 2026', stats: { sent: '-', opened: '-', clicked: '-', replied: '-' } },
-        { id: '4', title: 'Spring 2026 Yield Campaign', status: 'Completed', channel: 'Email', dateRange: 'Mar 1 - May 1, 2026', stats: { sent: '1,200', opened: '62%', clicked: '18%', replied: '4%' } },
-        { id: '5', title: 'Counselor Newsletter - May', status: 'Completed', channel: 'Email', dateRange: 'May 1 - May 2, 2026', stats: { sent: '85', opened: '74%', clicked: '35%', replied: '-' } },
-        { id: '6', title: 'Interview Scheduling Ping', status: 'Active', channel: 'Email', dateRange: 'May 10 - Jun 30, 2026', stats: { sent: '156', opened: '82%', clicked: '45%', replied: '-' } },
-    ];
+    readonly campaigns = CAMPAIGNS;
+    readonly selectedCampaignId = signal(this.campaigns[0]?.id ?? '');
+    readonly selectedCampaign = computed(
+        () =>
+            this.campaigns.find(
+                (campaign) => campaign.id === this.selectedCampaignId()
+            ) ?? this.campaigns[0]
+    );
+    readonly totalAudience = computed(() =>
+        this.campaigns.reduce(
+            (total, campaign) => total + campaign.metrics.audienceSize,
+            0
+        )
+    );
+    readonly activeCampaigns = computed(
+        () =>
+            this.campaigns.filter((campaign) => campaign.status === 'ACTIVE')
+                .length
+    );
+    readonly averageOpenRate = computed(() => {
+        const sentCampaigns = this.campaigns.filter(
+            (campaign) => campaign.metrics.sent > 0
+        );
+
+        if (!sentCampaigns.length) {
+            return 0;
+        }
+
+        const openRate = sentCampaigns.reduce(
+            (total, campaign) => total + this.rate(campaign.metrics.opened, campaign.metrics.sent),
+            0
+        );
+
+        return Math.round(openRate / sentCampaigns.length);
+    });
+
+    selectCampaign(campaignId: string): void {
+        this.selectedCampaignId.set(campaignId);
+    }
+
+    statusClass(campaign: Campaign): string {
+        switch (campaign.status) {
+            case 'ACTIVE':
+                return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+            case 'PAUSED':
+                return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+            case 'COMPLETED':
+                return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+            case 'DRAFT':
+                return 'bg-slate-100 text-secondary dark:bg-slate-800';
+        }
+    }
+
+    channelClass(campaign: Campaign): string {
+        return campaign.channel === 'EMAIL'
+            ? 'bg-primary-50 text-primary dark:bg-primary-900/20'
+            : 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+    }
+
+    rate(value: number, total: number): number {
+        if (!total) {
+            return 0;
+        }
+
+        return Math.round((value / total) * 100);
+    }
+
+    compactNumber(value: number): string {
+        return new Intl.NumberFormat('en-US').format(value);
+    }
 }

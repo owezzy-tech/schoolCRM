@@ -1,64 +1,175 @@
-@if (true) {
-    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
-        <div class="flex-auto p-6 sm:p-10">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 class="text-3xl font-semibold tracking-tight">Campaigns</h1>
-                </div>
-                <div>
-                    <button mat-flat-button color="primary">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
-                        <span class="ml-2">New campaign</span>
-                    </button>
-                </div>
+<div class="flex min-w-0 flex-auto flex-col bg-card dark:bg-transparent">
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <h1 class="text-3xl font-semibold leading-8 tracking-tight">Campaigns</h1>
+                <p class="mt-1 max-w-3xl text-secondary">
+                    Build simple segmented email and SMS outreach using admissions criteria, saved messages, schedules, and auditable send events.
+                </p>
             </div>
+            <button mat-flat-button color="primary">
+                <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                <span class="ml-2">New campaign</span>
+            </button>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @for (campaign of campaigns; track campaign.id) {
-                    <div class="bg-card border rounded-2xl p-6 shadow-sm flex flex-col">
-                        <div class="flex items-start justify-between mb-4">
-                            <h2 class="text-lg font-semibold leading-tight line-clamp-2 mr-2">{{ campaign.title }}</h2>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
-                                  [class.bg-green-100]="campaign.status === 'Active'"
-                                  [class.text-green-800]="campaign.status === 'Active'"
-                                  [class.dark:bg-green-900]="campaign.status === 'Active'"
-                                  [class.dark:text-green-300]="campaign.status === 'Active'"
-                                  [class.bg-gray-100]="campaign.status === 'Draft' || campaign.status === 'Completed'"
-                                  [class.text-secondary]="campaign.status === 'Draft' || campaign.status === 'Completed'"
-                                  [class.dark:bg-gray-800]="campaign.status === 'Draft' || campaign.status === 'Completed'">
-                                {{ campaign.status }}
-                            </span>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 mb-6 text-sm text-secondary">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800">
-                                {{ campaign.channel }}
-                            </span>
-                            <span>&middot;</span>
-                            <span>{{ campaign.dateRange }}</span>
-                        </div>
-                        
-                        <div class="mt-auto grid grid-cols-4 gap-2 pt-4 border-t">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-secondary">Sent</span>
-                                <span class="font-medium mt-0.5">{{ campaign.stats.sent }}</span>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs text-secondary">Opened</span>
-                                <span class="font-medium mt-0.5">{{ campaign.stats.opened }}</span>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs text-secondary">Clicked</span>
-                                <span class="font-medium mt-0.5">{{ campaign.stats.clicked }}</span>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs text-secondary">Replied</span>
-                                <span class="font-medium mt-0.5">{{ campaign.stats.replied }}</span>
-                            </div>
-                        </div>
-                    </div>
-                }
+        <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="rounded-2xl border bg-card p-5 shadow-sm">
+                <div class="text-sm font-medium text-secondary">Active campaigns</div>
+                <div class="mt-2 text-3xl font-semibold">{{ activeCampaigns() }}</div>
+            </div>
+            <div class="rounded-2xl border bg-card p-5 shadow-sm">
+                <div class="text-sm font-medium text-secondary">Segmented audience</div>
+                <div class="mt-2 text-3xl font-semibold">{{ compactNumber(totalAudience()) }}</div>
+            </div>
+            <div class="rounded-2xl border bg-card p-5 shadow-sm">
+                <div class="text-sm font-medium text-secondary">Avg. open rate</div>
+                <div class="mt-2 text-3xl font-semibold">{{ averageOpenRate() }}%</div>
             </div>
         </div>
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(420px,0.9fr)]">
+            <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <div class="grid grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-secondary dark:bg-gray-900/30">
+                    <div>Name</div>
+                    <div>Channel</div>
+                    <div>Audience</div>
+                    <div>Sent</div>
+                    <div>Opened</div>
+                    <div>Actions</div>
+                </div>
+
+                @for (campaign of campaigns; track campaign.id) {
+                    <button
+                        type="button"
+                        class="grid w-full grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] items-center border-b px-5 py-4 text-left transition-colors last:border-b-0 hover:bg-hover"
+                        [class.bg-primary-50]="selectedCampaignId() === campaign.id"
+                        [class.dark:bg-primary-900]="selectedCampaignId() === campaign.id"
+                        [class.dark:bg-opacity-20]="selectedCampaignId() === campaign.id"
+                        (click)="selectCampaign(campaign.id)">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="truncate font-semibold text-default">{{ campaign.name }}</span>
+                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" [class]="statusClass(campaign)">
+                                    {{ campaign.status | titlecase }}
+                                </span>
+                            </div>
+                            <div class="mt-1 truncate text-sm text-secondary">{{ campaign.schedule }}</div>
+                        </div>
+                        <div>
+                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="channelClass(campaign)">
+                                {{ campaign.channel }}
+                            </span>
+                        </div>
+                        <div class="font-medium">{{ compactNumber(campaign.metrics.audienceSize) }}</div>
+                        <div>{{ compactNumber(campaign.metrics.sent) }}</div>
+                        <div>{{ rate(campaign.metrics.opened, campaign.metrics.sent) }}%</div>
+                        <div class="text-primary">View</div>
+                    </button>
+                }
+            </div>
+
+            @if (selectedCampaign(); as campaign) {
+                <div class="flex flex-col gap-6">
+                    <div class="rounded-2xl border bg-card p-6 shadow-sm">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm font-medium text-secondary">Builder preview</div>
+                                <h2 class="mt-1 text-xl font-semibold">{{ campaign.name }}</h2>
+                            </div>
+                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="statusClass(campaign)">
+                                {{ campaign.status | titlecase }}
+                            </span>
+                        </div>
+
+                        <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="text-secondary">Step 1</div>
+                                <div class="font-medium">{{ campaign.channel }} · {{ campaign.schedule }}</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="text-secondary">Step 2</div>
+                                <div class="font-medium">{{ campaign.audienceName }}</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="text-secondary">Step 3</div>
+                                <div class="font-medium">{{ campaign.templateName }}</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="text-secondary">Step 4</div>
+                                <div class="font-medium">Review & activate</div>
+                            </div>
+                        </div>
+
+                        <p class="mt-5 rounded-xl border border-dashed p-4 text-sm text-secondary">
+                            {{ campaign.messagePreview }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border bg-card p-6 shadow-sm">
+                        <h3 class="text-lg font-semibold">Segment criteria</h3>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            @for (type of campaign.segment.applicationTypes; track type) {
+                                <span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary dark:bg-primary-900/20">{{ type | titlecase }}</span>
+                            }
+                            @for (status of campaign.segment.applicationStatuses; track status) {
+                                <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{{ status | titlecase }}</span>
+                            }
+                            @for (band of campaign.segment.leadScoreBands; track band) {
+                                <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{{ band | titlecase }}</span>
+                            }
+                            @for (territory of campaign.segment.territories; track territory) {
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-secondary dark:bg-slate-800">{{ territory }}</span>
+                            }
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                            <div><span class="text-secondary">Terms:</span> {{ campaign.segment.academicTerms.join(', ') }}</div>
+                            <div><span class="text-secondary">Programs:</span> {{ campaign.segment.programs.join(', ') }}</div>
+                            <div><span class="text-secondary">Recruiters:</span> {{ campaign.segment.recruiters.join(', ') }}</div>
+                            <div><span class="text-secondary">Event attendance:</span> {{ campaign.segment.eventAttendance | titlecase }}</div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border bg-card p-6 shadow-sm">
+                        <h3 class="text-lg font-semibold">Metrics & audit</h3>
+                        <div class="mt-4 grid grid-cols-5 gap-2 text-center text-sm">
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="font-semibold">{{ compactNumber(campaign.metrics.delivered) }}</div>
+                                <div class="text-xs text-secondary">Delivered</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="font-semibold">{{ rate(campaign.metrics.opened, campaign.metrics.sent) }}%</div>
+                                <div class="text-xs text-secondary">Opened</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="font-semibold">{{ rate(campaign.metrics.clicked, campaign.metrics.sent) }}%</div>
+                                <div class="text-xs text-secondary">Clicked</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="font-semibold">{{ compactNumber(campaign.metrics.bounced) }}</div>
+                                <div class="text-xs text-secondary">Bounced</div>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
+                                <div class="font-semibold">{{ compactNumber(campaign.metrics.replied) }}</div>
+                                <div class="text-xs text-secondary">Replies</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 space-y-3">
+                            @for (event of campaign.auditTrail; track event.timestamp) {
+                                <div class="flex items-start gap-3 text-sm">
+                                    <mat-icon svgIcon="heroicons_outline:shield-check" class="mt-0.5 text-primary icon-size-4"></mat-icon>
+                                    <div>
+                                        <div class="font-medium">{{ event.action }}</div>
+                                        <div class="text-secondary">{{ event.actor }} · {{ event.timestamp }}</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
-}
+</div>
