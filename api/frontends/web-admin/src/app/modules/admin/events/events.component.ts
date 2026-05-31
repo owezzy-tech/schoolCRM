@@ -1,11 +1,15 @@
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
-import { RouterOutlet, RouterLink, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import {
+    ActivatedRoute,
+    NavigationEnd,
+    Router,
+    RouterLink,
+    RouterOutlet,
+} from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-events',
@@ -15,7 +19,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
         RouterLink,
         MatButtonModule,
         MatIconModule,
-        MatButtonToggleModule,
         MatChipsModule,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,

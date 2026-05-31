@@ -7,23 +7,41 @@
                 <p class="text-secondary mt-1">11 total events — drag to reschedule.</p>
             </div>
             <div class="flex items-center gap-4">
-                <mat-button-toggle-group 
-                    [value]="currentView()" 
-                    (change)="onViewChange($event.value)" 
-                    class="h-10">
-                    <mat-button-toggle value="table" class="px-2">
+                <div class="inline-flex h-10 rounded-full border bg-default/5 p-1 shadow-sm dark:bg-white/5">
+                    <button
+                        type="button"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        [class.bg-card]="currentView() === 'table'"
+                        [class.text-default]="currentView() === 'table'"
+                        [class.shadow]="currentView() === 'table'"
+                        [class.text-secondary]="currentView() !== 'table'"
+                        (click)="onViewChange('table')">
                         <mat-icon class="icon-size-5" svgIcon="heroicons_outline:list-bullet"></mat-icon>
                         <span class="ml-1 hidden sm:inline">Table</span>
-                    </mat-button-toggle>
-                    <mat-button-toggle value="calendar" class="px-2">
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        [class.bg-card]="currentView() === 'calendar'"
+                        [class.text-default]="currentView() === 'calendar'"
+                        [class.shadow]="currentView() === 'calendar'"
+                        [class.text-secondary]="currentView() !== 'calendar'"
+                        (click)="onViewChange('calendar')">
                         <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
                         <span class="ml-1 hidden sm:inline">Calendar</span>
-                    </mat-button-toggle>
-                    <mat-button-toggle value="kanban" class="px-2">
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        [class.bg-card]="currentView() === 'kanban'"
+                        [class.text-default]="currentView() === 'kanban'"
+                        [class.shadow]="currentView() === 'kanban'"
+                        [class.text-secondary]="currentView() !== 'kanban'"
+                        (click)="onViewChange('kanban')">
                         <mat-icon class="icon-size-5" svgIcon="heroicons_outline:view-columns"></mat-icon>
                         <span class="ml-1 hidden sm:inline">Kanban</span>
-                    </mat-button-toggle>
-                </mat-button-toggle-group>
+                    </button>
+                </div>
 
                 <button mat-flat-button color="primary" routerLink="new">
                     <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
