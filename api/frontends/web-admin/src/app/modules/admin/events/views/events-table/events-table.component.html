@@ -1,0 +1,102 @@
+<div class="overflow-x-auto rounded-2xl border bg-card shadow-sm">
+    <table mat-table [dataSource]="events()" class="w-full">
+
+        <!-- Date Column -->
+        <ng-container matColumnDef="datetime">
+            <th mat-header-cell *matHeaderCellDef class="w-48">Date & Time</th>
+            <td mat-cell *matCellDef="let event" class="py-3">
+                <div class="flex flex-col">
+                    <span class="font-medium">{{ event.start | date:'mediumDate' }}</span>
+                    <span class="text-sm text-secondary">{{ event.start | date:'shortTime' }}</span>
+                </div>
+            </td>
+        </ng-container>
+
+        <!-- Title Column -->
+        <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef>Event Name</th>
+            <td mat-cell *matCellDef="let event" class="font-semibold text-primary">
+                <a [routerLink]="['..', event.id]" class="hover:underline">{{ event.title }}</a>
+            </td>
+        </ng-container>
+
+        <!-- Type Column -->
+        <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef class="w-40">Type</th>
+            <td mat-cell *matCellDef="let event">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" [ngClass]="getTypeColor(event.type)"></span>
+                    <span class="capitalize">{{ event.type.replace('-', ' ') }}</span>
+                </div>
+            </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="w-32">Status</th>
+            <td mat-cell *matCellDef="let event">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full capitalize" 
+                      [ngClass]="getStatusClasses(event.status)">
+                    {{ event.status }}
+                </span>
+            </td>
+        </ng-container>
+
+        <!-- Location Column -->
+        <ng-container matColumnDef="location">
+            <th mat-header-cell *matHeaderCellDef>Location</th>
+            <td mat-cell *matCellDef="let event">
+                <div class="flex items-center text-secondary">
+                    <mat-icon class="icon-size-4 mr-1" [svgIcon]="event.isVirtual ? 'heroicons_outline:video-camera' : 'heroicons_outline:map-pin'"></mat-icon>
+                    <span>{{ event.location }}</span>
+                </div>
+            </td>
+        </ng-container>
+
+        <!-- Capacity Column -->
+        <ng-container matColumnDef="capacity">
+            <th mat-header-cell *matHeaderCellDef class="w-48">Capacity</th>
+            <td mat-cell *matCellDef="let event">
+                <div class="flex flex-col gap-1 w-32">
+                    <div class="flex justify-between text-xs font-medium">
+                        <span>{{ event.registeredCount }} / {{ event.capacity }}</span>
+                        <span>{{ getCapacityPercentage(event.registeredCount, event.capacity) }}%</span>
+                    </div>
+                    <mat-progress-bar 
+                        mode="determinate" 
+                        [value]="getCapacityPercentage(event.registeredCount, event.capacity)"
+                        color="primary"
+                        class="rounded-full h-1.5">
+                    </mat-progress-bar>
+                </div>
+            </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="w-16"></th>
+            <td mat-cell *matCellDef="let event" class="text-right">
+                <button mat-icon-button [matMenuTriggerFor]="menu">
+                    <mat-icon svgIcon="heroicons_outline:ellipsis-vertical"></mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                    <a mat-menu-item [routerLink]="['..', event.id]">
+                        <mat-icon svgIcon="heroicons_outline:eye"></mat-icon>
+                        <span>View Details</span>
+                    </a>
+                    <a mat-menu-item [routerLink]="['..', event.id, 'edit']">
+                        <mat-icon svgIcon="heroicons_outline:pencil"></mat-icon>
+                        <span>Edit</span>
+                    </a>
+                    <button mat-menu-item class="text-red-600">
+                        <mat-icon svgIcon="heroicons_outline:trash" class="text-red-600"></mat-icon>
+                        <span>Delete</span>
+                    </button>
+                </mat-menu>
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"></tr>
+    </table>
+</div>

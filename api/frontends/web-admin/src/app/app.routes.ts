@@ -106,6 +106,13 @@ export const appRoutes: Route[] = [
                 loadChildren: () =>
                     import('app/modules/landing/portal/portal.routes'),
             },
+            {
+                path: 'events/:id/checkin',
+                loadComponent: () =>
+                    import(
+                        'app/modules/admin/events/checkin/event-checkin.component'
+                    ).then((m) => m.EventCheckinComponent),
+            },
         ],
     },
 
