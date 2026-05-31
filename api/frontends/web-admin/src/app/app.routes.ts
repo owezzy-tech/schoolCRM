@@ -215,6 +215,14 @@ export const appRoutes: Route[] = [
             },
 
             {
+                path: '_dev/filepond-demo',
+                loadComponent: () =>
+                    import(
+                        'app/modules/admin/_dev/filepond-demo.component'
+                    ).then((m) => m.FilePondDemoComponent),
+            },
+
+            {
                 path: '404-not-found',
                 pathMatch: 'full',
                 loadChildren: () =>
