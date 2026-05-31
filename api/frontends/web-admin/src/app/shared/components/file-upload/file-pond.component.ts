@@ -72,6 +72,18 @@ export class FilePondComponent {
     /** Allow multiple file uploads in one drop. */
     @Input() allowMultiple = false;
 
+    /** Disable browsing, dropping, and reverting files. */
+    @Input()
+    set disabled(value: boolean) {
+        this._disabled = value;
+        if (this._pond) {
+            this._pond.disabled = value;
+        }
+    }
+    get disabled(): boolean {
+        return this._disabled;
+    }
+
     /** Server configuration object matching FilePond's server contract. */
     @Input() server: FilePondLib.FilePondServerConfigProps['server'] | null = null;
 
@@ -80,8 +92,10 @@ export class FilePondComponent {
         `Drag & drop files or <span class="filepond--label-action">browse</span>`;
 
     @Output() filesAdded = new EventEmitter<FilePondLib.FilePondFile[]>();
+    @Output() uploadStarted = new EventEmitter<FilePondLib.FilePondFile>();
     @Output() fileUploaded = new EventEmitter<FilePondLib.FilePondFile>();
     @Output() fileReverted = new EventEmitter<FilePondLib.FilePondFile>();
+    @Output() uploadAborted = new EventEmitter<FilePondLib.FilePondFile>();
     @Output() uploadError = new EventEmitter<{
         error: FilePondLib.FilePondErrorDescription | null;
         file: FilePondLib.FilePondFile | null;
@@ -91,6 +105,7 @@ export class FilePondComponent {
     private readonly _destroyRef = inject(DestroyRef);
     private readonly _platformId = inject(PLATFORM_ID);
     private _pond: FilePondLib.FilePond | null = null;
+    private _disabled = false;
 
     constructor() {
         // `afterNextRender` only runs in the browser, making this SSR-safe.
@@ -117,6 +132,7 @@ export class FilePondComponent {
         // on FilePondOptionProps; widen to a record so we can pass them through.
         const options: Record<string, unknown> = {
             allowMultiple: this.allowMultiple,
+            disabled: this.disabled,
             maxFiles: this.maxFiles,
             labelIdle: this.labelIdle,
             credits: false,
@@ -149,6 +165,12 @@ export class FilePondComponent {
             });
         });
 
+        this._pond.on('processfilestart', (file) => {
+            this._zone.run(() => {
+                this.uploadStarted.emit(file);
+            });
+        });
+
         this._pond.on('processfile', (error, file) => {
             this._zone.run(() => {
                 if (error) {
@@ -162,6 +184,12 @@ export class FilePondComponent {
         this._pond.on('processfilerevert', (file) => {
             this._zone.run(() => {
                 this.fileReverted.emit(file);
+            });
+        });
+
+        this._pond.on('processfileabort', (file) => {
+            this._zone.run(() => {
+                this.uploadAborted.emit(file);
             });
         });
     }
