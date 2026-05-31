@@ -1,49 +1,72 @@
-@if (true) {
-    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
-        <div class="flex-auto p-6 sm:p-10">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 class="text-3xl font-semibold tracking-tight">Events</h1>
-                </div>
-                <div>
-                    <button mat-flat-button color="primary">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
-                        <span class="ml-2">Create event</span>
-                    </button>
-                </div>
+<div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-semibold tracking-tight leading-8">Events</h1>
+                <p class="text-secondary mt-1">11 total events — drag to reschedule.</p>
             </div>
+            <div class="flex items-center gap-4">
+                <mat-button-toggle-group 
+                    [value]="currentView()" 
+                    (change)="onViewChange($event.value)" 
+                    class="h-10">
+                    <mat-button-toggle value="table" class="px-2">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:list-bullet"></mat-icon>
+                        <span class="ml-1 hidden sm:inline">Table</span>
+                    </mat-button-toggle>
+                    <mat-button-toggle value="calendar" class="px-2">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
+                        <span class="ml-1 hidden sm:inline">Calendar</span>
+                    </mat-button-toggle>
+                    <mat-button-toggle value="kanban" class="px-2">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:view-columns"></mat-icon>
+                        <span class="ml-1 hidden sm:inline">Kanban</span>
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @for (event of events; track event.id) {
-                    <div class="bg-card border rounded-2xl p-6 shadow-sm flex flex-col">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="flex-none w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
-                                <mat-icon class="icon-size-6 text-primary" svgIcon="heroicons_outline:calendar-days"></mat-icon>
-                            </div>
-                            <h2 class="text-lg font-semibold leading-tight">{{ event.title }}</h2>
-                        </div>
-                        
-                        <div class="space-y-3 mb-6">
-                            <div class="flex items-start text-sm">
-                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:clock"></mat-icon>
-                                <span>{{ event.datetime }}</span>
-                            </div>
-                            <div class="flex items-start text-sm">
-                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:map-pin"></mat-icon>
-                                <span>{{ event.location }}</span>
-                            </div>
-                            <div class="flex items-start text-sm">
-                                <mat-icon class="icon-size-5 text-secondary mr-3" svgIcon="heroicons_outline:users"></mat-icon>
-                                <span>{{ event.attendeeCount }} expected attendees</span>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-auto pt-4 border-t flex justify-end">
-                            <button mat-stroked-button>Manage</button>
-                        </div>
-                    </div>
-                }
+                <button mat-flat-button color="primary" routerLink="new">
+                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                    <span class="ml-2">New event</span>
+                </button>
             </div>
         </div>
+
+        <!-- Filters -->
+        <div class="flex items-center gap-4 mb-6">
+            <span class="text-secondary font-medium">Filter:</span>
+            <mat-chip-set>
+                <mat-chip-option (click)="toggleTypeFilter('open-day')" [selected]="typeFilter() === 'open-day'" class="bg-gray-100 dark:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-500"></span> Open Day
+                    </span>
+                </mat-chip-option>
+                <mat-chip-option (click)="toggleTypeFilter('webinar')" [selected]="typeFilter() === 'webinar'" class="bg-gray-100 dark:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-teal-500"></span> Webinar
+                    </span>
+                </mat-chip-option>
+                <mat-chip-option (click)="toggleTypeFilter('info-session')" [selected]="typeFilter() === 'info-session'" class="bg-gray-100 dark:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Info Session
+                    </span>
+                </mat-chip-option>
+                <mat-chip-option (click)="toggleTypeFilter('campus-tour')" [selected]="typeFilter() === 'campus-tour'" class="bg-gray-100 dark:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Campus Tour
+                    </span>
+                </mat-chip-option>
+                <mat-chip-option (click)="toggleTypeFilter('fair')" [selected]="typeFilter() === 'fair'" class="bg-gray-100 dark:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Fair
+                    </span>
+                </mat-chip-option>
+            </mat-chip-set>
+        </div>
+
+        <!-- Content Router Outlet -->
+        <div>
+            <router-outlet></router-outlet>
+        </div>
     </div>
-}
+</div>
