@@ -136,13 +136,15 @@ The analytics boundary is privacy-first:
 - Consent Mode v2 or an equivalent consent layer controls analytics and ads storage before GA4 tags or Measurement Protocol events are sent.
 - CRM audit logs record staff actions and report/export access. GA4 event collection is separate telemetry and is not a substitute for CRM audit trails.
 
+The browser collection layer uses the Google tag. Prefer Google Tag Manager when marketing or analytics staff need to manage destinations without deploys; use `gtag.js` only when a smaller direct integration is intentionally chosen. In both cases, application code publishes typed analytics events through a single analytics facade instead of scattering raw tag calls across components. When GTM is used, that facade writes to a stable `dataLayer` contract with approved event names, bounded parameters, and no PII-bearing values. Tag configuration is environment-specific, Consent Mode defaults run before any GA4 event, and Tag Assistant/debug tooling is part of acceptance for implementation.
+
 Recommended reporting flow:
 
 ```mermaid
 flowchart LR
-  Browser[Applicant/public pages] --> GTM[Google Tag / server-side GTM]
+  Browser[Applicant/public pages] --> Tag[Google tag via GTM or gtag.js]
   CRM[CRM backend events] --> MP[GA4 Measurement Protocol]
-  GTM --> GA4[GA4 property]
+  Tag --> GA4[GA4 property]
   MP --> GA4
   GA4 --> DataAPI[GA4 Data API]
   GA4 --> BigQuery[GA4 BigQuery export]

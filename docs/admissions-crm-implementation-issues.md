@@ -369,7 +369,7 @@ Goal: connect Google Analytics 4 to campaign and reporting workflows without mak
 Deliverables:
 
 - GA4 event taxonomy and UTM naming governance for admissions campaigns.
-- Consent-aware client-side tag integration for public inquiry, applicant portal, event registration, and application funnel pages.
+- Consent-aware Google tag integration for public inquiry, applicant portal, event registration, and application funnel pages, implemented through either Google Tag Manager or `gtag.js` behind a typed frontend analytics facade.
 - Server-side Measurement Protocol or server-side Google Tag Manager integration for offline CRM events such as campaign provider clicks, application submission, decision posted, and enrollment intent confirmed.
 - GA4 Data API adapter for aggregate campaign/report widgets.
 - BigQuery export design for CRM-to-GA joins, long-range attribution, and funnel analysis.
@@ -378,6 +378,8 @@ Deliverables:
 Acceptance criteria:
 
 - GA4 events use snake_case names and bounded parameters.
+- Google tag initialization is environment-specific, runs consent defaults before analytics events, and is verifiable with Tag Assistant or GA debug tooling.
+- Google Tag Manager, when selected, receives events through a documented `dataLayer` schema owned by the frontend analytics facade.
 - UTM values are normalized and preserved on inquiry/application attribution records.
 - GA4 user IDs are opaque CRM identifiers only.
 - Embedded reports can show aggregate source/medium/campaign attribution without exposing applicant PII.
