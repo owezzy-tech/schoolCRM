@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import {
     ActivatedRoute,
@@ -19,7 +18,6 @@ import { filter } from 'rxjs/operators';
         RouterLink,
         MatButtonModule,
         MatIconModule,
-        MatChipsModule,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './events.component.html',
@@ -32,6 +30,33 @@ export class EventsComponent {
     
     // Filter state
     readonly typeFilter = signal<string | null>(null);
+    readonly eventTypeFilters = [
+        {
+            type: 'open-day',
+            label: 'Open Day',
+            dotClass: 'bg-purple-500',
+        },
+        {
+            type: 'webinar',
+            label: 'Webinar',
+            dotClass: 'bg-teal-500',
+        },
+        {
+            type: 'info-session',
+            label: 'Info Session',
+            dotClass: 'bg-green-500',
+        },
+        {
+            type: 'campus-tour',
+            label: 'Campus Tour',
+            dotClass: 'bg-amber-500',
+        },
+        {
+            type: 'fair',
+            label: 'Fair',
+            dotClass: 'bg-red-500',
+        },
+    ] as const;
 
     constructor() {
         this.router.events.pipe(

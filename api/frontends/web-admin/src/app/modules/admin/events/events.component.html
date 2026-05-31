@@ -51,35 +51,27 @@
         </div>
 
         <!-- Filters -->
-        <div class="flex items-center gap-4 mb-6">
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <span class="text-secondary font-medium">Filter:</span>
-            <mat-chip-set>
-                <mat-chip-option (click)="toggleTypeFilter('open-day')" [selected]="typeFilter() === 'open-day'" class="bg-gray-100 dark:bg-gray-800">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-purple-500"></span> Open Day
-                    </span>
-                </mat-chip-option>
-                <mat-chip-option (click)="toggleTypeFilter('webinar')" [selected]="typeFilter() === 'webinar'" class="bg-gray-100 dark:bg-gray-800">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-teal-500"></span> Webinar
-                    </span>
-                </mat-chip-option>
-                <mat-chip-option (click)="toggleTypeFilter('info-session')" [selected]="typeFilter() === 'info-session'" class="bg-gray-100 dark:bg-gray-800">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Info Session
-                    </span>
-                </mat-chip-option>
-                <mat-chip-option (click)="toggleTypeFilter('campus-tour')" [selected]="typeFilter() === 'campus-tour'" class="bg-gray-100 dark:bg-gray-800">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Campus Tour
-                    </span>
-                </mat-chip-option>
-                <mat-chip-option (click)="toggleTypeFilter('fair')" [selected]="typeFilter() === 'fair'" class="bg-gray-100 dark:bg-gray-800">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Fair
-                    </span>
-                </mat-chip-option>
-            </mat-chip-set>
+            <div class="flex flex-wrap gap-2">
+                @for (filter of eventTypeFilters; track filter.type) {
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 hover:border-primary/40 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        [class.border-primary]="typeFilter() === filter.type"
+                        [class.bg-primary-50]="typeFilter() === filter.type"
+                        [class.text-primary]="typeFilter() === filter.type"
+                        [class.dark:bg-primary-900]="typeFilter() === filter.type"
+                        [class.dark:bg-opacity-20]="typeFilter() === filter.type"
+                        [class.border-default]="typeFilter() !== filter.type"
+                        [class.bg-card]="typeFilter() !== filter.type"
+                        [class.text-secondary]="typeFilter() !== filter.type"
+                        (click)="toggleTypeFilter(filter.type)">
+                        <span class="h-2 w-2 rounded-full" [class]="filter.dotClass"></span>
+                        <span>{{ filter.label }}</span>
+                    </button>
+                }
+            </div>
         </div>
 
         <!-- Content Router Outlet -->
