@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
-import { RouterOutlet, RouterLink, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatChipsModule } from '@angular/material/chips';
+import {
+    ActivatedRoute,
+    NavigationEnd,
+    Router,
+    RouterLink,
+    RouterOutlet,
+} from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-events',
@@ -15,8 +18,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
         RouterLink,
         MatButtonModule,
         MatIconModule,
-        MatButtonToggleModule,
-        MatChipsModule,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './events.component.html',
@@ -29,6 +30,33 @@ export class EventsComponent {
     
     // Filter state
     readonly typeFilter = signal<string | null>(null);
+    readonly eventTypeFilters = [
+        {
+            type: 'open-day',
+            label: 'Open Day',
+            dotClass: 'bg-purple-500',
+        },
+        {
+            type: 'webinar',
+            label: 'Webinar',
+            dotClass: 'bg-teal-500',
+        },
+        {
+            type: 'info-session',
+            label: 'Info Session',
+            dotClass: 'bg-green-500',
+        },
+        {
+            type: 'campus-tour',
+            label: 'Campus Tour',
+            dotClass: 'bg-amber-500',
+        },
+        {
+            type: 'fair',
+            label: 'Fair',
+            dotClass: 'bg-red-500',
+        },
+    ] as const;
 
     constructor() {
         this.router.events.pipe(
