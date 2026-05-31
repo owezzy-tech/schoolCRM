@@ -1,0 +1,122 @@
+<div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+    <div class="flex-auto p-6 sm:p-10 max-w-4xl mx-auto w-full">
+        <!-- Back navigation -->
+        <div class="mb-6 flex items-center justify-between">
+            <a mat-button [routerLink]="isEditMode() ? ['..'] : ['..']" color="primary">
+                <mat-icon class="icon-size-5 mr-2" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                Back
+            </a>
+            <h1 class="text-2xl font-semibold">{{ isEditMode() ? 'Edit Event' : 'Create New Event' }}</h1>
+        </div>
+
+        <div class="bg-card border rounded-2xl shadow-sm p-6 sm:p-8">
+            <form [formGroup]="eventForm" (ngSubmit)="save()" class="flex flex-col gap-6">
+                
+                <!-- Basic Info -->
+                <div class="flex flex-col gap-4">
+                    <h2 class="text-lg font-medium border-b pb-2">Basic Information</h2>
+                    
+                    <mat-form-field class="w-full">
+                        <mat-label>Event Title</mat-label>
+                        <input matInput formControlName="title" placeholder="e.g. Fall Open House">
+                    </mat-form-field>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>Event Type</mat-label>
+                            <mat-select formControlName="type">
+                                <mat-option value="open-day">Open Day</mat-option>
+                                <mat-option value="webinar">Webinar</mat-option>
+                                <mat-option value="info-session">Info Session</mat-option>
+                                <mat-option value="campus-tour">Campus Tour</mat-option>
+                                <mat-option value="fair">Fair</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>Status</mat-label>
+                            <mat-select formControlName="status">
+                                <mat-option value="draft">Draft</mat-option>
+                                <mat-option value="upcoming">Upcoming</mat-option>
+                                <mat-option value="live">Live</mat-option>
+                                <mat-option value="completed">Completed</mat-option>
+                                <mat-option value="cancelled">Cancelled</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                    
+                    <mat-form-field class="w-full">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput formControlName="description" rows="4" placeholder="Event details..."></textarea>
+                    </mat-form-field>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="flex flex-col gap-4 mt-4">
+                    <h2 class="text-lg font-medium border-b pb-2">Date & Time</h2>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>Start Date</mat-label>
+                            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                            <mat-datepicker #startPicker></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>Start Time</mat-label>
+                            <input matInput type="time" formControlName="startTime">
+                        </mat-form-field>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>End Date</mat-label>
+                            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+                            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                            <mat-datepicker #endPicker></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field class="w-full sm:w-1/2">
+                            <mat-label>End Time</mat-label>
+                            <input matInput type="time" formControlName="endTime">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Location & Capacity -->
+                <div class="flex flex-col gap-4 mt-4">
+                    <h2 class="text-lg font-medium border-b pb-2">Location & Capacity</h2>
+                    
+                    <div class="mb-2">
+                        <mat-radio-group formControlName="isVirtual" class="flex gap-6">
+                            <mat-radio-button [value]="false">In-Person</mat-radio-button>
+                            <mat-radio-button [value]="true">Virtual (Online)</mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <mat-form-field class="w-full sm:w-2/3">
+                            <mat-label>{{ eventForm.get('isVirtual')?.value ? 'Meeting Link (URL)' : 'Physical Location' }}</mat-label>
+                            <input matInput formControlName="location" placeholder="e.g. Zoom link or Room 101">
+                        </mat-form-field>
+
+                        <mat-form-field class="w-full sm:w-1/3">
+                            <mat-label>Capacity limit</mat-label>
+                            <input matInput type="number" formControlName="capacity">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t">
+                    <button mat-button type="button" [routerLink]="['..']">Cancel</button>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="eventForm.invalid">
+                        {{ isEditMode() ? 'Save Changes' : 'Create Event' }}
+                    </button>
+                </div>
+                
+            </form>
+        </div>
+    </div>
+</div>

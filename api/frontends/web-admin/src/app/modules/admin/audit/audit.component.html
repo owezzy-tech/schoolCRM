@@ -1,0 +1,69 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Audit log</h1>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mb-6">
+                @for (filter of filters; track filter) {
+                    <button class="inline-flex items-center px-3 py-1.5 border rounded-full text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        {{ filter }}
+                        <mat-icon class="icon-size-4 ml-1.5 text-secondary" svgIcon="heroicons_outline:chevron-down"></mat-icon>
+                    </button>
+                }
+            </div>
+
+            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
+                        <tr>
+                            <th class="px-6 py-4 font-medium">Timestamp</th>
+                            <th class="px-6 py-4 font-medium">Actor</th>
+                            <th class="px-6 py-4 font-medium">Action</th>
+                            <th class="px-6 py-4 font-medium">Entity</th>
+                            <th class="px-6 py-4 font-medium">IP</th>
+                            <th class="px-6 py-4 font-medium text-right">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (event of events; track event.id) {
+                            <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                <td class="px-6 py-4 text-secondary whitespace-nowrap">{{ event.timestamp }}</td>
+                                <td class="px-6 py-4 font-medium">{{ event.actor }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                          [class.bg-blue-100]="event.action === 'Create'"
+                                          [class.text-blue-800]="event.action === 'Create'"
+                                          [class.dark:bg-blue-900]="event.action === 'Create'"
+                                          [class.dark:text-blue-300]="event.action === 'Create'"
+                                          [class.bg-amber-100]="event.action === 'Update'"
+                                          [class.text-amber-800]="event.action === 'Update'"
+                                          [class.dark:bg-amber-900]="event.action === 'Update'"
+                                          [class.dark:text-amber-300]="event.action === 'Update'"
+                                          [class.bg-red-100]="event.action === 'Delete'"
+                                          [class.text-red-800]="event.action === 'Delete'"
+                                          [class.dark:bg-red-900]="event.action === 'Delete'"
+                                          [class.dark:text-red-300]="event.action === 'Delete'"
+                                          [class.bg-gray-100]="event.action === 'Login'"
+                                          [class.text-gray-800]="event.action === 'Login'"
+                                          [class.dark:bg-gray-800]="event.action === 'Login'"
+                                          [class.dark:text-gray-300]="event.action === 'Login'">
+                                        {{ event.action }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">{{ event.entity }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-secondary">{{ event.ip }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <a class="text-primary hover:underline cursor-pointer">View</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

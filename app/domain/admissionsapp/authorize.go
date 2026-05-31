@@ -58,3 +58,48 @@ func authorizeAdmissions(authClient authclient.Authenticator, admissionsBus admi
 
 	return m
 }
+
+func authorizeApplicant(authClient authclient.Authenticator, admissionsBus admissionsbus.ExtBusiness, rule string) web.MidFunc {
+	m := func(next web.HandlerFunc) web.HandlerFunc {
+		h := func(ctx context.Context, r *http.Request) web.Encoder {
+			userID, err := mid.GetUserID(ctx)
+			if err != nil {
+				return errs.New(errs.Unauthenticated, err)
+			}
+
+			profile, err := admissionsBus.QueryApplicantProfileByUserID(ctx, userID)
+			if err != nil {
+				if errors.Is(err, admissionsbus.ErrApplicantProfileNotFound) {
+					return errs.New(errs.Unauthenticated, admissionsbus.ErrApplicantProfileNotFound)
+				}
+				return errs.Errorf(errs.Unauthenticated, "query admissions applicant profile: %s", err)
+			}
+
+			if !profile.Active {
+				return errs.New(errs.Unauthenticated, fmt.Errorf("admissions applicant profile inactive"))
+			}
+
+			claims := mid.GetClaims(ctx)
+			claims.Roles = append(claims.Roles, admissionsbus.AdmissionsRoleApplicant.String())
+
+			auth := authclient.Authorize{
+				Claims: claims,
+				UserID: userID,
+				Rule:   rule,
+			}
+
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+
+			if err := authClient.Authorize(ctx, auth); err != nil {
+				return errs.New(errs.Unauthenticated, err)
+			}
+
+			return next(ctx, r)
+		}
+
+		return h
+	}
+
+	return m
+}

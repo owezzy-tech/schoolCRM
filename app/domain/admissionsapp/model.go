@@ -95,6 +95,255 @@ func toBusNewStaffProfile(app NewStaffProfile) (admissionsbus.NewStaffProfile, e
 	}, nil
 }
 
+// ApplicantProfile represents an admissions applicant context profile.
+type ApplicantProfile struct {
+	ID            string `json:"id"`
+	UserID        string `json:"userID"`
+	ConstituentID string `json:"constituentID"`
+	Active        bool   `json:"active"`
+	DateCreated   string `json:"dateCreated"`
+	DateUpdated   string `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ApplicantProfile) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplicantProfile(profile admissionsbus.ApplicantProfile) ApplicantProfile {
+	return ApplicantProfile{
+		ID:            profile.ID.String(),
+		UserID:        profile.UserID.String(),
+		ConstituentID: profile.ConstituentID.String(),
+		Active:        profile.Active,
+		DateCreated:   profile.DateCreated.Format(time.RFC3339),
+		DateUpdated:   profile.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplicantProfiles(profiles []admissionsbus.ApplicantProfile) []ApplicantProfile {
+	app := make([]ApplicantProfile, len(profiles))
+	for i, profile := range profiles {
+		app[i] = toAppApplicantProfile(profile)
+	}
+
+	return app
+}
+
+// NewApplicantProfile defines the data needed to create or update an admissions applicant profile.
+type NewApplicantProfile struct {
+	UserID        string `json:"userID"`
+	ConstituentID string `json:"constituentID"`
+	Active        bool   `json:"active"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplicantProfile) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewApplicantProfile(app NewApplicantProfile) (admissionsbus.NewApplicantProfile, error) {
+	var fieldErrors errs.FieldErrors
+
+	userID, err := uuid.Parse(app.UserID)
+	if err != nil {
+		fieldErrors.Add("userID", err)
+	}
+
+	constituentID, err := uuid.Parse(app.ConstituentID)
+	if err != nil {
+		fieldErrors.Add("constituentID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewApplicantProfile{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewApplicantProfile{
+		UserID:        userID,
+		ConstituentID: constituentID,
+		Active:        app.Active,
+	}, nil
+}
+
+// LeadScoreCriterion represents a single condition in a lead score rule.
+type LeadScoreCriterion struct {
+	Field    string   `json:"field"`
+	Operator string   `json:"operator"`
+	Values   []string `json:"values"`
+}
+
+func toAppLeadScoreCriterion(criterion admissionsbus.LeadScoreCriterion) LeadScoreCriterion {
+	return LeadScoreCriterion{
+		Field:    criterion.Field.String(),
+		Operator: criterion.Operator.String(),
+		Values:   criterion.Values,
+	}
+}
+
+func toAppLeadScoreCriteria(criteria []admissionsbus.LeadScoreCriterion) []LeadScoreCriterion {
+	app := make([]LeadScoreCriterion, len(criteria))
+	for i, criterion := range criteria {
+		app[i] = toAppLeadScoreCriterion(criterion)
+	}
+
+	return app
+}
+
+func toBusLeadScoreCriterion(app LeadScoreCriterion) admissionsbus.LeadScoreCriterion {
+	return admissionsbus.LeadScoreCriterion{
+		Field:    admissionsbus.LeadScoreCriterionField(app.Field),
+		Operator: admissionsbus.LeadScoreCriterionOperator(app.Operator),
+		Values:   app.Values,
+	}
+}
+
+func toBusLeadScoreCriteria(app []LeadScoreCriterion) []admissionsbus.LeadScoreCriterion {
+	criteria := make([]admissionsbus.LeadScoreCriterion, len(app))
+	for i, criterion := range app {
+		criteria[i] = toBusLeadScoreCriterion(criterion)
+	}
+
+	return criteria
+}
+
+// LeadScoreRule represents an explainable rule contributing points to a lead score.
+type LeadScoreRule struct {
+	ID          string               `json:"id"`
+	Name        string               `json:"name"`
+	Description *string              `json:"description,omitempty"`
+	Criteria    []LeadScoreCriterion `json:"criteria"`
+	Points      int                  `json:"points"`
+	Active      bool                 `json:"active"`
+	Priority    int                  `json:"priority"`
+	DateCreated string               `json:"dateCreated"`
+	DateUpdated string               `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app LeadScoreRule) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppLeadScoreRule(rule admissionsbus.LeadScoreRule) LeadScoreRule {
+	return LeadScoreRule{
+		ID:          rule.ID.String(),
+		Name:        rule.Name,
+		Description: rule.Description,
+		Criteria:    toAppLeadScoreCriteria(rule.Criteria),
+		Points:      rule.Points,
+		Active:      rule.Active,
+		Priority:    rule.Priority,
+		DateCreated: rule.DateCreated.Format(time.RFC3339),
+		DateUpdated: rule.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppLeadScoreRules(rules []admissionsbus.LeadScoreRule) []LeadScoreRule {
+	app := make([]LeadScoreRule, len(rules))
+	for i, rule := range rules {
+		app[i] = toAppLeadScoreRule(rule)
+	}
+
+	return app
+}
+
+// NewLeadScoreRule defines the data needed to create or update a lead score rule.
+type NewLeadScoreRule struct {
+	Name        string               `json:"name"`
+	Description *string              `json:"description"`
+	Criteria    []LeadScoreCriterion `json:"criteria"`
+	Points      int                  `json:"points"`
+	Active      bool                 `json:"active"`
+	Priority    int                  `json:"priority"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewLeadScoreRule) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewLeadScoreRule(app NewLeadScoreRule) admissionsbus.NewLeadScoreRule {
+	return admissionsbus.NewLeadScoreRule{
+		Name:        app.Name,
+		Description: app.Description,
+		Criteria:    toBusLeadScoreCriteria(app.Criteria),
+		Points:      app.Points,
+		Active:      app.Active,
+		Priority:    app.Priority,
+	}
+}
+
+// LeadScoreRuleResult explains how one rule contributed to a score.
+type LeadScoreRuleResult struct {
+	RuleID  string `json:"ruleID"`
+	Name    string `json:"name"`
+	Points  int    `json:"points"`
+	Matched bool   `json:"matched"`
+	Reason  string `json:"reason"`
+}
+
+func toAppLeadScoreRuleResult(result admissionsbus.LeadScoreRuleResult) LeadScoreRuleResult {
+	return LeadScoreRuleResult{
+		RuleID:  result.RuleID.String(),
+		Name:    result.Name,
+		Points:  result.Points,
+		Matched: result.Matched,
+		Reason:  result.Reason,
+	}
+}
+
+func toAppLeadScoreRuleResults(results []admissionsbus.LeadScoreRuleResult) []LeadScoreRuleResult {
+	app := make([]LeadScoreRuleResult, len(results))
+	for i, result := range results {
+		app[i] = toAppLeadScoreRuleResult(result)
+	}
+
+	return app
+}
+
+// LeadScore represents the latest explainable score for a constituent.
+type LeadScore struct {
+	ID             string                `json:"id"`
+	ConstituentID  string                `json:"constituentID"`
+	TotalScore     int                   `json:"totalScore"`
+	Band           string                `json:"band"`
+	Breakdown      []LeadScoreRuleResult `json:"breakdown"`
+	RecalculatedAt string                `json:"recalculatedAt"`
+	DateCreated    string                `json:"dateCreated"`
+	DateUpdated    string                `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app LeadScore) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppLeadScore(score admissionsbus.LeadScore) LeadScore {
+	return LeadScore{
+		ID:             score.ID.String(),
+		ConstituentID:  score.ConstituentID.String(),
+		TotalScore:     score.TotalScore,
+		Band:           score.Band.String(),
+		Breakdown:      toAppLeadScoreRuleResults(score.Breakdown),
+		RecalculatedAt: score.RecalculatedAt.Format(time.RFC3339),
+		DateCreated:    score.DateCreated.Format(time.RFC3339),
+		DateUpdated:    score.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppLeadScores(scores []admissionsbus.LeadScore) []LeadScore {
+	app := make([]LeadScore, len(scores))
+	for i, score := range scores {
+		app[i] = toAppLeadScore(score)
+	}
+
+	return app
+}
+
 // Encode implements the encoder interface.
 func (app Health) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
@@ -215,6 +464,128 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 		ExternalSISID:   app.ExternalSISID,
 		LifecycleStage:  stage,
 		DuplicateStatus: admissionsbus.DuplicateStatusActive,
+	}, nil
+}
+
+// Inquiry represents a public admissions inquiry submission.
+type Inquiry struct {
+	ID                string  `json:"id"`
+	ConstituentID     string  `json:"constituentID"`
+	FirstName         string  `json:"firstName"`
+	LastName          string  `json:"lastName"`
+	DateOfBirth       string  `json:"dateOfBirth"`
+	PrimaryEmail      string  `json:"primaryEmail"`
+	PrimaryPhone      string  `json:"primaryPhone"`
+	ProgramOfInterest *string `json:"programOfInterest,omitempty"`
+	TermOfInterest    *string `json:"termOfInterest,omitempty"`
+	Source            string  `json:"source"`
+	UTMSource         *string `json:"utmSource,omitempty"`
+	UTMMedium         *string `json:"utmMedium,omitempty"`
+	UTMCampaign       *string `json:"utmCampaign,omitempty"`
+	Message           *string `json:"message,omitempty"`
+	Status            string  `json:"status"`
+	DateCreated       string  `json:"dateCreated"`
+	DateUpdated       string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Inquiry) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppInquiry(inquiry admissionsbus.Inquiry) Inquiry {
+	return Inquiry{
+		ID:                inquiry.ID.String(),
+		ConstituentID:     inquiry.ConstituentID.String(),
+		FirstName:         inquiry.FirstName,
+		LastName:          inquiry.LastName,
+		DateOfBirth:       inquiry.DateOfBirth.Format(time.RFC3339),
+		PrimaryEmail:      inquiry.PrimaryEmail.String(),
+		PrimaryPhone:      inquiry.PrimaryPhone,
+		ProgramOfInterest: uuidStringPtr(inquiry.ProgramOfInterest),
+		TermOfInterest:    uuidStringPtr(inquiry.TermOfInterest),
+		Source:            inquiry.Source,
+		UTMSource:         inquiry.UTMSource,
+		UTMMedium:         inquiry.UTMMedium,
+		UTMCampaign:       inquiry.UTMCampaign,
+		Message:           inquiry.Message,
+		Status:            inquiry.Status.String(),
+		DateCreated:       inquiry.DateCreated.Format(time.RFC3339),
+		DateUpdated:       inquiry.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppInquiries(inquiries []admissionsbus.Inquiry) []Inquiry {
+	app := make([]Inquiry, len(inquiries))
+	for i, inquiry := range inquiries {
+		app[i] = toAppInquiry(inquiry)
+	}
+
+	return app
+}
+
+// NewInquiry defines the data needed to submit a public inquiry form.
+type NewInquiry struct {
+	FirstName         string  `json:"firstName"`
+	LastName          string  `json:"lastName"`
+	DateOfBirth       string  `json:"dateOfBirth"`
+	PrimaryEmail      string  `json:"primaryEmail"`
+	PrimaryPhone      string  `json:"primaryPhone"`
+	ProgramOfInterest *string `json:"programOfInterest"`
+	TermOfInterest    *string `json:"termOfInterest"`
+	Source            string  `json:"source"`
+	UTMSource         *string `json:"utmSource"`
+	UTMMedium         *string `json:"utmMedium"`
+	UTMCampaign       *string `json:"utmCampaign"`
+	Message           *string `json:"message"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewInquiry) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewInquiry(app NewInquiry) (admissionsbus.NewInquiry, error) {
+	var fieldErrors errs.FieldErrors
+
+	dob, err := time.Parse(time.RFC3339, app.DateOfBirth)
+	if err != nil {
+		fieldErrors.Add("dateOfBirth", err)
+	}
+
+	email, err := mail.ParseAddress(app.PrimaryEmail)
+	if err != nil {
+		fieldErrors.Add("primaryEmail", err)
+	}
+
+	programID, err := parseUUIDPtr(app.ProgramOfInterest)
+	if err != nil {
+		fieldErrors.Add("programOfInterest", err)
+	}
+
+	termID, err := parseUUIDPtr(app.TermOfInterest)
+	if err != nil {
+		fieldErrors.Add("termOfInterest", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewInquiry{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewInquiry{
+		FirstName:         app.FirstName,
+		LastName:          app.LastName,
+		DateOfBirth:       dob,
+		PrimaryEmail:      *email,
+		PrimaryPhone:      app.PrimaryPhone,
+		ProgramOfInterest: programID,
+		TermOfInterest:    termID,
+		Source:            app.Source,
+		UTMSource:         app.UTMSource,
+		UTMMedium:         app.UTMMedium,
+		UTMCampaign:       app.UTMCampaign,
+		Message:           app.Message,
 	}, nil
 }
 
@@ -481,6 +852,112 @@ type Application struct {
 	DateUpdated        string  `json:"dateUpdated"`
 }
 
+// ApplicationFormField represents a configurable, non-core application form field.
+type ApplicationFormField struct {
+	FieldName    string  `json:"fieldName"`
+	FieldType    string  `json:"fieldType"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+	Validation   *string `json:"validation,omitempty"`
+}
+
+// ApplicationChecklistTemplateItem represents a checklist/document requirement in a form template.
+type ApplicationChecklistTemplateItem struct {
+	ItemKey      string  `json:"itemKey"`
+	DocumentName string  `json:"documentName"`
+	Description  *string `json:"description,omitempty"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+}
+
+// ApplicationFormTemplate represents configurable application form requirements.
+type ApplicationFormTemplate struct {
+	ID              string                             `json:"id"`
+	ProgramID       string                             `json:"programID"`
+	AcademicTermID  string                             `json:"academicTermID"`
+	ApplicationType string                             `json:"applicationType"`
+	Name            string                             `json:"name"`
+	Description     *string                            `json:"description,omitempty"`
+	Version         int                                `json:"version"`
+	RequiredFields  []ApplicationFormField             `json:"requiredFields"`
+	ChecklistItems  []ApplicationChecklistTemplateItem `json:"checklistItems"`
+	Active          bool                               `json:"active"`
+	Priority        int                                `json:"priority"`
+	DateCreated     string                             `json:"dateCreated"`
+	DateUpdated     string                             `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ApplicationFormTemplate) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppApplicationFormField(field admissionsbus.ApplicationFormField) ApplicationFormField {
+	return ApplicationFormField{
+		FieldName:    field.FieldName,
+		FieldType:    field.FieldType,
+		Required:     field.Required,
+		DisplayOrder: field.DisplayOrder,
+		Validation:   field.Validation,
+	}
+}
+
+func toAppApplicationFormFields(fields []admissionsbus.ApplicationFormField) []ApplicationFormField {
+	app := make([]ApplicationFormField, len(fields))
+	for i, field := range fields {
+		app[i] = toAppApplicationFormField(field)
+	}
+
+	return app
+}
+
+func toAppChecklistTemplateItem(item admissionsbus.ApplicationChecklistTemplateItem) ApplicationChecklistTemplateItem {
+	return ApplicationChecklistTemplateItem{
+		ItemKey:      item.ItemKey,
+		DocumentName: item.DocumentName,
+		Description:  item.Description,
+		Required:     item.Required,
+		DisplayOrder: item.DisplayOrder,
+	}
+}
+
+func toAppChecklistTemplateItems(items []admissionsbus.ApplicationChecklistTemplateItem) []ApplicationChecklistTemplateItem {
+	app := make([]ApplicationChecklistTemplateItem, len(items))
+	for i, item := range items {
+		app[i] = toAppChecklistTemplateItem(item)
+	}
+
+	return app
+}
+
+func toAppApplicationFormTemplate(template admissionsbus.ApplicationFormTemplate) ApplicationFormTemplate {
+	return ApplicationFormTemplate{
+		ID:              template.ID.String(),
+		ProgramID:       template.ProgramID.String(),
+		AcademicTermID:  template.AcademicTermID.String(),
+		ApplicationType: template.ApplicationType.String(),
+		Name:            template.Name,
+		Description:     template.Description,
+		Version:         template.Version,
+		RequiredFields:  toAppApplicationFormFields(template.RequiredFields),
+		ChecklistItems:  toAppChecklistTemplateItems(template.ChecklistItems),
+		Active:          template.Active,
+		Priority:        template.Priority,
+		DateCreated:     template.DateCreated.Format(time.RFC3339),
+		DateUpdated:     template.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppApplicationFormTemplates(templates []admissionsbus.ApplicationFormTemplate) []ApplicationFormTemplate {
+	app := make([]ApplicationFormTemplate, len(templates))
+	for i, template := range templates {
+		app[i] = toAppApplicationFormTemplate(template)
+	}
+
+	return app
+}
+
 // ApplicationTransition represents immutable application status transition history.
 type ApplicationTransition struct {
 	ID            string          `json:"id"`
@@ -523,6 +1000,104 @@ func toAppApplicationTransitions(transitions []admissionsbus.ApplicationTransiti
 	return app
 }
 
+// ChecklistItem represents one document requirement for an application.
+type ChecklistItem struct {
+	ID            string  `json:"id"`
+	ApplicationID string  `json:"applicationID"`
+	ItemKey       string  `json:"itemKey"`
+	DocumentName  string  `json:"documentName"`
+	Description   *string `json:"description,omitempty"`
+	Required      bool    `json:"required"`
+	Status        string  `json:"status"`
+	DisplayOrder  int     `json:"displayOrder"`
+	DateCreated   string  `json:"dateCreated"`
+	DateUpdated   string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ChecklistItem) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppChecklistItem(item admissionsbus.ChecklistItem) ChecklistItem {
+	return ChecklistItem{
+		ID:            item.ID.String(),
+		ApplicationID: item.ApplicationID.String(),
+		ItemKey:       item.ItemKey,
+		DocumentName:  item.DocumentName,
+		Description:   item.Description,
+		Required:      item.Required,
+		Status:        item.Status.String(),
+		DisplayOrder:  item.DisplayOrder,
+		DateCreated:   item.DateCreated.Format(time.RFC3339),
+		DateUpdated:   item.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppChecklistItems(items []admissionsbus.ChecklistItem) []ChecklistItem {
+	app := make([]ChecklistItem, len(items))
+	for i, item := range items {
+		app[i] = toAppChecklistItem(item)
+	}
+
+	return app
+}
+
+// Document represents uploaded admissions document metadata.
+type Document struct {
+	ID              string  `json:"id"`
+	ApplicationID   string  `json:"applicationID"`
+	ChecklistItemID string  `json:"checklistItemID"`
+	FileName        string  `json:"fileName"`
+	ContentType     string  `json:"contentType"`
+	SizeBytes       int64   `json:"sizeBytes"`
+	StorageKey      string  `json:"storageKey"`
+	Status          string  `json:"status"`
+	ReviewerID      *string `json:"reviewerID,omitempty"`
+	ReviewerNotes   *string `json:"reviewerNotes,omitempty"`
+	UploadedByID    string  `json:"uploadedByID"`
+	UploadedAt      string  `json:"uploadedAt"`
+	ReviewedAt      *string `json:"reviewedAt,omitempty"`
+	DateCreated     string  `json:"dateCreated"`
+	DateUpdated     string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Document) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppDocument(document admissionsbus.Document) Document {
+	return Document{
+		ID:              document.ID.String(),
+		ApplicationID:   document.ApplicationID.String(),
+		ChecklistItemID: document.ChecklistItemID.String(),
+		FileName:        document.FileName,
+		ContentType:     document.ContentType,
+		SizeBytes:       document.SizeBytes,
+		StorageKey:      document.StorageKey,
+		Status:          document.Status.String(),
+		ReviewerID:      uuidStringPtr(document.ReviewerID),
+		ReviewerNotes:   document.ReviewerNotes,
+		UploadedByID:    document.UploadedByID.String(),
+		UploadedAt:      document.UploadedAt.Format(time.RFC3339),
+		ReviewedAt:      formatTimePtr(document.ReviewedAt),
+		DateCreated:     document.DateCreated.Format(time.RFC3339),
+		DateUpdated:     document.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppDocuments(documents []admissionsbus.Document) []Document {
+	app := make([]Document, len(documents))
+	for i, document := range documents {
+		app[i] = toAppDocument(document)
+	}
+
+	return app
+}
+
 // Encode implements the encoder interface.
 func (app Application) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
@@ -560,6 +1135,173 @@ type NewApplication struct {
 	AcademicTermID     string  `json:"academicTermID"`
 	ApplicationType    string  `json:"applicationType"`
 	AssignedReviewerID *string `json:"assignedReviewerID"`
+}
+
+// NewApplicationFormTemplate defines the data needed to create or update a form template.
+type NewApplicationFormTemplate struct {
+	ProgramID       string                             `json:"programID"`
+	AcademicTermID  string                             `json:"academicTermID"`
+	ApplicationType string                             `json:"applicationType"`
+	Name            string                             `json:"name"`
+	Description     *string                            `json:"description"`
+	RequiredFields  []ApplicationFormField             `json:"requiredFields"`
+	ChecklistItems  []ApplicationChecklistTemplateItem `json:"checklistItems"`
+	Active          bool                               `json:"active"`
+	Priority        int                                `json:"priority"`
+}
+
+// NewChecklistItem defines the data needed to create or update an application checklist item.
+type NewChecklistItem struct {
+	ItemKey      string  `json:"itemKey"`
+	DocumentName string  `json:"documentName"`
+	Description  *string `json:"description"`
+	Required     bool    `json:"required"`
+	DisplayOrder int     `json:"displayOrder"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewChecklistItem) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewChecklistItem(app NewChecklistItem, applicationID uuid.UUID) admissionsbus.NewChecklistItem {
+	return admissionsbus.NewChecklistItem{
+		ApplicationID: applicationID,
+		ItemKey:       app.ItemKey,
+		DocumentName:  app.DocumentName,
+		Description:   app.Description,
+		Required:      app.Required,
+		DisplayOrder:  app.DisplayOrder,
+	}
+}
+
+// NewDocument defines uploaded document metadata. File bytes are stored outside the CRM database.
+type NewDocument struct {
+	ChecklistItemID string `json:"checklistItemID"`
+	FileName        string `json:"fileName"`
+	ContentType     string `json:"contentType"`
+	SizeBytes       int64  `json:"sizeBytes"`
+	StorageKey      string `json:"storageKey"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewDocument) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewDocument(app NewDocument, applicationID uuid.UUID, uploadedByID uuid.UUID) (admissionsbus.NewDocument, error) {
+	var fieldErrors errs.FieldErrors
+
+	checklistItemID, err := uuid.Parse(app.ChecklistItemID)
+	if err != nil {
+		fieldErrors.Add("checklistItemID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewDocument{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewDocument{
+		ApplicationID:   applicationID,
+		ChecklistItemID: checklistItemID,
+		FileName:        app.FileName,
+		ContentType:     app.ContentType,
+		SizeBytes:       app.SizeBytes,
+		StorageKey:      app.StorageKey,
+		UploadedByID:    uploadedByID,
+	}, nil
+}
+
+// NewDocumentVerification defines reviewer action for uploaded document metadata.
+type NewDocumentVerification struct {
+	Status        string  `json:"status"`
+	ReviewerNotes *string `json:"reviewerNotes"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewDocumentVerification) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewDocumentVerification(app NewDocumentVerification, reviewerID uuid.UUID) admissionsbus.NewDocumentVerification {
+	return admissionsbus.NewDocumentVerification{
+		Status:        admissionsbus.DocumentStatus(app.Status),
+		ReviewerID:    reviewerID,
+		ReviewerNotes: app.ReviewerNotes,
+	}
+}
+
+// Decode implements the decoder interface.
+func (app *NewApplicationFormTemplate) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusApplicationFormField(app ApplicationFormField) admissionsbus.ApplicationFormField {
+	return admissionsbus.ApplicationFormField{
+		FieldName:    app.FieldName,
+		FieldType:    app.FieldType,
+		Required:     app.Required,
+		DisplayOrder: app.DisplayOrder,
+		Validation:   app.Validation,
+	}
+}
+
+func toBusApplicationFormFields(app []ApplicationFormField) []admissionsbus.ApplicationFormField {
+	fields := make([]admissionsbus.ApplicationFormField, len(app))
+	for i, field := range app {
+		fields[i] = toBusApplicationFormField(field)
+	}
+
+	return fields
+}
+
+func toBusChecklistTemplateItem(app ApplicationChecklistTemplateItem) admissionsbus.ApplicationChecklistTemplateItem {
+	return admissionsbus.ApplicationChecklistTemplateItem{
+		ItemKey:      app.ItemKey,
+		DocumentName: app.DocumentName,
+		Description:  app.Description,
+		Required:     app.Required,
+		DisplayOrder: app.DisplayOrder,
+	}
+}
+
+func toBusChecklistTemplateItems(app []ApplicationChecklistTemplateItem) []admissionsbus.ApplicationChecklistTemplateItem {
+	items := make([]admissionsbus.ApplicationChecklistTemplateItem, len(app))
+	for i, item := range app {
+		items[i] = toBusChecklistTemplateItem(item)
+	}
+
+	return items
+}
+
+func toBusNewApplicationFormTemplate(app NewApplicationFormTemplate) (admissionsbus.NewApplicationFormTemplate, error) {
+	var fieldErrors errs.FieldErrors
+
+	programID, err := uuid.Parse(app.ProgramID)
+	if err != nil {
+		fieldErrors.Add("programID", err)
+	}
+
+	academicTermID, err := uuid.Parse(app.AcademicTermID)
+	if err != nil {
+		fieldErrors.Add("academicTermID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewApplicationFormTemplate{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewApplicationFormTemplate{
+		ProgramID:       programID,
+		AcademicTermID:  academicTermID,
+		ApplicationType: admissionsbus.ApplicationType(app.ApplicationType),
+		Name:            app.Name,
+		Description:     app.Description,
+		RequiredFields:  toBusApplicationFormFields(app.RequiredFields),
+		ChecklistItems:  toBusChecklistTemplateItems(app.ChecklistItems),
+		Active:          app.Active,
+		Priority:        app.Priority,
+	}, nil
 }
 
 // Decode implements the decoder interface.
@@ -647,4 +1389,17 @@ func uuidStringPtr(id *uuid.UUID) *string {
 
 	formatted := id.String()
 	return &formatted
+}
+
+func parseUUIDPtr(value *string) (*uuid.UUID, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	id, err := uuid.Parse(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &id, nil
 }

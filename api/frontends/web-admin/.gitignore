@@ -4,6 +4,9 @@
 /dist
 /tmp
 /out-tsc
+
+# local playwright-mcp session artifacts
+/.playwright-mcp
 # Only exists if Bazel was run
 /bazel-out
 

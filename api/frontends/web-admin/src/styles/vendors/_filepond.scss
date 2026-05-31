@@ -1,0 +1,77 @@
+/* ----------------------------------------------------------------------------------------------------- */
+/*  @ FilePond overrides — aligned with Fuse theme tokens
+/* ----------------------------------------------------------------------------------------------------- */
+
+.filepond--root {
+    margin-bottom: 0;
+    font-family: inherit;
+    font-size: 0.875rem;
+
+    .filepond--drop-label {
+        @apply text-secondary;
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+
+    .filepond--label-action {
+        @apply text-primary;
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .filepond--panel-root {
+        @apply bg-card border-gray-300 border;
+        border-radius: 6px;
+        border-style: dashed;
+
+        .dark & {
+            @apply border-gray-500;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+    }
+
+    .filepond--item-panel {
+        background-color: var(--fuse-primary);
+        border-radius: 4px;
+    }
+
+    .filepond--drip-blob {
+        background-color: var(--fuse-primary);
+    }
+
+    .filepond--file {
+        color: #fff;
+    }
+
+    .filepond--file-action-button {
+        cursor: pointer;
+        background-color: rgba(0, 0, 0, 0.35);
+        color: #fff;
+
+        &:hover,
+        &:focus {
+            box-shadow: 0 0 0 0.125em rgba(255, 255, 255, 0.5);
+        }
+    }
+
+    .filepond--credits {
+        display: none;
+    }
+}
+
+/* Image preview plugin */
+.filepond--image-preview {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.filepond--image-preview-overlay-success {
+    color: var(--fuse-primary);
+}
+
+.filepond--image-preview-overlay-failure {
+    @apply text-warn;
+}

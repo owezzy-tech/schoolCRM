@@ -1,0 +1,142 @@
+<div class="bg-default flex min-w-0 flex-auto flex-col">
+    <div class="relative overflow-hidden bg-primary-900 px-6 py-16 text-white sm:px-12 lg:px-20">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute -left-24 top-8 h-72 w-72 rounded-full bg-primary-500 blur-3xl"></div>
+            <div class="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-accent-500 blur-3xl"></div>
+        </div>
+
+        <div class="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_420px] lg:items-center">
+            <div>
+                <a
+                    class="inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/20 hover:bg-white/15"
+                    [routerLink]="['/home']"
+                >
+                    <mat-icon
+                        class="mr-2 icon-size-4 text-white"
+                        [svgIcon]="'heroicons_outline:arrow-left'"
+                    ></mat-icon>
+                    Back to home
+                </a>
+                <h1 class="mt-8 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl">
+                    Start your admissions conversation
+                </h1>
+                <p class="mt-6 max-w-2xl text-lg leading-8 text-white/80">
+                    Tell us who you are and what you are exploring. We will create
+                    your inquiry profile and connect you with the right admissions
+                    contact.
+                </p>
+                <div class="mt-8 grid gap-4 text-sm text-white/80 sm:grid-cols-3">
+                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
+                        <div class="font-semibold text-white">No account needed</div>
+                        <div class="mt-1">Submit first, apply later.</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
+                        <div class="font-semibold text-white">Fast routing</div>
+                        <div class="mt-1">Your source and campaign are tracked.</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
+                        <div class="font-semibold text-white">Personal follow-up</div>
+                        <div class="mt-1">Admissions staff can continue the conversation.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-3xl bg-card p-6 text-default shadow-2xl sm:p-8">
+                <div>
+                    <div class="text-2xl font-bold tracking-tight">Inquiry form</div>
+                    <p class="mt-2 text-secondary">
+                        Required fields help us identify or create your admissions
+                        profile without duplicating records.
+                    </p>
+                </div>
+
+                @if (alert(); as currentAlert) {
+                    <fuse-alert
+                        class="mt-6"
+                        [appearance]="'outline'"
+                        [showIcon]="true"
+                        [type]="currentAlert.type"
+                    >
+                        {{ currentAlert.message }}
+                    </fuse-alert>
+                }
+
+                <form class="mt-6 space-y-4" [formGroup]="inquiryForm" (ngSubmit)="submitInquiry()">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>First name</mat-label>
+                            <input id="firstName" matInput formControlName="firstName" autocomplete="given-name" />
+                            @if (inquiryForm.controls.firstName.hasError('required')) {
+                                <mat-error>First name is required</mat-error>
+                            }
+                        </mat-form-field>
+
+                        <mat-form-field class="w-full">
+                            <mat-label>Last name</mat-label>
+                            <input id="lastName" matInput formControlName="lastName" autocomplete="family-name" />
+                            @if (inquiryForm.controls.lastName.hasError('required')) {
+                                <mat-error>Last name is required</mat-error>
+                            }
+                        </mat-form-field>
+                    </div>
+
+                    <mat-form-field class="w-full">
+                        <mat-label>Date of birth</mat-label>
+                        <input id="dateOfBirth" matInput type="date" formControlName="dateOfBirth" />
+                        @if (inquiryForm.controls.dateOfBirth.hasError('required')) {
+                            <mat-error>Date of birth is required</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full">
+                        <mat-label>Email address</mat-label>
+                        <input id="primaryEmail" matInput formControlName="primaryEmail" autocomplete="email" />
+                        @if (inquiryForm.controls.primaryEmail.hasError('required')) {
+                            <mat-error>Email address is required</mat-error>
+                        }
+                        @if (inquiryForm.controls.primaryEmail.hasError('email')) {
+                            <mat-error>Please enter a valid email address</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full">
+                        <mat-label>Phone number</mat-label>
+                        <input id="primaryPhone" matInput formControlName="primaryPhone" autocomplete="tel" />
+                        @if (inquiryForm.controls.primaryPhone.hasError('required')) {
+                            <mat-error>Phone number is required</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full">
+                        <mat-label>How can we help?</mat-label>
+                        <textarea
+                            id="message"
+                            matInput
+                            formControlName="message"
+                            rows="4"
+                            placeholder="Share the program, term, or question you have in mind."
+                        ></textarea>
+                    </mat-form-field>
+
+                    <button
+                        class="fuse-mat-button-large w-full"
+                        mat-flat-button
+                        color="primary"
+                        type="submit"
+                        [disabled]="submitting()"
+                    >
+                        @if (!submitting()) {
+                            <span>Submit inquiry</span>
+                        }
+                        @if (submitting()) {
+                            <mat-progress-spinner
+                                [diameter]="24"
+                                [mode]="'indeterminate'"
+                            ></mat-progress-spinner>
+                        }
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

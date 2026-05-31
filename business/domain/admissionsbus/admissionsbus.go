@@ -29,6 +29,9 @@ var (
 	ErrInvalidDuplicateStatus       = errors.New("invalid duplicate status")
 	ErrInvalidDuplicateLink         = errors.New("duplicate status does not match duplicate link")
 	ErrInvalidLifecycleChange       = errors.New("invalid lifecycle stage change")
+	ErrInquiryNotFound              = errors.New("inquiry not found")
+	ErrInquirySourceRequired        = errors.New("inquiry source required")
+	ErrInvalidInquiryStatus         = errors.New("invalid inquiry status")
 	ErrProgramNotFound              = errors.New("program not found")
 	ErrAcademicTermNotFound         = errors.New("academic term not found")
 	ErrInvalidTermDateRange         = errors.New("term start date must be before end date")
@@ -53,10 +56,39 @@ var (
 	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
 	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
 	ErrApplicationActorRequired     = errors.New("application transition actor required")
+	ErrFormTemplateNotFound         = errors.New("application form template not found")
+	ErrFormTemplateNameRequired     = errors.New("application form template name required")
+	ErrFormTemplateFieldsRequired   = errors.New("application form template required fields required")
+	ErrFormTemplateFieldInvalid     = errors.New("application form template field invalid")
+	ErrFormTemplateChecklistInvalid = errors.New("application form template checklist item invalid")
+	ErrFormTemplatePriorityInvalid  = errors.New("application form template priority must be greater than or equal to zero")
 	ErrStaffProfileNotFound         = errors.New("staff profile not found")
 	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
 	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
+	ErrApplicantProfileNotFound     = errors.New("applicant profile not found")
+	ErrApplicantProfileUserRequired = errors.New("applicant profile user id required")
 	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
+	ErrLeadScoreRuleNotFound        = errors.New("lead score rule not found")
+	ErrLeadScoreNotFound            = errors.New("lead score not found")
+	ErrLeadScoreRuleNameRequired    = errors.New("lead score rule name required")
+	ErrLeadScoreCriteriaRequired    = errors.New("lead score criteria required")
+	ErrInvalidLeadScoreCriterion    = errors.New("invalid lead score criterion")
+	ErrInvalidLeadScorePoints       = errors.New("lead score points must be greater than or equal to zero")
+	ErrInvalidLeadScorePriority     = errors.New("lead score priority must be greater than or equal to zero")
+	ErrInvalidLeadScoreBand         = errors.New("invalid lead score band")
+	ErrChecklistItemNotFound        = errors.New("checklist item not found")
+	ErrChecklistItemKeyRequired     = errors.New("checklist item key required")
+	ErrChecklistItemNameRequired    = errors.New("checklist item document name required")
+	ErrChecklistItemOrderInvalid    = errors.New("checklist item display order must be greater than or equal to zero")
+	ErrDocumentNotFound             = errors.New("document not found")
+	ErrInvalidDocumentStatus        = errors.New("invalid document status")
+	ErrDocumentFileNameRequired     = errors.New("document file name required")
+	ErrDocumentContentTypeRequired  = errors.New("document content type required")
+	ErrDocumentSizeInvalid          = errors.New("document size must be greater than zero")
+	ErrDocumentStorageKeyRequired   = errors.New("document storage key required")
+	ErrDocumentUploaderRequired     = errors.New("document uploader required")
+	ErrDocumentReviewerRequired     = errors.New("document reviewer required")
+	ErrDocumentStatusNotReviewable  = errors.New("document status is not a review action")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -70,6 +102,28 @@ type Storer interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateApplicantProfile(ctx context.Context, profile ApplicantProfile) error
+	UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile) error
+	QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error)
+	CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error)
+	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
+	CreateInquiry(ctx context.Context, inquiry Inquiry) error
+	UpdateInquiry(ctx context.Context, inquiry Inquiry) error
+	QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error)
+	CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error)
+	QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error)
+	CreateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
+	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule) error
+	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
+	CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error)
+	QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error)
+	UpsertLeadScore(ctx context.Context, score LeadScore) error
+	QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error)
+	CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error)
+	QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error)
+	QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
 	CreateConstituent(ctx context.Context, cst Constituent) error
 	UpdateConstituent(ctx context.Context, cst Constituent) error
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -98,9 +152,24 @@ type Storer interface {
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 	QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error)
 	UpdateApplication(ctx context.Context, app Application) error
+	CreateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate) error
+	UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate) error
+	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
+	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
+	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
 	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
+	CreateChecklistItem(ctx context.Context, item ChecklistItem) error
+	UpdateChecklistItem(ctx context.Context, item ChecklistItem) error
+	QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error)
+	CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error)
+	QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error)
+	CreateDocument(ctx context.Context, document Document) error
+	UpdateDocument(ctx context.Context, document Document) error
+	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
+	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
+	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -114,6 +183,27 @@ type ExtBusiness interface {
 	CountStaffProfiles(ctx context.Context, filter StaffProfileQueryFilter) (int, error)
 	QueryStaffProfileByID(ctx context.Context, profileID uuid.UUID) (StaffProfile, error)
 	QueryStaffProfileByUserID(ctx context.Context, userID uuid.UUID) (StaffProfile, error)
+	CreateApplicantProfile(ctx context.Context, np NewApplicantProfile) (ApplicantProfile, error)
+	UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile, np NewApplicantProfile) (ApplicantProfile, error)
+	QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error)
+	CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error)
+	QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error)
+	QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error)
+	CreateInquiry(ctx context.Context, ni NewInquiry) (Inquiry, error)
+	QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error)
+	CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error)
+	QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error)
+	CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error)
+	UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error)
+	QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error)
+	CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error)
+	QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error)
+	RecalculateLeadScoreForConstituent(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
+	QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error)
+	CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error)
+	QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error)
+	QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error)
 	CreateConstituent(ctx context.Context, nc NewConstituent) (Constituent, error)
 	UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error)
 	QueryConstituents(ctx context.Context, filter ConstituentQueryFilter, orderBy order.By, page page.Page) ([]Constituent, error)
@@ -141,8 +231,23 @@ type ExtBusiness interface {
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
 	TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error)
+	CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
+	UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
+	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
+	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
+	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
+	CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error)
+	UpdateChecklistItem(ctx context.Context, item ChecklistItem, ni NewChecklistItem) (ChecklistItem, error)
+	QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error)
+	CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error)
+	QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error)
+	CreateDocument(ctx context.Context, nd NewDocument) (Document, error)
+	VerifyDocument(ctx context.Context, document Document, nv NewDocumentVerification) (Document, error)
+	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
+	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
+	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
 }
 
 // CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
@@ -219,6 +324,349 @@ func (b *Business) QueryStaffProfileByUserID(ctx context.Context, userID uuid.UU
 	}
 
 	return profile, nil
+}
+
+// CreateApplicantProfile adds a portal applicant context profile for an identity user.
+func (b *Business) CreateApplicantProfile(ctx context.Context, np NewApplicantProfile) (ApplicantProfile, error) {
+	if err := validateNewApplicantProfile(np); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	if _, err := b.QueryConstituentByID(ctx, np.ConstituentID); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	now := time.Now()
+	profile := ApplicantProfile{
+		ID:            uuid.New(),
+		UserID:        np.UserID,
+		ConstituentID: np.ConstituentID,
+		Active:        np.Active,
+		DateCreated:   now,
+		DateUpdated:   now,
+	}
+
+	if err := b.storer.CreateApplicantProfile(ctx, profile); err != nil {
+		return ApplicantProfile{}, fmt.Errorf("create applicant profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// UpdateApplicantProfile replaces mutable admissions applicant profile data.
+func (b *Business) UpdateApplicantProfile(ctx context.Context, profile ApplicantProfile, np NewApplicantProfile) (ApplicantProfile, error) {
+	if err := validateNewApplicantProfile(np); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	if _, err := b.QueryConstituentByID(ctx, np.ConstituentID); err != nil {
+		return ApplicantProfile{}, err
+	}
+
+	profile.UserID = np.UserID
+	profile.ConstituentID = np.ConstituentID
+	profile.Active = np.Active
+	profile.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateApplicantProfile(ctx, profile); err != nil {
+		return ApplicantProfile{}, fmt.Errorf("update applicant profile: %w", err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfiles retrieves a list of admissions applicant profiles.
+func (b *Business) QueryApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter, orderBy order.By, page page.Page) ([]ApplicantProfile, error) {
+	profiles, err := b.storer.QueryApplicantProfiles(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query applicant profiles: %w", err)
+	}
+
+	return profiles, nil
+}
+
+// CountApplicantProfiles returns the total number of admissions applicant profiles.
+func (b *Business) CountApplicantProfiles(ctx context.Context, filter ApplicantProfileQueryFilter) (int, error) {
+	return b.storer.CountApplicantProfiles(ctx, filter)
+}
+
+// QueryApplicantProfileByID finds an admissions applicant profile by ID.
+func (b *Business) QueryApplicantProfileByID(ctx context.Context, profileID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByID(ctx, profileID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: profileID[%s]: %w", profileID, err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByUserID finds an admissions applicant profile by identity user ID.
+func (b *Business) QueryApplicantProfileByUserID(ctx context.Context, userID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByUserID(ctx, userID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: userID[%s]: %w", userID, err)
+	}
+
+	return profile, nil
+}
+
+// QueryApplicantProfileByConstituentID finds an admissions applicant profile by constituent ID.
+func (b *Business) QueryApplicantProfileByConstituentID(ctx context.Context, constituentID uuid.UUID) (ApplicantProfile, error) {
+	profile, err := b.storer.QueryApplicantProfileByConstituentID(ctx, constituentID)
+	if err != nil {
+		return ApplicantProfile{}, fmt.Errorf("query applicant profile: constituentID[%s]: %w", constituentID, err)
+	}
+
+	return profile, nil
+}
+
+// CreateInquiry records an anonymous inquiry and links it to a matched or new constituent.
+func (b *Business) CreateInquiry(ctx context.Context, ni NewInquiry) (Inquiry, error) {
+	if err := validateNewInquiry(ni); err != nil {
+		return Inquiry{}, err
+	}
+
+	constituent, err := b.createOrMatchInquiryConstituent(ctx, ni)
+	if err != nil {
+		return Inquiry{}, err
+	}
+
+	now := time.Now()
+	inquiry := Inquiry{
+		ID:                uuid.New(),
+		ConstituentID:     constituent.ID,
+		FirstName:         strings.TrimSpace(ni.FirstName),
+		LastName:          strings.TrimSpace(ni.LastName),
+		DateOfBirth:       ni.DateOfBirth,
+		PrimaryEmail:      ni.PrimaryEmail,
+		PrimaryPhone:      strings.TrimSpace(ni.PrimaryPhone),
+		ProgramOfInterest: ni.ProgramOfInterest,
+		TermOfInterest:    ni.TermOfInterest,
+		Source:            strings.TrimSpace(ni.Source),
+		UTMSource:         trimStringPtr(ni.UTMSource),
+		UTMMedium:         trimStringPtr(ni.UTMMedium),
+		UTMCampaign:       trimStringPtr(ni.UTMCampaign),
+		Message:           trimStringPtr(ni.Message),
+		Status:            InquiryStatusNew,
+		DateCreated:       now,
+		DateUpdated:       now,
+	}
+
+	if err := b.storer.CreateInquiry(ctx, inquiry); err != nil {
+		return Inquiry{}, fmt.Errorf("create inquiry: %w", err)
+	}
+
+	return inquiry, nil
+}
+
+// QueryInquiries retrieves admissions inquiries.
+func (b *Business) QueryInquiries(ctx context.Context, filter InquiryQueryFilter, orderBy order.By, page page.Page) ([]Inquiry, error) {
+	inquiries, err := b.storer.QueryInquiries(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query inquiries: %w", err)
+	}
+
+	return inquiries, nil
+}
+
+// CountInquiries returns the total number of admissions inquiries.
+func (b *Business) CountInquiries(ctx context.Context, filter InquiryQueryFilter) (int, error) {
+	return b.storer.CountInquiries(ctx, filter)
+}
+
+// QueryInquiryByID finds an admissions inquiry by ID.
+func (b *Business) QueryInquiryByID(ctx context.Context, inquiryID uuid.UUID) (Inquiry, error) {
+	inquiry, err := b.storer.QueryInquiryByID(ctx, inquiryID)
+	if err != nil {
+		return Inquiry{}, fmt.Errorf("query inquiry: inquiryID[%s]: %w", inquiryID, err)
+	}
+
+	return inquiry, nil
+}
+
+func (b *Business) createOrMatchInquiryConstituent(ctx context.Context, ni NewInquiry) (Constituent, error) {
+	matched, err := b.storer.QueryConstituentByPrimaryEmail(ctx, ni.PrimaryEmail.String())
+	if err != nil && !errors.Is(err, ErrConstituentNotFound) {
+		return Constituent{}, fmt.Errorf("query inquiry constituent match: %w", err)
+	}
+
+	if err == nil {
+		return matched, nil
+	}
+
+	constituent, err := b.CreateConstituent(ctx, NewConstituent{
+		FirstName:       ni.FirstName,
+		LastName:        ni.LastName,
+		DateOfBirth:     ni.DateOfBirth,
+		PrimaryEmail:    ni.PrimaryEmail,
+		PrimaryPhone:    ni.PrimaryPhone,
+		LifecycleStage:  LifecycleStageInquiry,
+		DuplicateStatus: DuplicateStatusActive,
+	})
+	if err != nil {
+		return Constituent{}, fmt.Errorf("create inquiry constituent: %w", err)
+	}
+
+	return constituent, nil
+}
+
+// CreateLeadScoreRule adds an explainable lead scoring rule.
+func (b *Business) CreateLeadScoreRule(ctx context.Context, nr NewLeadScoreRule) (LeadScoreRule, error) {
+	if err := validateNewLeadScoreRule(nr); err != nil {
+		return LeadScoreRule{}, err
+	}
+
+	now := time.Now()
+	rule := LeadScoreRule{
+		ID:          uuid.New(),
+		Name:        strings.TrimSpace(nr.Name),
+		Description: trimStringPtr(nr.Description),
+		Criteria:    nr.Criteria,
+		Points:      nr.Points,
+		Active:      nr.Active,
+		Priority:    nr.Priority,
+		DateCreated: now,
+		DateUpdated: now,
+	}
+
+	if err := b.storer.CreateLeadScoreRule(ctx, rule); err != nil {
+		return LeadScoreRule{}, fmt.Errorf("create lead score rule: %w", err)
+	}
+
+	return rule, nil
+}
+
+// UpdateLeadScoreRule replaces mutable lead scoring rule data.
+func (b *Business) UpdateLeadScoreRule(ctx context.Context, rule LeadScoreRule, nr NewLeadScoreRule) (LeadScoreRule, error) {
+	if err := validateNewLeadScoreRule(nr); err != nil {
+		return LeadScoreRule{}, err
+	}
+
+	rule.Name = strings.TrimSpace(nr.Name)
+	rule.Description = trimStringPtr(nr.Description)
+	rule.Criteria = nr.Criteria
+	rule.Points = nr.Points
+	rule.Active = nr.Active
+	rule.Priority = nr.Priority
+	rule.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateLeadScoreRule(ctx, rule); err != nil {
+		return LeadScoreRule{}, fmt.Errorf("update lead score rule: %w", err)
+	}
+
+	return rule, nil
+}
+
+// QueryLeadScoreRules retrieves lead scoring rules.
+func (b *Business) QueryLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter, orderBy order.By, page page.Page) ([]LeadScoreRule, error) {
+	rules, err := b.storer.QueryLeadScoreRules(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query lead score rules: %w", err)
+	}
+
+	return rules, nil
+}
+
+// CountLeadScoreRules returns the total number of lead score rules.
+func (b *Business) CountLeadScoreRules(ctx context.Context, filter LeadScoreRuleQueryFilter) (int, error) {
+	return b.storer.CountLeadScoreRules(ctx, filter)
+}
+
+// QueryLeadScoreRuleByID finds a lead scoring rule by ID.
+func (b *Business) QueryLeadScoreRuleByID(ctx context.Context, ruleID uuid.UUID) (LeadScoreRule, error) {
+	rule, err := b.storer.QueryLeadScoreRuleByID(ctx, ruleID)
+	if err != nil {
+		return LeadScoreRule{}, fmt.Errorf("query lead score rule: ruleID[%s]: %w", ruleID, err)
+	}
+
+	return rule, nil
+}
+
+// RecalculateLeadScoreForConstituent recalculates and stores a constituent's latest lead score.
+func (b *Business) RecalculateLeadScoreForConstituent(ctx context.Context, constituentID uuid.UUID) (LeadScore, error) {
+	constituent, err := b.QueryConstituentByID(ctx, constituentID)
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	active := true
+	rules, err := b.QueryLeadScoreRules(ctx, LeadScoreRuleQueryFilter{Active: &active}, DefaultLeadScoreRuleOrderBy, page.MustParse("1", "100"))
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	applications, err := b.QueryApplications(ctx, ApplicationQueryFilter{ConstituentID: &constituentID}, DefaultApplicationOrderBy, page.MustParse("1", "100"))
+	if err != nil {
+		return LeadScore{}, err
+	}
+
+	existing, err := b.storer.QueryLeadScoreByConstituentID(ctx, constituentID)
+	if err != nil && !errors.Is(err, ErrLeadScoreNotFound) {
+		return LeadScore{}, fmt.Errorf("query lead score: %w", err)
+	}
+
+	now := time.Now()
+	score := LeadScore{
+		ID:             existing.ID,
+		ConstituentID:  constituentID,
+		RecalculatedAt: now,
+		DateCreated:    existing.DateCreated,
+		DateUpdated:    now,
+	}
+	if score.ID == uuid.Nil {
+		score.ID = uuid.New()
+		score.DateCreated = now
+	}
+
+	for _, rule := range rules {
+		result := evaluateLeadScoreRule(rule, constituent, applications)
+		score.Breakdown = append(score.Breakdown, result)
+		if result.Matched {
+			score.TotalScore += result.Points
+		}
+	}
+	score.Band = LeadScoreBandForTotal(score.TotalScore)
+
+	if err := b.storer.UpsertLeadScore(ctx, score); err != nil {
+		return LeadScore{}, fmt.Errorf("upsert lead score: %w", err)
+	}
+
+	return score, nil
+}
+
+// QueryLeadScores retrieves lead scores.
+func (b *Business) QueryLeadScores(ctx context.Context, filter LeadScoreQueryFilter, orderBy order.By, page page.Page) ([]LeadScore, error) {
+	scores, err := b.storer.QueryLeadScores(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query lead scores: %w", err)
+	}
+
+	return scores, nil
+}
+
+// CountLeadScores returns the total number of lead scores.
+func (b *Business) CountLeadScores(ctx context.Context, filter LeadScoreQueryFilter) (int, error) {
+	return b.storer.CountLeadScores(ctx, filter)
+}
+
+// QueryLeadScoreByID finds a lead score by ID.
+func (b *Business) QueryLeadScoreByID(ctx context.Context, scoreID uuid.UUID) (LeadScore, error) {
+	score, err := b.storer.QueryLeadScoreByID(ctx, scoreID)
+	if err != nil {
+		return LeadScore{}, fmt.Errorf("query lead score: scoreID[%s]: %w", scoreID, err)
+	}
+
+	return score, nil
+}
+
+// QueryLeadScoreByConstituentID finds a lead score by constituent ID.
+func (b *Business) QueryLeadScoreByConstituentID(ctx context.Context, constituentID uuid.UUID) (LeadScore, error) {
+	score, err := b.storer.QueryLeadScoreByConstituentID(ctx, constituentID)
+	if err != nil {
+		return LeadScore{}, fmt.Errorf("query lead score: constituentID[%s]: %w", constituentID, err)
+	}
+
+	return score, nil
 }
 
 // Extension is a function that wraps a new layer of business logic
@@ -802,6 +1250,118 @@ func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.
 	return app, nil
 }
 
+// CreateApplicationFormTemplate adds a configurable application form template.
+func (b *Business) CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error) {
+	if err := validateNewApplicationFormTemplate(nt); err != nil {
+		return ApplicationFormTemplate{}, err
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, nt.ProgramID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return ApplicationFormTemplate{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, nt.AcademicTermID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return ApplicationFormTemplate{}, ErrInactiveAcademicTerm
+	}
+
+	now := time.Now()
+	template := ApplicationFormTemplate{
+		ID:              uuid.New(),
+		ProgramID:       nt.ProgramID,
+		AcademicTermID:  nt.AcademicTermID,
+		ApplicationType: nt.ApplicationType,
+		Name:            strings.TrimSpace(nt.Name),
+		Description:     trimStringPtr(nt.Description),
+		Version:         1,
+		RequiredFields:  normalizeApplicationFormFields(nt.RequiredFields),
+		ChecklistItems:  normalizeChecklistTemplateItems(nt.ChecklistItems),
+		Active:          nt.Active,
+		Priority:        nt.Priority,
+		DateCreated:     now,
+		DateUpdated:     now,
+	}
+
+	if err := b.storer.CreateApplicationFormTemplate(ctx, template); err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("create application form template: %w", err)
+	}
+
+	return template, nil
+}
+
+// UpdateApplicationFormTemplate creates a new template version and updates the mutable template configuration.
+func (b *Business) UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error) {
+	if err := validateNewApplicationFormTemplate(nt); err != nil {
+		return ApplicationFormTemplate{}, err
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, nt.ProgramID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return ApplicationFormTemplate{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, nt.AcademicTermID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return ApplicationFormTemplate{}, ErrInactiveAcademicTerm
+	}
+
+	template.ProgramID = nt.ProgramID
+	template.AcademicTermID = nt.AcademicTermID
+	template.ApplicationType = nt.ApplicationType
+	template.Name = strings.TrimSpace(nt.Name)
+	template.Description = trimStringPtr(nt.Description)
+	template.Version++
+	template.RequiredFields = normalizeApplicationFormFields(nt.RequiredFields)
+	template.ChecklistItems = normalizeChecklistTemplateItems(nt.ChecklistItems)
+	template.Active = nt.Active
+	template.Priority = nt.Priority
+	template.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateApplicationFormTemplate(ctx, template); err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("update application form template: %w", err)
+	}
+
+	return template, nil
+}
+
+// QueryApplicationFormTemplates retrieves configurable application form templates.
+func (b *Business) QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error) {
+	templates, err := b.storer.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query application form templates: %w", err)
+	}
+
+	return templates, nil
+}
+
+// CountApplicationFormTemplates returns the total number of application form templates.
+func (b *Business) CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error) {
+	return b.storer.CountApplicationFormTemplates(ctx, filter)
+}
+
+// QueryApplicationFormTemplateByID finds an application form template by ID.
+func (b *Business) QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error) {
+	template, err := b.storer.QueryApplicationFormTemplateByID(ctx, templateID)
+	if err != nil {
+		return ApplicationFormTemplate{}, fmt.Errorf("query application form template: templateID[%s]: %w", templateID, err)
+	}
+
+	return template, nil
+}
+
 // TransitionApplicationStatus changes an Application status and records immutable transition history.
 func (b *Business) TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error) {
 	if nt.ActorID == uuid.Nil {
@@ -861,6 +1421,188 @@ func (b *Business) CountApplicationTransitions(ctx context.Context, filter Appli
 	return b.storer.CountApplicationTransitions(ctx, filter)
 }
 
+// CreateChecklistItem adds a document requirement to an application checklist.
+func (b *Business) CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error) {
+	if err := validateNewChecklistItem(ni); err != nil {
+		return ChecklistItem{}, err
+	}
+
+	if _, err := b.storer.QueryApplicationByID(ctx, ni.ApplicationID); err != nil {
+		return ChecklistItem{}, fmt.Errorf("query application: %w", err)
+	}
+
+	now := time.Now()
+	item := ChecklistItem{
+		ID:            uuid.New(),
+		ApplicationID: ni.ApplicationID,
+		ItemKey:       strings.TrimSpace(ni.ItemKey),
+		DocumentName:  strings.TrimSpace(ni.DocumentName),
+		Description:   trimStringPtr(ni.Description),
+		Required:      ni.Required,
+		Status:        DocumentStatusPendingReview,
+		DisplayOrder:  ni.DisplayOrder,
+		DateCreated:   now,
+		DateUpdated:   now,
+	}
+
+	if err := b.storer.CreateChecklistItem(ctx, item); err != nil {
+		return ChecklistItem{}, fmt.Errorf("create checklist item: %w", err)
+	}
+
+	return item, nil
+}
+
+// UpdateChecklistItem updates a document requirement while preserving its review status.
+func (b *Business) UpdateChecklistItem(ctx context.Context, item ChecklistItem, ni NewChecklistItem) (ChecklistItem, error) {
+	if err := validateNewChecklistItem(ni); err != nil {
+		return ChecklistItem{}, err
+	}
+
+	if _, err := b.storer.QueryApplicationByID(ctx, ni.ApplicationID); err != nil {
+		return ChecklistItem{}, fmt.Errorf("query application: %w", err)
+	}
+
+	item.ApplicationID = ni.ApplicationID
+	item.ItemKey = strings.TrimSpace(ni.ItemKey)
+	item.DocumentName = strings.TrimSpace(ni.DocumentName)
+	item.Description = trimStringPtr(ni.Description)
+	item.Required = ni.Required
+	item.DisplayOrder = ni.DisplayOrder
+	item.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return ChecklistItem{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return item, nil
+}
+
+// QueryChecklistItems retrieves application checklist requirements.
+func (b *Business) QueryChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter, orderBy order.By, page page.Page) ([]ChecklistItem, error) {
+	items, err := b.storer.QueryChecklistItems(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query checklist items: %w", err)
+	}
+
+	return items, nil
+}
+
+// CountChecklistItems returns the total number of checklist requirements.
+func (b *Business) CountChecklistItems(ctx context.Context, filter ChecklistItemQueryFilter) (int, error) {
+	return b.storer.CountChecklistItems(ctx, filter)
+}
+
+// QueryChecklistItemByID finds a checklist requirement by ID.
+func (b *Business) QueryChecklistItemByID(ctx context.Context, itemID uuid.UUID) (ChecklistItem, error) {
+	item, err := b.storer.QueryChecklistItemByID(ctx, itemID)
+	if err != nil {
+		return ChecklistItem{}, fmt.Errorf("query checklist item: itemID[%s]: %w", itemID, err)
+	}
+
+	return item, nil
+}
+
+// CreateDocument records uploaded document metadata for a checklist item.
+func (b *Business) CreateDocument(ctx context.Context, nd NewDocument) (Document, error) {
+	if err := validateNewDocument(nd); err != nil {
+		return Document{}, err
+	}
+
+	item, err := b.storer.QueryChecklistItemByID(ctx, nd.ChecklistItemID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query checklist item: %w", err)
+	}
+	if item.ApplicationID != nd.ApplicationID {
+		return Document{}, ErrApplicationNotFound
+	}
+
+	now := time.Now()
+	document := Document{
+		ID:              uuid.New(),
+		ApplicationID:   nd.ApplicationID,
+		ChecklistItemID: nd.ChecklistItemID,
+		FileName:        strings.TrimSpace(nd.FileName),
+		ContentType:     strings.TrimSpace(nd.ContentType),
+		SizeBytes:       nd.SizeBytes,
+		StorageKey:      strings.TrimSpace(nd.StorageKey),
+		Status:          DocumentStatusPendingReview,
+		UploadedByID:    nd.UploadedByID,
+		UploadedAt:      now,
+		DateCreated:     now,
+		DateUpdated:     now,
+	}
+
+	item.Status = DocumentStatusPendingReview
+	item.DateUpdated = now
+
+	if err := b.storer.CreateDocument(ctx, document); err != nil {
+		return Document{}, fmt.Errorf("create document: %w", err)
+	}
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return Document{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return document, nil
+}
+
+// VerifyDocument records reviewer action for uploaded document metadata.
+func (b *Business) VerifyDocument(ctx context.Context, document Document, nv NewDocumentVerification) (Document, error) {
+	if err := validateNewDocumentVerification(nv); err != nil {
+		return Document{}, err
+	}
+
+	item, err := b.storer.QueryChecklistItemByID(ctx, document.ChecklistItemID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query checklist item: %w", err)
+	}
+
+	now := time.Now()
+	document.Status = nv.Status
+	document.ReviewerID = &nv.ReviewerID
+	document.ReviewerNotes = trimStringPtr(nv.ReviewerNotes)
+	document.ReviewedAt = &now
+	document.DateUpdated = now
+
+	item.Status = nv.Status
+	item.DateUpdated = now
+
+	if err := b.storer.UpdateDocument(ctx, document); err != nil {
+		return Document{}, fmt.Errorf("update document: %w", err)
+	}
+
+	if err := b.storer.UpdateChecklistItem(ctx, item); err != nil {
+		return Document{}, fmt.Errorf("update checklist item: %w", err)
+	}
+
+	return document, nil
+}
+
+// QueryDocuments retrieves uploaded document metadata.
+func (b *Business) QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error) {
+	documents, err := b.storer.QueryDocuments(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query documents: %w", err)
+	}
+
+	return documents, nil
+}
+
+// CountDocuments returns the total number of uploaded document metadata records.
+func (b *Business) CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error) {
+	return b.storer.CountDocuments(ctx, filter)
+}
+
+// QueryDocumentByID finds uploaded document metadata by ID.
+func (b *Business) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error) {
+	document, err := b.storer.QueryDocumentByID(ctx, documentID)
+	if err != nil {
+		return Document{}, fmt.Errorf("query document: documentID[%s]: %w", documentID, err)
+	}
+
+	return document, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -901,6 +1643,192 @@ func validateNewStaffProfile(np NewStaffProfile) error {
 	}
 
 	return nil
+}
+
+func validateNewApplicantProfile(np NewApplicantProfile) error {
+	if np.UserID == uuid.Nil {
+		return ErrApplicantProfileUserRequired
+	}
+
+	if np.ConstituentID == uuid.Nil {
+		return ErrConstituentIDRequired
+	}
+
+	return nil
+}
+
+func validateNewInquiry(ni NewInquiry) error {
+	if err := validateRequiredConstituentFields(ni.FirstName, ni.LastName, ni.DateOfBirth, ni.PrimaryPhone); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(ni.Source) == "" {
+		return ErrInquirySourceRequired
+	}
+
+	return nil
+}
+
+func validateInquiryStatus(status InquiryStatus) error {
+	switch status {
+	case InquiryStatusNew,
+		InquiryStatusContacted,
+		InquiryStatusConverted,
+		InquiryStatusClosed:
+		return nil
+	default:
+		return ErrInvalidInquiryStatus
+	}
+}
+
+func validateNewApplicationFormTemplate(nt NewApplicationFormTemplate) error {
+	if nt.ProgramID == uuid.Nil {
+		return ErrProgramIDRequired
+	}
+
+	if nt.AcademicTermID == uuid.Nil {
+		return ErrAcademicTermIDRequired
+	}
+
+	if err := validateApplicationType(nt.ApplicationType); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nt.Name) == "" {
+		return ErrFormTemplateNameRequired
+	}
+
+	if len(nt.RequiredFields) == 0 {
+		return ErrFormTemplateFieldsRequired
+	}
+
+	for _, field := range nt.RequiredFields {
+		if err := validateApplicationFormField(field); err != nil {
+			return err
+		}
+	}
+
+	for _, item := range nt.ChecklistItems {
+		if err := validateChecklistTemplateItem(item); err != nil {
+			return err
+		}
+	}
+
+	if nt.Priority < 0 {
+		return ErrFormTemplatePriorityInvalid
+	}
+
+	return nil
+}
+
+func validateApplicationFormField(field ApplicationFormField) error {
+	if strings.TrimSpace(field.FieldName) == "" || strings.TrimSpace(field.FieldType) == "" || field.DisplayOrder < 0 {
+		return ErrFormTemplateFieldInvalid
+	}
+
+	return nil
+}
+
+func validateChecklistTemplateItem(item ApplicationChecklistTemplateItem) error {
+	if strings.TrimSpace(item.ItemKey) == "" || strings.TrimSpace(item.DocumentName) == "" || item.DisplayOrder < 0 {
+		return ErrFormTemplateChecklistInvalid
+	}
+
+	return nil
+}
+
+func validateNewChecklistItem(ni NewChecklistItem) error {
+	if ni.ApplicationID == uuid.Nil {
+		return ErrApplicationNotFound
+	}
+
+	if strings.TrimSpace(ni.ItemKey) == "" {
+		return ErrChecklistItemKeyRequired
+	}
+
+	if strings.TrimSpace(ni.DocumentName) == "" {
+		return ErrChecklistItemNameRequired
+	}
+
+	if ni.DisplayOrder < 0 {
+		return ErrChecklistItemOrderInvalid
+	}
+
+	return nil
+}
+
+func validateNewDocument(nd NewDocument) error {
+	if nd.ApplicationID == uuid.Nil {
+		return ErrApplicationNotFound
+	}
+
+	if nd.ChecklistItemID == uuid.Nil {
+		return ErrChecklistItemNotFound
+	}
+
+	if strings.TrimSpace(nd.FileName) == "" {
+		return ErrDocumentFileNameRequired
+	}
+
+	if strings.TrimSpace(nd.ContentType) == "" {
+		return ErrDocumentContentTypeRequired
+	}
+
+	if nd.SizeBytes <= 0 {
+		return ErrDocumentSizeInvalid
+	}
+
+	if strings.TrimSpace(nd.StorageKey) == "" {
+		return ErrDocumentStorageKeyRequired
+	}
+
+	if nd.UploadedByID == uuid.Nil {
+		return ErrDocumentUploaderRequired
+	}
+
+	return nil
+}
+
+func validateNewDocumentVerification(nv NewDocumentVerification) error {
+	if nv.ReviewerID == uuid.Nil {
+		return ErrDocumentReviewerRequired
+	}
+
+	if !isReviewDocumentStatus(nv.Status) {
+		return ErrDocumentStatusNotReviewable
+	}
+
+	return nil
+}
+
+func normalizeApplicationFormFields(fields []ApplicationFormField) []ApplicationFormField {
+	normalized := make([]ApplicationFormField, len(fields))
+	for i, field := range fields {
+		normalized[i] = ApplicationFormField{
+			FieldName:    strings.TrimSpace(field.FieldName),
+			FieldType:    strings.TrimSpace(field.FieldType),
+			Required:     field.Required,
+			DisplayOrder: field.DisplayOrder,
+			Validation:   trimStringPtr(field.Validation),
+		}
+	}
+
+	return normalized
+}
+
+func normalizeChecklistTemplateItems(items []ApplicationChecklistTemplateItem) []ApplicationChecklistTemplateItem {
+	normalized := make([]ApplicationChecklistTemplateItem, len(items))
+	for i, item := range items {
+		normalized[i] = ApplicationChecklistTemplateItem{
+			ItemKey:      strings.TrimSpace(item.ItemKey),
+			DocumentName: strings.TrimSpace(item.DocumentName),
+			Description:  trimStringPtr(item.Description),
+			Required:     item.Required,
+			DisplayOrder: item.DisplayOrder,
+		}
+	}
+
+	return normalized
 }
 
 func validateAdmissionsRole(role AdmissionsRole) error {
@@ -951,6 +1879,7 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionResolveDuplicates,
 			AdmissionsPermissionManageReferences,
 			AdmissionsPermissionManageStaff,
+			AdmissionsPermissionManageLeadScoring,
 		}
 	case AdmissionsRoleRecruiter:
 		return []AdmissionsPermission{
@@ -965,8 +1894,12 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionResolveDuplicates,
 		}
 	case AdmissionsRoleMarketingManager,
-		AdmissionsRoleEventManager,
-		AdmissionsRoleReportViewer,
+		AdmissionsRoleEventManager:
+		return []AdmissionsPermission{
+			AdmissionsPermissionRead,
+			AdmissionsPermissionManageLeadScoring,
+		}
+	case AdmissionsRoleReportViewer,
 		AdmissionsRoleApplicant:
 		return []AdmissionsPermission{AdmissionsPermissionRead}
 	default:
@@ -1006,6 +1939,175 @@ func AdmissionsPermissionsToStrings(permissions []AdmissionsPermission) []string
 	}
 
 	return values
+}
+
+func validateNewLeadScoreRule(nr NewLeadScoreRule) error {
+	if strings.TrimSpace(nr.Name) == "" {
+		return ErrLeadScoreRuleNameRequired
+	}
+
+	if len(nr.Criteria) == 0 {
+		return ErrLeadScoreCriteriaRequired
+	}
+
+	if nr.Points < 0 {
+		return ErrInvalidLeadScorePoints
+	}
+
+	if nr.Priority < 0 {
+		return ErrInvalidLeadScorePriority
+	}
+
+	for _, criterion := range nr.Criteria {
+		if err := validateLeadScoreCriterion(criterion); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateLeadScoreCriterion(criterion LeadScoreCriterion) error {
+	if len(criterion.Values) == 0 {
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	switch criterion.Field {
+	case LeadScoreCriterionFieldLifecycleStage,
+		LeadScoreCriterionFieldApplicationType,
+		LeadScoreCriterionFieldApplicationStatus,
+		LeadScoreCriterionFieldProgramID,
+		LeadScoreCriterionFieldAcademicTermID:
+	default:
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	switch criterion.Operator {
+	case LeadScoreCriterionOperatorEquals:
+		if len(criterion.Values) != 1 {
+			return ErrInvalidLeadScoreCriterion
+		}
+	case LeadScoreCriterionOperatorIn:
+	default:
+		return ErrInvalidLeadScoreCriterion
+	}
+
+	for _, value := range criterion.Values {
+		if strings.TrimSpace(value) == "" {
+			return ErrInvalidLeadScoreCriterion
+		}
+	}
+
+	return nil
+}
+
+// LeadScoreBandForTotal derives the score band from a total score.
+func LeadScoreBandForTotal(total int) LeadScoreBand {
+	switch {
+	case total >= 76:
+		return LeadScoreBandReadyToApply
+	case total >= 51:
+		return LeadScoreBandHot
+	case total >= 26:
+		return LeadScoreBandWarm
+	default:
+		return LeadScoreBandCold
+	}
+}
+
+func validateLeadScoreBand(band LeadScoreBand) error {
+	switch band {
+	case LeadScoreBandCold,
+		LeadScoreBandWarm,
+		LeadScoreBandHot,
+		LeadScoreBandReadyToApply:
+		return nil
+	default:
+		return ErrInvalidLeadScoreBand
+	}
+}
+
+func evaluateLeadScoreRule(rule LeadScoreRule, constituent Constituent, applications []Application) LeadScoreRuleResult {
+	result := LeadScoreRuleResult{
+		RuleID: rule.ID,
+		Name:   rule.Name,
+		Points: rule.Points,
+	}
+
+	for _, criterion := range rule.Criteria {
+		matched, value := evaluateLeadScoreCriterion(criterion, constituent, applications)
+		if !matched {
+			result.Reason = fmt.Sprintf("%s did not match %s", criterion.Field, strings.Join(criterion.Values, ", "))
+			return result
+		}
+
+		result.Reason = appendReason(result.Reason, fmt.Sprintf("%s matched %s", criterion.Field, value))
+	}
+
+	result.Matched = true
+	return result
+}
+
+func evaluateLeadScoreCriterion(criterion LeadScoreCriterion, constituent Constituent, applications []Application) (bool, string) {
+	values := valuesForLeadScoreCriterion(criterion.Field, constituent, applications)
+	for _, candidate := range values {
+		if criterionMatchesValue(criterion, candidate) {
+			return true, candidate
+		}
+	}
+
+	return false, ""
+}
+
+func valuesForLeadScoreCriterion(field LeadScoreCriterionField, constituent Constituent, applications []Application) []string {
+	switch field {
+	case LeadScoreCriterionFieldLifecycleStage:
+		return []string{constituent.LifecycleStage.String()}
+	case LeadScoreCriterionFieldApplicationType:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.ApplicationType.String())
+		}
+		return values
+	case LeadScoreCriterionFieldApplicationStatus:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.Status.String())
+		}
+		return values
+	case LeadScoreCriterionFieldProgramID:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.ProgramID.String())
+		}
+		return values
+	case LeadScoreCriterionFieldAcademicTermID:
+		values := make([]string, 0, len(applications))
+		for _, app := range applications {
+			values = append(values, app.AcademicTermID.String())
+		}
+		return values
+	default:
+		return nil
+	}
+}
+
+func criterionMatchesValue(criterion LeadScoreCriterion, candidate string) bool {
+	for _, value := range criterion.Values {
+		if strings.EqualFold(candidate, strings.TrimSpace(value)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func appendReason(existing string, next string) string {
+	if existing == "" {
+		return next
+	}
+
+	return existing + "; " + next
 }
 
 func validateLifecycleStage(stage LifecycleStage) error {
@@ -1159,6 +2261,32 @@ func validateApplicationStatus(status ApplicationStatus) error {
 		return nil
 	default:
 		return ErrInvalidApplicationStatus
+	}
+}
+
+func validateDocumentStatus(status DocumentStatus) error {
+	switch status {
+	case DocumentStatusUploaded,
+		DocumentStatusPendingReview,
+		DocumentStatusAccepted,
+		DocumentStatusRejected,
+		DocumentStatusWaived,
+		DocumentStatusExpired,
+		DocumentStatusSyncedToSIS:
+		return nil
+	default:
+		return ErrInvalidDocumentStatus
+	}
+}
+
+func isReviewDocumentStatus(status DocumentStatus) bool {
+	switch status {
+	case DocumentStatusAccepted,
+		DocumentStatusRejected,
+		DocumentStatusWaived:
+		return true
+	default:
+		return false
 	}
 }
 

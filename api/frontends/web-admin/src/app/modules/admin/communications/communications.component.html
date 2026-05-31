@@ -1,0 +1,70 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Communications</h1>
+                </div>
+                <div>
+                    <button mat-flat-button color="primary">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:pencil-square"></mat-icon>
+                        <span class="ml-2">Compose</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mb-6">
+                @for (tab of tabs; track tab) {
+                    <button class="px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                            [class.bg-gray-900]="activeTab() === tab"
+                            [class.text-white]="activeTab() === tab"
+                            [class.dark:bg-gray-100]="activeTab() === tab"
+                            [class.dark:text-gray-900]="activeTab() === tab"
+                            [class.bg-gray-100]="activeTab() !== tab"
+                            [class.text-secondary]="activeTab() !== tab"
+                            [class.dark:bg-gray-800]="activeTab() !== tab"
+                            (click)="activeTab.set(tab)">
+                        {{ tab }}
+                    </button>
+                }
+            </div>
+
+            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                <div class="flex flex-col">
+                    @for (message of messages; track message.id) {
+                        <div class="flex items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer">
+                            <div class="flex-none relative">
+                                <div class="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900 text-primary flex items-center justify-center font-medium">
+                                    {{ message.initials }}
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                                    <mat-icon class="icon-size-3 text-secondary" [svgIcon]="message.channelIcon"></mat-icon>
+                                </div>
+                            </div>
+                            <div class="flex-auto min-w-0">
+                                <div class="flex justify-between items-start mb-0.5">
+                                    <div class="font-medium truncate">{{ message.recipient }}</div>
+                                    <div class="text-xs text-secondary whitespace-nowrap ml-2">{{ message.timestamp }}</div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="text-sm text-secondary truncate mr-4">{{ message.subject }}</div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 flex-shrink-0"
+                                          [class.text-green-600]="message.status === 'Read'"
+                                          [class.bg-green-50]="message.status === 'Read'"
+                                          [class.dark:text-green-400]="message.status === 'Read'"
+                                          [class.dark:bg-green-900/30]="message.status === 'Read'"
+                                          [class.text-red-600]="message.status === 'Failed'"
+                                          [class.bg-red-50]="message.status === 'Failed'"
+                                          [class.dark:text-red-400]="message.status === 'Failed'"
+                                          [class.dark:bg-red-900/30]="message.status === 'Failed'">
+                                        {{ message.status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

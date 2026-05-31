@@ -1,0 +1,203 @@
+@if (event(); as evt) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <!-- Back navigation -->
+            <div class="mb-6">
+                <a mat-button [routerLink]="['..']" color="primary">
+                    <mat-icon class="icon-size-5 mr-2" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                    Back to Events
+                </a>
+            </div>
+
+            <div class="flex flex-col xl:flex-row gap-8">
+                <!-- Left Column (Hero + Tabs) -->
+                <div class="flex-auto min-w-0 xl:max-w-4xl">
+                    <!-- Hero Card -->
+                    <div class="bg-card border rounded-2xl shadow-sm overflow-hidden mb-8">
+                        <div class="h-32 bg-gradient-to-r from-indigo-100 via-purple-100 to-teal-100 dark:from-indigo-900/40 dark:via-purple-900/40 dark:to-teal-900/40"></div>
+                        <div class="p-6 sm:p-8 relative">
+                            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full capitalize" [ngClass]="getStatusClasses(evt.status)">
+                                            {{ evt.status }}
+                                        </span>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-2.5 h-2.5 rounded-full" [ngClass]="getTypeColor(evt.type)"></span>
+                                            <span class="text-sm text-secondary font-medium capitalize">{{ evt.type.replace('-', ' ') }}</span>
+                                        </div>
+                                    </div>
+                                    <h1 class="text-3xl font-bold tracking-tight text-default">{{ evt.title }}</h1>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button mat-stroked-button [routerLink]="['edit']">
+                                        <mat-icon class="icon-size-5 mr-2" svgIcon="heroicons_outline:pencil"></mat-icon>
+                                        Edit
+                                    </button>
+                                    <button mat-flat-button color="primary">
+                                        <mat-icon class="icon-size-5 mr-2" svgIcon="heroicons_outline:share"></mat-icon>
+                                        Promote
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-secondary">
+                                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">{{ evt.start | date:'fullDate' }}</div>
+                                        <div class="text-secondary">{{ evt.start | date:'shortTime' }} - {{ evt.end | date:'shortTime' }}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-secondary">
+                                        <mat-icon class="icon-size-5" [svgIcon]="evt.isVirtual ? 'heroicons_outline:video-camera' : 'heroicons_outline:map-pin'"></mat-icon>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">{{ evt.isVirtual ? 'Virtual Event' : 'In-Person' }}</div>
+                                        <div class="text-secondary">{{ evt.location }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border">
+                                <div class="flex justify-between items-end mb-2">
+                                    <div>
+                                        <div class="text-lg font-semibold">{{ evt.registeredCount }} / {{ evt.capacity }}</div>
+                                        <div class="text-sm text-secondary">Registered Attendees</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-primary">{{ getCapacityPercentage(evt.registeredCount, evt.capacity) }}%</div>
+                                </div>
+                                <mat-progress-bar 
+                                    mode="determinate" 
+                                    [value]="getCapacityPercentage(evt.registeredCount, evt.capacity)"
+                                    color="primary"
+                                    class="rounded-full h-2.5">
+                                </mat-progress-bar>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                        <mat-tab-group animationDuration="0ms">
+                            <mat-tab label="Overview">
+                                <div class="p-6 sm:p-8">
+                                    <h3 class="text-lg font-semibold mb-4">About this event</h3>
+                                    <p class="text-secondary leading-relaxed">{{ evt.description }}</p>
+                                </div>
+                            </mat-tab>
+                            <mat-tab label="Registrations">
+                                <div class="p-6 sm:p-8">
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h3 class="text-lg font-semibold">Attendee List</h3>
+                                        <button mat-stroked-button>Export CSV</button>
+                                    </div>
+                                    <div class="text-center py-12 border-2 border-dashed rounded-xl">
+                                        <mat-icon class="icon-size-12 text-hint mb-4" svgIcon="heroicons_outline:users"></mat-icon>
+                                        <h4 class="text-lg font-medium text-secondary">Registrations will appear here</h4>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                            <mat-tab label="Check-in">
+                                <div class="p-6 sm:p-8">
+                                    <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-6 rounded-xl border border-blue-100 dark:border-blue-800 flex items-start gap-4">
+                                        <mat-icon svgIcon="heroicons_outline:information-circle"></mat-icon>
+                                        <div>
+                                            <h4 class="font-semibold mb-1">Check-in Mode</h4>
+                                            <p class="text-sm opacity-90 mb-4">Launch the dedicated iPad check-in interface for this event.</p>
+                                            <button mat-flat-button color="primary">Launch Check-in App</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                            <mat-tab label="Communications">
+                                <div class="p-6 sm:p-8">
+                                    <h3 class="text-lg font-semibold mb-4">Automated Emails</h3>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-4 border rounded-xl">
+                                            <div class="flex items-center gap-4">
+                                                <mat-icon class="text-green-500" svgIcon="heroicons_outline:check-circle"></mat-icon>
+                                                <div>
+                                                    <div class="font-medium">Registration Confirmation</div>
+                                                    <div class="text-sm text-secondary">Sent immediately upon registration</div>
+                                                </div>
+                                            </div>
+                                            <button mat-icon-button><mat-icon svgIcon="heroicons_outline:pencil"></mat-icon></button>
+                                        </div>
+                                        <div class="flex items-center justify-between p-4 border rounded-xl">
+                                            <div class="flex items-center gap-4">
+                                                <mat-icon class="text-green-500" svgIcon="heroicons_outline:check-circle"></mat-icon>
+                                                <div>
+                                                    <div class="font-medium">48-Hour Reminder</div>
+                                                    <div class="text-sm text-secondary">Scheduled for {{ evt.start | date:'mediumDate' }}</div>
+                                                </div>
+                                            </div>
+                                            <button mat-icon-button><mat-icon svgIcon="heroicons_outline:pencil"></mat-icon></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </mat-tab>
+                        </mat-tab-group>
+                    </div>
+                </div>
+
+                <!-- Right Column (Side Panel) -->
+                <div class="flex flex-col flex-none w-full xl:w-80 gap-8">
+                    <!-- Organizer -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-6">
+                        <h3 class="text-base font-semibold mb-4">Organizer</h3>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                                OA
+                            </div>
+                            <div>
+                                <div class="font-medium">Owen Adirah</div>
+                                <div class="text-sm text-secondary">Admissions Office</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Dates -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-6">
+                        <h3 class="text-base font-semibold mb-4">Key Dates</h3>
+                        <div class="relative border-l-2 border-gray-200 dark:border-gray-700 ml-3 pl-5 space-y-6">
+                            <div class="relative">
+                                <div class="absolute -left-[27px] w-3 h-3 rounded-full bg-primary ring-4 ring-card"></div>
+                                <div class="font-medium text-sm">Registration Opens</div>
+                                <div class="text-xs text-secondary mt-1">May 1, 2026</div>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute -left-[27px] w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 ring-4 ring-card"></div>
+                                <div class="font-medium text-sm">Registration Closes</div>
+                                <div class="text-xs text-secondary mt-1">June 14, 2026</div>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute -left-[27px] w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 ring-4 ring-card"></div>
+                                <div class="font-medium text-sm">Event Date</div>
+                                <div class="text-xs text-secondary mt-1">{{ evt.start | date:'mediumDate' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="bg-card border rounded-2xl shadow-sm p-6">
+                        <h3 class="text-base font-semibold mb-4">Quick Actions</h3>
+                        <div class="flex flex-col gap-2">
+                            <button mat-stroked-button class="w-full justify-start">
+                                <mat-icon class="icon-size-5 mr-2" svgIcon="heroicons_outline:document-duplicate"></mat-icon>
+                                Duplicate Event
+                            </button>
+                            <button mat-stroked-button class="w-full justify-start text-red-600">
+                                <mat-icon class="icon-size-5 mr-2 text-red-600" svgIcon="heroicons_outline:x-circle"></mat-icon>
+                                Cancel Event
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

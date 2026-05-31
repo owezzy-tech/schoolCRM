@@ -1,0 +1,45 @@
+app-events-calendar {
+    display: block;
+    
+    .fc {
+        .fc-event {
+            background: transparent !important;
+            border: none !important;
+            padding: 2px 4px;
+            
+            .fc-event-main {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: inherit;
+                font-weight: 500;
+                font-size: 0.8125rem; /* 13px */
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                
+                &::before {
+                    content: '';
+                    display: block;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                }
+            }
+            
+            &.event-type-open-day .fc-event-main::before { background-color: #a855f7; }
+            &.event-type-webinar .fc-event-main::before { background-color: #14b8a6; }
+            &.event-type-info-session .fc-event-main::before { background-color: #22c55e; }
+            &.event-type-campus-tour .fc-event-main::before { background-color: #f59e0b; }
+            &.event-type-fair .fc-event-main::before { background-color: #ef4444; }
+        }
+        
+        .fc-daygrid-event {
+            &:hover {
+                background: rgba(0,0,0,0.05) !important;
+                border-radius: 4px;
+            }
+        }
+    }
+}

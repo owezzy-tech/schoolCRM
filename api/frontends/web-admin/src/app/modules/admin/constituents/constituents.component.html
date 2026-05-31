@@ -1,0 +1,68 @@
+@if (true) {
+    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+        <div class="flex-auto p-6 sm:p-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h1 class="text-3xl font-semibold tracking-tight">Constituents</h1>
+                <div class="flex gap-3">
+                    <button mat-stroked-button>
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:arrow-down-tray"></mat-icon>
+                        <span class="ml-2">Export</span>
+                    </button>
+                    <button mat-flat-button color="primary">
+                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                        <span class="ml-2">New constituent</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+                <div class="relative flex-1 min-w-64">
+                    <mat-icon class="icon-size-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" svgIcon="heroicons_outline:magnifying-glass"></mat-icon>
+                    <input class="w-full pl-10 pr-4 py-2 border rounded-lg bg-card" placeholder="Search constituents..." />
+                </div>
+                @for (filter of filters; track filter) {
+                    <button mat-stroked-button>
+                        {{ filter }}
+                        <mat-icon class="icon-size-4 ml-1" svgIcon="heroicons_outline:chevron-down"></mat-icon>
+                    </button>
+                }
+            </div>
+
+            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
+                        <tr>
+                            <th class="px-4 py-3 font-medium">Name</th>
+                            <th class="px-4 py-3 font-medium">Stage</th>
+                            <th class="px-4 py-3 font-medium">Program</th>
+                            <th class="px-4 py-3 font-medium">Term</th>
+                            <th class="px-4 py-3 font-medium">Source</th>
+                            <th class="px-4 py-3 font-medium">Score</th>
+                            <th class="px-4 py-3 font-medium">Owner</th>
+                            <th class="px-4 py-3 font-medium">Last activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (c of constituents; track c.email) {
+                            <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ c.name }}</div>
+                                    <div class="text-xs text-secondary">{{ c.email }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ c.stage }}</span>
+                                </td>
+                                <td class="px-4 py-3">{{ c.program }}</td>
+                                <td class="px-4 py-3">{{ c.term }}</td>
+                                <td class="px-4 py-3">{{ c.source }}</td>
+                                <td class="px-4 py-3 font-mono">{{ c.score }}</td>
+                                <td class="px-4 py-3">{{ c.owner }}</td>
+                                <td class="px-4 py-3 text-secondary">{{ c.lastActivity }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

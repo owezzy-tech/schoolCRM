@@ -38,6 +38,7 @@ const (
 	AdmissionsPermissionResolveDuplicates  AdmissionsPermission = "admissions:resolve_duplicates"
 	AdmissionsPermissionManageReferences   AdmissionsPermission = "admissions:manage_references"
 	AdmissionsPermissionManageStaff        AdmissionsPermission = "admissions:manage_staff"
+	AdmissionsPermissionManageLeadScoring  AdmissionsPermission = "admissions:manage_lead_scoring"
 )
 
 // String returns the admissions permission as a string.
@@ -182,8 +183,58 @@ type UpdateConstituent struct {
 	SISSyncedAt     *time.Time
 }
 
+// InquiryStatus represents staff follow-up state for an inquiry.
+type InquiryStatus string
+
+// Set of valid inquiry statuses.
+const (
+	InquiryStatusNew       InquiryStatus = "NEW"
+	InquiryStatusContacted InquiryStatus = "CONTACTED"
+	InquiryStatusConverted InquiryStatus = "CONVERTED"
+	InquiryStatusClosed    InquiryStatus = "CLOSED"
+)
+
+// String returns the inquiry status as a string.
+func (status InquiryStatus) String() string {
+	return string(status)
+}
+
 // Inquiry captures pre-application interest in the school.
-type Inquiry struct{}
+type Inquiry struct {
+	ID                uuid.UUID
+	ConstituentID     uuid.UUID
+	FirstName         string
+	LastName          string
+	DateOfBirth       time.Time
+	PrimaryEmail      mail.Address
+	PrimaryPhone      string
+	ProgramOfInterest *uuid.UUID
+	TermOfInterest    *uuid.UUID
+	Source            string
+	UTMSource         *string
+	UTMMedium         *string
+	UTMCampaign       *string
+	Message           *string
+	Status            InquiryStatus
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
+// NewInquiry is what we require from anonymous prospects when submitting an inquiry.
+type NewInquiry struct {
+	FirstName         string
+	LastName          string
+	DateOfBirth       time.Time
+	PrimaryEmail      mail.Address
+	PrimaryPhone      string
+	ProgramOfInterest *uuid.UUID
+	TermOfInterest    *uuid.UUID
+	Source            string
+	UTMSource         *string
+	UTMMedium         *string
+	UTMCampaign       *string
+	Message           *string
+}
 
 // ApplicationType represents the admissions category for an application.
 type ApplicationType string
@@ -238,6 +289,54 @@ type Application struct {
 	DateUpdated        time.Time
 }
 
+// ApplicationFormField defines a configurable, non-core application form field.
+type ApplicationFormField struct {
+	FieldName    string
+	FieldType    string
+	Required     bool
+	DisplayOrder int
+	Validation   *string
+}
+
+// ApplicationChecklistTemplateItem defines a document/checklist requirement attached to a form template.
+type ApplicationChecklistTemplateItem struct {
+	ItemKey      string
+	DocumentName string
+	Description  *string
+	Required     bool
+	DisplayOrder int
+}
+
+// ApplicationFormTemplate defines configurable form requirements for a program, term, and application type.
+type ApplicationFormTemplate struct {
+	ID              uuid.UUID
+	ProgramID       uuid.UUID
+	AcademicTermID  uuid.UUID
+	ApplicationType ApplicationType
+	Name            string
+	Description     *string
+	Version         int
+	RequiredFields  []ApplicationFormField
+	ChecklistItems  []ApplicationChecklistTemplateItem
+	Active          bool
+	Priority        int
+	DateCreated     time.Time
+	DateUpdated     time.Time
+}
+
+// NewApplicationFormTemplate is what we require to create or update a form template.
+type NewApplicationFormTemplate struct {
+	ProgramID       uuid.UUID
+	AcademicTermID  uuid.UUID
+	ApplicationType ApplicationType
+	Name            string
+	Description     *string
+	RequiredFields  []ApplicationFormField
+	ChecklistItems  []ApplicationChecklistTemplateItem
+	Active          bool
+	Priority        int
+}
+
 // ApplicationTransition records an immutable application status transition.
 type ApplicationTransition struct {
 	ID            uuid.UUID
@@ -249,6 +348,104 @@ type ApplicationTransition struct {
 	Note          *string
 	Metadata      []byte
 	DateCreated   time.Time
+}
+
+// LeadScoreBand represents an explainable score tier for a constituent.
+type LeadScoreBand string
+
+// Set of derived lead score bands.
+const (
+	LeadScoreBandCold         LeadScoreBand = "COLD"
+	LeadScoreBandWarm         LeadScoreBand = "WARM"
+	LeadScoreBandHot          LeadScoreBand = "HOT"
+	LeadScoreBandReadyToApply LeadScoreBand = "READY_TO_APPLY"
+)
+
+// String returns the lead score band as a string.
+func (band LeadScoreBand) String() string {
+	return string(band)
+}
+
+// LeadScoreCriterionField represents a supported rule criterion field.
+type LeadScoreCriterionField string
+
+// Set of supported lead score criterion fields.
+const (
+	LeadScoreCriterionFieldLifecycleStage    LeadScoreCriterionField = "lifecycle_stage"
+	LeadScoreCriterionFieldApplicationType   LeadScoreCriterionField = "application_type"
+	LeadScoreCriterionFieldApplicationStatus LeadScoreCriterionField = "application_status"
+	LeadScoreCriterionFieldProgramID         LeadScoreCriterionField = "program_id"
+	LeadScoreCriterionFieldAcademicTermID    LeadScoreCriterionField = "academic_term_id"
+)
+
+// String returns the criterion field as a string.
+func (field LeadScoreCriterionField) String() string {
+	return string(field)
+}
+
+// LeadScoreCriterionOperator represents a supported rule comparison operator.
+type LeadScoreCriterionOperator string
+
+// Set of supported lead score criterion operators.
+const (
+	LeadScoreCriterionOperatorEquals LeadScoreCriterionOperator = "EQ"
+	LeadScoreCriterionOperatorIn     LeadScoreCriterionOperator = "IN"
+)
+
+// String returns the criterion operator as a string.
+func (operator LeadScoreCriterionOperator) String() string {
+	return string(operator)
+}
+
+// LeadScoreCriterion is one condition in a lead score rule.
+type LeadScoreCriterion struct {
+	Field    LeadScoreCriterionField
+	Operator LeadScoreCriterionOperator
+	Values   []string
+}
+
+// LeadScoreRule defines an enabled/disabled rule that contributes points to a constituent score.
+type LeadScoreRule struct {
+	ID          uuid.UUID
+	Name        string
+	Description *string
+	Criteria    []LeadScoreCriterion
+	Points      int
+	Active      bool
+	Priority    int
+	DateCreated time.Time
+	DateUpdated time.Time
+}
+
+// NewLeadScoreRule is what we require to create or update a lead score rule.
+type NewLeadScoreRule struct {
+	Name        string
+	Description *string
+	Criteria    []LeadScoreCriterion
+	Points      int
+	Active      bool
+	Priority    int
+}
+
+// LeadScoreRuleResult explains how one rule contributed to a lead score.
+type LeadScoreRuleResult struct {
+	RuleID  uuid.UUID
+	Name    string
+	Points  int
+	Matched bool
+	Reason  string
+}
+
+// LeadScore records the latest explainable score for a constituent.
+type LeadScore struct {
+	ID             uuid.UUID
+	ConstituentID  uuid.UUID
+	TotalScore     int
+	Band           LeadScoreBand
+	Breakdown      []LeadScoreRuleResult
+	RecalculatedAt time.Time
+	DateCreated    time.Time
+	DateUpdated    time.Time
 }
 
 // StaffProfile connects an identity user to admissions-specific staff roles.
@@ -266,6 +463,23 @@ type NewStaffProfile struct {
 	UserID uuid.UUID
 	Roles  []AdmissionsRole
 	Active bool
+}
+
+// ApplicantProfile connects an authenticated identity user to a constituent record.
+type ApplicantProfile struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	ConstituentID uuid.UUID
+	Active        bool
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewApplicantProfile is what we require to create an admissions applicant profile.
+type NewApplicantProfile struct {
+	UserID        uuid.UUID
+	ConstituentID uuid.UUID
+	Active        bool
 }
 
 // NewApplicationTransition is what we require to change an application status.
@@ -286,11 +500,85 @@ type NewApplication struct {
 	AssignedReviewerID *uuid.UUID
 }
 
-// Checklist groups required admissions items for an application.
-type Checklist struct{}
+// DocumentStatus represents the review state of applicant-submitted evidence.
+type DocumentStatus string
+
+// Set of valid document statuses.
+const (
+	DocumentStatusUploaded      DocumentStatus = "UPLOADED"
+	DocumentStatusPendingReview DocumentStatus = "PENDING_REVIEW"
+	DocumentStatusAccepted      DocumentStatus = "ACCEPTED"
+	DocumentStatusRejected      DocumentStatus = "REJECTED"
+	DocumentStatusWaived        DocumentStatus = "WAIVED"
+	DocumentStatusExpired       DocumentStatus = "EXPIRED"
+	DocumentStatusSyncedToSIS   DocumentStatus = "SYNCED_TO_SIS"
+)
+
+// String returns the document status as a string.
+func (status DocumentStatus) String() string {
+	return string(status)
+}
+
+// ChecklistItem represents one document requirement for an application.
+type ChecklistItem struct {
+	ID            uuid.UUID
+	ApplicationID uuid.UUID
+	ItemKey       string
+	DocumentName  string
+	Description   *string
+	Required      bool
+	Status        DocumentStatus
+	DisplayOrder  int
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewChecklistItem is what we require to create a checklist item.
+type NewChecklistItem struct {
+	ApplicationID uuid.UUID
+	ItemKey       string
+	DocumentName  string
+	Description   *string
+	Required      bool
+	DisplayOrder  int
+}
 
 // Document represents applicant-submitted evidence for checklist items.
-type Document struct{}
+type Document struct {
+	ID              uuid.UUID
+	ApplicationID   uuid.UUID
+	ChecklistItemID uuid.UUID
+	FileName        string
+	ContentType     string
+	SizeBytes       int64
+	StorageKey      string
+	Status          DocumentStatus
+	ReviewerID      *uuid.UUID
+	ReviewerNotes   *string
+	UploadedByID    uuid.UUID
+	UploadedAt      time.Time
+	ReviewedAt      *time.Time
+	DateCreated     time.Time
+	DateUpdated     time.Time
+}
+
+// NewDocument is what we require to record uploaded document metadata.
+type NewDocument struct {
+	ApplicationID   uuid.UUID
+	ChecklistItemID uuid.UUID
+	FileName        string
+	ContentType     string
+	SizeBytes       int64
+	StorageKey      string
+	UploadedByID    uuid.UUID
+}
+
+// NewDocumentVerification is what we require to review document metadata.
+type NewDocumentVerification struct {
+	Status        DocumentStatus
+	ReviewerID    uuid.UUID
+	ReviewerNotes *string
+}
 
 // Decision represents the outcome of an application review.
 type Decision struct{}
@@ -389,9 +677,12 @@ type ResolveDuplicateReview struct {
 func AggregateNames() []string {
 	return []string{
 		"staffProfile",
+		"applicantProfile",
 		"constituent",
 		"inquiry",
 		"application",
+		"leadScoreRule",
+		"leadScore",
 		"checklist",
 		"document",
 		"decision",
@@ -408,6 +699,41 @@ type StaffProfileQueryFilter struct {
 	UserID *uuid.UUID
 	Role   *AdmissionsRole
 	Active *bool
+}
+
+// ApplicantProfileQueryFilter holds the available fields an applicant profile query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicantProfileQueryFilter struct {
+	ID            *uuid.UUID
+	UserID        *uuid.UUID
+	ConstituentID *uuid.UUID
+	Active        *bool
+}
+
+// InquiryQueryFilter holds the available fields an inquiry query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type InquiryQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	PrimaryEmail  *mail.Address
+	Source        *string
+	Status        *InquiryStatus
+}
+
+// LeadScoreRuleQueryFilter holds the available fields a lead score rule query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type LeadScoreRuleQueryFilter struct {
+	ID     *uuid.UUID
+	Active *bool
+}
+
+// LeadScoreQueryFilter holds the available fields a lead score query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type LeadScoreQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	Band          *LeadScoreBand
+	MinScore      *int
 }
 
 // ProgramQueryFilter holds the available fields a program query can be filtered on.
@@ -460,6 +786,17 @@ type ApplicationQueryFilter struct {
 	ActiveOnly      *bool
 }
 
+// ApplicationFormTemplateQueryFilter holds fields an application form template query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ApplicationFormTemplateQueryFilter struct {
+	ID              *uuid.UUID
+	ProgramID       *uuid.UUID
+	AcademicTermID  *uuid.UUID
+	ApplicationType *ApplicationType
+	Active          *bool
+	Version         *int
+}
+
 // ApplicationTransitionQueryFilter holds the available fields an application transition query can be filtered on.
 // We are using pointer semantics because the With API mutates the value.
 type ApplicationTransitionQueryFilter struct {
@@ -468,4 +805,24 @@ type ApplicationTransitionQueryFilter struct {
 	ActorID       *uuid.UUID
 	FromStatus    *ApplicationStatus
 	ToStatus      *ApplicationStatus
+}
+
+// ChecklistItemQueryFilter holds fields a checklist item query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ChecklistItemQueryFilter struct {
+	ID            *uuid.UUID
+	ApplicationID *uuid.UUID
+	Status        *DocumentStatus
+	Required      *bool
+}
+
+// DocumentQueryFilter holds fields a document query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type DocumentQueryFilter struct {
+	ID              *uuid.UUID
+	ApplicationID   *uuid.UUID
+	ChecklistItemID *uuid.UUID
+	Status          *DocumentStatus
+	UploadedByID    *uuid.UUID
+	ReviewerID      *uuid.UUID
 }

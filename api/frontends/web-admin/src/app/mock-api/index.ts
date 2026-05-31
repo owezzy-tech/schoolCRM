@@ -10,6 +10,7 @@ import { NotesMockApi } from 'app/mock-api/apps/notes/api';
 import { ScrumboardMockApi } from 'app/mock-api/apps/scrumboard/api';
 import { TasksMockApi } from 'app/mock-api/apps/tasks/api';
 import { AuthMockApi } from 'app/mock-api/common/auth/api';
+import { FileUploadMockApi } from 'app/mock-api/common/file-upload/api';
 import { MessagesMockApi } from 'app/mock-api/common/messages/api';
 import { NavigationMockApi } from 'app/mock-api/common/navigation/api';
 import { NotificationsMockApi } from 'app/mock-api/common/notifications/api';
@@ -34,6 +35,7 @@ export class MockApiService {
     cryptoMockApi = inject(CryptoMockApi);
     eCommerceInventoryMockApi = inject(ECommerceInventoryMockApi);
     fileManagerMockApi = inject(FileManagerMockApi);
+    fileUploadMockApi = inject(FileUploadMockApi);
     financeMockApi = inject(FinanceMockApi);
     helpCenterMockApi = inject(HelpCenterMockApi);
     iconsMockApi = inject(IconsMockApi);
