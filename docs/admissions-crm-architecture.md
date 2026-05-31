@@ -125,6 +125,37 @@ Document metadata is owned by CRM. File bytes are stored in object/file storage.
 - `Event` owns registration, capacity, reminders, and check-in.
 - `Notification` owns in-app notification delivery.
 
+### Analytics Integration
+
+Google Analytics 4 (GA4) is an external analytics integration, not the admissions system of record. CRM remains authoritative for constituents, inquiries, applications, campaign audience snapshots, send audit, and provider delivery metrics. GA4 contributes web and campaign behavior metrics for reporting: source/medium/campaign attribution, page and form engagement, public event registration funnel steps, application funnel events, and aggregate conversion reporting.
+
+The analytics boundary is privacy-first:
+
+- No applicant PII is sent to GA4. Names, emails, phone numbers, dates of birth, documents, reviewer notes, and raw application identifiers are excluded from event parameters and URLs.
+- GA4 `user_id`, when used, is an opaque CRM identifier suitable for analytics joins, not an email address or human-readable ID.
+- Consent Mode v2 or an equivalent consent layer controls analytics and ads storage before GA4 tags or Measurement Protocol events are sent.
+- CRM audit logs record staff actions and report/export access. GA4 event collection is separate telemetry and is not a substitute for CRM audit trails.
+
+The browser collection layer uses the Google tag. Prefer Google Tag Manager when marketing or analytics staff need to manage destinations without deploys; use `gtag.js` only when a smaller direct integration is intentionally chosen. In both cases, application code publishes typed analytics events through a single analytics facade instead of scattering raw tag calls across components. When GTM is used, that facade writes to a stable `dataLayer` contract with approved event names, bounded parameters, and no PII-bearing values. Tag configuration is environment-specific, Consent Mode defaults run before any GA4 event, and Tag Assistant/debug tooling is part of acceptance for implementation.
+
+Recommended reporting flow:
+
+```mermaid
+flowchart LR
+  Browser[Applicant/public pages] --> Tag[Google tag via GTM or gtag.js]
+  CRM[CRM backend events] --> MP[GA4 Measurement Protocol]
+  Tag --> GA4[GA4 property]
+  MP --> GA4
+  GA4 --> DataAPI[GA4 Data API]
+  GA4 --> BigQuery[GA4 BigQuery export]
+  CRMDB[(CRM database)] --> Warehouse[Reporting warehouse]
+  BigQuery --> Warehouse
+  DataAPI --> Reports[Embedded CRM reports]
+  Warehouse --> Reports
+```
+
+Use the GA4 Data API for aggregate dashboard widgets and near-term campaign reports. Use BigQuery export for CRM joins, history beyond standard API windows, funnel reconstruction, and attribution analysis that combines GA4 events with CRM application state.
+
 ### Integration Aggregate
 
 `SyncJob` and `SyncEvent` track batch and real-time PeopleSoft/SIS synchronization.
