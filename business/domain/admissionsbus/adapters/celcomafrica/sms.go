@@ -1,5 +1,5 @@
-// Package africastalking defines the outbound port for SMS delivery through Africa's Talking.
-package africastalking
+// Package celcomafrica defines the outbound port for SMS delivery through Celcom Africa.
+package celcomafrica
 
 import (
 	"context"
@@ -29,7 +29,7 @@ type SendSMSResponse struct {
 	SentAt      time.Time
 }
 
-// DeliveryReportRequest carries an Africa's Talking delivery callback in normalized form.
+// DeliveryReportRequest carries a Celcom Africa delivery callback in normalized form.
 type DeliveryReportRequest struct {
 	MessageID   string
 	PhoneNumber string
