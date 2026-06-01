@@ -84,6 +84,22 @@ var applicationFormTemplateOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationFormTemplateDateCreated,
 }
 
+var customFieldDefinitionOrderByFields = map[string]string{
+	"custom_field_definition_id": admissionsbus.OrderByCustomFieldDefinitionID,
+	"owner":                      admissionsbus.OrderByCustomFieldDefinitionOwner,
+	"field_key":                  admissionsbus.OrderByCustomFieldDefinitionFieldKey,
+	"display_order":              admissionsbus.OrderByCustomFieldDefinitionDisplayOrder,
+	"date_created":               admissionsbus.OrderByCustomFieldDefinitionDateCreated,
+}
+
+var customFieldValueOrderByFields = map[string]string{
+	"custom_field_value_id":      admissionsbus.OrderByCustomFieldValueID,
+	"custom_field_definition_id": admissionsbus.OrderByCustomFieldValueDefinition,
+	"owner":                      admissionsbus.OrderByCustomFieldValueOwner,
+	"owner_id":                   admissionsbus.OrderByCustomFieldValueOwnerID,
+	"date_created":               admissionsbus.OrderByCustomFieldValueDateCreated,
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	"application_transition_id": admissionsbus.OrderByApplicationTransitionID,
 	"application_id":            admissionsbus.OrderByApplicationTransitionApplication,

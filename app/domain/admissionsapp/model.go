@@ -887,6 +887,182 @@ type ApplicationFormTemplate struct {
 	DateUpdated     string                             `json:"dateUpdated"`
 }
 
+// CustomFieldDefinition represents a configurable admissions field owned by a constituent or application.
+type CustomFieldDefinition struct {
+	ID           string   `json:"id"`
+	Owner        string   `json:"owner"`
+	FieldKey     string   `json:"fieldKey"`
+	Label        string   `json:"label"`
+	Description  *string  `json:"description,omitempty"`
+	DataType     string   `json:"dataType"`
+	Required     bool     `json:"required"`
+	Options      []string `json:"options"`
+	Validation   *string  `json:"validation,omitempty"`
+	Searchable   bool     `json:"searchable"`
+	Reportable   bool     `json:"reportable"`
+	Importable   bool     `json:"importable"`
+	Exportable   bool     `json:"exportable"`
+	DisplayOrder int      `json:"displayOrder"`
+	Active       bool     `json:"active"`
+	DateCreated  string   `json:"dateCreated"`
+	DateUpdated  string   `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app CustomFieldDefinition) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCustomFieldDefinition(definition admissionsbus.CustomFieldDefinition) CustomFieldDefinition {
+	return CustomFieldDefinition{
+		ID:           definition.ID.String(),
+		Owner:        definition.Owner.String(),
+		FieldKey:     definition.FieldKey,
+		Label:        definition.Label,
+		Description:  definition.Description,
+		DataType:     definition.DataType.String(),
+		Required:     definition.Required,
+		Options:      definition.Options,
+		Validation:   definition.Validation,
+		Searchable:   definition.Searchable,
+		Reportable:   definition.Reportable,
+		Importable:   definition.Importable,
+		Exportable:   definition.Exportable,
+		DisplayOrder: definition.DisplayOrder,
+		Active:       definition.Active,
+		DateCreated:  definition.DateCreated.Format(time.RFC3339),
+		DateUpdated:  definition.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCustomFieldDefinitions(definitions []admissionsbus.CustomFieldDefinition) []CustomFieldDefinition {
+	app := make([]CustomFieldDefinition, len(definitions))
+	for i, definition := range definitions {
+		app[i] = toAppCustomFieldDefinition(definition)
+	}
+
+	return app
+}
+
+// NewCustomFieldDefinition defines the data needed to create or update an admissions custom field definition.
+type NewCustomFieldDefinition struct {
+	Owner        string   `json:"owner"`
+	FieldKey     string   `json:"fieldKey"`
+	Label        string   `json:"label"`
+	Description  *string  `json:"description"`
+	DataType     string   `json:"dataType"`
+	Required     bool     `json:"required"`
+	Options      []string `json:"options"`
+	Validation   *string  `json:"validation"`
+	Searchable   bool     `json:"searchable"`
+	Reportable   bool     `json:"reportable"`
+	Importable   bool     `json:"importable"`
+	Exportable   bool     `json:"exportable"`
+	DisplayOrder int      `json:"displayOrder"`
+	Active       bool     `json:"active"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewCustomFieldDefinition) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewCustomFieldDefinition(app NewCustomFieldDefinition) admissionsbus.NewCustomFieldDefinition {
+	return admissionsbus.NewCustomFieldDefinition{
+		Owner:        admissionsbus.CustomFieldOwner(app.Owner),
+		FieldKey:     app.FieldKey,
+		Label:        app.Label,
+		Description:  app.Description,
+		DataType:     admissionsbus.CustomFieldDataType(app.DataType),
+		Required:     app.Required,
+		Options:      app.Options,
+		Validation:   app.Validation,
+		Searchable:   app.Searchable,
+		Reportable:   app.Reportable,
+		Importable:   app.Importable,
+		Exportable:   app.Exportable,
+		DisplayOrder: app.DisplayOrder,
+		Active:       app.Active,
+	}
+}
+
+func toBusNewCustomFieldValue(app NewCustomFieldValue) (admissionsbus.NewCustomFieldValue, error) {
+	var fieldErrors errs.FieldErrors
+
+	definitionID, err := uuid.Parse(app.DefinitionID)
+	if err != nil {
+		fieldErrors.Add("definitionID", err)
+	}
+
+	ownerID, err := uuid.Parse(app.OwnerID)
+	if err != nil {
+		fieldErrors.Add("ownerID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewCustomFieldValue{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        admissionsbus.CustomFieldOwner(app.Owner),
+		OwnerID:      ownerID,
+		Value:        app.Value,
+	}, nil
+}
+
+// CustomFieldValue represents one custom field value for a constituent or application.
+type CustomFieldValue struct {
+	ID           string `json:"id"`
+	DefinitionID string `json:"definitionID"`
+	Owner        string `json:"owner"`
+	OwnerID      string `json:"ownerID"`
+	Value        string `json:"value"`
+	DateCreated  string `json:"dateCreated"`
+	DateUpdated  string `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app CustomFieldValue) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCustomFieldValue(value admissionsbus.CustomFieldValue) CustomFieldValue {
+	return CustomFieldValue{
+		ID:           value.ID.String(),
+		DefinitionID: value.DefinitionID.String(),
+		Owner:        value.Owner.String(),
+		OwnerID:      value.OwnerID.String(),
+		Value:        value.Value,
+		DateCreated:  value.DateCreated.Format(time.RFC3339),
+		DateUpdated:  value.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCustomFieldValues(values []admissionsbus.CustomFieldValue) []CustomFieldValue {
+	app := make([]CustomFieldValue, len(values))
+	for i, value := range values {
+		app[i] = toAppCustomFieldValue(value)
+	}
+
+	return app
+}
+
+// NewCustomFieldValue defines the data needed to set one custom field value.
+type NewCustomFieldValue struct {
+	DefinitionID string `json:"definitionID"`
+	Owner        string `json:"owner"`
+	OwnerID      string `json:"ownerID"`
+	Value        string `json:"value"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewCustomFieldValue) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
 // Encode implements the encoder interface.
 func (app ApplicationFormTemplate) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)

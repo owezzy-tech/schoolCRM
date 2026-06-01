@@ -931,6 +931,153 @@ func (a *app) queryApplicationFormTemplateByID(ctx context.Context, r *http.Requ
 	return toAppApplicationFormTemplate(template)
 }
 
+func (a *app) createCustomFieldDefinition(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldDefinition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	definition, err := a.admissionsBus.CreateCustomFieldDefinition(ctx, toBusNewCustomFieldDefinition(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(definition)
+}
+
+func (a *app) updateCustomFieldDefinition(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldDefinition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	definitionID, err := uuid.Parse(web.Param(r, "custom_field_definition_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_definition_id", err)
+	}
+
+	definition, err := a.admissionsBus.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definition: %s", err)
+	}
+
+	updated, err := a.admissionsBus.UpdateCustomFieldDefinition(ctx, definition, toBusNewCustomFieldDefinition(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(updated)
+}
+
+func (a *app) queryCustomFieldDefinitions(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCustomFieldDefinitionQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCustomFieldDefinitionFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(customFieldDefinitionOrderByFields, qp.OrderBy, admissionsbus.DefaultCustomFieldDefinitionOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	definitions, err := a.admissionsBus.QueryCustomFieldDefinitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definitions: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCustomFieldDefinitions(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count custom field definitions: %s", err)
+	}
+
+	return query.NewResult(toAppCustomFieldDefinitions(definitions), total, page)
+}
+
+func (a *app) queryCustomFieldDefinitionByID(ctx context.Context, r *http.Request) web.Encoder {
+	definitionID, err := uuid.Parse(web.Param(r, "custom_field_definition_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_definition_id", err)
+	}
+
+	definition, err := a.admissionsBus.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(definition)
+}
+
+func (a *app) setCustomFieldValue(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldValue
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nv, err := toBusNewCustomFieldValue(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	value, err := a.admissionsBus.SetCustomFieldValue(ctx, nv)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "set custom field value: %s", err)
+	}
+
+	return toAppCustomFieldValue(value)
+}
+
+func (a *app) queryCustomFieldValues(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCustomFieldValueQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCustomFieldValueFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(customFieldValueOrderByFields, qp.OrderBy, admissionsbus.DefaultCustomFieldValueOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	values, err := a.admissionsBus.QueryCustomFieldValues(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field values: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCustomFieldValues(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count custom field values: %s", err)
+	}
+
+	return query.NewResult(toAppCustomFieldValues(values), total, page)
+}
+
+func (a *app) queryCustomFieldValueByID(ctx context.Context, r *http.Request) web.Encoder {
+	valueID, err := uuid.Parse(web.Param(r, "custom_field_value_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_value_id", err)
+	}
+
+	value, err := a.admissionsBus.QueryCustomFieldValueByID(ctx, valueID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field value: %s", err)
+	}
+
+	return toAppCustomFieldValue(value)
+}
+
 func (a *app) transitionApplicationStatus(ctx context.Context, r *http.Request) web.Encoder {
 	var app NewApplicationTransition
 	if err := web.Decode(r, &app); err != nil {
