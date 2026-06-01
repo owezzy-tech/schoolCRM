@@ -954,16 +954,47 @@ func toBusResolveDuplicateReview(app ResolveDuplicateReview, actorID uuid.UUID) 
 
 // Application represents a constituent's application for a program and academic term.
 type Application struct {
-	ID                 string  `json:"id"`
-	ConstituentID      string  `json:"constituentID"`
-	ProgramID          string  `json:"programID"`
-	AcademicTermID     string  `json:"academicTermID"`
-	ApplicationType    string  `json:"applicationType"`
-	Status             string  `json:"status"`
-	AssignedReviewerID *string `json:"assignedReviewerID,omitempty"`
-	SubmittedAt        *string `json:"submittedAt,omitempty"`
-	DateCreated        string  `json:"dateCreated"`
-	DateUpdated        string  `json:"dateUpdated"`
+	ID                 string                 `json:"id"`
+	ConstituentID      string                 `json:"constituentID"`
+	ProgramID          string                 `json:"programID"`
+	AcademicTermID     string                 `json:"academicTermID"`
+	ApplicationType    string                 `json:"applicationType"`
+	Status             string                 `json:"status"`
+	KUCCPSPlacement    *KUCCPSPlacement       `json:"kuccpsPlacement,omitempty"`
+	KCSEResult         *ApplicationKCSEResult `json:"kcseResult,omitempty"`
+	AssignedReviewerID *string                `json:"assignedReviewerID,omitempty"`
+	SubmittedAt        *string                `json:"submittedAt,omitempty"`
+	DateCreated        string                 `json:"dateCreated"`
+	DateUpdated        string                 `json:"dateUpdated"`
+}
+
+// KUCCPSPlacement captures a normalized KUCCPS placement snapshot on an application.
+type KUCCPSPlacement struct {
+	PlacementID        string   `json:"placementID"`
+	AdmissionNumber    *string  `json:"admissionNumber,omitempty"`
+	InstitutionCode    string   `json:"institutionCode"`
+	ProgrammeCode      string   `json:"programmeCode"`
+	ProgrammeName      string   `json:"programmeName"`
+	PlacementYear      int      `json:"placementYear"`
+	ClusterCode        *string  `json:"clusterCode,omitempty"`
+	ClusterPoints      *float64 `json:"clusterPoints,omitempty"`
+	WeightedPointsNote *string  `json:"weightedPointsNote,omitempty"`
+}
+
+// ApplicationKCSESubject stores one KCSE subject grade snapshot on an application.
+type ApplicationKCSESubject struct {
+	SubjectCode string `json:"subjectCode"`
+	Grade       string `json:"grade"`
+	Points      int    `json:"points"`
+}
+
+// ApplicationKCSEResult stores the KCSE result snapshot submitted with an application.
+type ApplicationKCSEResult struct {
+	IndexNumber string                   `json:"indexNumber"`
+	ExamYear    int                      `json:"examYear"`
+	Subjects    []ApplicationKCSESubject `json:"subjects"`
+	MeanGrade   string                   `json:"meanGrade"`
+	MeanPoints  int                      `json:"meanPoints"`
 }
 
 // ApplicationFormField represents a configurable, non-core application form field.
@@ -1578,6 +1609,8 @@ func toAppApplication(application admissionsbus.Application) Application {
 		AcademicTermID:     application.AcademicTermID.String(),
 		ApplicationType:    application.ApplicationType.String(),
 		Status:             application.Status.String(),
+		KUCCPSPlacement:    toAppKUCCPSPlacement(application.KUCCPSPlacement),
+		KCSEResult:         toAppApplicationKCSEResult(application.KCSEResult),
 		AssignedReviewerID: uuidStringPtr(application.AssignedReviewerID),
 		SubmittedAt:        formatTimePtr(application.SubmittedAt),
 		DateCreated:        application.DateCreated.Format(time.RFC3339),
@@ -1596,11 +1629,13 @@ func toAppApplications(applications []admissionsbus.Application) []Application {
 
 // NewApplication defines the data needed to create a draft application.
 type NewApplication struct {
-	ConstituentID      string  `json:"constituentID"`
-	ProgramID          string  `json:"programID"`
-	AcademicTermID     string  `json:"academicTermID"`
-	ApplicationType    string  `json:"applicationType"`
-	AssignedReviewerID *string `json:"assignedReviewerID"`
+	ConstituentID      string                 `json:"constituentID"`
+	ProgramID          string                 `json:"programID"`
+	AcademicTermID     string                 `json:"academicTermID"`
+	ApplicationType    string                 `json:"applicationType"`
+	KUCCPSPlacement    *KUCCPSPlacement       `json:"kuccpsPlacement"`
+	KCSEResult         *ApplicationKCSEResult `json:"kcseResult"`
+	AssignedReviewerID *string                `json:"assignedReviewerID"`
 }
 
 // NewApplicationFormTemplate defines the data needed to create or update a form template.
@@ -1812,8 +1847,100 @@ func toBusNewApplication(app NewApplication) (admissionsbus.NewApplication, erro
 		ProgramID:          programID,
 		AcademicTermID:     academicTermID,
 		ApplicationType:    admissionsbus.ApplicationType(app.ApplicationType),
+		KUCCPSPlacement:    toBusKUCCPSPlacement(app.KUCCPSPlacement),
+		KCSEResult:         toBusApplicationKCSEResult(app.KCSEResult),
 		AssignedReviewerID: assignedReviewerID,
 	}, nil
+}
+
+func toAppKUCCPSPlacement(placement *admissionsbus.KUCCPSPlacement) *KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	return &KUCCPSPlacement{
+		PlacementID:        placement.PlacementID,
+		AdmissionNumber:    placement.AdmissionNumber,
+		InstitutionCode:    placement.InstitutionCode,
+		ProgrammeCode:      placement.ProgrammeCode,
+		ProgrammeName:      placement.ProgrammeName,
+		PlacementYear:      placement.PlacementYear,
+		ClusterCode:        placement.ClusterCode,
+		ClusterPoints:      placement.ClusterPoints,
+		WeightedPointsNote: placement.WeightedPointsNote,
+	}
+}
+
+func toBusKUCCPSPlacement(placement *KUCCPSPlacement) *admissionsbus.KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	return &admissionsbus.KUCCPSPlacement{
+		PlacementID:        placement.PlacementID,
+		AdmissionNumber:    placement.AdmissionNumber,
+		InstitutionCode:    placement.InstitutionCode,
+		ProgrammeCode:      placement.ProgrammeCode,
+		ProgrammeName:      placement.ProgrammeName,
+		PlacementYear:      placement.PlacementYear,
+		ClusterCode:        placement.ClusterCode,
+		ClusterPoints:      placement.ClusterPoints,
+		WeightedPointsNote: placement.WeightedPointsNote,
+	}
+}
+
+func toAppApplicationKCSEResult(result *admissionsbus.ApplicationKCSEResult) *ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	return &ApplicationKCSEResult{
+		IndexNumber: result.IndexNumber,
+		ExamYear:    result.ExamYear,
+		Subjects:    toAppApplicationKCSESubjects(result.Subjects),
+		MeanGrade:   result.MeanGrade,
+		MeanPoints:  result.MeanPoints,
+	}
+}
+
+func toBusApplicationKCSEResult(result *ApplicationKCSEResult) *admissionsbus.ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	return &admissionsbus.ApplicationKCSEResult{
+		IndexNumber: result.IndexNumber,
+		ExamYear:    result.ExamYear,
+		Subjects:    toBusApplicationKCSESubjects(result.Subjects),
+		MeanGrade:   result.MeanGrade,
+		MeanPoints:  result.MeanPoints,
+	}
+}
+
+func toAppApplicationKCSESubjects(subjects []admissionsbus.ApplicationKCSESubject) []ApplicationKCSESubject {
+	app := make([]ApplicationKCSESubject, len(subjects))
+	for i, subject := range subjects {
+		app[i] = ApplicationKCSESubject{
+			SubjectCode: subject.SubjectCode,
+			Grade:       subject.Grade,
+			Points:      subject.Points,
+		}
+	}
+
+	return app
+}
+
+func toBusApplicationKCSESubjects(subjects []ApplicationKCSESubject) []admissionsbus.ApplicationKCSESubject {
+	bus := make([]admissionsbus.ApplicationKCSESubject, len(subjects))
+	for i, subject := range subjects {
+		bus[i] = admissionsbus.ApplicationKCSESubject{
+			SubjectCode: subject.SubjectCode,
+			Grade:       subject.Grade,
+			Points:      subject.Points,
+		}
+	}
+
+	return bus
 }
 
 // NewApplicationTransition defines the data needed to change an application status.
