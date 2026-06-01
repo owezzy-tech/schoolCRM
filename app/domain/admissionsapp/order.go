@@ -107,3 +107,22 @@ var documentOrderByFields = map[string]string{
 	"uploaded_at":       admissionsbus.OrderByDocumentUploadedAt,
 	"reviewed_at":       admissionsbus.OrderByDocumentReviewedAt,
 }
+
+var syncJobOrderByFields = map[string]string{
+	"sync_job_id":  admissionsbus.OrderBySyncJobID,
+	"status":       admissionsbus.OrderBySyncJobStatus,
+	"direction":    admissionsbus.OrderBySyncJobDirection,
+	"started_at":   admissionsbus.OrderBySyncJobStartedAt,
+	"completed_at": admissionsbus.OrderBySyncJobCompletedAt,
+	"date_created": admissionsbus.OrderBySyncJobDateCreated,
+}
+
+var syncEventOrderByFields = map[string]string{
+	"sync_event_id": admissionsbus.OrderBySyncEventID,
+	"sync_job_id":   admissionsbus.OrderBySyncEventJob,
+	"event_type":    admissionsbus.OrderBySyncEventType,
+	"status":        admissionsbus.OrderBySyncEventStatus,
+	"direction":     admissionsbus.OrderBySyncEventDirection,
+	"resource_id":   admissionsbus.OrderBySyncEventResource,
+	"date_created":  admissionsbus.OrderBySyncEventDateCreated,
+}
