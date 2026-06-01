@@ -100,6 +100,35 @@ export const APPLICATION_FEE_PROVIDERS = [
     'not_required',
 ] as const;
 
+export const SIS_SYNC_JOB_STATUSES = [
+    'QUEUED',
+    'RUNNING',
+    'SUCCEEDED',
+    'FAILED',
+    'RETRY_READY',
+] as const;
+
+export const SIS_SYNC_EVENT_STATUSES = [
+    'QUEUED',
+    'PROCESSING',
+    'SUCCEEDED',
+    'FAILED',
+    'RETRY_READY',
+] as const;
+
+export const SIS_SYNC_DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
+
+export const SIS_SYNC_EVENT_TYPES = [
+    'BATCH_TERMS_PULL',
+    'BATCH_PROGRAMS_PULL',
+    'BATCH_PERSON_MATCHES_PULL',
+    'BATCH_ENROLLMENT_PULL',
+    'APPLICATION_SUBMISSION',
+    'APPLICATION_DECISION',
+    'DOCUMENT_STATUS',
+    'ENROLLMENT_INTENT',
+] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -116,6 +145,44 @@ export type LeadAssignmentCriterionOperator =
 export type EventAttendanceStatus = (typeof EVENT_ATTENDANCE_STATUSES)[number];
 export type ApplicationFeeStatus = (typeof APPLICATION_FEE_STATUSES)[number];
 export type ApplicationFeeProvider = (typeof APPLICATION_FEE_PROVIDERS)[number];
+export type SisSyncJobStatus = (typeof SIS_SYNC_JOB_STATUSES)[number];
+export type SisSyncEventStatus = (typeof SIS_SYNC_EVENT_STATUSES)[number];
+export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
+export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
+
+export interface SisSyncJob {
+    id: string;
+    name: string;
+    status: SisSyncJobStatus;
+    direction: SisSyncDirection;
+    startedAt?: string;
+    completedAt?: string;
+    recordsPulled: number;
+    recordsPushed: number;
+    eventsRequeued: number;
+    failureReason?: string;
+    retryable: boolean;
+    owner: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface SisSyncEvent {
+    id: string;
+    jobID?: string;
+    eventType: SisSyncEventType;
+    status: SisSyncEventStatus;
+    direction: SisSyncDirection;
+    resourceType: string;
+    resourceID: string;
+    payloadHash: string;
+    attempts: number;
+    nextRetryAt?: string;
+    failureReason?: string;
+    auditMessage: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
 
 export interface ApplicationFeeAuditEvent {
     actor: string;

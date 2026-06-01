@@ -607,3 +607,83 @@ func (ext *Extension) QueryDocumentByID(ctx context.Context, documentID uuid.UUI
 
 	return ext.bus.QueryDocumentByID(ctx, documentID)
 }
+
+// CreateSyncJob applies otel to SIS sync job creation.
+func (ext *Extension) CreateSyncJob(ctx context.Context, nj admissionsbus.NewSyncJob) (admissionsbus.SyncJob, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createsyncjob")
+	defer span.End()
+
+	return ext.bus.CreateSyncJob(ctx, nj)
+}
+
+// UpdateSyncJob applies otel to SIS sync job updates.
+func (ext *Extension) UpdateSyncJob(ctx context.Context, job admissionsbus.SyncJob, uj admissionsbus.UpdateSyncJob) (admissionsbus.SyncJob, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updatesyncjob")
+	defer span.End()
+
+	return ext.bus.UpdateSyncJob(ctx, job, uj)
+}
+
+// QuerySyncJobs applies otel to SIS sync job queries.
+func (ext *Extension) QuerySyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncJob, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querysyncjobs")
+	defer span.End()
+
+	return ext.bus.QuerySyncJobs(ctx, filter, orderBy, page)
+}
+
+// CountSyncJobs applies otel to SIS sync job counts.
+func (ext *Extension) CountSyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countsyncjobs")
+	defer span.End()
+
+	return ext.bus.CountSyncJobs(ctx, filter)
+}
+
+// QuerySyncJobByID applies otel to SIS sync job ID lookups.
+func (ext *Extension) QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (admissionsbus.SyncJob, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querysyncjobbyid")
+	defer span.End()
+
+	return ext.bus.QuerySyncJobByID(ctx, jobID)
+}
+
+// EnqueueSyncEvent applies otel to SIS sync event enqueueing.
+func (ext *Extension) EnqueueSyncEvent(ctx context.Context, ne admissionsbus.NewSyncEvent) (admissionsbus.SyncEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.enqueuesyncevent")
+	defer span.End()
+
+	return ext.bus.EnqueueSyncEvent(ctx, ne)
+}
+
+// UpdateSyncEvent applies otel to SIS sync event updates.
+func (ext *Extension) UpdateSyncEvent(ctx context.Context, event admissionsbus.SyncEvent, ue admissionsbus.UpdateSyncEvent) (admissionsbus.SyncEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updatesyncevent")
+	defer span.End()
+
+	return ext.bus.UpdateSyncEvent(ctx, event, ue)
+}
+
+// QuerySyncEvents applies otel to SIS sync event queries.
+func (ext *Extension) QuerySyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querysyncevents")
+	defer span.End()
+
+	return ext.bus.QuerySyncEvents(ctx, filter, orderBy, page)
+}
+
+// CountSyncEvents applies otel to SIS sync event counts.
+func (ext *Extension) CountSyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countsyncevents")
+	defer span.End()
+
+	return ext.bus.CountSyncEvents(ctx, filter)
+}
+
+// QuerySyncEventByID applies otel to SIS sync event ID lookups.
+func (ext *Extension) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.SyncEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querysynceventbyid")
+	defer span.End()
+
+	return ext.bus.QuerySyncEventByID(ctx, eventID)
+}

@@ -1841,6 +1841,56 @@ func (s *Store) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (ad
 	return document, nil
 }
 
+// CreateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
+func (s *Store) CreateSyncJob(context.Context, admissionsbus.SyncJob) error {
+	return nil
+}
+
+// UpdateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
+func (s *Store) UpdateSyncJob(context.Context, admissionsbus.SyncJob) error {
+	return nil
+}
+
+// QuerySyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
+func (s *Store) QuerySyncJobs(context.Context, admissionsbus.SyncJobQueryFilter, order.By, page.Page) ([]admissionsbus.SyncJob, error) {
+	return []admissionsbus.SyncJob{}, nil
+}
+
+// CountSyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
+func (s *Store) CountSyncJobs(context.Context, admissionsbus.SyncJobQueryFilter) (int, error) {
+	return 0, nil
+}
+
+// QuerySyncJobByID is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
+func (s *Store) QuerySyncJobByID(context.Context, uuid.UUID) (admissionsbus.SyncJob, error) {
+	return admissionsbus.SyncJob{}, admissionsbus.ErrSyncJobNotFound
+}
+
+// CreateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
+func (s *Store) CreateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+	return nil
+}
+
+// UpdateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
+func (s *Store) UpdateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+	return nil
+}
+
+// QuerySyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
+func (s *Store) QuerySyncEvents(context.Context, admissionsbus.SyncEventQueryFilter, order.By, page.Page) ([]admissionsbus.SyncEvent, error) {
+	return []admissionsbus.SyncEvent{}, nil
+}
+
+// CountSyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
+func (s *Store) CountSyncEvents(context.Context, admissionsbus.SyncEventQueryFilter) (int, error) {
+	return 0, nil
+}
+
+// QuerySyncEventByID is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
+func (s *Store) QuerySyncEventByID(context.Context, uuid.UUID) (admissionsbus.SyncEvent, error) {
+	return admissionsbus.SyncEvent{}, admissionsbus.ErrSyncEventNotFound
+}
+
 func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (admissionsbus.Document, error) {
 	data := map[string]any{}
 

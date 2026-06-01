@@ -89,6 +89,15 @@ var (
 	ErrDocumentUploaderRequired     = errors.New("document uploader required")
 	ErrDocumentReviewerRequired     = errors.New("document reviewer required")
 	ErrDocumentStatusNotReviewable  = errors.New("document status is not a review action")
+	ErrSyncJobNotFound              = errors.New("sync job not found")
+	ErrSyncJobNameRequired          = errors.New("sync job name required")
+	ErrInvalidSyncJobStatus         = errors.New("invalid sync job status")
+	ErrInvalidSyncEventStatus       = errors.New("invalid sync event status")
+	ErrInvalidSyncDirection         = errors.New("invalid sync direction")
+	ErrInvalidSyncEventType         = errors.New("invalid sync event type")
+	ErrSyncEventNotFound            = errors.New("sync event not found")
+	ErrSyncEventResourceRequired    = errors.New("sync event resource required")
+	ErrSyncEventPayloadHashRequired = errors.New("sync event payload hash required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -170,6 +179,16 @@ type Storer interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateSyncJob(ctx context.Context, job SyncJob) error
+	UpdateSyncJob(ctx context.Context, job SyncJob) error
+	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
+	CountSyncJobs(ctx context.Context, filter SyncJobQueryFilter) (int, error)
+	QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (SyncJob, error)
+	CreateSyncEvent(ctx context.Context, event SyncEvent) error
+	UpdateSyncEvent(ctx context.Context, event SyncEvent) error
+	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
+	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
+	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -248,6 +267,16 @@ type ExtBusiness interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error)
+	UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error)
+	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
+	CountSyncJobs(ctx context.Context, filter SyncJobQueryFilter) (int, error)
+	QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (SyncJob, error)
+	EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncEvent, error)
+	UpdateSyncEvent(ctx context.Context, event SyncEvent, ue UpdateSyncEvent) (SyncEvent, error)
+	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
+	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
+	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
 }
 
 // CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
@@ -1603,6 +1632,151 @@ func (b *Business) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) 
 	return document, nil
 }
 
+// CreateSyncJob schedules or starts a SIS batch reconciliation run.
+func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error) {
+	if err := validateNewSyncJob(nj); err != nil {
+		return SyncJob{}, err
+	}
+
+	now := time.Now()
+	job := SyncJob{
+		ID:          uuid.New(),
+		Name:        strings.TrimSpace(nj.Name),
+		Status:      nj.Status,
+		Direction:   nj.Direction,
+		StartedAt:   nj.StartedAt,
+		CreatedByID: nj.CreatedByID,
+		DateCreated: now,
+		DateUpdated: now,
+	}
+
+	if err := b.storer.CreateSyncJob(ctx, job); err != nil {
+		return SyncJob{}, fmt.Errorf("create sync job: %w", err)
+	}
+
+	return job, nil
+}
+
+// UpdateSyncJob records the outcome and retry state for a SIS batch reconciliation run.
+func (b *Business) UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error) {
+	if err := validateSyncJobStatus(uj.Status); err != nil {
+		return SyncJob{}, err
+	}
+
+	job.Status = uj.Status
+	job.CompletedAt = uj.CompletedAt
+	job.RecordsPulled = uj.RecordsPulled
+	job.RecordsPushed = uj.RecordsPushed
+	job.EventsRequeued = uj.EventsRequeued
+	job.FailureReason = trimStringPtr(uj.FailureReason)
+	job.Retryable = uj.Retryable
+	job.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateSyncJob(ctx, job); err != nil {
+		return SyncJob{}, fmt.Errorf("update sync job: %w", err)
+	}
+
+	return job, nil
+}
+
+// QuerySyncJobs retrieves SIS batch reconciliation runs.
+func (b *Business) QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error) {
+	jobs, err := b.storer.QuerySyncJobs(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query sync jobs: %w", err)
+	}
+
+	return jobs, nil
+}
+
+// CountSyncJobs returns the total number of SIS batch reconciliation runs.
+func (b *Business) CountSyncJobs(ctx context.Context, filter SyncJobQueryFilter) (int, error) {
+	return b.storer.CountSyncJobs(ctx, filter)
+}
+
+// QuerySyncJobByID finds a SIS batch reconciliation run by ID.
+func (b *Business) QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (SyncJob, error) {
+	job, err := b.storer.QuerySyncJobByID(ctx, jobID)
+	if err != nil {
+		return SyncJob{}, fmt.Errorf("query sync job: jobID[%s]: %w", jobID, err)
+	}
+
+	return job, nil
+}
+
+// EnqueueSyncEvent records a selected real-time SIS sync event for queue processing.
+func (b *Business) EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncEvent, error) {
+	if err := validateNewSyncEvent(ne); err != nil {
+		return SyncEvent{}, err
+	}
+
+	now := time.Now()
+	event := SyncEvent{
+		ID:           uuid.New(),
+		JobID:        ne.JobID,
+		EventType:    ne.EventType,
+		Status:       SyncEventStatusQueued,
+		Direction:    ne.Direction,
+		ResourceType: strings.TrimSpace(ne.ResourceType),
+		ResourceID:   ne.ResourceID,
+		PayloadHash:  strings.TrimSpace(ne.PayloadHash),
+		AuditMessage: strings.TrimSpace(ne.AuditMessage),
+		DateCreated:  now,
+		DateUpdated:  now,
+	}
+
+	if err := b.storer.CreateSyncEvent(ctx, event); err != nil {
+		return SyncEvent{}, fmt.Errorf("create sync event: %w", err)
+	}
+
+	return event, nil
+}
+
+// UpdateSyncEvent records queue processing status, retry scheduling, and failure visibility.
+func (b *Business) UpdateSyncEvent(ctx context.Context, event SyncEvent, ue UpdateSyncEvent) (SyncEvent, error) {
+	if err := validateSyncEventStatus(ue.Status); err != nil {
+		return SyncEvent{}, err
+	}
+
+	event.Status = ue.Status
+	event.Attempts = ue.Attempts
+	event.NextRetryAt = ue.NextRetryAt
+	event.FailureReason = trimStringPtr(ue.FailureReason)
+	event.AuditMessage = strings.TrimSpace(ue.AuditMessage)
+	event.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateSyncEvent(ctx, event); err != nil {
+		return SyncEvent{}, fmt.Errorf("update sync event: %w", err)
+	}
+
+	return event, nil
+}
+
+// QuerySyncEvents retrieves selected real-time SIS sync events.
+func (b *Business) QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error) {
+	events, err := b.storer.QuerySyncEvents(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query sync events: %w", err)
+	}
+
+	return events, nil
+}
+
+// CountSyncEvents returns the total number of selected real-time SIS sync events.
+func (b *Business) CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error) {
+	return b.storer.CountSyncEvents(ctx, filter)
+}
+
+// QuerySyncEventByID finds a selected real-time SIS sync event by ID.
+func (b *Business) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error) {
+	event, err := b.storer.QuerySyncEventByID(ctx, eventID)
+	if err != nil {
+		return SyncEvent{}, fmt.Errorf("query sync event: eventID[%s]: %w", eventID, err)
+	}
+
+	return event, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -1799,6 +1973,90 @@ func validateNewDocumentVerification(nv NewDocumentVerification) error {
 	}
 
 	return nil
+}
+
+func validateNewSyncJob(nj NewSyncJob) error {
+	if strings.TrimSpace(nj.Name) == "" {
+		return ErrSyncJobNameRequired
+	}
+
+	if err := validateSyncDirection(nj.Direction); err != nil {
+		return err
+	}
+
+	return validateSyncJobStatus(nj.Status)
+}
+
+func validateNewSyncEvent(ne NewSyncEvent) error {
+	if err := validateSyncEventType(ne.EventType); err != nil {
+		return err
+	}
+
+	if err := validateSyncDirection(ne.Direction); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(ne.ResourceType) == "" || ne.ResourceID == uuid.Nil {
+		return ErrSyncEventResourceRequired
+	}
+
+	if strings.TrimSpace(ne.PayloadHash) == "" {
+		return ErrSyncEventPayloadHashRequired
+	}
+
+	return nil
+}
+
+func validateSyncJobStatus(status SyncJobStatus) error {
+	switch status {
+	case SyncJobStatusQueued,
+		SyncJobStatusRunning,
+		SyncJobStatusSucceeded,
+		SyncJobStatusFailed,
+		SyncJobStatusRetryReady:
+		return nil
+	default:
+		return ErrInvalidSyncJobStatus
+	}
+}
+
+func validateSyncEventStatus(status SyncEventStatus) error {
+	switch status {
+	case SyncEventStatusQueued,
+		SyncEventStatusProcessing,
+		SyncEventStatusSucceeded,
+		SyncEventStatusFailed,
+		SyncEventStatusRetryReady:
+		return nil
+	default:
+		return ErrInvalidSyncEventStatus
+	}
+}
+
+func validateSyncDirection(direction SyncDirection) error {
+	switch direction {
+	case SyncDirectionInbound,
+		SyncDirectionOutbound:
+		return nil
+	default:
+		return ErrInvalidSyncDirection
+	}
+}
+
+func validateSyncEventType(eventType SyncEventType) error {
+	switch eventType {
+	case SyncEventTypeBatchTermsPull,
+		SyncEventTypeBatchProgramsPull,
+		SyncEventTypeBatchPersonMatchesPull,
+		SyncEventTypeBatchEnrollmentPull,
+		SyncEventTypeApplicationSubmission,
+		SyncEventTypeApplicationDecision,
+		SyncEventTypeDocumentStatus,
+		SyncEventTypeEnrollmentIntent:
+		return nil
+	default:
+		return ErrInvalidSyncEventType
+	}
 }
 
 func normalizeApplicationFormFields(fields []ApplicationFormField) []ApplicationFormField {

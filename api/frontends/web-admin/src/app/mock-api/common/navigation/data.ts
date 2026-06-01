@@ -63,6 +63,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 icon: 'heroicons_outline:queue-list',
                 link: '/leads',
             },
+            {
+                id: 'admissions.sis-sync',
+                title: 'SIS Sync',
+                type: 'basic',
+                icon: 'heroicons_outline:arrow-path-rounded-square',
+                link: '/sis-sync',
+            },
         ],
     },
     {
