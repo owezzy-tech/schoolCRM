@@ -17,9 +17,15 @@ import {
     ApplicationFormTemplate,
     ApplicationFormTemplateRequest,
     ApplicationType,
+    AssignmentCandidate,
+    EVENT_ATTENDANCE_STATUSES,
+    LEAD_ASSIGNMENT_CRITERION_FIELDS,
+    LEAD_ASSIGNMENT_CRITERION_OPERATORS,
     LEAD_SCORE_CRITERION_FIELDS,
     LEAD_SCORE_CRITERION_OPERATORS,
     LIFECYCLE_STAGES,
+    LeadAssignmentCriterionField,
+    LeadAssignmentRule,
     LeadScoreCriterionField,
     LeadScoreCriterionOperator,
     LeadScoreRule,
@@ -49,6 +55,18 @@ interface ApplicationFormTemplateForm {
     description: string;
     requiredFieldsText: string;
     checklistItemsText: string;
+    priority: number;
+    active: boolean;
+}
+
+interface AssignmentRuleForm {
+    id: string;
+    name: string;
+    description: string;
+    field: LeadAssignmentCriterionField;
+    operator: 'EQ' | 'IN' | 'BETWEEN';
+    valuesText: string;
+    assignee: string;
     priority: number;
     active: boolean;
 }
@@ -97,6 +115,195 @@ const emptyTemplateForm: ApplicationFormTemplateForm = {
     active: true,
 };
 
+const emptyAssignmentForm: AssignmentRuleForm = {
+    id: '',
+    name: '',
+    description: '',
+    field: 'territory',
+    operator: 'IN',
+    valuesText: 'Northeast, Mid-Atlantic',
+    assignee: 'Maya Schultz',
+    priority: 100,
+    active: true,
+};
+
+const TERRITORIES = [
+    'Northeast',
+    'Mid-Atlantic',
+    'Midwest',
+    'Southwest',
+] as const;
+
+const PROGRAMS = [
+    'Computer Science',
+    'Business Analytics',
+    'B.Sc. CS',
+    'M.B.A.',
+    'B.A. Econ',
+] as const;
+
+const TERMS = ['Fall 2026', 'Spring 2027', 'Spring 2026'] as const;
+
+const LEAD_SOURCES = [
+    'Web form',
+    'Open house',
+    'Counselor',
+    'Referral',
+] as const;
+
+const ASSIGNEES = [
+    'Maya Schultz',
+    'Andre Park',
+    'Avery',
+    'Priya',
+    'Diego',
+] as const;
+
+const ASSIGNMENT_RULES: LeadAssignmentRule[] = [
+    {
+        id: 'assign-northeast-cs',
+        name: 'Northeast CS recruiter route',
+        description:
+            'Prioritizes regional Computer Science prospects for the recruiter covering Northeast and Mid-Atlantic territories.',
+        criteria: [
+            {
+                field: 'territory',
+                operator: 'IN',
+                values: ['Northeast', 'Mid-Atlantic'],
+            },
+            {
+                field: 'program_interest',
+                operator: 'IN',
+                values: ['Computer Science', 'B.Sc. CS'],
+            },
+        ],
+        assignee: 'Maya Schultz',
+        assigneeRole: 'RECRUITER',
+        active: true,
+        priority: 10,
+        lastMatchedCount: 128,
+        auditTrail: [
+            {
+                actor: 'Owen Adirah',
+                action: 'Activated assignment rule',
+                reason: 'Regional recruiter ownership for Fall 2026 CS demand.',
+                timestamp: 'Jun 1, 2026 09:20',
+            },
+        ],
+    },
+    {
+        id: 'assign-open-house-hot-leads',
+        name: 'Open house attendee follow-up',
+        description:
+            'Routes attended event prospects to the recruiter queue for same-day follow-up.',
+        criteria: [
+            {
+                field: 'event_attendance',
+                operator: 'EQ',
+                values: ['ATTENDED'],
+            },
+            {
+                field: 'lead_source',
+                operator: 'IN',
+                values: ['Open house', 'Referral'],
+            },
+        ],
+        assignee: 'Andre Park',
+        assigneeRole: 'RECRUITER',
+        active: true,
+        priority: 20,
+        lastMatchedCount: 64,
+        auditTrail: [
+            {
+                actor: 'System',
+                action: 'Auto-assigned matching leads',
+                reason: 'Event attendance rule evaluated after nightly sync.',
+                timestamp: 'Jun 1, 2026 07:00',
+            },
+        ],
+    },
+    {
+        id: 'assign-alpha-review',
+        name: 'Alpha split application review',
+        description:
+            'Balances submitted applications by applicant surname range when no higher priority program rule matches.',
+        criteria: [
+            {
+                field: 'alpha_range',
+                operator: 'BETWEEN',
+                values: ['A', 'M'],
+            },
+            {
+                field: 'application_type',
+                operator: 'IN',
+                values: ['FRESHMAN', 'TRANSFER'],
+            },
+        ],
+        assignee: 'Avery',
+        assigneeRole: 'APPLICATION_REVIEWER',
+        active: true,
+        priority: 90,
+        lastMatchedCount: 216,
+        auditTrail: [
+            {
+                actor: 'Priya',
+                action: 'Adjusted priority',
+                reason: 'Keep alpha split after territory and program rules.',
+                timestamp: 'May 30, 2026 16:45',
+            },
+        ],
+    },
+];
+
+const ASSIGNMENT_CANDIDATES: AssignmentCandidate[] = [
+    {
+        id: 'APP-3024',
+        applicant: 'Sofia Martinez',
+        program: 'B.Sc. CS',
+        term: 'Fall 2026',
+        source: 'Open house',
+        territory: 'Northeast',
+        eventAttendance: 'ATTENDED',
+        alphaKey: 'M',
+        currentAssignee: 'Avery',
+        recommendedAssignee: 'Maya Schultz',
+        matchedRule: 'Northeast CS recruiter route',
+        assignmentMode: 'MANUAL_OVERRIDE',
+        overrideReason:
+            'Keep with original reviewer until interview notes close.',
+        overrideActor: 'Priya',
+        overrideTimestamp: 'Jun 1, 2026 10:12',
+    },
+    {
+        id: 'APP-3023',
+        applicant: 'James Okoro',
+        program: 'M.A. Edu',
+        term: 'Spring 2027',
+        source: 'Counselor',
+        territory: 'Midwest',
+        eventAttendance: 'REGISTERED',
+        alphaKey: 'O',
+        currentAssignee: 'Priya',
+        recommendedAssignee: 'Priya',
+        matchedRule: 'Alpha split application review',
+        assignmentMode: 'AUTO',
+    },
+    {
+        id: 'LEAD-1442',
+        applicant: 'Aisha Bello',
+        program: 'M.B.A.',
+        term: 'Fall 2026',
+        source: 'Referral',
+        territory: 'Southwest',
+        eventAttendance: 'ATTENDED',
+        alphaKey: 'B',
+        currentAssignee: 'Andre Park',
+        recommendedAssignee: 'Andre Park',
+        matchedRule: 'Open house attendee follow-up',
+        assignmentMode: 'AUTO',
+    },
+];
+
 @Component({
     selector: 'app-admissions-settings',
     imports: [
@@ -118,9 +325,15 @@ export class AdmissionsSettingsComponent {
 
     readonly fields = LEAD_SCORE_CRITERION_FIELDS;
     readonly operators = LEAD_SCORE_CRITERION_OPERATORS;
+    readonly assignmentFields = LEAD_ASSIGNMENT_CRITERION_FIELDS;
+    readonly assignmentOperators = LEAD_ASSIGNMENT_CRITERION_OPERATORS;
     readonly lifecycleStages = LIFECYCLE_STAGES;
     readonly applicationTypes = APPLICATION_TYPES;
     readonly applicationStatuses = APPLICATION_STATUSES;
+    readonly eventAttendanceStatuses = EVENT_ATTENDANCE_STATUSES;
+    readonly assignmentRules = ASSIGNMENT_RULES;
+    readonly assignmentCandidates = ASSIGNMENT_CANDIDATES;
+    readonly assignees = ASSIGNEES;
     readonly rules$ = this.admissionsService.rules$;
     readonly templates$ = this.admissionsService.templates$;
 
@@ -129,6 +342,7 @@ export class AdmissionsSettingsComponent {
     form: LeadScoreRuleForm = { ...emptyForm };
     templateSaving = false;
     templateForm: ApplicationFormTemplateForm = { ...emptyTemplateForm };
+    assignmentForm: AssignmentRuleForm = { ...emptyAssignmentForm };
 
     constructor() {
         this.loadRules();
@@ -221,6 +435,25 @@ export class AdmissionsSettingsComponent {
         this.templateForm = { ...emptyTemplateForm };
     }
 
+    editAssignmentRule(rule: LeadAssignmentRule): void {
+        const criterion = rule.criteria[0];
+        this.assignmentForm = {
+            id: rule.id,
+            name: rule.name,
+            description: rule.description,
+            field: criterion?.field ?? 'territory',
+            operator: criterion?.operator ?? 'IN',
+            valuesText: criterion?.values.join(', ') ?? '',
+            assignee: rule.assignee,
+            priority: rule.priority,
+            active: rule.active,
+        };
+    }
+
+    resetAssignmentForm(): void {
+        this.assignmentForm = { ...emptyAssignmentForm };
+    }
+
     saveRule(): void {
         this.errorMessage = '';
         this.saving = true;
@@ -310,6 +543,34 @@ export class AdmissionsSettingsComponent {
 
     templateSummary(template: ApplicationFormTemplate): string {
         return `${template.requiredFields.length} fields · ${template.checklistItems.length} checklist items · v${template.version}`;
+    }
+
+    assignmentCriterionSummary(rule: LeadAssignmentRule): string {
+        return rule.criteria
+            .map(
+                (criterion) =>
+                    `${criterion.field} ${criterion.operator} ${criterion.values.join(', ')}`
+            )
+            .join(' · ');
+    }
+
+    assignmentSuggestedValues(): readonly string[] {
+        switch (this.assignmentForm.field) {
+            case 'territory':
+                return TERRITORIES;
+            case 'program_interest':
+                return PROGRAMS;
+            case 'application_type':
+                return this.applicationTypes;
+            case 'academic_term':
+                return TERMS;
+            case 'lead_source':
+                return LEAD_SOURCES;
+            case 'event_attendance':
+                return this.eventAttendanceStatuses;
+            case 'alpha_range':
+                return ['A, M', 'N, Z'];
+        }
     }
 
     private toRequest(form: LeadScoreRuleForm): LeadScoreRuleRequest {
