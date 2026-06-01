@@ -268,9 +268,14 @@ type ApplicationType string
 
 // Set of valid application types.
 const (
-	ApplicationTypeFreshman ApplicationType = "FRESHMAN"
-	ApplicationTypeTransfer ApplicationType = "TRANSFER"
-	ApplicationTypeGraduate ApplicationType = "GRADUATE"
+	ApplicationTypeKUCCPSPlacement        ApplicationType = "KUCCPS_PLACEMENT"
+	ApplicationTypeSelfSponsoredUndergrad ApplicationType = "SELF_SPONSORED_UNDERGRAD"
+	ApplicationTypeDiploma                ApplicationType = "DIPLOMA"
+	ApplicationTypeMasters                ApplicationType = "MASTERS"
+	ApplicationTypePhD                    ApplicationType = "PHD"
+	ApplicationTypeTVET                   ApplicationType = "TVET"
+	ApplicationTypeBridging               ApplicationType = "BRIDGING"
+	ApplicationTypeCertificate            ApplicationType = "CERTIFICATE"
 )
 
 // String returns the application type as a string.
@@ -310,10 +315,41 @@ type Application struct {
 	AcademicTermID     uuid.UUID
 	ApplicationType    ApplicationType
 	Status             ApplicationStatus
+	KUCCPSPlacement    *KUCCPSPlacement
+	KCSEResult         *ApplicationKCSEResult
 	AssignedReviewerID *uuid.UUID
 	SubmittedAt        *time.Time
 	DateCreated        time.Time
 	DateUpdated        time.Time
+}
+
+// KUCCPSPlacement captures a normalized KUCCPS placement snapshot on an application.
+type KUCCPSPlacement struct {
+	PlacementID        string
+	AdmissionNumber    *string
+	InstitutionCode    string
+	ProgrammeCode      string
+	ProgrammeName      string
+	PlacementYear      int
+	ClusterCode        *string
+	ClusterPoints      *float64
+	WeightedPointsNote *string
+}
+
+// ApplicationKCSESubject stores one KCSE subject grade snapshot on an application.
+type ApplicationKCSESubject struct {
+	SubjectCode string
+	Grade       string
+	Points      int
+}
+
+// ApplicationKCSEResult stores the KCSE result snapshot submitted with an application.
+type ApplicationKCSEResult struct {
+	IndexNumber string
+	ExamYear    int
+	Subjects    []ApplicationKCSESubject
+	MeanGrade   string
+	MeanPoints  int
 }
 
 // ApplicationFormField defines a configurable, non-core application form field.
@@ -614,6 +650,8 @@ type NewApplication struct {
 	ProgramID          uuid.UUID
 	AcademicTermID     uuid.UUID
 	ApplicationType    ApplicationType
+	KUCCPSPlacement    *KUCCPSPlacement
+	KCSEResult         *ApplicationKCSEResult
 	AssignedReviewerID *uuid.UUID
 }
 

@@ -1381,6 +1381,8 @@ func (b *Business) CreateApplication(ctx context.Context, na NewApplication) (Ap
 		AcademicTermID:     na.AcademicTermID,
 		ApplicationType:    na.ApplicationType,
 		Status:             ApplicationStatusDraft,
+		KUCCPSPlacement:    normalizeKUCCPSPlacement(na.KUCCPSPlacement),
+		KCSEResult:         normalizeApplicationKCSEResult(na.KCSEResult),
 		AssignedReviewerID: na.AssignedReviewerID,
 		DateCreated:        now,
 		DateUpdated:        now,
@@ -3031,13 +3033,68 @@ func validateNewApplication(na NewApplication) error {
 
 func validateApplicationType(applicationType ApplicationType) error {
 	switch applicationType {
-	case ApplicationTypeFreshman,
-		ApplicationTypeTransfer,
-		ApplicationTypeGraduate:
+	case ApplicationTypeKUCCPSPlacement,
+		ApplicationTypeSelfSponsoredUndergrad,
+		ApplicationTypeDiploma,
+		ApplicationTypeMasters,
+		ApplicationTypePhD,
+		ApplicationTypeTVET,
+		ApplicationTypeBridging,
+		ApplicationTypeCertificate:
 		return nil
 	default:
 		return ErrInvalidApplicationType
 	}
+}
+
+func normalizeKUCCPSPlacement(placement *KUCCPSPlacement) *KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	normalized := *placement
+	normalized.PlacementID = strings.TrimSpace(normalized.PlacementID)
+	normalized.AdmissionNumber = trimStringPtr(normalized.AdmissionNumber)
+	normalized.InstitutionCode = strings.ToUpper(strings.TrimSpace(normalized.InstitutionCode))
+	normalized.ProgrammeCode = strings.ToUpper(strings.TrimSpace(normalized.ProgrammeCode))
+	normalized.ProgrammeName = strings.TrimSpace(normalized.ProgrammeName)
+	normalized.ClusterCode = upperTrimStringPtr(normalized.ClusterCode)
+	normalized.WeightedPointsNote = trimStringPtr(normalized.WeightedPointsNote)
+
+	return &normalized
+}
+
+func normalizeApplicationKCSEResult(result *ApplicationKCSEResult) *ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	normalized := *result
+	normalized.IndexNumber = strings.TrimSpace(normalized.IndexNumber)
+	normalized.MeanGrade = strings.ToUpper(strings.TrimSpace(normalized.MeanGrade))
+	normalized.Subjects = make([]ApplicationKCSESubject, len(result.Subjects))
+	for i, subject := range result.Subjects {
+		normalized.Subjects[i] = ApplicationKCSESubject{
+			SubjectCode: strings.ToUpper(strings.TrimSpace(subject.SubjectCode)),
+			Grade:       strings.ToUpper(strings.TrimSpace(subject.Grade)),
+			Points:      subject.Points,
+		}
+	}
+
+	return &normalized
+}
+
+func upperTrimStringPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	trimmed := strings.ToUpper(strings.TrimSpace(*value))
+	if trimmed == "" {
+		return nil
+	}
+
+	return &trimmed
 }
 
 func validateApplicationStatus(status ApplicationStatus) error {

@@ -62,7 +62,9 @@
                         <tr>
                             <th class="px-6 py-4 font-medium">ID</th>
                             <th class="px-6 py-4 font-medium">Applicant</th>
-                            <th class="px-6 py-4 font-medium">Program</th>
+                            <th class="px-6 py-4 font-medium">Programme</th>
+                            <th class="px-6 py-4 font-medium">Type</th>
+                            <th class="px-6 py-4 font-medium">KCSE</th>
                             <th class="px-6 py-4 font-medium">Term</th>
                             <th class="px-6 py-4 font-medium">Status</th>
                             <th class="px-6 py-4 font-medium">Fee</th>
@@ -90,7 +92,40 @@
                                 <td class="px-6 py-4 font-medium">
                                     {{ app.applicant }}
                                 </td>
-                                <td class="px-6 py-4">{{ app.program }}</td>
+                                <td class="px-6 py-4">
+                                    <div class="font-medium">
+                                        {{ app.program }}
+                                    </div>
+                                    <div class="text-secondary text-xs">
+                                        {{ app.programmeCode }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"
+                                    >
+                                        {{
+                                            formatApplicationType(
+                                                app.applicationType
+                                            )
+                                        }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (app.kcseResult) {
+                                        <div class="font-semibold">
+                                            {{ app.kcseResult.meanGrade }} ·
+                                            {{ app.kcseResult.meanPoints }} pts
+                                        </div>
+                                        <div class="text-secondary text-xs">
+                                            Index
+                                            {{ app.kcseResult.indexNumber }} ·
+                                            {{ app.kcseResult.examYear }}
+                                        </div>
+                                    } @else {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                </td>
                                 <td class="px-6 py-4">{{ app.term }}</td>
                                 <td class="px-6 py-4">
                                     <span

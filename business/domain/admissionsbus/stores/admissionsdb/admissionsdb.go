@@ -1318,11 +1318,16 @@ func (s *Store) queryDuplicateReview(ctx context.Context, filter admissionsbus.D
 func (s *Store) CreateApplication(ctx context.Context, app admissionsbus.Application) error {
 	const q = `
 	INSERT INTO admissions_applications
-		(application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated)
+		(application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated)
 	VALUES
-		(:application_id, :constituent_id, :program_id, :academic_term_id, :application_type, :status, :assigned_reviewer_id, :submitted_at, :date_created, :date_updated)`
+		(:application_id, :constituent_id, :program_id, :academic_term_id, :application_type, :status, :kuccps_placement, :kcse_result, :assigned_reviewer_id, :submitted_at, :date_created, :date_updated)`
 
-	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+	dbApp, err := toDBApplication(app)
+	if err != nil {
+		return fmt.Errorf("to db application: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbApp); err != nil {
 		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
 			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
 		}
@@ -1339,13 +1344,20 @@ func (s *Store) UpdateApplication(ctx context.Context, app admissionsbus.Applica
 		admissions_applications
 	SET
 		status = :status,
+		kuccps_placement = :kuccps_placement,
+		kcse_result = :kcse_result,
 		assigned_reviewer_id = :assigned_reviewer_id,
 		submitted_at = :submitted_at,
 		date_updated = :date_updated
 	WHERE
 		application_id = :application_id`
 
-	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+	dbApp, err := toDBApplication(app)
+	if err != nil {
+		return fmt.Errorf("to db application: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbApp); err != nil {
 		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
 			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
 		}
@@ -1364,7 +1376,7 @@ func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.Appl
 
 	const q = `
 	SELECT
-		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated
 	FROM
 		admissions_applications`
 
@@ -1384,7 +1396,7 @@ func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.Appl
 		return nil, fmt.Errorf("namedqueryslice: %w", err)
 	}
 
-	return toBusApplications(dbApplications), nil
+	return toBusApplications(dbApplications)
 }
 
 // CountApplications returns the total number of Applications in the database.
@@ -1443,7 +1455,7 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 
 	const q = `
 	SELECT
-		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated
 	FROM
 		admissions_applications`
 
@@ -1458,7 +1470,7 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 		return admissionsbus.Application{}, fmt.Errorf("db: %w", err)
 	}
 
-	return toBusApplication(dbApplication), nil
+	return toBusApplication(dbApplication)
 }
 
 // CreateApplicationFormTemplate inserts a new application form template.

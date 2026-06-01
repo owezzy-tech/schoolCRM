@@ -12,10 +12,10 @@ export const CAMPAIGNS: Campaign[] = [
         messagePreview:
             'Join our admissions team for a guided campus experience and program Q&A.',
         segment: {
-            applicationTypes: ['FRESHMAN', 'TRANSFER'],
+            applicationTypes: ['KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD'],
             applicationStatuses: ['DRAFT', 'SUBMITTED'],
-            academicTerms: ['Fall 2026'],
-            programs: ['Computer Science', 'Business Analytics'],
+            academicTerms: ['September 2026'],
+            programs: ['B.Sc. Computer Science', 'Bachelor of Commerce'],
             eventAttendance: 'ANY',
             leadScoreBands: ['WARM', 'HOT'],
             recruiters: ['Maya Schultz', 'Andre Park'],
@@ -56,9 +56,9 @@ export const CAMPAIGNS: Campaign[] = [
         messagePreview:
             'Your application is almost complete. Upload your remaining documents today.',
         segment: {
-            applicationTypes: ['FRESHMAN', 'TRANSFER', 'GRADUATE'],
+            applicationTypes: ['KUCCPS_PLACEMENT', 'DIPLOMA', 'MASTERS'],
             applicationStatuses: ['AWAITING_DOCUMENTS'],
-            academicTerms: ['Fall 2026'],
+            academicTerms: ['September 2026'],
             programs: ['All active programs'],
             eventAttendance: 'ANY',
             leadScoreBands: ['HOT', 'READY_TO_APPLY'],
@@ -100,9 +100,9 @@ export const CAMPAIGNS: Campaign[] = [
         messagePreview:
             'Financial aid deadlines are approaching. Complete your next steps before July 1.',
         segment: {
-            applicationTypes: ['FRESHMAN', 'TRANSFER'],
+            applicationTypes: ['KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD'],
             applicationStatuses: ['ADMITTED'],
-            academicTerms: ['Fall 2026'],
+            academicTerms: ['September 2026'],
             programs: ['All active programs'],
             eventAttendance: 'ATTENDED',
             leadScoreBands: ['READY_TO_APPLY'],
@@ -139,9 +139,9 @@ export const CAMPAIGNS: Campaign[] = [
         messagePreview:
             'Hear from current students and confirm your enrollment intent before the deadline.',
         segment: {
-            applicationTypes: ['FRESHMAN', 'TRANSFER', 'GRADUATE'],
+            applicationTypes: ['KUCCPS_PLACEMENT', 'DIPLOMA', 'MASTERS'],
             applicationStatuses: ['ADMITTED'],
-            academicTerms: ['Spring 2026'],
+            academicTerms: ['January 2026'],
             programs: ['All active programs'],
             eventAttendance: 'REGISTERED',
             leadScoreBands: ['HOT', 'READY_TO_APPLY'],
