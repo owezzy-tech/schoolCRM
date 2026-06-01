@@ -8,8 +8,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import {
+    ApplicationKCSEResult,
     ApplicationStatus,
+    ApplicationType,
     DocumentStatus,
+    KUCCPSPlacement,
 } from 'app/core/admissions/admissions.types';
 
 type ReviewDecision = Extract<
@@ -21,7 +24,9 @@ interface AssignedApplication {
     id: string;
     applicant: string;
     program: string;
+    programmeCode: string;
     term: string;
+    applicationType: ApplicationType;
     status: Extract<
         ApplicationStatus,
         'READY_FOR_REVIEW' | 'IN_REVIEW' | 'DECISION_PENDING'
@@ -35,6 +40,8 @@ interface AssignedApplication {
     submittedAt: string;
     dueAt: string;
     risk: 'Low' | 'Medium' | 'High';
+    kcseResult?: ApplicationKCSEResult;
+    kuccpsPlacement?: KUCCPSPlacement;
 }
 
 interface ReviewDocument {
@@ -70,7 +77,9 @@ const ASSIGNED_APPLICATIONS: AssignedApplication[] = [
         id: 'APP-3024',
         applicant: 'Sofia Martinez',
         program: 'B.Sc. Computer Science',
-        term: 'Fall 2026',
+        programmeCode: 'BSC-CS',
+        term: 'September 2026',
+        applicationType: 'KUCCPS_PLACEMENT',
         status: 'IN_REVIEW',
         statusLabel: 'In review',
         reviewer: 'Avery',
@@ -81,12 +90,37 @@ const ASSIGNED_APPLICATIONS: AssignedApplication[] = [
         submittedAt: 'May 30, 8:45 AM',
         dueAt: 'Jun 3, 5:00 PM',
         risk: 'Low',
+        kcseResult: {
+            indexNumber: '204003024',
+            examYear: 2025,
+            meanGrade: 'A-',
+            meanPoints: 74,
+            subjects: [
+                { subjectCode: '101', grade: 'A-', points: 11 },
+                { subjectCode: '102', grade: 'B+', points: 10 },
+                { subjectCode: '121', grade: 'A', points: 12 },
+            ],
+        },
+        kuccpsPlacement: {
+            placementID: 'KUCCPS-2026-003024',
+            admissionNumber: 'SCM/2026/003024',
+            institutionCode: 'SCM001',
+            programmeCode: 'BSC-CS',
+            programmeName: 'B.Sc. Computer Science',
+            placementYear: 2026,
+            clusterCode: 'CS01',
+            clusterPoints: 42.318,
+            weightedPointsNote:
+                'Public KUCCPS approximation; exact points require KNEC PI data.',
+        },
     },
     {
         id: 'APP-3023',
         applicant: 'James Okoro',
-        program: 'M.A. Education',
-        term: 'Spring 2027',
+        program: 'Diploma in ICT',
+        programmeCode: 'DIP-ICT',
+        term: 'January 2027',
+        applicationType: 'DIPLOMA',
         status: 'READY_FOR_REVIEW',
         statusLabel: 'Ready for review',
         reviewer: 'Avery',
@@ -97,12 +131,24 @@ const ASSIGNED_APPLICATIONS: AssignedApplication[] = [
         submittedAt: 'May 29, 2:20 PM',
         dueAt: 'Jun 5, 12:00 PM',
         risk: 'Medium',
+        kcseResult: {
+            indexNumber: '204003023',
+            examYear: 2024,
+            meanGrade: 'C+',
+            meanPoints: 46,
+            subjects: [
+                { subjectCode: '101', grade: 'C+', points: 7 },
+                { subjectCode: '102', grade: 'B-', points: 8 },
+            ],
+        },
     },
     {
         id: 'APP-3020',
         applicant: 'Aisha Bello',
-        program: 'M.B.A.',
-        term: 'Fall 2026',
+        program: 'M.A. Education',
+        programmeCode: 'MA-EDU',
+        term: 'September 2026',
+        applicationType: 'MASTERS',
         status: 'DECISION_PENDING',
         statusLabel: 'Decision pending',
         reviewer: 'Diego',
@@ -289,5 +335,9 @@ export class StaffReviewWorkspaceComponent {
 
     formatStatus(status: string): string {
         return status.replaceAll('_', ' ');
+    }
+
+    formatApplicationType(type: ApplicationType): string {
+        return type.replaceAll('_', ' ');
     }
 }

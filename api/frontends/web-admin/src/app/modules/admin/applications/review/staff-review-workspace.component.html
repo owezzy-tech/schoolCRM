@@ -144,6 +144,12 @@
 
                                 <div class="text-secondary mt-3 text-sm">
                                     {{ application.program }} ·
+                                    {{
+                                        formatApplicationType(
+                                            application.applicationType
+                                        )
+                                    }}
+                                    ·
                                     {{ application.term }}
                                 </div>
                                 <div
@@ -221,6 +227,7 @@
                             </h2>
                             <p class="text-secondary mt-2">
                                 {{ selectedApplication.program }} ·
+                                {{ selectedApplication.programmeCode }} ·
                                 {{ selectedApplication.term }} · submitted
                                 {{ selectedApplication.submittedAt }}
                             </p>
@@ -311,6 +318,158 @@
                                         wired.
                                     </p>
                                 </div>
+                            </div>
+                        </mat-tab>
+
+                        <mat-tab label="Kenya Data">
+                            <div
+                                class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-2"
+                            >
+                                <section
+                                    class="rounded-2xl border bg-gray-50 p-5 dark:bg-gray-900"
+                                >
+                                    <h3 class="font-semibold">
+                                        Application localization
+                                    </h3>
+                                    <dl class="mt-4 space-y-3 text-sm">
+                                        <div>
+                                            <dt class="text-secondary">
+                                                Application type
+                                            </dt>
+                                            <dd class="font-semibold">
+                                                {{
+                                                    formatApplicationType(
+                                                        selectedApplication.applicationType
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-secondary">
+                                                Programme catalog reference
+                                            </dt>
+                                            <dd class="font-semibold">
+                                                {{
+                                                    selectedApplication.program
+                                                }}
+                                                ·
+                                                {{
+                                                    selectedApplication.programmeCode
+                                                }}
+                                            </dd>
+                                        </div>
+                                        @if (
+                                            selectedApplication.kuccpsPlacement
+                                        ) {
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    KUCCPS placement
+                                                </dt>
+                                                <dd
+                                                    class="font-mono font-semibold"
+                                                >
+                                                    {{
+                                                        selectedApplication
+                                                            .kuccpsPlacement
+                                                            .placementID
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Cluster estimate
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        selectedApplication
+                                                            .kuccpsPlacement
+                                                            .clusterCode
+                                                    }}
+                                                    ·
+                                                    {{
+                                                        selectedApplication
+                                                            .kuccpsPlacement
+                                                            .clusterPoints
+                                                    }}
+                                                    points
+                                                </dd>
+                                            </div>
+                                        } @else {
+                                            <div class="text-secondary">
+                                                No KUCCPS placement attached for
+                                                this application type.
+                                            </div>
+                                        }
+                                    </dl>
+                                </section>
+
+                                <section
+                                    class="rounded-2xl border bg-gray-50 p-5 dark:bg-gray-900"
+                                >
+                                    <h3 class="font-semibold">
+                                        KCSE result attachment
+                                    </h3>
+                                    @if (selectedApplication.kcseResult) {
+                                        <dl
+                                            class="mt-4 grid grid-cols-2 gap-4 text-sm"
+                                        >
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Index number
+                                                </dt>
+                                                <dd
+                                                    class="font-mono font-semibold"
+                                                >
+                                                    {{
+                                                        selectedApplication
+                                                            .kcseResult
+                                                            .indexNumber
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Exam year
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        selectedApplication
+                                                            .kcseResult.examYear
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Mean grade
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        selectedApplication
+                                                            .kcseResult
+                                                            .meanGrade
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Points
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        selectedApplication
+                                                            .kcseResult
+                                                            .meanPoints
+                                                    }}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    } @else {
+                                        <p class="text-secondary mt-4 text-sm">
+                                            KCSE result is not required for this
+                                            postgraduate application.
+                                        </p>
+                                    }
+                                </section>
                             </div>
                         </mat-tab>
 
