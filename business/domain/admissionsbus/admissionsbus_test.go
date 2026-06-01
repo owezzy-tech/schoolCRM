@@ -921,7 +921,7 @@ func TestCreateApplicationFormTemplateCreatesVersionedConfig(t *testing.T) {
 	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Name:            " Freshman v1 ",
 		Description:     &description,
 		RequiredFields: []ApplicationFormField{
@@ -965,7 +965,7 @@ func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
 	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 		Name:            "Transfer v1",
 		RequiredFields: []ApplicationFormField{
 			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
@@ -980,7 +980,7 @@ func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
 	updated, err := bus.UpdateApplicationFormTemplate(context.Background(), template, NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 		Name:            "Transfer v2",
 		RequiredFields: []ApplicationFormField{
 			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
@@ -1020,7 +1020,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				RequiredFields: []ApplicationFormField{
 					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
 				},
@@ -1032,7 +1032,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				Name:            "Freshman",
 			},
 			want: ErrFormTemplateFieldsRequired,
@@ -1042,7 +1042,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				Name:            "Freshman",
 				RequiredFields: []ApplicationFormField{
 					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
@@ -1149,7 +1149,7 @@ func TestRecalculateLeadScoreExplainsMatchedRulesAndBand(t *testing.T) {
 			ConstituentID:   constituentID,
 			ProgramID:       programID,
 			AcademicTermID:  termID,
-			ApplicationType: ApplicationTypeTransfer,
+			ApplicationType: ApplicationTypeDiploma,
 			Status:          ApplicationStatusSubmitted,
 		}},
 	}
@@ -1456,7 +1456,7 @@ func TestCreateApplicationPreventsDuplicateActiveApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Status:          ApplicationStatusDraft,
 	})
 	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
@@ -1465,7 +1465,7 @@ func TestCreateApplicationPreventsDuplicateActiveApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 	})
 
 	if !errors.Is(err, ErrDuplicateApplication) {
@@ -1485,7 +1485,7 @@ func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Status:          ApplicationStatusWithdrawn,
 	})
 	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
@@ -1494,7 +1494,7 @@ func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 	})
 	if err != nil {
 		t.Fatalf("CreateApplication returned error: %v", err)
