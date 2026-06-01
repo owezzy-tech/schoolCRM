@@ -1,12 +1,14 @@
 import { TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { RouterLink } from '@angular/router';
 import {
     ApplicationFee,
     ApplicationFeeStatus,
 } from 'app/core/admissions/admissions.types';
+import { PortalAuthService } from 'app/core/portal/portal-auth.service';
 import { FilePondComponent } from 'app/shared/components/file-upload/file-pond.component';
 import { FilePondFile } from 'filepond';
 
@@ -35,11 +37,39 @@ interface PortalDocument {
         MatButtonModule,
         MatIconModule,
         MatProgressBarModule,
+        RouterLink,
         TitleCasePipe,
     ],
     template: `
         <div class="flex flex-auto flex-col px-6 py-12 sm:px-10 lg:px-16">
             <div class="mx-auto w-full max-w-6xl">
+                @if (!hasPortalAccess()) {
+                    <div
+                        class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+                    >
+                        <div
+                            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <div>
+                                <h2 class="text-lg font-semibold">
+                                    Portal access required
+                                </h2>
+                                <p class="mt-1 text-sm">
+                                    Use your submitted application email to
+                                    create a temporary status token before
+                                    uploading documents.
+                                </p>
+                            </div>
+                            <a
+                                routerLink="/portal"
+                                mat-flat-button
+                                color="primary"
+                                >Get access</a
+                            >
+                        </div>
+                    </div>
+                }
+
                 <!-- Header section -->
                 <div
                     class="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -51,8 +81,8 @@ interface PortalDocument {
                             Application status
                         </h1>
                         <h2 class="text-secondary mt-1 text-lg">
-                            APP-3018 &middot; Data Science MSc &middot; Fall
-                            2026
+                            {{ portalSession()?.applicationID ?? 'APP-3018' }}
+                            &middot; Data Science MSc &middot; Fall 2026
                         </h2>
                     </div>
                     <div
@@ -369,6 +399,9 @@ interface PortalDocument {
     host: { class: 'flex w-full flex-auto flex-col' },
 })
 export class PortalStatusComponent {
+    private readonly portalAuthService = inject(PortalAuthService);
+
+    readonly portalSession = this.portalAuthService.session;
     readonly applicationFee: ApplicationFee = {
         id: 'fee-app-3018',
         applicationID: 'APP-3018',
@@ -492,7 +525,14 @@ export class PortalStatusComponent {
     }
 
     canUploadDocument(document: PortalDocument): boolean {
-        return ['missing', 'received', 'uploading'].includes(document.status);
+        return (
+            this.hasPortalAccess() &&
+            ['missing', 'received', 'uploading'].includes(document.status)
+        );
+    }
+
+    hasPortalAccess(): boolean {
+        return this.portalAuthService.hasValidSession();
     }
 
     uploadLabelFor(document: PortalDocument): string {
