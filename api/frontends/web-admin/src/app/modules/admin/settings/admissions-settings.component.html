@@ -32,18 +32,22 @@
                     class="rounded-full px-4 py-2 text-sm font-semibold"
                     [class.bg-primary]="
                         tab === 'Checklist Templates' ||
+                        tab === 'Lead Assignment Rules' ||
                         tab === 'Lead Scoring Rules'
                     "
                     [class.text-white]="
                         tab === 'Checklist Templates' ||
+                        tab === 'Lead Assignment Rules' ||
                         tab === 'Lead Scoring Rules'
                     "
                     [class.bg-card]="
                         tab !== 'Checklist Templates' &&
+                        tab !== 'Lead Assignment Rules' &&
                         tab !== 'Lead Scoring Rules'
                     "
                     [class.text-secondary]="
                         tab !== 'Checklist Templates' &&
+                        tab !== 'Lead Assignment Rules' &&
                         tab !== 'Lead Scoring Rules'
                     "
                 >
@@ -280,6 +284,375 @@
                             "
                         >
                             {{ templateSaving ? 'Saving...' : 'Save template' }}
+                        </button>
+                    </div>
+                </form>
+            </aside>
+        </div>
+
+        <div
+            class="mb-10 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]"
+        >
+            <section class="bg-card overflow-hidden rounded-2xl shadow">
+                <div class="border-b p-6">
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                    >
+                        <div>
+                            <h2 class="text-xl font-bold">
+                                Lead assignment rules
+                            </h2>
+                            <p class="text-secondary mt-2 text-sm">
+                                Priority-ordered matching for auto assignment.
+                                Manual overrides keep actor, timestamp, and
+                                reason visible for audit review.
+                            </p>
+                        </div>
+                        <div
+                            class="rounded-2xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary"
+                        >
+                            {{ assignmentCandidates.length }} sample matches ·
+                            {{ assignmentRules.length }} rules
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divide-y">
+                    @for (rule of assignmentRules; track rule.id) {
+                        <div
+                            class="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[90px_minmax(0,1fr)_150px_100px] lg:items-center"
+                        >
+                            <div>
+                                <div
+                                    class="text-secondary text-xs uppercase tracking-wide"
+                                >
+                                    Priority
+                                </div>
+                                <div class="mt-1 text-2xl font-extrabold">
+                                    {{ rule.priority }}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="font-semibold">{{ rule.name }}</div>
+                                <div class="text-secondary mt-1 text-sm">
+                                    {{ assignmentCriterionSummary(rule) }}
+                                </div>
+                                <div class="text-secondary mt-2 text-xs">
+                                    {{ rule.description }}
+                                </div>
+                                <div
+                                    class="mt-3 flex flex-wrap items-center gap-2 text-xs"
+                                >
+                                    <span
+                                        class="rounded-full bg-blue-100 px-3 py-1 font-semibold text-blue-700"
+                                    >
+                                        {{ rule.assigneeRole }}
+                                    </span>
+                                    <span
+                                        class="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                    >
+                                        Last matched
+                                        {{ rule.lastMatchedCount }} records
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <div
+                                    class="text-secondary text-xs uppercase tracking-wide"
+                                >
+                                    Assignee
+                                </div>
+                                <div class="mt-1 font-semibold">
+                                    {{ rule.assignee }}
+                                </div>
+                            </div>
+                            <div
+                                class="flex items-center justify-between gap-3 lg:justify-end"
+                            >
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class.bg-green-100]="rule.active"
+                                    [class.text-green-700]="rule.active"
+                                    [class.bg-slate-100]="!rule.active"
+                                    [class.text-secondary]="!rule.active"
+                                >
+                                    {{ rule.active ? 'Active' : 'Inactive' }}
+                                </span>
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    [attr.aria-label]="'Edit ' + rule.name"
+                                    (click)="editAssignmentRule(rule)"
+                                >
+                                    <mat-icon
+                                        svgIcon="heroicons_outline:pencil-square"
+                                    ></mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="border-t bg-gray-50 p-6 dark:bg-gray-900/40">
+                    <h3 class="text-base font-bold">Assignment review queue</h3>
+                    <p class="text-secondary mt-1 text-sm">
+                        Static preview of auto-assigned records and manual
+                        overrides that must remain auditable.
+                    </p>
+
+                    <div class="bg-card mt-4 overflow-x-auto rounded-xl border">
+                        <table class="w-full min-w-240 text-left text-sm">
+                            <thead
+                                class="text-secondary border-b bg-gray-50 text-xs uppercase tracking-wide dark:bg-gray-900"
+                            >
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">
+                                        Record
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        Match inputs
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        Rule
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        Assignment
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        Audit state
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                @for (
+                                    candidate of assignmentCandidates;
+                                    track candidate.id
+                                ) {
+                                    <tr>
+                                        <td class="align-top px-4 py-4">
+                                            <div
+                                                class="font-mono text-xs text-primary"
+                                            >
+                                                {{ candidate.id }}
+                                            </div>
+                                            <div class="mt-1 font-semibold">
+                                                {{ candidate.applicant }}
+                                            </div>
+                                            <div
+                                                class="text-secondary mt-1 text-xs"
+                                            >
+                                                {{ candidate.program }} ·
+                                                {{ candidate.term }}
+                                            </div>
+                                        </td>
+                                        <td class="align-top px-4 py-4 text-xs">
+                                            <div>
+                                                {{ candidate.territory }} ·
+                                                {{ candidate.source }}
+                                            </div>
+                                            <div class="text-secondary mt-1">
+                                                Event:
+                                                {{
+                                                    candidate.eventAttendance
+                                                }}
+                                                · Alpha {{ candidate.alphaKey }}
+                                            </div>
+                                        </td>
+                                        <td class="align-top px-4 py-4">
+                                            {{ candidate.matchedRule }}
+                                        </td>
+                                        <td class="align-top px-4 py-4 text-xs">
+                                            <div>
+                                                Current:
+                                                <span class="font-semibold">{{
+                                                    candidate.currentAssignee
+                                                }}</span>
+                                            </div>
+                                            <div class="text-secondary mt-1">
+                                                Recommended:
+                                                {{
+                                                    candidate.recommendedAssignee
+                                                }}
+                                            </div>
+                                        </td>
+                                        <td class="align-top px-4 py-4">
+                                            <span
+                                                class="rounded-full px-3 py-1 text-xs font-semibold"
+                                                [class.bg-amber-100]="
+                                                    candidate.assignmentMode ===
+                                                    'MANUAL_OVERRIDE'
+                                                "
+                                                [class.text-amber-700]="
+                                                    candidate.assignmentMode ===
+                                                    'MANUAL_OVERRIDE'
+                                                "
+                                                [class.bg-green-100]="
+                                                    candidate.assignmentMode ===
+                                                    'AUTO'
+                                                "
+                                                [class.text-green-700]="
+                                                    candidate.assignmentMode ===
+                                                    'AUTO'
+                                                "
+                                            >
+                                                {{ candidate.assignmentMode }}
+                                            </span>
+                                            @if (candidate.overrideReason) {
+                                                <div
+                                                    class="text-secondary mt-2 text-xs"
+                                                >
+                                                    {{
+                                                        candidate.overrideActor
+                                                    }}
+                                                    ·
+                                                    {{
+                                                        candidate.overrideTimestamp
+                                                    }}
+                                                </div>
+                                                <div class="mt-1 text-xs">
+                                                    {{
+                                                        candidate.overrideReason
+                                                    }}
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="bg-card rounded-2xl p-6 shadow">
+                <h2 class="text-xl font-bold">
+                    {{
+                        assignmentForm.id
+                            ? 'Edit assignment rule'
+                            : 'Create assignment rule'
+                    }}
+                </h2>
+                <p class="text-secondary mt-2 text-sm">
+                    Static rule builder for the future API: one primary
+                    criterion, priority, target assignee, and active state.
+                </p>
+
+                <form class="mt-6 space-y-4">
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Rule name</mat-label>
+                        <input
+                            matInput
+                            required
+                            name="assignmentRuleName"
+                            [(ngModel)]="assignmentForm.name"
+                        />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Description</mat-label>
+                        <textarea
+                            matInput
+                            name="assignmentRuleDescription"
+                            rows="3"
+                            [(ngModel)]="assignmentForm.description"
+                        ></textarea>
+                    </mat-form-field>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Field</mat-label>
+                            <mat-select
+                                name="assignmentField"
+                                [(ngModel)]="assignmentForm.field"
+                            >
+                                @for (field of assignmentFields; track field) {
+                                    <mat-option [value]="field">{{
+                                        field
+                                    }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Operator</mat-label>
+                            <mat-select
+                                name="assignmentOperator"
+                                [(ngModel)]="assignmentForm.operator"
+                            >
+                                @for (
+                                    operator of assignmentOperators;
+                                    track operator
+                                ) {
+                                    <mat-option [value]="operator">{{
+                                        operator
+                                    }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Values</mat-label>
+                        <input
+                            matInput
+                            required
+                            name="assignmentValuesText"
+                            [(ngModel)]="assignmentForm.valuesText"
+                        />
+                        <mat-hint
+                            >Examples:
+                            {{
+                                assignmentSuggestedValues().join(', ')
+                            }}</mat-hint
+                        >
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Assignee</mat-label>
+                        <mat-select
+                            name="assignmentAssignee"
+                            [(ngModel)]="assignmentForm.assignee"
+                        >
+                            @for (assignee of assignees; track assignee) {
+                                <mat-option [value]="assignee">{{
+                                    assignee
+                                }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Priority</mat-label>
+                        <input
+                            matInput
+                            required
+                            type="number"
+                            name="assignmentPriority"
+                            [(ngModel)]="assignmentForm.priority"
+                        />
+                    </mat-form-field>
+
+                    <mat-slide-toggle
+                        name="assignmentActive"
+                        [(ngModel)]="assignmentForm.active"
+                        >Active</mat-slide-toggle
+                    >
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button
+                            mat-stroked-button
+                            type="button"
+                            (click)="resetAssignmentForm()"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="button"
+                            disabled
+                        >
+                            Save after API integration
                         </button>
                     </div>
                 </form>

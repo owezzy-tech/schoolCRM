@@ -61,6 +61,29 @@ export const ADMISSIONS_ROLES = [
     'APPLICANT',
 ] as const;
 
+export const LEAD_ASSIGNMENT_CRITERION_FIELDS = [
+    'territory',
+    'program_interest',
+    'application_type',
+    'academic_term',
+    'lead_source',
+    'event_attendance',
+    'alpha_range',
+] as const;
+
+export const LEAD_ASSIGNMENT_CRITERION_OPERATORS = [
+    'EQ',
+    'IN',
+    'BETWEEN',
+] as const;
+
+export const EVENT_ATTENDANCE_STATUSES = [
+    'ANY',
+    'REGISTERED',
+    'ATTENDED',
+    'NO_SHOW',
+] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -70,6 +93,11 @@ export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationType = (typeof APPLICATION_TYPES)[number];
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+export type LeadAssignmentCriterionField =
+    (typeof LEAD_ASSIGNMENT_CRITERION_FIELDS)[number];
+export type LeadAssignmentCriterionOperator =
+    (typeof LEAD_ASSIGNMENT_CRITERION_OPERATORS)[number];
+export type EventAttendanceStatus = (typeof EVENT_ATTENDANCE_STATUSES)[number];
 
 export interface LeadScoreCriterion {
     field: LeadScoreCriterionField;
@@ -96,6 +124,50 @@ export interface LeadScoreRuleRequest {
     points: number;
     active: boolean;
     priority: number;
+}
+
+export interface LeadAssignmentCriterion {
+    field: LeadAssignmentCriterionField;
+    operator: LeadAssignmentCriterionOperator;
+    values: string[];
+}
+
+export interface AssignmentAuditEvent {
+    actor: string;
+    action: string;
+    reason: string;
+    timestamp: string;
+}
+
+export interface LeadAssignmentRule {
+    id: string;
+    name: string;
+    description: string;
+    criteria: LeadAssignmentCriterion[];
+    assignee: string;
+    assigneeRole: Extract<AdmissionsRole, 'RECRUITER' | 'APPLICATION_REVIEWER'>;
+    active: boolean;
+    priority: number;
+    lastMatchedCount: number;
+    auditTrail: AssignmentAuditEvent[];
+}
+
+export interface AssignmentCandidate {
+    id: string;
+    applicant: string;
+    program: string;
+    term: string;
+    source: string;
+    territory: string;
+    eventAttendance: EventAttendanceStatus;
+    alphaKey: string;
+    currentAssignee: string;
+    recommendedAssignee: string;
+    matchedRule: string;
+    assignmentMode: 'AUTO' | 'MANUAL_OVERRIDE';
+    overrideReason?: string;
+    overrideActor?: string;
+    overrideTimestamp?: string;
 }
 
 export interface LeadScoreRuleResult {
