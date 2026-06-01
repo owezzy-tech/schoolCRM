@@ -84,6 +84,22 @@ export const EVENT_ATTENDANCE_STATUSES = [
     'NO_SHOW',
 ] as const;
 
+export const APPLICATION_FEE_STATUSES = [
+    'PENDING',
+    'PAID',
+    'FAILED',
+    'WAIVED',
+    'REFUNDED',
+    'NOT_REQUIRED',
+] as const;
+
+export const APPLICATION_FEE_PROVIDERS = [
+    'stripe',
+    'square',
+    'manual',
+    'not_required',
+] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -98,6 +114,31 @@ export type LeadAssignmentCriterionField =
 export type LeadAssignmentCriterionOperator =
     (typeof LEAD_ASSIGNMENT_CRITERION_OPERATORS)[number];
 export type EventAttendanceStatus = (typeof EVENT_ATTENDANCE_STATUSES)[number];
+export type ApplicationFeeStatus = (typeof APPLICATION_FEE_STATUSES)[number];
+export type ApplicationFeeProvider = (typeof APPLICATION_FEE_PROVIDERS)[number];
+
+export interface ApplicationFeeAuditEvent {
+    actor: string;
+    action: string;
+    reason: string;
+    timestamp: string;
+}
+
+export interface ApplicationFee {
+    id: string;
+    applicationID: string;
+    amountCents: number;
+    currency: string;
+    status: ApplicationFeeStatus;
+    provider: ApplicationFeeProvider;
+    transactionID?: string;
+    dueAt?: string;
+    paidAt?: string;
+    waiverGrantedBy?: string;
+    waiverReason?: string;
+    waiverGrantedAt?: string;
+    auditTrail: ApplicationFeeAuditEvent[];
+}
 
 export interface LeadScoreCriterion {
     field: LeadScoreCriterionField;
