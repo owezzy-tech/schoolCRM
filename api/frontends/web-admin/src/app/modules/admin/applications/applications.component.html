@@ -1,71 +1,144 @@
 @if (true) {
-    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+    <div class="bg-card flex min-w-0 flex-auto flex-col dark:bg-transparent">
         <div class="flex-auto p-6 sm:p-10">
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div
+                class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
                 <div>
-                    <h1 class="text-3xl font-semibold tracking-tight">Applications</h1>
+                    <h1 class="text-3xl font-semibold tracking-tight">
+                        Applications
+                    </h1>
                 </div>
                 <div>
                     <button mat-flat-button color="primary">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:plus"
+                        ></mat-icon>
                         <span class="ml-2">New application</span>
                     </button>
                 </div>
             </div>
 
             <!-- Filters -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            <div
+                class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center"
+            >
                 <div class="relative w-full sm:w-72">
-                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 icon-size-5 text-secondary" svgIcon="heroicons_outline:magnifying-glass"></mat-icon>
-                    <input type="text" class="w-full pl-10 pr-3 py-2 border rounded-full bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Search applications...">
+                    <mat-icon
+                        class="text-secondary absolute left-3 top-1/2 -translate-y-1/2 icon-size-5"
+                        svgIcon="heroicons_outline:magnifying-glass"
+                    ></mat-icon>
+                    <input
+                        type="text"
+                        class="w-full rounded-full border bg-transparent py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="Search applications..."
+                    />
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @for (filter of filters; track filter) {
-                        <button class="inline-flex items-center px-3 py-1.5 border rounded-full text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <button
+                            class="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
                             {{ filter }}
-                            <mat-icon class="icon-size-4 ml-1.5 text-secondary" svgIcon="heroicons_outline:chevron-down"></mat-icon>
+                            <mat-icon
+                                class="text-secondary ml-1.5 icon-size-4"
+                                svgIcon="heroicons_outline:chevron-down"
+                            ></mat-icon>
                         </button>
                     }
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
+            <div
+                class="bg-card overflow-hidden overflow-x-auto rounded-2xl border shadow-sm"
+            >
                 <table class="w-full text-sm">
-                    <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
+                    <thead
+                        class="text-secondary border-b bg-gray-50 text-left dark:bg-gray-900"
+                    >
                         <tr>
                             <th class="px-6 py-4 font-medium">ID</th>
                             <th class="px-6 py-4 font-medium">Applicant</th>
                             <th class="px-6 py-4 font-medium">Program</th>
                             <th class="px-6 py-4 font-medium">Term</th>
                             <th class="px-6 py-4 font-medium">Status</th>
-                            <th class="px-6 py-4 font-medium w-32">Progress</th>
+                            <th class="px-6 py-4 font-medium">Fee</th>
+                            <th class="w-32 px-6 py-4 font-medium">Progress</th>
                             <th class="px-6 py-4 font-medium">Reviewer</th>
-                            <th class="px-6 py-4 font-medium text-right">Score</th>
+                            <th class="px-6 py-4 text-right font-medium">
+                                Score
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @for (app of applications; track app.id) {
-                            <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                                <td class="px-6 py-4 font-mono text-xs text-primary">
-                                    <a [routerLink]="['/applications', app.id]" class="hover:underline">{{ app.id }}</a>
+                            <tr
+                                class="border-b transition-colors last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900"
+                            >
+                                <td
+                                    class="px-6 py-4 font-mono text-xs text-primary"
+                                >
+                                    <a
+                                        [routerLink]="['/applications', app.id]"
+                                        class="hover:underline"
+                                        >{{ app.id }}</a
+                                    >
                                 </td>
-                                <td class="px-6 py-4 font-medium">{{ app.applicant }}</td>
+                                <td class="px-6 py-4 font-medium">
+                                    {{ app.applicant }}
+                                </td>
                                 <td class="px-6 py-4">{{ app.program }}</td>
                                 <td class="px-6 py-4">{{ app.term }}</td>
                                 <td class="px-6 py-4">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800">
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium dark:bg-gray-800"
+                                    >
                                         {{ app.status }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-primary rounded-full" [style.width.%]="app.progress"></div>
+                                    <div class="flex flex-col gap-1">
+                                        <span
+                                            class="w-fit rounded-full px-2.5 py-1 text-xs font-semibold"
+                                            [class]="
+                                                feeStatusClass(app.fee.status)
+                                            "
+                                        >
+                                            {{
+                                                formatFeeStatus(app.fee.status)
+                                            }}
+                                        </span>
+                                        <span class="text-secondary text-xs">
+                                            {{ formatAmount(app.fee) }} ·
+                                            {{ app.fee.provider }}
+                                        </span>
+                                        @if (app.fee.waiverReason) {
+                                            <span
+                                                class="text-secondary text-xs"
+                                            >
+                                                Waived by
+                                                {{ app.fee.waiverGrantedBy }}
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div
+                                        class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                                    >
+                                        <div
+                                            class="h-full rounded-full bg-primary"
+                                            [style.width.%]="app.progress"
+                                        ></div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">{{ app.reviewer }}</td>
-                                <td class="px-6 py-4 text-right font-mono text-xs">
+                                <td
+                                    class="px-6 py-4 text-right font-mono text-xs"
+                                >
                                     @if (app.score !== null) {
                                         {{ app.score }}
                                     } @else {
