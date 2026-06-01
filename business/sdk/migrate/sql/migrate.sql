@@ -625,3 +625,55 @@ CREATE TABLE sub_counties (
 
 CREATE INDEX idx_sub_counties_county_code ON sub_counties (county_code);
 CREATE INDEX idx_sub_counties_name ON sub_counties (name);
+
+-- Version: 1.21
+-- Description: Add Kenya constituent identity identifiers and manual backfill review table
+ALTER TABLE admissions_constituents
+    ADD COLUMN national_id TEXT NULL,
+    ADD COLUMN national_id_verified_at TIMESTAMP NULL,
+    ADD COLUMN national_id_verified_by_adapter TEXT NULL,
+    ADD COLUMN upi TEXT NULL,
+    ADD COLUMN upi_verified_at TIMESTAMP NULL,
+    ADD COLUMN upi_verified_by_adapter TEXT NULL,
+    ADD COLUMN kcse_index_number TEXT NULL,
+    ADD COLUMN kcse_index_verified_at TIMESTAMP NULL,
+    ADD COLUMN kcse_index_verified_by_adapter TEXT NULL;
+
+CREATE UNIQUE INDEX idx_admissions_constituents_national_id ON admissions_constituents (national_id) WHERE national_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_admissions_constituents_upi ON admissions_constituents (upi) WHERE upi IS NOT NULL;
+CREATE UNIQUE INDEX idx_admissions_constituents_kcse_index_number ON admissions_constituents (kcse_index_number) WHERE kcse_index_number IS NOT NULL;
+
+CREATE TABLE admissions_identity_backfill_reviews (
+    identity_backfill_review_id UUID      NOT NULL,
+    constituent_id              UUID      NOT NULL,
+    external_sis_id             TEXT      NOT NULL,
+    review_reason               TEXT      NOT NULL,
+    status                      TEXT      NOT NULL,
+    date_created                TIMESTAMP NOT NULL,
+    date_updated                TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (identity_backfill_review_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_identity_backfill_reviews_reason_not_empty CHECK (trim(review_reason) <> ''),
+    CONSTRAINT admissions_identity_backfill_reviews_status CHECK (status IN ('PENDING', 'RESOLVED')),
+    CONSTRAINT admissions_identity_backfill_reviews_unique_constituent UNIQUE (constituent_id, external_sis_id)
+);
+
+INSERT INTO admissions_identity_backfill_reviews
+    (identity_backfill_review_id, constituent_id, external_sis_id, review_reason, status, date_created, date_updated)
+SELECT
+    gen_random_uuid(),
+    constituent_id,
+    external_sis_id,
+    'external_sis_id requires manual classification before migration to national_id, upi, or kcse_index_number',
+    'PENDING',
+    NOW(),
+    NOW()
+FROM
+    admissions_constituents
+WHERE
+    external_sis_id IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+CREATE INDEX idx_admissions_identity_backfill_reviews_constituent ON admissions_identity_backfill_reviews (constituent_id);
+CREATE INDEX idx_admissions_identity_backfill_reviews_status ON admissions_identity_backfill_reviews (status);
