@@ -44,6 +44,12 @@ var DefaultChecklistItemOrderBy = order.NewBy(OrderByChecklistItemDisplayOrder, 
 // DefaultDocumentOrderBy represents the default way we sort documents.
 var DefaultDocumentOrderBy = order.NewBy(OrderByDocumentUploadedAt, order.DESC)
 
+// DefaultSyncJobOrderBy represents the default way we sort SIS sync jobs.
+var DefaultSyncJobOrderBy = order.NewBy(OrderBySyncJobDateCreated, order.DESC)
+
+// DefaultSyncEventOrderBy represents the default way we sort SIS sync events.
+var DefaultSyncEventOrderBy = order.NewBy(OrderBySyncEventDateCreated, order.DESC)
+
 // Set of fields that programs can be ordered by.
 const (
 	OrderByStaffProfileID          = "a"
@@ -162,4 +168,25 @@ const (
 	OrderByDocumentStatus        = "d"
 	OrderByDocumentUploadedAt    = "e"
 	OrderByDocumentReviewedAt    = "f"
+)
+
+// Set of fields that SIS sync jobs can be ordered by.
+const (
+	OrderBySyncJobID          = "a"
+	OrderBySyncJobStatus      = "b"
+	OrderBySyncJobDirection   = "c"
+	OrderBySyncJobStartedAt   = "d"
+	OrderBySyncJobCompletedAt = "e"
+	OrderBySyncJobDateCreated = "f"
+)
+
+// Set of fields that SIS sync events can be ordered by.
+const (
+	OrderBySyncEventID          = "a"
+	OrderBySyncEventJob         = "b"
+	OrderBySyncEventType        = "c"
+	OrderBySyncEventStatus      = "d"
+	OrderBySyncEventDirection   = "e"
+	OrderBySyncEventResource    = "f"
+	OrderBySyncEventDateCreated = "g"
 )

@@ -519,6 +519,74 @@ func (status DocumentStatus) String() string {
 	return string(status)
 }
 
+// SyncJobStatus represents the operational state of a SIS batch reconciliation run.
+type SyncJobStatus string
+
+// Set of valid SIS sync job statuses.
+const (
+	SyncJobStatusQueued     SyncJobStatus = "QUEUED"
+	SyncJobStatusRunning    SyncJobStatus = "RUNNING"
+	SyncJobStatusSucceeded  SyncJobStatus = "SUCCEEDED"
+	SyncJobStatusFailed     SyncJobStatus = "FAILED"
+	SyncJobStatusRetryReady SyncJobStatus = "RETRY_READY"
+)
+
+// String returns the sync job status as a string.
+func (status SyncJobStatus) String() string {
+	return string(status)
+}
+
+// SyncEventStatus represents the queue state for a real-time SIS sync event.
+type SyncEventStatus string
+
+// Set of valid SIS sync event statuses.
+const (
+	SyncEventStatusQueued     SyncEventStatus = "QUEUED"
+	SyncEventStatusProcessing SyncEventStatus = "PROCESSING"
+	SyncEventStatusSucceeded  SyncEventStatus = "SUCCEEDED"
+	SyncEventStatusFailed     SyncEventStatus = "FAILED"
+	SyncEventStatusRetryReady SyncEventStatus = "RETRY_READY"
+)
+
+// String returns the sync event status as a string.
+func (status SyncEventStatus) String() string {
+	return string(status)
+}
+
+// SyncDirection represents whether CRM is pulling canonical SIS state or pushing CRM events to SIS.
+type SyncDirection string
+
+// Set of valid SIS sync directions.
+const (
+	SyncDirectionInbound  SyncDirection = "INBOUND"
+	SyncDirectionOutbound SyncDirection = "OUTBOUND"
+)
+
+// String returns the sync direction as a string.
+func (direction SyncDirection) String() string {
+	return string(direction)
+}
+
+// SyncEventType represents the approved field-set actions exchanged with SIS.
+type SyncEventType string
+
+// Set of valid SIS sync event types.
+const (
+	SyncEventTypeBatchTermsPull         SyncEventType = "BATCH_TERMS_PULL"
+	SyncEventTypeBatchProgramsPull      SyncEventType = "BATCH_PROGRAMS_PULL"
+	SyncEventTypeBatchPersonMatchesPull SyncEventType = "BATCH_PERSON_MATCHES_PULL"
+	SyncEventTypeBatchEnrollmentPull    SyncEventType = "BATCH_ENROLLMENT_PULL"
+	SyncEventTypeApplicationSubmission  SyncEventType = "APPLICATION_SUBMISSION"
+	SyncEventTypeApplicationDecision    SyncEventType = "APPLICATION_DECISION"
+	SyncEventTypeDocumentStatus         SyncEventType = "DOCUMENT_STATUS"
+	SyncEventTypeEnrollmentIntent       SyncEventType = "ENROLLMENT_INTENT"
+)
+
+// String returns the sync event type as a string.
+func (eventType SyncEventType) String() string {
+	return string(eventType)
+}
+
 // ChecklistItem represents one document requirement for an application.
 type ChecklistItem struct {
 	ID            uuid.UUID
@@ -578,6 +646,82 @@ type NewDocumentVerification struct {
 	Status        DocumentStatus
 	ReviewerID    uuid.UUID
 	ReviewerNotes *string
+}
+
+// SyncJob tracks a SIS batch reconciliation run and its operational result.
+type SyncJob struct {
+	ID             uuid.UUID
+	Name           string
+	Status         SyncJobStatus
+	Direction      SyncDirection
+	StartedAt      *time.Time
+	CompletedAt    *time.Time
+	RecordsPulled  int
+	RecordsPushed  int
+	EventsRequeued int
+	FailureReason  *string
+	Retryable      bool
+	CreatedByID    *uuid.UUID
+	DateCreated    time.Time
+	DateUpdated    time.Time
+}
+
+// NewSyncJob is what the sync runner requires when starting or scheduling a batch reconciliation run.
+type NewSyncJob struct {
+	Name        string
+	Direction   SyncDirection
+	Status      SyncJobStatus
+	StartedAt   *time.Time
+	CreatedByID *uuid.UUID
+}
+
+// UpdateSyncJob is what the sync runner may change as a batch reconciliation run progresses.
+type UpdateSyncJob struct {
+	Status         SyncJobStatus
+	CompletedAt    *time.Time
+	RecordsPulled  int
+	RecordsPushed  int
+	EventsRequeued int
+	FailureReason  *string
+	Retryable      bool
+}
+
+// SyncEvent tracks a selected real-time SIS event, including retries and failure visibility.
+type SyncEvent struct {
+	ID            uuid.UUID
+	JobID         *uuid.UUID
+	EventType     SyncEventType
+	Status        SyncEventStatus
+	Direction     SyncDirection
+	ResourceType  string
+	ResourceID    uuid.UUID
+	PayloadHash   string
+	Attempts      int
+	NextRetryAt   *time.Time
+	FailureReason *string
+	AuditMessage  string
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewSyncEvent is what workflow hooks provide when enqueueing a selected real-time SIS event.
+type NewSyncEvent struct {
+	JobID        *uuid.UUID
+	EventType    SyncEventType
+	Direction    SyncDirection
+	ResourceType string
+	ResourceID   uuid.UUID
+	PayloadHash  string
+	AuditMessage string
+}
+
+// UpdateSyncEvent is what the queue runner may change as an event is processed or retried.
+type UpdateSyncEvent struct {
+	Status        SyncEventStatus
+	Attempts      int
+	NextRetryAt   *time.Time
+	FailureReason *string
+	AuditMessage  string
 }
 
 // Decision represents the outcome of an application review.
@@ -686,6 +830,8 @@ func AggregateNames() []string {
 		"checklist",
 		"document",
 		"decision",
+		"syncJob",
+		"syncEvent",
 		"program",
 		"academicTerm",
 		"duplicateReview",
@@ -825,4 +971,25 @@ type DocumentQueryFilter struct {
 	Status          *DocumentStatus
 	UploadedByID    *uuid.UUID
 	ReviewerID      *uuid.UUID
+}
+
+// SyncJobQueryFilter holds fields a SIS sync job query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type SyncJobQueryFilter struct {
+	ID        *uuid.UUID
+	Status    *SyncJobStatus
+	Direction *SyncDirection
+	Retryable *bool
+}
+
+// SyncEventQueryFilter holds fields a SIS sync event query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type SyncEventQueryFilter struct {
+	ID           *uuid.UUID
+	JobID        *uuid.UUID
+	EventType    *SyncEventType
+	Status       *SyncEventStatus
+	Direction    *SyncDirection
+	ResourceType *string
+	ResourceID   *uuid.UUID
 }

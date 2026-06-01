@@ -163,6 +163,11 @@ export const appRoutes: Route[] = [
                 loadChildren: () =>
                     import('app/modules/admin/leads/admissions-leads.routes'),
             },
+            {
+                path: 'sis-sync',
+                loadChildren: () =>
+                    import('app/modules/admin/sis-sync/sis-sync.routes'),
+            },
 
             // Engagement
             {

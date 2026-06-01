@@ -250,6 +250,143 @@ func TestCreateApplicantProfileLinksIdentityToConstituent(t *testing.T) {
 	}
 }
 
+func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nj   NewSyncJob
+		want error
+	}{
+		{
+			name: "name required",
+			nj: NewSyncJob{
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrSyncJobNameRequired,
+		},
+		{
+			name: "valid status",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Status:    SyncJobStatus("UNKNOWN"),
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrInvalidSyncJobStatus,
+		},
+		{
+			name: "valid direction",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirection("UNKNOWN"),
+			},
+			want: ErrInvalidSyncDirection,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateSyncJob(context.Background(), tt.nj)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	applicationID := uuid.New()
+
+	event, err := bus.EnqueueSyncEvent(context.Background(), NewSyncEvent{
+		EventType:    SyncEventTypeApplicationSubmission,
+		Direction:    SyncDirectionOutbound,
+		ResourceType: "application",
+		ResourceID:   applicationID,
+		PayloadHash:  "sha256:application-submission",
+		AuditMessage: "Application submission queued for SIS.",
+	})
+	if err != nil {
+		t.Fatalf("EnqueueSyncEvent returned error: %v", err)
+	}
+
+	if event.Status != SyncEventStatusQueued {
+		t.Fatalf("Status = %s, want %s", event.Status, SyncEventStatusQueued)
+	}
+
+	if event.EventType != SyncEventTypeApplicationSubmission {
+		t.Fatalf("EventType = %s, want %s", event.EventType, SyncEventTypeApplicationSubmission)
+	}
+
+	if len(store.syncEvents) != 1 {
+		t.Fatalf("stored sync events = %d, want 1", len(store.syncEvents))
+	}
+}
+
+func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		ne   NewSyncEvent
+		want error
+	}{
+		{
+			name: "event type",
+			ne: NewSyncEvent{
+				EventType:    SyncEventType("CUSTOM_FIELD_SYNC"),
+				Direction:    SyncDirectionOutbound,
+				ResourceType: "application",
+				ResourceID:   uuid.New(),
+				PayloadHash:  "sha256:custom",
+			},
+			want: ErrInvalidSyncEventType,
+		},
+		{
+			name: "resource",
+			ne: NewSyncEvent{
+				EventType:   SyncEventTypeApplicationDecision,
+				Direction:   SyncDirectionOutbound,
+				ResourceID:  uuid.New(),
+				PayloadHash: "sha256:decision",
+			},
+			want: ErrSyncEventResourceRequired,
+		},
+		{
+			name: "payload hash",
+			ne: NewSyncEvent{
+				EventType:    SyncEventTypeDocumentStatus,
+				Direction:    SyncDirectionOutbound,
+				ResourceType: "document",
+				ResourceID:   uuid.New(),
+			},
+			want: ErrSyncEventPayloadHashRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.EnqueueSyncEvent(context.Background(), tt.ne)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestCreateApplicantProfileValidatesIdentityAndConstituent(t *testing.T) {
 	t.Parallel()
 
@@ -1331,6 +1468,8 @@ type stubStore struct {
 	applicationTransitions []ApplicationTransition
 	checklistItems         []ChecklistItem
 	documents              []Document
+	syncJobs               []SyncJob
+	syncEvents             []SyncEvent
 }
 
 func (s *stubStore) NewWithTx(sqldb.CommitRollbacker) (Storer, error) {
@@ -1823,4 +1962,70 @@ func (s *stubStore) QueryDocumentByID(_ context.Context, documentID uuid.UUID) (
 		}
 	}
 	return Document{}, ErrDocumentNotFound
+}
+
+func (s *stubStore) CreateSyncJob(_ context.Context, job SyncJob) error {
+	s.syncJobs = append(s.syncJobs, job)
+	return nil
+}
+
+func (s *stubStore) UpdateSyncJob(_ context.Context, job SyncJob) error {
+	for i, existing := range s.syncJobs {
+		if existing.ID == job.ID {
+			s.syncJobs[i] = job
+			return nil
+		}
+	}
+	s.syncJobs = append(s.syncJobs, job)
+	return nil
+}
+
+func (s *stubStore) QuerySyncJobs(context.Context, SyncJobQueryFilter, order.By, page.Page) ([]SyncJob, error) {
+	return s.syncJobs, nil
+}
+
+func (s *stubStore) CountSyncJobs(context.Context, SyncJobQueryFilter) (int, error) {
+	return len(s.syncJobs), nil
+}
+
+func (s *stubStore) QuerySyncJobByID(_ context.Context, jobID uuid.UUID) (SyncJob, error) {
+	for _, job := range s.syncJobs {
+		if job.ID == jobID {
+			return job, nil
+		}
+	}
+	return SyncJob{}, ErrSyncJobNotFound
+}
+
+func (s *stubStore) CreateSyncEvent(_ context.Context, event SyncEvent) error {
+	s.syncEvents = append(s.syncEvents, event)
+	return nil
+}
+
+func (s *stubStore) UpdateSyncEvent(_ context.Context, event SyncEvent) error {
+	for i, existing := range s.syncEvents {
+		if existing.ID == event.ID {
+			s.syncEvents[i] = event
+			return nil
+		}
+	}
+	s.syncEvents = append(s.syncEvents, event)
+	return nil
+}
+
+func (s *stubStore) QuerySyncEvents(context.Context, SyncEventQueryFilter, order.By, page.Page) ([]SyncEvent, error) {
+	return s.syncEvents, nil
+}
+
+func (s *stubStore) CountSyncEvents(context.Context, SyncEventQueryFilter) (int, error) {
+	return len(s.syncEvents), nil
+}
+
+func (s *stubStore) QuerySyncEventByID(_ context.Context, eventID uuid.UUID) (SyncEvent, error) {
+	for _, event := range s.syncEvents {
+		if event.ID == eventID {
+			return event, nil
+		}
+	}
+	return SyncEvent{}, ErrSyncEventNotFound
 }

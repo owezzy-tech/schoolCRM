@@ -20,7 +20,10 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 <a mat-stroked-button routerLink="/applications">
-                    <mat-icon svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                    <mat-icon
+                        svgIcon="heroicons_outline:arrow-left"
+                        aria-hidden="true"
+                    ></mat-icon>
                     <span class="ml-2">Applications</span>
                 </a>
                 <button mat-flat-button color="primary" type="button" disabled>
@@ -50,6 +53,10 @@
                     <span
                         class="rounded-full px-3 py-1 text-sm font-semibold"
                         [class]="statusClass(selectedApplication.status)"
+                        [attr.aria-label]="
+                            'Current application status: ' +
+                            selectedApplication.statusLabel
+                        "
                     >
                         {{ selectedApplication.statusLabel }}
                     </span>
@@ -94,6 +101,19 @@
                                 "
                                 [class.opacity-55]="!application.authorized"
                                 [disabled]="!application.authorized"
+                                [attr.aria-disabled]="!application.authorized"
+                                [attr.aria-label]="
+                                    application.authorized
+                                        ? 'Open application ' +
+                                          application.id +
+                                          ' for ' +
+                                          application.applicant
+                                        : 'Application ' +
+                                          application.id +
+                                          ' is hidden from ' +
+                                          currentReviewer +
+                                          ' queue'
+                                "
                                 (click)="selectApplication(application)"
                             >
                                 <div
@@ -112,6 +132,11 @@
                                     <span
                                         class="rounded-full px-2.5 py-1 text-xs font-semibold"
                                         [class]="riskClass(application.risk)"
+                                        [attr.aria-label]="
+                                            'Risk level: ' +
+                                            application.risk +
+                                            ' risk'
+                                        "
                                     >
                                         {{ application.risk }} risk
                                     </span>
@@ -128,6 +153,10 @@
                                         class="rounded-full px-2.5 py-1 font-semibold"
                                         [class]="
                                             statusClass(application.status)
+                                        "
+                                        [attr.aria-label]="
+                                            'Application status: ' +
+                                            application.statusLabel
                                         "
                                     >
                                         {{ application.statusLabel }}
@@ -167,6 +196,7 @@
                                         <mat-icon
                                             class="icon-size-4"
                                             svgIcon="heroicons_outline:lock-closed"
+                                            aria-hidden="true"
                                         ></mat-icon>
                                         Hidden from {{ currentReviewer }} queue
                                     </div>
@@ -200,6 +230,10 @@
                                 class="rounded-full px-3 py-1 text-sm font-semibold"
                                 [class]="
                                     statusClass(selectedApplication.status)
+                                "
+                                [attr.aria-label]="
+                                    'Selected application status: ' +
+                                    selectedApplication.statusLabel
                                 "
                             >
                                 {{ selectedApplication.statusLabel }}
@@ -315,21 +349,25 @@
                                             <tr>
                                                 <th
                                                     class="px-4 py-3 font-semibold"
+                                                    scope="col"
                                                 >
                                                     Document
                                                 </th>
                                                 <th
                                                     class="px-4 py-3 font-semibold"
+                                                    scope="col"
                                                 >
                                                     Required
                                                 </th>
                                                 <th
                                                     class="px-4 py-3 font-semibold"
+                                                    scope="col"
                                                 >
                                                     Status
                                                 </th>
                                                 <th
                                                     class="px-4 py-3 font-semibold"
+                                                    scope="col"
                                                 >
                                                     Reviewer notes
                                                 </th>
@@ -341,11 +379,12 @@
                                                 track document.name
                                             ) {
                                                 <tr>
-                                                    <td
+                                                    <th
                                                         class="px-4 py-4 font-semibold"
+                                                        scope="row"
                                                     >
                                                         {{ document.name }}
-                                                    </td>
+                                                    </th>
                                                     <td class="px-4 py-4">
                                                         {{
                                                             document.required
@@ -358,6 +397,12 @@
                                                             class="rounded-full px-3 py-1 text-xs font-semibold"
                                                             [class]="
                                                                 documentStatusClass(
+                                                                    document.status
+                                                                )
+                                                            "
+                                                            [attr.aria-label]="
+                                                                'Document status: ' +
+                                                                formatStatus(
                                                                     document.status
                                                                 )
                                                             "
@@ -480,6 +525,7 @@
                                         <mat-icon
                                             class="my-3 text-primary icon-size-5"
                                             svgIcon="heroicons_outline:arrow-down"
+                                            aria-hidden="true"
                                         ></mat-icon>
                                         <div class="text-secondary">To</div>
                                         <div class="font-semibold">

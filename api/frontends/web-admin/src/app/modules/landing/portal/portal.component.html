@@ -8,6 +8,7 @@
             <mat-icon
                 svgIcon="heroicons_outline:calendar"
                 class="icon-size-4"
+                aria-hidden="true"
             ></mat-icon>
             <span>Fall 2026 applications open</span>
         </div>
@@ -38,6 +39,7 @@
                 <mat-icon
                     svgIcon="heroicons_outline:arrow-right"
                     class="ml-2 icon-size-5"
+                    aria-hidden="true"
                 ></mat-icon>
             </a>
             <a
@@ -107,6 +109,9 @@
                             [ngModel]="email()"
                             (ngModelChange)="email.set($event)"
                             name="portalEmail"
+                            [attr.aria-describedby]="
+                                accessError() ? 'portal-access-error' : null
+                            "
                             required
                         />
                     </mat-form-field>
@@ -123,6 +128,10 @@
 
                 @if (accessError()) {
                     <div
+                        id="portal-access-error"
+                        role="alert"
+                        aria-live="polite"
+                        aria-atomic="true"
                         class="mt-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-200"
                     >
                         {{ accessError() }}

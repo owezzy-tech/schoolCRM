@@ -1373,6 +1373,194 @@ func toBusNewApplicationTransition(app NewApplicationTransition, actorID uuid.UU
 	}
 }
 
+// SyncJob represents a SIS batch reconciliation run.
+type SyncJob struct {
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	Status         string  `json:"status"`
+	Direction      string  `json:"direction"`
+	StartedAt      *string `json:"startedAt,omitempty"`
+	CompletedAt    *string `json:"completedAt,omitempty"`
+	RecordsPulled  int     `json:"recordsPulled"`
+	RecordsPushed  int     `json:"recordsPushed"`
+	EventsRequeued int     `json:"eventsRequeued"`
+	FailureReason  *string `json:"failureReason,omitempty"`
+	Retryable      bool    `json:"retryable"`
+	CreatedByID    *string `json:"createdByID,omitempty"`
+	DateCreated    string  `json:"dateCreated"`
+	DateUpdated    string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app SyncJob) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppSyncJob(job admissionsbus.SyncJob) SyncJob {
+	return SyncJob{
+		ID:             job.ID.String(),
+		Name:           job.Name,
+		Status:         job.Status.String(),
+		Direction:      job.Direction.String(),
+		StartedAt:      formatTimePtr(job.StartedAt),
+		CompletedAt:    formatTimePtr(job.CompletedAt),
+		RecordsPulled:  job.RecordsPulled,
+		RecordsPushed:  job.RecordsPushed,
+		EventsRequeued: job.EventsRequeued,
+		FailureReason:  job.FailureReason,
+		Retryable:      job.Retryable,
+		CreatedByID:    uuidStringPtr(job.CreatedByID),
+		DateCreated:    job.DateCreated.Format(time.RFC3339),
+		DateUpdated:    job.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppSyncJobs(jobs []admissionsbus.SyncJob) []SyncJob {
+	app := make([]SyncJob, len(jobs))
+	for i, job := range jobs {
+		app[i] = toAppSyncJob(job)
+	}
+
+	return app
+}
+
+// NewSyncJob defines the data needed to create a SIS batch reconciliation run.
+type NewSyncJob struct {
+	Name        string  `json:"name"`
+	Direction   string  `json:"direction"`
+	Status      string  `json:"status"`
+	StartedAt   *string `json:"startedAt"`
+	CreatedByID *string `json:"createdByID"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewSyncJob) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewSyncJob(app NewSyncJob) (admissionsbus.NewSyncJob, error) {
+	var fieldErrors errs.FieldErrors
+
+	startedAt, err := parseTimePtr(app.StartedAt)
+	if err != nil {
+		fieldErrors.Add("startedAt", err)
+	}
+
+	createdByID, err := parseUUIDPtr(app.CreatedByID)
+	if err != nil {
+		fieldErrors.Add("createdByID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewSyncJob{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewSyncJob{
+		Name:        app.Name,
+		Direction:   admissionsbus.SyncDirection(app.Direction),
+		Status:      admissionsbus.SyncJobStatus(app.Status),
+		StartedAt:   startedAt,
+		CreatedByID: createdByID,
+	}, nil
+}
+
+// SyncEvent represents a selected real-time SIS sync event.
+type SyncEvent struct {
+	ID            string  `json:"id"`
+	JobID         *string `json:"jobID,omitempty"`
+	EventType     string  `json:"eventType"`
+	Status        string  `json:"status"`
+	Direction     string  `json:"direction"`
+	ResourceType  string  `json:"resourceType"`
+	ResourceID    string  `json:"resourceID"`
+	PayloadHash   string  `json:"payloadHash"`
+	Attempts      int     `json:"attempts"`
+	NextRetryAt   *string `json:"nextRetryAt,omitempty"`
+	FailureReason *string `json:"failureReason,omitempty"`
+	AuditMessage  string  `json:"auditMessage"`
+	DateCreated   string  `json:"dateCreated"`
+	DateUpdated   string  `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app SyncEvent) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppSyncEvent(event admissionsbus.SyncEvent) SyncEvent {
+	return SyncEvent{
+		ID:            event.ID.String(),
+		JobID:         uuidStringPtr(event.JobID),
+		EventType:     event.EventType.String(),
+		Status:        event.Status.String(),
+		Direction:     event.Direction.String(),
+		ResourceType:  event.ResourceType,
+		ResourceID:    event.ResourceID.String(),
+		PayloadHash:   event.PayloadHash,
+		Attempts:      event.Attempts,
+		NextRetryAt:   formatTimePtr(event.NextRetryAt),
+		FailureReason: event.FailureReason,
+		AuditMessage:  event.AuditMessage,
+		DateCreated:   event.DateCreated.Format(time.RFC3339),
+		DateUpdated:   event.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppSyncEvents(events []admissionsbus.SyncEvent) []SyncEvent {
+	app := make([]SyncEvent, len(events))
+	for i, event := range events {
+		app[i] = toAppSyncEvent(event)
+	}
+
+	return app
+}
+
+// NewSyncEvent defines the data needed to enqueue a selected real-time SIS sync event.
+type NewSyncEvent struct {
+	JobID        *string `json:"jobID"`
+	EventType    string  `json:"eventType"`
+	Direction    string  `json:"direction"`
+	ResourceType string  `json:"resourceType"`
+	ResourceID   string  `json:"resourceID"`
+	PayloadHash  string  `json:"payloadHash"`
+	AuditMessage string  `json:"auditMessage"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewSyncEvent) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewSyncEvent(app NewSyncEvent) (admissionsbus.NewSyncEvent, error) {
+	var fieldErrors errs.FieldErrors
+
+	jobID, err := parseUUIDPtr(app.JobID)
+	if err != nil {
+		fieldErrors.Add("jobID", err)
+	}
+
+	resourceID, err := uuid.Parse(app.ResourceID)
+	if err != nil {
+		fieldErrors.Add("resourceID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewSyncEvent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewSyncEvent{
+		JobID:        jobID,
+		EventType:    admissionsbus.SyncEventType(app.EventType),
+		Direction:    admissionsbus.SyncDirection(app.Direction),
+		ResourceType: app.ResourceType,
+		ResourceID:   resourceID,
+		PayloadHash:  app.PayloadHash,
+		AuditMessage: app.AuditMessage,
+	}, nil
+}
+
 func formatTimePtr(t *time.Time) *string {
 	if t == nil {
 		return nil
@@ -1389,6 +1577,19 @@ func uuidStringPtr(id *uuid.UUID) *string {
 
 	formatted := id.String()
 	return &formatted
+}
+
+func parseTimePtr(value *string) (*time.Time, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	parsed, err := time.Parse(time.RFC3339, *value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &parsed, nil
 }
 
 func parseUUIDPtr(value *string) (*uuid.UUID, error) {
