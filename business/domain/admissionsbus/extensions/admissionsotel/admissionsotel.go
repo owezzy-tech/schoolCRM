@@ -504,6 +504,78 @@ func (ext *Extension) QueryApplicationFormTemplateByID(ctx context.Context, temp
 	return ext.bus.QueryApplicationFormTemplateByID(ctx, templateID)
 }
 
+// CreateCustomFieldDefinition applies otel to custom field definition creation.
+func (ext *Extension) CreateCustomFieldDefinition(ctx context.Context, nd admissionsbus.NewCustomFieldDefinition) (admissionsbus.CustomFieldDefinition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createcustomfielddefinition")
+	defer span.End()
+
+	return ext.bus.CreateCustomFieldDefinition(ctx, nd)
+}
+
+// UpdateCustomFieldDefinition applies otel to custom field definition updates.
+func (ext *Extension) UpdateCustomFieldDefinition(ctx context.Context, definition admissionsbus.CustomFieldDefinition, nd admissionsbus.NewCustomFieldDefinition) (admissionsbus.CustomFieldDefinition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updatecustomfielddefinition")
+	defer span.End()
+
+	return ext.bus.UpdateCustomFieldDefinition(ctx, definition, nd)
+}
+
+// QueryCustomFieldDefinitions applies otel to custom field definition queries.
+func (ext *Extension) QueryCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldDefinition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycustomfielddefinitions")
+	defer span.End()
+
+	return ext.bus.QueryCustomFieldDefinitions(ctx, filter, orderBy, page)
+}
+
+// CountCustomFieldDefinitions applies otel to custom field definition counts.
+func (ext *Extension) CountCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countcustomfielddefinitions")
+	defer span.End()
+
+	return ext.bus.CountCustomFieldDefinitions(ctx, filter)
+}
+
+// QueryCustomFieldDefinitionByID applies otel to custom field definition ID lookups.
+func (ext *Extension) QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (admissionsbus.CustomFieldDefinition, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycustomfielddefinitionbyid")
+	defer span.End()
+
+	return ext.bus.QueryCustomFieldDefinitionByID(ctx, definitionID)
+}
+
+// SetCustomFieldValue applies otel to custom field value upserts.
+func (ext *Extension) SetCustomFieldValue(ctx context.Context, nv admissionsbus.NewCustomFieldValue) (admissionsbus.CustomFieldValue, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.setcustomfieldvalue")
+	defer span.End()
+
+	return ext.bus.SetCustomFieldValue(ctx, nv)
+}
+
+// QueryCustomFieldValues applies otel to custom field value queries.
+func (ext *Extension) QueryCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldValue, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycustomfieldvalues")
+	defer span.End()
+
+	return ext.bus.QueryCustomFieldValues(ctx, filter, orderBy, page)
+}
+
+// CountCustomFieldValues applies otel to custom field value counts.
+func (ext *Extension) CountCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countcustomfieldvalues")
+	defer span.End()
+
+	return ext.bus.CountCustomFieldValues(ctx, filter)
+}
+
+// QueryCustomFieldValueByID applies otel to custom field value ID lookups.
+func (ext *Extension) QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (admissionsbus.CustomFieldValue, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycustomfieldvaluebyid")
+	defer span.End()
+
+	return ext.bus.QueryCustomFieldValueByID(ctx, valueID)
+}
+
 // TransitionApplicationStatus applies otel to Application status transitions.
 func (ext *Extension) TransitionApplicationStatus(ctx context.Context, app admissionsbus.Application, nt admissionsbus.NewApplicationTransition) (admissionsbus.Application, admissionsbus.ApplicationTransition, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.transitionapplicationstatus")
@@ -606,6 +678,78 @@ func (ext *Extension) QueryDocumentByID(ctx context.Context, documentID uuid.UUI
 	defer span.End()
 
 	return ext.bus.QueryDocumentByID(ctx, documentID)
+}
+
+// CreateImportBatch applies otel to admissions import batch creation.
+func (ext *Extension) CreateImportBatch(ctx context.Context, nb admissionsbus.NewImportBatch) (admissionsbus.ImportBatch, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createimportbatch")
+	defer span.End()
+
+	return ext.bus.CreateImportBatch(ctx, nb)
+}
+
+// UpdateImportBatch applies otel to admissions import batch updates.
+func (ext *Extension) UpdateImportBatch(ctx context.Context, batch admissionsbus.ImportBatch, nb admissionsbus.NewImportBatch) (admissionsbus.ImportBatch, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateimportbatch")
+	defer span.End()
+
+	return ext.bus.UpdateImportBatch(ctx, batch, nb)
+}
+
+// QueryImportBatches applies otel to admissions import batch queries.
+func (ext *Extension) QueryImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportBatch, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryimportbatches")
+	defer span.End()
+
+	return ext.bus.QueryImportBatches(ctx, filter, orderBy, page)
+}
+
+// CountImportBatches applies otel to admissions import batch counts.
+func (ext *Extension) CountImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countimportbatches")
+	defer span.End()
+
+	return ext.bus.CountImportBatches(ctx, filter)
+}
+
+// QueryImportBatchByID applies otel to admissions import batch ID lookups.
+func (ext *Extension) QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (admissionsbus.ImportBatch, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryimportbatchbyid")
+	defer span.End()
+
+	return ext.bus.QueryImportBatchByID(ctx, batchID)
+}
+
+// CreateImportInvalidRows applies otel to admissions import invalid row creation.
+func (ext *Extension) CreateImportInvalidRows(ctx context.Context, rows []admissionsbus.NewImportInvalidRow) ([]admissionsbus.ImportInvalidRow, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createimportinvalidrows")
+	defer span.End()
+
+	return ext.bus.CreateImportInvalidRows(ctx, rows)
+}
+
+// QueryImportInvalidRows applies otel to admissions import invalid row queries.
+func (ext *Extension) QueryImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportInvalidRow, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryimportinvalidrows")
+	defer span.End()
+
+	return ext.bus.QueryImportInvalidRows(ctx, filter, orderBy, page)
+}
+
+// CountImportInvalidRows applies otel to admissions import invalid row counts.
+func (ext *Extension) CountImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countimportinvalidrows")
+	defer span.End()
+
+	return ext.bus.CountImportInvalidRows(ctx, filter)
+}
+
+// QueryImportInvalidRowByID applies otel to admissions import invalid row ID lookups.
+func (ext *Extension) QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (admissionsbus.ImportInvalidRow, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryimportinvalidrowbyid")
+	defer span.End()
+
+	return ext.bus.QueryImportInvalidRowByID(ctx, rowID)
 }
 
 // CreateSyncJob applies otel to SIS sync job creation.
