@@ -80,6 +80,125 @@
                                         </div>
                                     }
                                 </div>
+
+                                <div
+                                    class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2"
+                                >
+                                    <section
+                                        class="rounded-2xl border bg-gray-50 p-5 dark:bg-gray-900"
+                                    >
+                                        <h3 class="font-semibold">
+                                            KUCCPS placement
+                                        </h3>
+                                        <dl class="mt-4 space-y-3 text-sm">
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Placement ID
+                                                </dt>
+                                                <dd
+                                                    class="font-mono font-semibold"
+                                                >
+                                                    {{
+                                                        kuccpsPlacement.placementID
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Programme catalog record
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        kuccpsPlacement.programmeName
+                                                    }}
+                                                    ·
+                                                    {{
+                                                        kuccpsPlacement.programmeCode
+                                                    }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Cluster estimate
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{
+                                                        kuccpsPlacement.clusterCode
+                                                    }}
+                                                    ·
+                                                    {{
+                                                        kuccpsPlacement.clusterPoints
+                                                    }}
+                                                    points
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        <p class="text-secondary mt-4 text-xs">
+                                            {{
+                                                kuccpsPlacement.weightedPointsNote
+                                            }}
+                                        </p>
+                                    </section>
+
+                                    <section
+                                        class="rounded-2xl border bg-gray-50 p-5 dark:bg-gray-900"
+                                    >
+                                        <h3 class="font-semibold">
+                                            KCSE result snapshot
+                                        </h3>
+                                        <dl
+                                            class="mt-4 grid grid-cols-2 gap-4 text-sm"
+                                        >
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Index number
+                                                </dt>
+                                                <dd
+                                                    class="font-mono font-semibold"
+                                                >
+                                                    {{ kcseResult.indexNumber }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Exam year
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{ kcseResult.examYear }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Mean grade
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{ kcseResult.meanGrade }}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-secondary">
+                                                    Aggregate points
+                                                </dt>
+                                                <dd class="font-semibold">
+                                                    {{ kcseResult.meanPoints }}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        <div class="mt-4 flex flex-wrap gap-2">
+                                            @for (
+                                                subject of kcseResult.subjects;
+                                                track subject.subjectCode
+                                            ) {
+                                                <span
+                                                    class="rounded-full bg-white px-3 py-1 text-xs font-semibold dark:bg-gray-800"
+                                                >
+                                                    {{ subject.subjectCode }} ·
+                                                    {{ subject.grade }}
+                                                </span>
+                                            }
+                                        </div>
+                                    </section>
+                                </div>
                             </div>
                         } @placeholder {
                             <div class="p-6">

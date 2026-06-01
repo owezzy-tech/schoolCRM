@@ -6,6 +6,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
     ApplicationFee,
     ApplicationFeeStatus,
+    ApplicationKCSEResult,
+    KUCCPSPlacement,
 } from 'app/core/admissions/admissions.types';
 import { ApplicationDocumentsComponent } from '../components/documents/application-documents.component';
 
@@ -44,16 +46,41 @@ export class ApplicationDetailComponent {
     private readonly route = inject(ActivatedRoute);
     readonly applicationId = this.route.snapshot.paramMap.get('id');
 
-    readonly applicantName = 'Sofia Martinez';
+    readonly applicantName = 'Achieng Otieno';
     readonly status = 'In review';
+    readonly applicationType = 'KUCCPS PLACEMENT';
+    readonly kuccpsPlacement: KUCCPSPlacement = {
+        placementID: 'KUCCPS-2026-003024',
+        admissionNumber: 'SCM/2026/003024',
+        institutionCode: 'SCM001',
+        programmeCode: 'BSC-CS',
+        programmeName: 'B.Sc. Computer Science',
+        placementYear: 2026,
+        clusterCode: 'CS01',
+        clusterPoints: 42.318,
+        weightedPointsNote:
+            'Public KUCCPS approximation; exact points require private KNEC performance indices.',
+    };
+    readonly kcseResult: ApplicationKCSEResult = {
+        indexNumber: '204003024',
+        examYear: 2025,
+        meanGrade: 'A-',
+        meanPoints: 74,
+        subjects: [
+            { subjectCode: '101', grade: 'A-', points: 11 },
+            { subjectCode: '102', grade: 'B+', points: 10 },
+            { subjectCode: '121', grade: 'A', points: 12 },
+            { subjectCode: '232', grade: 'A-', points: 11 },
+        ],
+    };
     readonly fee: ApplicationFee = {
         id: 'fee-app-3024',
         applicationID: 'APP-3024',
-        amountCents: 15000,
-        currency: 'USD',
+        amountCents: 250000,
+        currency: 'KES',
         status: 'PAID',
-        provider: 'stripe',
-        transactionID: 'pi_3024_fall26',
+        provider: 'manual',
+        transactionID: 'mpesa-qe3024',
         paidAt: 'May 30, 2026 10:12 AM',
         auditTrail: [
             {
@@ -72,23 +99,24 @@ export class ApplicationDetailComponent {
     };
 
     readonly summaryCards = [
-        { label: 'Program', value: 'B.Sc. Computer Science' },
-        { label: 'Term', value: 'Fall 2026' },
+        { label: 'Programme', value: 'B.Sc. Computer Science' },
+        { label: 'Application type', value: this.applicationType },
+        { label: 'Term', value: 'September 2026' },
         { label: 'Submitted', value: '2 hours ago' },
-        { label: 'Application Fee', value: 'Paid · $150.00' },
+        { label: 'Application Fee', value: 'Paid · KES 2,500.00' },
     ];
 
     readonly applicantInfo = [
-        { label: 'Name', value: 'Sofia Martinez' },
-        { label: 'Email', value: 'sofia.m@example.com' },
-        { label: 'Phone', value: '+1 (555) 123-4567' },
-        { label: 'DOB', value: 'May 14, 2008' },
-        { label: 'Address', value: '123 Tech Lane, San Francisco, CA 94105' },
-        { label: 'GPA', value: '3.9' },
-        { label: 'Test Scores', value: 'SAT: 1450' },
+        { label: 'Name', value: 'Achieng Otieno' },
+        { label: 'Email', value: 'achieng.otieno@example.ac.ke' },
+        { label: 'Phone', value: '+254 712 345 678' },
+        { label: 'DOB', value: 'May 14, 2007' },
+        { label: 'National ID', value: '42817391' },
+        { label: 'UPI', value: 'KEMIS7Q4A2' },
+        { label: 'Address', value: 'P.O. Box 1024-40100, Kisumu' },
         {
             label: 'Essay excerpt',
-            value: '"My passion for computer science began when I built my first robot..."',
+            value: '"My interest in software engineering began through a county robotics club..."',
         },
     ];
 
@@ -97,13 +125,13 @@ export class ApplicationDetailComponent {
             authorInitials: 'AM',
             authorName: 'Avery',
             timestamp: '1 hour ago',
-            body: 'Strong candidate. Great math scores.',
+            body: 'Strong KCSE profile and KUCCPS placement matches the selected programme catalog record.',
         },
         {
             authorInitials: 'PP',
             authorName: 'Priya',
             timestamp: 'Yesterday',
-            body: 'Missing one recommendation letter, but otherwise complete.',
+            body: 'KCSE result slip verified; waiting for finance receipt reconciliation.',
         },
         {
             authorInitials: 'SM',
@@ -149,13 +177,14 @@ export class ApplicationDetailComponent {
     readonly insights: Insight[] = [
         {
             title: 'Recommended decision',
-            description: 'Strong admit based on GPA and test scores.',
+            description:
+                'Strong admit based on KCSE mean grade and cluster estimate.',
         },
         { title: 'Risk flags', description: 'None identified.' },
         {
             title: 'Similar profiles',
             description:
-                'Matches 85% of successful admits in the past 3 years.',
+                'Matches prior KUCCPS placement admits for B.Sc. Computer Science.',
         },
     ];
 
@@ -181,7 +210,7 @@ export class ApplicationDetailComponent {
     }
 
     formatAmount(fee: ApplicationFee): string {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-KE', {
             style: 'currency',
             currency: fee.currency,
         }).format(fee.amountCents / 100);
