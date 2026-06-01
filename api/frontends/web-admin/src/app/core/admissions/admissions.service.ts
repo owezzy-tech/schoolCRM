@@ -11,6 +11,11 @@ import {
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
+    CustomFieldDefinition,
+    CustomFieldDefinitionQuery,
+    CustomFieldDefinitionRequest,
+    CustomFieldValue,
+    CustomFieldValueRequest,
     Inquiry,
     InquiryRequest,
     LeadScore,
@@ -46,12 +51,17 @@ export class AdmissionsService {
     private readonly documentsSubject = new ReplaySubject<
         PaginatedResult<AdmissionsDocument>
     >(1);
+    private readonly customFieldDefinitionsSubject = new ReplaySubject<
+        PaginatedResult<CustomFieldDefinition>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
+    readonly customFieldDefinitions$ =
+        this.customFieldDefinitionsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -137,6 +147,50 @@ export class AdmissionsService {
             .put<
                 JsonApiDocument<ApplicationFormTemplate>
             >(`/v1/admissions/application-form-templates/${templateID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryCustomFieldDefinitions(
+        query: CustomFieldDefinitionQuery = {}
+    ): Observable<PaginatedResult<CustomFieldDefinition>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<CustomFieldDefinition>
+            >('/v1/admissions/custom-field-definitions', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.customFieldDefinitionsSubject.next(result))
+            );
+    }
+
+    createCustomFieldDefinition(
+        request: CustomFieldDefinitionRequest
+    ): Observable<CustomFieldDefinition> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<CustomFieldDefinition>
+            >('/v1/admissions/custom-field-definitions', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateCustomFieldDefinition(
+        definitionID: string,
+        request: CustomFieldDefinitionRequest
+    ): Observable<CustomFieldDefinition> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<CustomFieldDefinition>
+            >(`/v1/admissions/custom-field-definitions/${definitionID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    setCustomFieldValue(
+        request: CustomFieldValueRequest
+    ): Observable<CustomFieldValue> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<CustomFieldValue>
+            >('/v1/admissions/custom-field-values', request)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -226,6 +280,7 @@ export class AdmissionsService {
             | LeadScoreQuery
             | LeadScoreRuleQuery
             | ApplicationFormTemplateQuery
+            | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery
     ): HttpParams {
