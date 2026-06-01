@@ -4,6 +4,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
+import {
+    ApplicationFee,
+    ApplicationFeeStatus,
+} from 'app/core/admissions/admissions.types';
 import { PortalAuthService } from 'app/core/portal/portal-auth.service';
 import { FilePondComponent } from 'app/shared/components/file-upload/file-pond.component';
 import { FilePondFile } from 'filepond';
@@ -77,9 +81,7 @@ interface PortalDocument {
                             Application status
                         </h1>
                         <h2 class="text-secondary mt-1 text-lg">
-                            {{
-                                portalSession()?.applicationID ?? 'APP-3018'
-                            }}
+                            {{ portalSession()?.applicationID ?? 'APP-3018' }}
                             &middot; Data Science MSc &middot; Fall 2026
                         </h2>
                     </div>
@@ -105,6 +107,69 @@ interface PortalDocument {
                     <p class="text-secondary text-sm font-medium">
                         62% complete &middot; 3 of 5 stages done.
                     </p>
+                </div>
+
+                <!-- Fee status card -->
+                <div class="bg-card mt-6 rounded-2xl border p-6 shadow-sm">
+                    <div
+                        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                        <div>
+                            <h3 class="text-default text-lg font-semibold">
+                                Application fee
+                            </h3>
+                            <p class="text-secondary mt-1 text-sm">
+                                Payment processing is not active in this
+                                preview. The portal shows the fee status
+                                returned by the admissions office.
+                            </p>
+                        </div>
+                        <span
+                            class="w-fit rounded-full px-3 py-1 text-sm font-semibold"
+                            [class]="feeStatusClass(applicationFee.status)"
+                        >
+                            {{ formatFeeStatus(applicationFee.status) }}
+                        </span>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div
+                            class="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900"
+                        >
+                            <div
+                                class="text-secondary text-xs font-semibold uppercase tracking-wide"
+                            >
+                                Amount
+                            </div>
+                            <div class="mt-1 text-2xl font-bold">
+                                {{ formatAmount(applicationFee) }}
+                            </div>
+                        </div>
+                        <div
+                            class="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900"
+                        >
+                            <div
+                                class="text-secondary text-xs font-semibold uppercase tracking-wide"
+                            >
+                                Due date
+                            </div>
+                            <div class="mt-1 text-2xl font-bold">
+                                {{ applicationFee.dueAt || '—' }}
+                            </div>
+                        </div>
+                        <div
+                            class="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900"
+                        >
+                            <div
+                                class="text-secondary text-xs font-semibold uppercase tracking-wide"
+                            >
+                                Provider seam
+                            </div>
+                            <div class="mt-1 text-2xl font-bold capitalize">
+                                {{ applicationFee.provider }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 2-column grid -->
@@ -337,6 +402,23 @@ export class PortalStatusComponent {
     private readonly portalAuthService = inject(PortalAuthService);
 
     readonly portalSession = this.portalAuthService.session;
+    readonly applicationFee: ApplicationFee = {
+        id: 'fee-app-3018',
+        applicationID: 'APP-3018',
+        amountCents: 15000,
+        currency: 'USD',
+        status: 'PENDING',
+        provider: 'stripe',
+        dueAt: 'Jun 1, 2026',
+        auditTrail: [
+            {
+                actor: 'System',
+                action: 'Fee created',
+                reason: 'Application submitted with standard graduate fee.',
+                timestamp: 'May 12, 2026',
+            },
+        ],
+    };
 
     readonly acceptedDocumentTypes = ['application/pdf', 'image/*'];
     readonly serverConfig = {
@@ -408,6 +490,38 @@ export class PortalStatusComponent {
         return this.documents.filter(
             (document) => document.status !== 'missing'
         ).length;
+    }
+
+    feeStatusClass(status: ApplicationFeeStatus): string {
+        switch (status) {
+            case 'PAID':
+                return 'bg-green-100 text-green-700';
+            case 'PENDING':
+                return 'bg-amber-100 text-amber-700';
+            case 'FAILED':
+                return 'bg-red-100 text-red-700';
+            case 'WAIVED':
+                return 'bg-purple-100 text-purple-700';
+            case 'REFUNDED':
+                return 'bg-blue-100 text-blue-700';
+            case 'NOT_REQUIRED':
+                return 'bg-slate-100 text-secondary';
+        }
+    }
+
+    formatFeeStatus(status: ApplicationFeeStatus): string {
+        return status.replaceAll('_', ' ');
+    }
+
+    formatAmount(fee: ApplicationFee): string {
+        if (fee.status === 'NOT_REQUIRED') {
+            return 'No fee';
+        }
+
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: fee.currency,
+        }).format(fee.amountCents / 100);
     }
 
     canUploadDocument(document: PortalDocument): boolean {
