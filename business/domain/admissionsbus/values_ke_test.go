@@ -2,6 +2,7 @@ package admissionsbus
 
 import (
 	"errors"
+	"math"
 	"testing"
 )
 
@@ -215,6 +216,224 @@ func TestKenyaValueObjectsMarshalText(t *testing.T) {
 
 			if len(tt.text) == 0 {
 				t.Fatal("text is empty")
+			}
+		})
+	}
+}
+
+func TestParseKCSESubjectGrade(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		subjectCode string
+		grade       string
+		wantCode    string
+		wantGrade   string
+		wantPoints  int
+		err         error
+	}{
+		{name: "valid subject grade", subjectCode: "101", grade: "A", wantCode: "101", wantGrade: "A", wantPoints: 12},
+		{name: "normalizes subject and grade", subjectCode: " bio101 ", grade: " b+ ", wantCode: "BIO101", wantGrade: "B+", wantPoints: 10},
+		{name: "invalid subject", subjectCode: "BIO-101", grade: "A", err: ErrKCSESubjectCodeInvalid},
+		{name: "invalid grade", subjectCode: "101", grade: "X", err: ErrKCSEGradeInvalid},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ParseKCSESubjectGrade(tt.subjectCode, tt.grade)
+			if tt.err != nil {
+				if !errors.Is(err, tt.err) {
+					t.Fatalf("err = %v, want %v", err, tt.err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.SubjectCode != tt.wantCode || got.Grade != tt.wantGrade || got.Points != tt.wantPoints {
+				t.Fatalf("got = %#v, want code=%q grade=%q points=%d", got, tt.wantCode, tt.wantGrade, tt.wantPoints)
+			}
+		})
+	}
+}
+
+func TestParseKCSEResultCalculatesMeanGrade(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		subjects   []KCSESubjectGrade
+		wantGrade  string
+		wantPoints int
+	}{
+		{
+			name: "best seven grade A boundary",
+			subjects: []KCSESubjectGrade{
+				MustParseKCSESubjectGrade("101", "A"),
+				MustParseKCSESubjectGrade("102", "A"),
+				MustParseKCSESubjectGrade("103", "A"),
+				MustParseKCSESubjectGrade("104", "A"),
+				MustParseKCSESubjectGrade("105", "A"),
+				MustParseKCSESubjectGrade("106", "A"),
+				MustParseKCSESubjectGrade("107", "A"),
+				MustParseKCSESubjectGrade("108", "E"),
+			},
+			wantGrade:  "A",
+			wantPoints: 84,
+		},
+		{
+			name: "worked medicine example aggregate",
+			subjects: []KCSESubjectGrade{
+				MustParseKCSESubjectGrade("MAT", "B+"),
+				MustParseKCSESubjectGrade("BIO", "A"),
+				MustParseKCSESubjectGrade("CHE", "A-"),
+				MustParseKCSESubjectGrade("ENG", "B"),
+				MustParseKCSESubjectGrade("KIS", "B"),
+				MustParseKCSESubjectGrade("GEO", "B-"),
+				MustParseKCSESubjectGrade("HIS", "C+"),
+			},
+			wantGrade:  "B+",
+			wantPoints: 66,
+		},
+		{
+			name: "retake keeps best seven subjects",
+			subjects: []KCSESubjectGrade{
+				MustParseKCSESubjectGrade("101", "A"),
+				MustParseKCSESubjectGrade("102", "A-"),
+				MustParseKCSESubjectGrade("103", "B+"),
+				MustParseKCSESubjectGrade("104", "B"),
+				MustParseKCSESubjectGrade("105", "B-"),
+				MustParseKCSESubjectGrade("106", "C+"),
+				MustParseKCSESubjectGrade("107", "C"),
+				MustParseKCSESubjectGrade("108", "E"),
+				MustParseKCSESubjectGrade("109", "D"),
+			},
+			wantGrade:  "B",
+			wantPoints: 63,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ParseKCSEResult(MustParseKenyaKCSEIndexNumber("12345"), 2024, tt.subjects)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.MeanGrade != tt.wantGrade || got.MeanPoints != tt.wantPoints {
+				t.Fatalf("got grade=%q points=%d, want grade=%q points=%d", got.MeanGrade, got.MeanPoints, tt.wantGrade, tt.wantPoints)
+			}
+		})
+	}
+}
+
+func TestParseKCSEResultValidation(t *testing.T) {
+	t.Parallel()
+
+	validSubjects := []KCSESubjectGrade{
+		MustParseKCSESubjectGrade("101", "A"),
+		MustParseKCSESubjectGrade("102", "B+"),
+	}
+
+	tests := []struct {
+		name     string
+		year     int
+		subjects []KCSESubjectGrade
+		want     error
+	}{
+		{name: "invalid year", year: 1988, subjects: validSubjects, want: ErrKCSEExamYearInvalid},
+		{name: "subjects required", year: 2024, want: ErrKCSESubjectsRequired},
+		{name: "ungraded subject", year: 2024, subjects: []KCSESubjectGrade{{SubjectCode: "101", Grade: "A"}}, want: ErrKCSEUngradedSubject},
+		{name: "invalid grade points", year: 2024, subjects: []KCSESubjectGrade{{SubjectCode: "101", Grade: "A", Points: 11}}, want: ErrKCSEGradeInvalid},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := ParseKCSEResult(MustParseKenyaKCSEIndexNumber("12345"), tt.year, tt.subjects)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestKCSEResultClusterWeight(t *testing.T) {
+	t.Parallel()
+
+	result, err := ParseKCSEResult(MustParseKenyaKCSEIndexNumber("12345"), 2024, []KCSESubjectGrade{
+		MustParseKCSESubjectGrade("MAT", "B+"),
+		MustParseKCSESubjectGrade("BIO", "A"),
+		MustParseKCSESubjectGrade("CHE", "A-"),
+		MustParseKCSESubjectGrade("ENG", "B"),
+		MustParseKCSESubjectGrade("KIS", "B"),
+		MustParseKCSESubjectGrade("GEO", "B-"),
+		MustParseKCSESubjectGrade("HIS", "C+"),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cluster := KUCCPSClusterDefinition{
+		Code:         "13",
+		Name:         "Medicine and Health Sciences",
+		SubjectCodes: []string{"MAT", "BIO", "CHE", "ENG"},
+	}
+
+	got, err := result.ClusterWeight(cluster)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got.RawClusterPoints != 42 {
+		t.Fatalf("raw cluster points = %d, want 42", got.RawClusterPoints)
+	}
+	if got.AggregatePoints != 66 {
+		t.Fatalf("aggregate points = %d, want 66", got.AggregatePoints)
+	}
+	if math.Abs(got.WeightedPoints-39.799) > 0.001 {
+		t.Fatalf("weighted points = %.3f, want 39.799", got.WeightedPoints)
+	}
+	if got.ApproximationNote == "" {
+		t.Fatal("approximation note is empty")
+	}
+}
+
+func TestKCSEResultClusterWeightValidation(t *testing.T) {
+	t.Parallel()
+
+	result, err := ParseKCSEResult(MustParseKenyaKCSEIndexNumber("12345"), 2024, []KCSESubjectGrade{
+		MustParseKCSESubjectGrade("MAT", "B+"),
+		MustParseKCSESubjectGrade("BIO", "A"),
+		MustParseKCSESubjectGrade("CHE", "A-"),
+		MustParseKCSESubjectGrade("ENG", "B"),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		cluster KUCCPSClusterDefinition
+		want    error
+	}{
+		{name: "invalid cluster size", cluster: KUCCPSClusterDefinition{SubjectCodes: []string{"MAT"}}, want: ErrKCSEClusterInvalid},
+		{name: "invalid subject code", cluster: KUCCPSClusterDefinition{SubjectCodes: []string{"MAT", "BIO", "CHE", "ENG-1"}}, want: ErrKCSESubjectCodeInvalid},
+		{name: "missing subject", cluster: KUCCPSClusterDefinition{SubjectCodes: []string{"MAT", "BIO", "CHE", "PHY"}}, want: ErrKCSEMissingSubject},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := result.ClusterWeight(tt.cluster)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
 			}
 		})
 	}
