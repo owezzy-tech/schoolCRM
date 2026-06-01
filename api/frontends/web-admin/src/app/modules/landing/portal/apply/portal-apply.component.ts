@@ -48,6 +48,7 @@ import {
                     <mat-progress-bar
                         mode="determinate"
                         [value]="16"
+                        aria-label="Application progress: step 1 of 6, account information"
                     ></mat-progress-bar>
                 </div>
 
@@ -64,6 +65,7 @@ import {
                                     <input
                                         matInput
                                         formControlName="firstName"
+                                        autocomplete="given-name"
                                     />
                                 </mat-form-field>
 
@@ -75,6 +77,7 @@ import {
                                     <input
                                         matInput
                                         formControlName="lastName"
+                                        autocomplete="family-name"
                                     />
                                 </mat-form-field>
 
@@ -87,6 +90,7 @@ import {
                                         matInput
                                         type="email"
                                         formControlName="email"
+                                        autocomplete="email"
                                     />
                                 </mat-form-field>
 
@@ -99,6 +103,7 @@ import {
                                         matInput
                                         type="tel"
                                         formControlName="phone"
+                                        autocomplete="tel"
                                     />
                                 </mat-form-field>
 
@@ -111,6 +116,8 @@ import {
                                         matInput
                                         type="password"
                                         formControlName="password"
+                                        autocomplete="new-password"
+                                        aria-describedby="portal-password-help"
                                     />
                                 </mat-form-field>
 
@@ -123,15 +130,26 @@ import {
                                         matInput
                                         type="password"
                                         formControlName="confirmPassword"
+                                        autocomplete="new-password"
                                     />
                                 </mat-form-field>
                             </div>
+
+                            <p
+                                id="portal-password-help"
+                                class="text-secondary mt-2 text-sm"
+                            >
+                                Use a memorable password for the applicant
+                                account; stronger password rules will be
+                                enforced when account APIs are integrated.
+                            </p>
 
                             <div class="mt-8 flex items-center justify-between">
                                 <button mat-stroked-button type="button">
                                     <mat-icon
                                         svgIcon="heroicons_outline:arrow-left"
                                         class="icon-size-5"
+                                        aria-hidden="true"
                                     ></mat-icon>
                                     <span class="ml-2">Back</span>
                                 </button>
@@ -144,6 +162,7 @@ import {
                                     <mat-icon
                                         svgIcon="heroicons_outline:arrow-right"
                                         class="icon-size-5"
+                                        aria-hidden="true"
                                     ></mat-icon>
                                 </button>
                             </div>
@@ -204,6 +223,10 @@ import {
                                 <span
                                     class="rounded-full px-2.5 py-1 text-xs font-semibold"
                                     [class]="feeStatusClass(reviewFee.status)"
+                                    [attr.aria-label]="
+                                        'Application fee status: ' +
+                                        formatFeeStatus(reviewFee.status)
+                                    "
                                 >
                                     {{ formatFeeStatus(reviewFee.status) }}
                                 </span>
