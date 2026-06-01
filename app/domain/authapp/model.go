@@ -55,6 +55,44 @@ type loginResp struct {
 	User        loginUser `json:"user"`
 }
 
+type applicantPortalTokenReq struct {
+	Email string `json:"email"`
+}
+
+// Decode implements the decoder interface.
+func (req *applicantPortalTokenReq) Decode(data []byte) error {
+	return json.Unmarshal(data, req)
+}
+
+func (req applicantPortalTokenReq) Validate() error {
+	if req.Email == "" {
+		return fmt.Errorf("email is required")
+	}
+
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return fmt.Errorf("email is invalid: %w", err)
+	}
+
+	return nil
+}
+
+type applicantPortalTokenResp struct {
+	AccessToken   string    `json:"accessToken"`
+	TokenType     string    `json:"tokenType"`
+	ExpiresAt     time.Time `json:"expiresAt"`
+	ExpiresIn     int       `json:"expiresIn"`
+	ApplicationID string    `json:"applicationID"`
+	ConstituentID string    `json:"constituentID"`
+	ApplicantName string    `json:"applicantName"`
+	Email         string    `json:"email"`
+}
+
+// Encode implements the encoder interface.
+func (resp applicantPortalTokenResp) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(resp)
+	return data, "application/json", err
+}
+
 // Encode implements the encoder interface.
 func (lr loginResp) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(lr)
