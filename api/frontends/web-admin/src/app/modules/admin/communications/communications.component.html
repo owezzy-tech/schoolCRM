@@ -1,70 +1,256 @@
-@if (true) {
-    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
-        <div class="flex-auto p-6 sm:p-10">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 class="text-3xl font-semibold tracking-tight">Communications</h1>
-                </div>
-                <div>
-                    <button mat-flat-button color="primary">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:pencil-square"></mat-icon>
-                        <span class="ml-2">Compose</span>
-                    </button>
-                </div>
+<div class="flex min-w-0 flex-auto flex-col bg-card dark:bg-transparent">
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-medium uppercase tracking-[0.2em] text-secondary">
+                    Engagement
+                </p>
+                <h1 class="text-3xl font-semibold tracking-tight">
+                    Communications
+                </h1>
+                <p class="mt-2 max-w-3xl text-sm text-secondary">
+                    Track email, SMS, phone-call, and in-app notification history by
+                    constituent, application, campaign, provider status, and owner.
+                </p>
             </div>
+            <button mat-flat-button color="primary">
+                <mat-icon
+                    class="icon-size-5"
+                    svgIcon="heroicons_outline:pencil-square"
+                ></mat-icon>
+                <span class="ml-2">Compose</span>
+            </button>
+        </div>
 
-            <div class="flex flex-wrap gap-2 mb-6">
-                @for (tab of tabs; track tab) {
-                    <button class="px-4 py-2 rounded-full text-sm font-medium transition-colors"
-                            [class.bg-gray-900]="activeTab() === tab"
-                            [class.text-white]="activeTab() === tab"
-                            [class.dark:bg-gray-100]="activeTab() === tab"
-                            [class.dark:text-gray-900]="activeTab() === tab"
-                            [class.bg-gray-100]="activeTab() !== tab"
-                            [class.text-secondary]="activeTab() !== tab"
-                            [class.dark:bg-gray-800]="activeTab() !== tab"
-                            (click)="activeTab.set(tab)">
-                        {{ tab }}
+        <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @for (summary of summaries(); track summary.label) {
+                <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-gray-900">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm text-secondary">{{ summary.label }}</p>
+                            <p class="mt-2 text-3xl font-semibold">{{ summary.value }}</p>
+                        </div>
+                        <div
+                            class="rounded-xl p-3"
+                            [class.bg-blue-50]="summary.tone === 'blue'"
+                            [class.text-blue-600]="summary.tone === 'blue'"
+                            [class.bg-green-50]="summary.tone === 'green'"
+                            [class.text-green-600]="summary.tone === 'green'"
+                            [class.bg-amber-50]="summary.tone === 'amber'"
+                            [class.text-amber-600]="summary.tone === 'amber'"
+                            [class.bg-red-50]="summary.tone === 'red'"
+                            [class.text-red-600]="summary.tone === 'red'"
+                        >
+                            <mat-icon class="icon-size-6" [svgIcon]="summary.icon"></mat-icon>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mb-6 rounded-2xl border bg-white p-4 shadow-sm dark:bg-gray-900">
+            <div class="flex flex-wrap gap-2">
+                @for (tab of tabs; track tab.channel) {
+                    <button
+                        class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                        [class.bg-gray-900]="activeChannel() === tab.channel"
+                        [class.text-white]="activeChannel() === tab.channel"
+                        [class.dark:bg-gray-100]="activeChannel() === tab.channel"
+                        [class.dark:text-gray-900]="activeChannel() === tab.channel"
+                        [class.bg-gray-100]="activeChannel() !== tab.channel"
+                        [class.text-secondary]="activeChannel() !== tab.channel"
+                        [class.dark:bg-gray-800]="activeChannel() !== tab.channel"
+                        (click)="setChannel(tab.channel)"
+                    >
+                        {{ tab.label }}
                     </button>
                 }
             </div>
 
-            <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
-                <div class="flex flex-col">
-                    @for (message of messages; track message.id) {
-                        <div class="flex items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer">
-                            <div class="flex-none relative">
-                                <div class="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900 text-primary flex items-center justify-center font-medium">
-                                    {{ message.initials }}
+            <div class="mt-4 grid gap-3 md:grid-cols-5">
+                <div class="rounded-xl border border-dashed p-3 md:col-span-2">
+                    <p class="text-xs font-medium uppercase text-secondary">Date range</p>
+                    <p class="mt-1 text-sm font-medium">Last 30 days</p>
+                </div>
+                <label class="rounded-xl border border-dashed p-3">
+                    <span class="text-xs font-medium uppercase text-secondary">Direction</span>
+                    <select
+                        class="mt-1 w-full bg-transparent text-sm font-medium outline-none"
+                        [value]="directionFilter()"
+                        (change)="setDirectionFilter($event)"
+                    >
+                        @for (direction of directionOptions; track direction) {
+                            <option [value]="direction">{{ direction === 'ALL' ? 'All' : direction }}</option>
+                        }
+                    </select>
+                </label>
+                <label class="rounded-xl border border-dashed p-3">
+                    <span class="text-xs font-medium uppercase text-secondary">Status</span>
+                    <select
+                        class="mt-1 w-full bg-transparent text-sm font-medium outline-none"
+                        [value]="statusFilter()"
+                        (change)="setStatusFilter($event)"
+                    >
+                        @for (status of statusOptions; track status) {
+                            <option [value]="status">{{ status === 'ALL' ? 'All' : statusLabel(status) }}</option>
+                        }
+                    </select>
+                </label>
+                <div class="rounded-xl border border-dashed p-3">
+                    <p class="text-xs font-medium uppercase text-secondary">Campaign</p>
+                    <p class="mt-1 text-sm font-medium">All campaigns</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-[1fr_24rem]">
+            <div class="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-gray-900">
+                <div class="grid grid-cols-12 border-b bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary dark:bg-gray-800">
+                    <div class="col-span-4">Recipient/Sender</div>
+                    <div class="col-span-2">Channel</div>
+                    <div class="col-span-3">Subject/Preview</div>
+                    <div class="col-span-1">Status</div>
+                    <div class="col-span-2 text-right">Date</div>
+                </div>
+
+                @for (record of filteredRecords(); track record.id) {
+                    <div class="grid grid-cols-12 gap-3 border-b px-4 py-4 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div class="col-span-12 flex items-start gap-3 md:col-span-4">
+                            <div class="relative flex-none">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 font-semibold text-primary dark:bg-primary-900">
+                                    {{ record.recipientInitials }}
                                 </div>
-                                <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                                    <mat-icon class="icon-size-3 text-secondary" [svgIcon]="message.channelIcon"></mat-icon>
+                                <div class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-card dark:border-gray-700">
+                                    <mat-icon
+                                        class="icon-size-3 text-secondary"
+                                        [svgIcon]="channelIcon(record.channel)"
+                                    ></mat-icon>
                                 </div>
                             </div>
-                            <div class="flex-auto min-w-0">
-                                <div class="flex justify-between items-start mb-0.5">
-                                    <div class="font-medium truncate">{{ message.recipient }}</div>
-                                    <div class="text-xs text-secondary whitespace-nowrap ml-2">{{ message.timestamp }}</div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <div class="text-sm text-secondary truncate mr-4">{{ message.subject }}</div>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 flex-shrink-0"
-                                          [class.text-green-600]="message.status === 'Read'"
-                                          [class.bg-green-50]="message.status === 'Read'"
-                                          [class.dark:text-green-400]="message.status === 'Read'"
-                                          [class.dark:bg-green-900/30]="message.status === 'Read'"
-                                          [class.text-red-600]="message.status === 'Failed'"
-                                          [class.bg-red-50]="message.status === 'Failed'"
-                                          [class.dark:text-red-400]="message.status === 'Failed'"
-                                          [class.dark:bg-red-900/30]="message.status === 'Failed'">
-                                        {{ message.status }}
-                                    </span>
+                            <div class="min-w-0">
+                                <p class="font-medium">{{ record.recipientSender }}</p>
+                                <div class="mt-1 flex flex-wrap gap-2 text-xs text-secondary">
+                                    <a class="font-medium text-primary" routerLink="/constituents">
+                                        {{ record.constituentId }}
+                                    </a>
+                                    @if (record.applicationId) {
+                                        <a
+                                            class="font-medium text-primary"
+                                            [routerLink]="['/applications', record.applicationId]"
+                                        >
+                                            {{ record.applicationId }}
+                                        </a>
+                                    }
                                 </div>
                             </div>
                         </div>
-                    }
+
+                        <div class="col-span-6 md:col-span-2">
+                            <p class="text-sm font-medium">{{ channelLabel(record.channel) }}</p>
+                            <p class="text-xs text-secondary">{{ record.direction }}</p>
+                            @if (record.provider) {
+                                <p class="mt-1 text-xs text-secondary">{{ record.provider }}</p>
+                            }
+                        </div>
+
+                        <div class="col-span-12 md:col-span-3">
+                            <p class="text-sm font-medium">{{ record.subject }}</p>
+                            <p class="mt-1 line-clamp-2 text-sm text-secondary">
+                                {{ record.preview }}
+                            </p>
+                            @if (record.campaignId) {
+                                <p class="mt-1 text-xs font-medium text-primary">{{ record.campaignId }}</p>
+                            }
+                        </div>
+
+                        <div class="col-span-6 md:col-span-1">
+                            <span
+                                class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                                [class.bg-green-50]="['DELIVERED', 'OPENED', 'REPLIED', 'LOGGED'].includes(record.status)"
+                                [class.text-green-700]="['DELIVERED', 'OPENED', 'REPLIED', 'LOGGED'].includes(record.status)"
+                                [class.bg-red-50]="['FAILED', 'BOUNCED'].includes(record.status)"
+                                [class.text-red-700]="['FAILED', 'BOUNCED'].includes(record.status)"
+                                [class.bg-blue-50]="record.status === 'SENT'"
+                                [class.text-blue-700]="record.status === 'SENT'"
+                                [class.bg-amber-50]="record.status === 'QUEUED'"
+                                [class.text-amber-700]="record.status === 'QUEUED'"
+                            >
+                                {{ statusLabel(record.status) }}
+                            </span>
+                        </div>
+
+                        <div class="col-span-12 text-sm text-secondary md:col-span-2 md:text-right">
+                            <p>{{ record.date }}</p>
+                            <p class="mt-1">Owner: {{ record.owner }}</p>
+                        </div>
+                    </div>
+                } @empty {
+                    <div class="px-4 py-10 text-center text-secondary">
+                        No communications match the selected filters.
+                    </div>
+                }
+            </div>
+
+            <div class="flex flex-col gap-6">
+                <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-gray-900">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold">Compose workflow</p>
+                            <p class="text-sm text-secondary">Static preview for provider handoff</p>
+                        </div>
+                        <mat-icon class="text-primary" svgIcon="heroicons_outline:paper-airplane"></mat-icon>
+                    </div>
+                    <div class="mt-4 space-y-3 text-sm">
+                        <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+                            <p class="text-xs uppercase text-secondary">1. Select channel</p>
+                            <p class="font-medium">Email, SMS, notification, or phone call</p>
+                        </div>
+                        <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+                            <p class="text-xs uppercase text-secondary">2. Select recipient</p>
+                            <p class="font-medium">Constituent required; application optional</p>
+                        </div>
+                        <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+                            <p class="text-xs uppercase text-secondary">3. Template and schedule</p>
+                            <p class="font-medium">Provider delivery status updates this log</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-gray-900">
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-xl bg-primary-50 p-3 text-primary dark:bg-primary-900">
+                            <mat-icon svgIcon="heroicons_outline:phone"></mat-icon>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold">Phone call logging</p>
+                            <p class="text-sm text-secondary">Manual staff entry form</p>
+                        </div>
+                    </div>
+
+                    <dl class="mt-5 space-y-3 text-sm">
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-secondary">Constituent</dt>
+                            <dd class="font-medium">{{ phoneLogDraft.constituent }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-secondary">Application</dt>
+                            <dd class="font-medium">{{ phoneLogDraft.application }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-secondary">Duration</dt>
+                            <dd class="font-medium">{{ phoneLogDraft.duration }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-secondary">Outcome</dt>
+                            <dd class="font-medium">{{ phoneLogDraft.outcome }}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-4 rounded-xl bg-gray-50 p-3 text-sm text-secondary dark:bg-gray-800">
+                        {{ phoneLogDraft.notes }}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-}
+</div>

@@ -32,7 +32,7 @@ Admissions CRM v1 is admissions/enrollment-first. It includes:
 - Event registration, capacity, check-in, and automated confirmations/reminders.
 - Configurable lead assignment rules and manual override.
 - Rule-based lead scoring.
-- Operational dashboards, role-based CSV/PDF exports, and campaign/event analytics.
+- Operational dashboards, role-based CSV/PDF exports, and campaign/event analytics, with Google Analytics 4 (GA4) planned as the external web/campaign analytics source.
 - Staff policy RAG, applicant checklist/status assistant, and reviewer assistant released in phases with strict access boundaries.
 - Cloud-hosted dev/test/prod environments.
 
@@ -44,7 +44,7 @@ Admissions CRM v1 is admissions/enrollment-first. It includes:
 - Full configurable workflow engine.
 - Full drag-and-drop form builder.
 - Full custom report builder.
-- Full campaign journey builder, A/B testing, print campaigns, and advanced attribution.
+- Full campaign journey builder, A/B testing, print campaigns, and advanced multi-touch attribution beyond the GA4 integration boundary defined below.
 - Event payments, discount rules, staff scheduling, expense tracking, waitlists, and event task checklists.
 - Full two-way SIS sync for all fields.
 - Full multi-tenant SaaS platform.
@@ -177,6 +177,17 @@ V1 segmentation can use:
 - Assigned recruiter.
 - Geography/territory.
 
+Campaign metrics have two sources of truth:
+
+- CRM owns campaign configuration, audience snapshots, send audit, and email/SMS provider metrics such as sent, delivered, opened, clicked, bounced, and replied.
+- GA4 owns anonymous/web analytics signals such as source/medium/campaign attribution, landing page activity, inquiry form engagement, event registration funnel activity, and downstream conversion events when consent allows.
+
+V1 must not send applicant PII (name, email, phone, date of birth, application IDs containing PII, or free-text admissions notes) to GA4. If user identity is needed for reporting joins, GA4 uses an opaque CRM user or constituent identifier only. CRM remains the authoritative admissions record; GA4 is a supplemental analytics source for campaign and report views.
+
+GA4 event naming uses `snake_case` and a small event taxonomy with parameters rather than many one-off event names. Initial events include `generate_lead`, `form_submit`, `campaign_click`, `event_registration_started`, `event_registration_completed`, `application_started`, `application_submitted`, and `enrollment_intent_confirmed`. UTM parameters are normalized at intake (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`) and lowercased where appropriate to avoid fragmented reports.
+
+Browser collection uses the Google tag through one approved client tagging path: Google Tag Manager for low-code tag governance, or `gtag.js` when direct application-managed tagging is simpler. The selected path must initialize consent defaults before analytics events, centralize event pushes through a typed application analytics facade, and keep destination IDs/configuration environment-specific. If Google Tag Manager is selected, the facade owns the `dataLayer` event contract so GTM configuration can change without leaking tag-specific logic into Angular components. Server-side/offline events such as email clicks from provider webhooks, application submission, admission decision, and enrollment intent may be sent to GA4 through Measurement Protocol or a server-side Google Tag Manager container after consent and PII checks. Embedded CRM reports use the GA4 Data API for aggregate dashboard widgets and BigQuery export for CRM-to-GA joins, long-range history, and advanced analysis.
+
 ### Events
 
 V1 events support online registration, capacity, attendance check-in, and automated confirmations/reminders.
@@ -280,6 +291,7 @@ flowchart TD
 ## V1 Success Metrics
 
 - Inquiry-to-application conversion can be tracked by source, campaign, program, and term.
+- GA4-backed reports can attribute inquiry and application funnel activity by normalized UTM source, medium, campaign, content, and term without exposing applicant PII to GA4.
 - Applications can be submitted, reviewed, decided, and audited end-to-end.
 - Duplicate candidates are surfaced before creating conflicting constituent records.
 - Staff can see application status and document bottlenecks.

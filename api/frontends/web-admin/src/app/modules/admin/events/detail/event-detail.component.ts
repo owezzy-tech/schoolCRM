@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    OnInit,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,7 +14,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MOCK_EVENTS } from '../data/events.mock';
-import { EventItem } from '../models/event.types';
+import { EventItem, EventRegistration } from '../models/event.types';
 
 @Component({
     selector: 'app-event-detail',
@@ -27,12 +34,23 @@ import { EventItem } from '../models/event.types';
 })
 export class EventDetailComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
-    
-    readonly event = signal<EventItem | null>(null);
 
-    ngOnInit() {
+    readonly event = signal<EventItem | null>(null);
+    readonly registrations = computed(() => this.event()?.registrations ?? []);
+    readonly remainingCapacity = computed(() => {
+        const event = this.event();
+
+        if (!event) {
+            return 0;
+        }
+
+        return Math.max(event.capacity - event.registeredCount, 0);
+    });
+    readonly capacityEnforced = computed(() => this.remainingCapacity() === 0);
+
+    ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id');
-        const found = MOCK_EVENTS.find(e => e.id === id);
+        const found = MOCK_EVENTS.find((e) => e.id === id);
         if (found) {
             this.event.set(found);
         } else {
@@ -40,7 +58,35 @@ export class EventDetailComponent implements OnInit {
             this.event.set(MOCK_EVENTS[0]);
         }
     }
-    
+
+    getMatchStatusClasses(status: EventRegistration['matchStatus']): string {
+        switch (status) {
+            case 'matched':
+                return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200';
+            case 'new-prospect':
+                return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200';
+            case 'needs-review':
+                return 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200';
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    }
+
+    getRegistrationStatusClasses(
+        status: EventRegistration['status']
+    ): string {
+        switch (status) {
+            case 'checked-in':
+                return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200';
+            case 'registered':
+                return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200';
+            case 'cancelled':
+                return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200';
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    }
+
     getTypeColor(type: string): string {
         switch (type) {
             case 'open-day': return 'bg-purple-500';

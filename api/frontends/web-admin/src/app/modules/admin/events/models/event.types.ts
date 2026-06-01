@@ -14,10 +14,15 @@ export type EventStatus =
 
 export interface EventRegistration {
     id: string;
-    constituentId: string;
+    constituentId?: string;
     constituentName: string;
+    email: string;
+    phone?: string;
     status: 'registered' | 'checked-in' | 'cancelled';
     registeredAt: string;
+    matchStatus: 'matched' | 'new-prospect' | 'needs-review';
+    source: 'portal' | 'staff' | 'campaign';
+    checkedInAt?: string;
 }
 
 export interface EventItem {
@@ -33,4 +38,8 @@ export interface EventItem {
     capacity: number;
     registeredCount: number;
     checkedInCount: number;
+    registrationDeadline: string;
+    autoConfirmationEnabled: boolean;
+    autoReminderEnabled: boolean;
+    registrations: EventRegistration[];
 }
