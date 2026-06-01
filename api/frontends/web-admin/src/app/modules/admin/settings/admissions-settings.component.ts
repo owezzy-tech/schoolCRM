@@ -25,6 +25,11 @@ import {
     CustomFieldDefinitionRequest,
     CustomFieldOwner,
     EVENT_ATTENDANCE_STATUSES,
+    IMPORT_BATCH_STATUSES,
+    IMPORT_FILE_TYPES,
+    IMPORT_SOURCES,
+    IMPORT_TARGETS,
+    ImportBatch,
     LEAD_ASSIGNMENT_CRITERION_FIELDS,
     LEAD_ASSIGNMENT_CRITERION_OPERATORS,
     LEAD_SCORE_CRITERION_FIELDS,
@@ -93,6 +98,14 @@ interface AssignmentRuleForm {
     assignee: string;
     priority: number;
     active: boolean;
+}
+
+interface ImportTemplateColumn {
+    key: string;
+    label: string;
+    required: boolean;
+    owner: 'Core' | 'Custom Field';
+    example: string;
 }
 
 const emptyForm: LeadScoreRuleForm = {
@@ -407,6 +420,103 @@ const ASSIGNMENT_CANDIDATES: AssignmentCandidate[] = [
     },
 ];
 
+const IMPORT_BATCHES: ImportBatch[] = [
+    {
+        id: 'import-2026-0601-constituents',
+        source: 'MANUAL_UPLOAD',
+        fileType: 'CSV',
+        target: 'CONSTITUENTS',
+        status: 'VALIDATION_FAILED',
+        fileName: 'fall-2026-open-house-leads.csv',
+        storageKey: 'admissions/imports/fall-2026-open-house-leads.csv',
+        uploadedByID: 'user-maya-schultz',
+        totalRows: 420,
+        validRows: 392,
+        invalidRows: 18,
+        duplicateRows: 10,
+        fieldMapping: {
+            first_name: 'First Name',
+            last_name: 'Last Name',
+            primary_email: 'Email',
+            scholarship_level: 'Scholarship Level',
+        },
+        invalidReportKey:
+            'admissions/imports/reports/fall-2026-open-house-leads-invalid.csv',
+        validationSummary:
+            '18 rows need correction: missing email, invalid phone, or unknown program code.',
+        dateCreated: '2026-06-01T10:30:00Z',
+        dateUpdated: '2026-06-01T10:34:00Z',
+    },
+    {
+        id: 'import-2026-0531-applications',
+        source: 'SIS_EXPORT',
+        fileType: 'XLSX',
+        target: 'APPLICATIONS',
+        status: 'COMPLETED',
+        fileName: 'spring-2027-applications.xlsx',
+        uploadedByID: 'user-priya-reviewer',
+        totalRows: 128,
+        validRows: 124,
+        invalidRows: 0,
+        duplicateRows: 4,
+        fieldMapping: {
+            constituent_id: 'Student ID',
+            program_id: 'Program Code',
+            academic_term_id: 'Term Code',
+        },
+        committedAt: '2026-05-31T16:45:00Z',
+        validationSummary:
+            '124 applications committed. 4 duplicate active applications skipped.',
+        dateCreated: '2026-05-31T16:35:00Z',
+        dateUpdated: '2026-05-31T16:45:00Z',
+    },
+];
+
+const IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
+    {
+        key: 'first_name',
+        label: 'First name',
+        required: true,
+        owner: 'Core',
+        example: 'Aisha',
+    },
+    {
+        key: 'last_name',
+        label: 'Last name',
+        required: true,
+        owner: 'Core',
+        example: 'Bello',
+    },
+    {
+        key: 'primary_email',
+        label: 'Primary email',
+        required: true,
+        owner: 'Core',
+        example: 'aisha@example.edu',
+    },
+    {
+        key: 'program_id',
+        label: 'Program code',
+        required: false,
+        owner: 'Core',
+        example: 'BS-CS',
+    },
+    {
+        key: 'scholarship_level',
+        label: 'Scholarship level',
+        required: false,
+        owner: 'Custom Field',
+        example: 'Partial',
+    },
+    {
+        key: 'preferred_interview_window',
+        label: 'Preferred interview window',
+        required: false,
+        owner: 'Custom Field',
+        example: 'Weekday afternoons',
+    },
+];
+
 @Component({
     selector: 'app-admissions-settings',
     imports: [
@@ -437,6 +547,12 @@ export class AdmissionsSettingsComponent {
     readonly customFieldOwners = CUSTOM_FIELD_OWNERS;
     readonly customFieldDataTypes = CUSTOM_FIELD_DATA_TYPES;
     readonly customFieldDefinitions = CUSTOM_FIELD_DEFINITIONS;
+    readonly importBatchStatuses = IMPORT_BATCH_STATUSES;
+    readonly importSources = IMPORT_SOURCES;
+    readonly importFileTypes = IMPORT_FILE_TYPES;
+    readonly importTargets = IMPORT_TARGETS;
+    readonly importBatches = IMPORT_BATCHES;
+    readonly importTemplateColumns = IMPORT_TEMPLATE_COLUMNS;
     readonly eventAttendanceStatuses = EVENT_ATTENDANCE_STATUSES;
     readonly assignmentRules = ASSIGNMENT_RULES;
     readonly assignmentCandidates = ASSIGNMENT_CANDIDATES;
@@ -746,6 +862,28 @@ export class AdmissionsSettingsComponent {
             case 'alpha_range':
                 return ['A, M', 'N, Z'];
         }
+    }
+
+    importBatchProgress(batch: ImportBatch): number {
+        if (batch.totalRows === 0) {
+            return 0;
+        }
+
+        return Math.round((batch.validRows / batch.totalRows) * 100);
+    }
+
+    importBatchStatusLabel(batch: ImportBatch): string {
+        return batch.status.replaceAll('_', ' ');
+    }
+
+    importBatchSummary(batch: ImportBatch): string {
+        return `${batch.validRows} valid · ${batch.invalidRows} invalid · ${batch.duplicateRows} duplicates`;
+    }
+
+    importMappingSummary(batch: ImportBatch): string {
+        return Object.entries(batch.fieldMapping)
+            .map(([field, column]) => `${column} → ${field}`)
+            .join(' · ');
     }
 
     private toRequest(form: LeadScoreRuleForm): LeadScoreRuleRequest {
