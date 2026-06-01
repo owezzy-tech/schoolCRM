@@ -19,6 +19,8 @@ import (
 
 const TokenExpiry = 8 * time.Hour
 
+const PortalScopeApplicant = "applicant_portal"
+
 // Specific error variables for auth failures.
 var (
 	ErrForbidden       = errors.New("attempted action is not allowed")
@@ -32,7 +34,17 @@ var (
 // Claims represents the authorization claims transmitted via a JWT.
 type Claims struct {
 	jwt.RegisteredClaims
-	Roles []string `json:"roles"`
+	Roles  []string      `json:"roles"`
+	Portal *PortalClaims `json:"portal,omitempty"`
+}
+
+// PortalClaims identifies a token that is scoped to a public portal workflow
+// rather than an authenticated staff or student user session.
+type PortalClaims struct {
+	Scope         string `json:"scope"`
+	ApplicationID string `json:"applicationID"`
+	ConstituentID string `json:"constituentID"`
+	Email         string `json:"email"`
 }
 
 // KeyLookup declares a method set of behavior for looking up
@@ -203,6 +215,10 @@ func (a *Auth) opaPolicyEvaluation(ctx context.Context, regoScript string, rule 
 // no database connection was provided, this check is skipped.
 func (a *Auth) isUserEnabled(ctx context.Context, claims Claims) error {
 	if a.userBus == nil {
+		return nil
+	}
+
+	if claims.Portal != nil && claims.Portal.Scope == PortalScopeApplicant {
 		return nil
 	}
 
