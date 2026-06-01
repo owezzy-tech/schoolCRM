@@ -143,7 +143,7 @@ The Kenya implementation replaces monolithic SIS sync with explicit adapters:
 - `KnecVerifier` — verifies KCSE result slips or portal/QR outputs.
 - `IprsLookup` — verifies national ID data through an authorized aggregator.
 - `MpesaDarajaGateway` — initiates STK Push and handles payment callbacks.
-- `AfricasTalkingSmsGateway` — sends SMS and records delivery reports.
+- `CelcomAfricaSmsGateway` — sends SMS and records delivery reports.
 - `WhatsAppCloudGateway` — sends approved WhatsApp templates and session messages.
 
 All adapters should share common retry, circuit-breaker, configuration, observability, and fixture-based contract-test infrastructure. CI must not call live vendor APIs.
