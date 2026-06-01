@@ -129,6 +129,21 @@ export const CUSTOM_FIELD_DATA_TYPES = [
     'BOOLEAN',
 ] as const;
 
+export const IMPORT_BATCH_STATUSES = [
+    'PREVIEWED',
+    'VALIDATION_FAILED',
+    'QUEUED',
+    'PROCESSING',
+    'COMPLETED',
+    'FAILED',
+] as const;
+
+export const IMPORT_SOURCES = ['MANUAL_UPLOAD', 'SIS_EXPORT'] as const;
+
+export const IMPORT_FILE_TYPES = ['CSV', 'XLSX'] as const;
+
+export const IMPORT_TARGETS = ['CONSTITUENTS', 'APPLICATIONS'] as const;
+
 export const SIS_SYNC_EVENT_TYPES = [
     'BATCH_TERMS_PULL',
     'BATCH_PROGRAMS_PULL',
@@ -162,6 +177,10 @@ export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
 export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
 export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
 export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
+export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
+export type ImportSource = (typeof IMPORT_SOURCES)[number];
+export type ImportFileType = (typeof IMPORT_FILE_TYPES)[number];
+export type ImportTarget = (typeof IMPORT_TARGETS)[number];
 
 export interface CustomFieldDefinition {
     id: string;
@@ -505,6 +524,84 @@ export interface AdmissionsDocumentQuery {
     orderBy?: string;
     checklist_item_id?: string;
     status?: DocumentStatus;
+}
+
+export interface ImportBatch {
+    id: string;
+    source: ImportSource;
+    fileType: ImportFileType;
+    target: ImportTarget;
+    status: ImportBatchStatus;
+    fileName: string;
+    storageKey?: string;
+    uploadedByID: string;
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    fieldMapping: Record<string, string>;
+    invalidReportKey?: string;
+    validationSummary?: string;
+    committedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ImportBatchRequest {
+    source: ImportSource;
+    fileType: ImportFileType;
+    target: ImportTarget;
+    status: ImportBatchStatus;
+    fileName: string;
+    storageKey?: string | null;
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    fieldMapping: Record<string, string>;
+    invalidReportKey?: string | null;
+    validationSummary?: string | null;
+}
+
+export interface ImportBatchQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    source?: ImportSource;
+    file_type?: ImportFileType;
+    target?: ImportTarget;
+    status?: ImportBatchStatus;
+    uploaded_by_id?: string;
+}
+
+export interface ImportInvalidRow {
+    id: string;
+    batchID: string;
+    rowNumber: number;
+    fieldName?: string;
+    rawData: Record<string, string>;
+    errorCode: string;
+    errorDetail: string;
+    dateCreated: string;
+}
+
+export interface ImportInvalidRowRequest {
+    rowNumber: number;
+    fieldName?: string | null;
+    rawData: Record<string, string>;
+    errorCode: string;
+    errorDetail: string;
+}
+
+export interface ImportInvalidRowsRequest {
+    rows: ImportInvalidRowRequest[];
+}
+
+export interface ImportInvalidRowQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    import_batch_id?: string;
 }
 
 export interface Inquiry {

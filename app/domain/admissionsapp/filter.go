@@ -178,6 +178,26 @@ type documentQueryParams struct {
 	ReviewerID      string
 }
 
+type importBatchQueryParams struct {
+	Page         string
+	Rows         string
+	OrderBy      string
+	ID           string
+	Source       string
+	FileType     string
+	Target       string
+	Status       string
+	UploadedByID string
+}
+
+type importInvalidRowQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	BatchID string
+}
+
 type syncJobQueryParams struct {
 	Page      string
 	Rows      string
@@ -430,6 +450,34 @@ func parseDocumentQueryParams(r *http.Request) documentQueryParams {
 		Status:          values.Get("status"),
 		UploadedByID:    values.Get("uploaded_by_id"),
 		ReviewerID:      values.Get("reviewer_id"),
+	}
+}
+
+func parseImportBatchQueryParams(r *http.Request) importBatchQueryParams {
+	values := r.URL.Query()
+
+	return importBatchQueryParams{
+		Page:         values.Get("page"),
+		Rows:         values.Get("rows"),
+		OrderBy:      values.Get("orderBy"),
+		ID:           values.Get("import_batch_id"),
+		Source:       values.Get("source"),
+		FileType:     values.Get("file_type"),
+		Target:       values.Get("target"),
+		Status:       values.Get("status"),
+		UploadedByID: values.Get("uploaded_by_id"),
+	}
+}
+
+func parseImportInvalidRowQueryParams(r *http.Request) importInvalidRowQueryParams {
+	values := r.URL.Query()
+
+	return importInvalidRowQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("import_invalid_row_id"),
+		BatchID: values.Get("import_batch_id"),
 	}
 }
 
@@ -1189,6 +1237,84 @@ func parseDocumentFilter(qp documentQueryParams) (admissionsbus.DocumentQueryFil
 
 	if fieldErrors != nil {
 		return admissionsbus.DocumentQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseImportBatchFilter(qp importBatchQueryParams) (admissionsbus.ImportBatchQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ImportBatchQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("import_batch_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Source != "" {
+		source := admissionsbus.ImportSource(qp.Source)
+		filter.Source = &source
+	}
+
+	if qp.FileType != "" {
+		fileType := admissionsbus.ImportFileType(qp.FileType)
+		filter.FileType = &fileType
+	}
+
+	if qp.Target != "" {
+		target := admissionsbus.ImportTarget(qp.Target)
+		filter.Target = &target
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.ImportBatchStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.UploadedByID != "" {
+		id, err := uuid.Parse(qp.UploadedByID)
+		if err != nil {
+			fieldErrors.Add("uploaded_by_id", err)
+		} else {
+			filter.UploadedByID = &id
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ImportBatchQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseImportInvalidRowFilter(qp importInvalidRowQueryParams) (admissionsbus.ImportInvalidRowQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.ImportInvalidRowQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("import_invalid_row_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.BatchID != "" {
+		id, err := uuid.Parse(qp.BatchID)
+		if err != nil {
+			fieldErrors.Add("import_batch_id", err)
+		} else {
+			filter.BatchID = &id
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.ImportInvalidRowQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

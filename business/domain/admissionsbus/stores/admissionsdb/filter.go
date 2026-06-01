@@ -220,6 +220,59 @@ func (s *Store) applyApplicationFormTemplateFilter(filter admissionsbus.Applicat
 	}
 }
 
+func (s *Store) applyCustomFieldDefinitionFilter(filter admissionsbus.CustomFieldDefinitionQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["custom_field_definition_id"] = filter.ID
+		wc = append(wc, "custom_field_definition_id = :custom_field_definition_id")
+	}
+
+	if filter.Owner != nil {
+		data["owner"] = filter.Owner.String()
+		wc = append(wc, "owner = :owner")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyCustomFieldValueFilter(filter admissionsbus.CustomFieldValueQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["custom_field_value_id"] = filter.ID
+		wc = append(wc, "custom_field_value_id = :custom_field_value_id")
+	}
+
+	if filter.DefinitionID != nil {
+		data["custom_field_definition_id"] = filter.DefinitionID
+		wc = append(wc, "custom_field_definition_id = :custom_field_definition_id")
+	}
+
+	if filter.Owner != nil {
+		data["owner"] = filter.Owner.String()
+		wc = append(wc, "owner = :owner")
+	}
+
+	if filter.OwnerID != nil {
+		data["owner_id"] = filter.OwnerID
+		wc = append(wc, "owner_id = :owner_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
 func (s *Store) applyProgramFilter(filter admissionsbus.ProgramQueryFilter, data map[string]any, buf *bytes.Buffer) {
 	var wc []string
 
@@ -450,6 +503,64 @@ func (s *Store) applyDocumentFilter(filter admissionsbus.DocumentQueryFilter, da
 	if filter.ReviewerID != nil {
 		data["reviewer_id"] = filter.ReviewerID
 		wc = append(wc, "reviewer_id = :reviewer_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyImportBatchFilter(filter admissionsbus.ImportBatchQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["import_batch_id"] = filter.ID
+		wc = append(wc, "import_batch_id = :import_batch_id")
+	}
+
+	if filter.Source != nil {
+		data["source"] = filter.Source.String()
+		wc = append(wc, "source = :source")
+	}
+
+	if filter.FileType != nil {
+		data["file_type"] = filter.FileType.String()
+		wc = append(wc, "file_type = :file_type")
+	}
+
+	if filter.Target != nil {
+		data["target"] = filter.Target.String()
+		wc = append(wc, "target = :target")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.UploadedByID != nil {
+		data["uploaded_by_id"] = filter.UploadedByID
+		wc = append(wc, "uploaded_by_id = :uploaded_by_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyImportInvalidRowFilter(filter admissionsbus.ImportInvalidRowQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["import_invalid_row_id"] = filter.ID
+		wc = append(wc, "import_invalid_row_id = :import_invalid_row_id")
+	}
+
+	if filter.BatchID != nil {
+		data["import_batch_id"] = filter.BatchID
+		wc = append(wc, "import_batch_id = :import_batch_id")
 	}
 
 	if len(wc) > 0 {

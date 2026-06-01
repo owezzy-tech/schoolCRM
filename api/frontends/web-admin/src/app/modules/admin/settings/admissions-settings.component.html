@@ -1145,5 +1145,193 @@
                 </form>
             </aside>
         </div>
+
+        <div
+            class="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]"
+        >
+            <section class="bg-card overflow-hidden rounded-2xl shadow">
+                <div class="border-b p-6">
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                    >
+                        <div>
+                            <h2 class="text-xl font-bold">
+                                Import / Export batches
+                            </h2>
+                            <p class="text-secondary mt-2 text-sm">
+                                Static preview for CSV and Excel imports. Each
+                                upload records a batch, stores field mappings,
+                                and exposes invalid rows for correction
+                                download.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                            @for (fileType of importFileTypes; track fileType) {
+                                <span
+                                    class="rounded-full bg-primary/10 px-3 py-1 text-primary"
+                                >
+                                    {{ fileType }}
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divide-y">
+                    @for (batch of importBatches; track batch.id) {
+                        <div class="p-6">
+                            <div
+                                class="grid grid-cols-1 gap-4 lg:grid-cols-[160px_minmax(0,1fr)_180px] lg:items-start"
+                            >
+                                <div>
+                                    <div
+                                        class="text-secondary text-xs uppercase tracking-wide"
+                                    >
+                                        {{ batch.fileType }} ·
+                                        {{ batch.target }}
+                                    </div>
+                                    <div class="mt-2 font-semibold">
+                                        {{ batch.fileName }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-xs">
+                                        {{ batch.source }}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span
+                                            class="rounded-full px-3 py-1 text-xs font-semibold"
+                                            [class.bg-green-100]="
+                                                batch.status === 'COMPLETED'
+                                            "
+                                            [class.text-green-700]="
+                                                batch.status === 'COMPLETED'
+                                            "
+                                            [class.bg-amber-100]="
+                                                batch.status ===
+                                                'VALIDATION_FAILED'
+                                            "
+                                            [class.text-amber-700]="
+                                                batch.status ===
+                                                'VALIDATION_FAILED'
+                                            "
+                                            [class.bg-blue-100]="
+                                                batch.status !== 'COMPLETED' &&
+                                                batch.status !==
+                                                    'VALIDATION_FAILED'
+                                            "
+                                            [class.text-blue-700]="
+                                                batch.status !== 'COMPLETED' &&
+                                                batch.status !==
+                                                    'VALIDATION_FAILED'
+                                            "
+                                        >
+                                            {{ importBatchStatusLabel(batch) }}
+                                        </span>
+                                        <span
+                                            class="text-secondary rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold"
+                                        >
+                                            {{ batch.totalRows }} rows
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"
+                                    >
+                                        <div
+                                            class="h-full rounded-full bg-primary"
+                                            [style.width.%]="
+                                                importBatchProgress(batch)
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="text-secondary mt-2 text-sm">
+                                        {{ importBatchSummary(batch) }}
+                                    </div>
+                                    <div class="text-secondary mt-2 text-xs">
+                                        {{ importMappingSummary(batch) }}
+                                    </div>
+                                    @if (batch.validationSummary) {
+                                        <div
+                                            class="text-secondary mt-3 rounded-xl bg-slate-50 p-3 text-sm"
+                                        >
+                                            {{ batch.validationSummary }}
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        disabled
+                                    >
+                                        Download invalid rows
+                                    </button>
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        disabled
+                                    >
+                                        Export corrected file
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <aside class="bg-card rounded-2xl p-6 shadow">
+                <h2 class="text-xl font-bold">Import template</h2>
+                <p class="text-secondary mt-2 text-sm">
+                    Static layout for the downloadable CSV/XLSX templates. Core
+                    admissions fields stay fixed while custom fields opt into
+                    import/export from the registry.
+                </p>
+
+                <div class="mt-6 grid grid-cols-1 gap-3">
+                    @for (target of importTargets; track target) {
+                        <button mat-stroked-button type="button" disabled>
+                            Download {{ target }} template
+                        </button>
+                    }
+                </div>
+
+                <div class="mt-6 space-y-3">
+                    @for (column of importTemplateColumns; track column.key) {
+                        <div class="rounded-2xl border p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="font-semibold">
+                                        {{ column.label }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-xs">
+                                        {{ column.key }} · {{ column.owner }}
+                                    </div>
+                                </div>
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                                    [class.bg-red-100]="column.required"
+                                    [class.text-red-700]="column.required"
+                                    [class.bg-slate-100]="!column.required"
+                                    [class.text-secondary]="!column.required"
+                                >
+                                    {{
+                                        column.required
+                                            ? 'Required'
+                                            : 'Optional'
+                                    }}
+                                </span>
+                            </div>
+                            <div class="text-secondary mt-3 text-sm">
+                                Example: {{ column.example }}
+                            </div>
+                        </div>
+                    }
+                </div>
+            </aside>
+        </div>
     </div>
 </div>

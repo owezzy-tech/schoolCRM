@@ -124,6 +124,21 @@ var documentOrderByFields = map[string]string{
 	"reviewed_at":       admissionsbus.OrderByDocumentReviewedAt,
 }
 
+var importBatchOrderByFields = map[string]string{
+	"import_batch_id": admissionsbus.OrderByImportBatchID,
+	"target":          admissionsbus.OrderByImportBatchTarget,
+	"status":          admissionsbus.OrderByImportBatchStatus,
+	"uploaded_by_id":  admissionsbus.OrderByImportBatchUploadedBy,
+	"date_created":    admissionsbus.OrderByImportBatchDateCreated,
+}
+
+var importInvalidRowOrderByFields = map[string]string{
+	"import_invalid_row_id": admissionsbus.OrderByImportInvalidRowID,
+	"import_batch_id":       admissionsbus.OrderByImportInvalidRowBatch,
+	"row_number":            admissionsbus.OrderByImportInvalidRowNumber,
+	"date_created":          admissionsbus.OrderByImportInvalidRowDateCreated,
+}
+
 var syncJobOrderByFields = map[string]string{
 	"sync_job_id":  admissionsbus.OrderBySyncJobID,
 	"status":       admissionsbus.OrderBySyncJobStatus,
