@@ -1,6 +1,6 @@
 # Kenya Adapter Contract-Test Convention
 
-Kenya external adapters are outbound ports under `business/domain/admissionsbus/adapters`. The current slice defines typed ports, shared adapter behavior, and fixture tests only. CI must not call KUCCPS, KNEC, IPRS, M-Pesa Daraja, Africa's Talking, or WhatsApp Cloud.
+Kenya external adapters are outbound ports under `business/domain/admissionsbus/adapters`. The current slice defines typed ports, shared adapter behavior, and fixture tests only. CI must not call KUCCPS, KNEC, IPRS, M-Pesa Daraja, Celcom Africa, or WhatsApp Cloud.
 
 ## Package layout
 
@@ -14,7 +14,7 @@ business/domain/admissionsbus/adapters/
 ├── knec/                   # Verifier port
 ├── iprs/                   # Lookup port
 ├── mpesa/                  # DarajaGateway port
-├── africastalking/         # SmsGateway port
+├── celcomafrica/           # SmsGateway port
 └── whatsapp/               # CloudGateway port
 ```
 
@@ -67,7 +67,7 @@ Every adapter shell must keep at least one representative success fixture:
 - `knec`: KCSE result verification.
 - `iprs`: national ID verification.
 - `mpesa`: STK Push initiation.
-- `africastalking`: SMS send request.
+- `celcomafrica`: SMS send request.
 - `whatsapp`: template send request.
 
 Future concrete adapters should add non-retryable client-error and retryable transient-error fixtures without changing these port contracts.

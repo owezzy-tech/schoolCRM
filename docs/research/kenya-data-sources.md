@@ -16,7 +16,7 @@ This reference lists the current source systems and provider documentation for t
 │ KUCCPS programme and cluster lists    │ Auth portal files    │ No — Excel/PDF per cycle     │
 │ KNQA / KNQF levels                    │ PDF + portal         │ No — publications only       │
 │ Safaricom M-Pesa Daraja               │ REST API             │ Yes                          │
-│ Africa's Talking SMS                  │ REST API             │ Yes                          │
+│ Celcom Africa SMS                     │ REST API/SMPP        │ Yes                          │
 │ WhatsApp Cloud API                    │ REST API             │ Yes                          │
 │ Smile ID IPRS aggregation             │ REST API             │ Yes, commercial agreement    │
 │ MetaMap IPRS aggregation              │ REST API             │ Yes, commercial agreement    │
@@ -108,17 +108,17 @@ Implementation notes:
 
 ## Communications
 
-### Africa's Talking SMS
+### Celcom Africa SMS
 
-- Developer docs: <https://developers.africastalking.com>
-- SMS overview: <https://developers.africastalking.com/docs/sms/overview>
-- Bulk SMS guide: <https://developers.africastalking.com/docs/sms/sending/bulk>
+- Website: <https://celcomafrica.com>
+- Product surface: Bulk SMS, SMS Gateway/API, SMPP, Sender IDs, and Delivery Reports.
 
 Implementation notes:
 
 - Account registration is required for credentials.
-- Sender IDs and shortcodes require registration and lead time.
+- Sender IDs and shortcodes require registration, Communications Authority compliance, and lead time.
 - Delivery callbacks should be treated as first-class integration events.
+- Keep SMS credits/billing out of the admissions domain port; reconcile costs through provider reports.
 
 ### WhatsApp Cloud API
 

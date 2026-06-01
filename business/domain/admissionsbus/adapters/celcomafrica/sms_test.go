@@ -1,4 +1,4 @@
-package africastalking
+package celcomafrica
 
 import (
 	"testing"
