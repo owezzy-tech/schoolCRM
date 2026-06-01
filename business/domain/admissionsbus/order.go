@@ -50,6 +50,12 @@ var DefaultChecklistItemOrderBy = order.NewBy(OrderByChecklistItemDisplayOrder, 
 // DefaultDocumentOrderBy represents the default way we sort documents.
 var DefaultDocumentOrderBy = order.NewBy(OrderByDocumentUploadedAt, order.DESC)
 
+// DefaultImportBatchOrderBy represents the default way we sort admissions import batches.
+var DefaultImportBatchOrderBy = order.NewBy(OrderByImportBatchDateCreated, order.DESC)
+
+// DefaultImportInvalidRowOrderBy represents the default way we sort admissions import invalid rows.
+var DefaultImportInvalidRowOrderBy = order.NewBy(OrderByImportInvalidRowNumber, order.ASC)
+
 // DefaultSyncJobOrderBy represents the default way we sort SIS sync jobs.
 var DefaultSyncJobOrderBy = order.NewBy(OrderBySyncJobDateCreated, order.DESC)
 
@@ -192,6 +198,23 @@ const (
 	OrderByDocumentStatus        = "d"
 	OrderByDocumentUploadedAt    = "e"
 	OrderByDocumentReviewedAt    = "f"
+)
+
+// Set of fields that import batches can be ordered by.
+const (
+	OrderByImportBatchID          = "a"
+	OrderByImportBatchTarget      = "b"
+	OrderByImportBatchStatus      = "c"
+	OrderByImportBatchUploadedBy  = "d"
+	OrderByImportBatchDateCreated = "e"
+)
+
+// Set of fields that import invalid rows can be ordered by.
+const (
+	OrderByImportInvalidRowID          = "a"
+	OrderByImportInvalidRowBatch       = "b"
+	OrderByImportInvalidRowNumber      = "c"
+	OrderByImportInvalidRowDateCreated = "d"
 )
 
 // Set of fields that SIS sync jobs can be ordered by.

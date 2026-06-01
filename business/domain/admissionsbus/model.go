@@ -609,6 +609,66 @@ func (status DocumentStatus) String() string {
 	return string(status)
 }
 
+// ImportBatchStatus represents the operational state of an admissions import.
+type ImportBatchStatus string
+
+// Set of valid admissions import batch statuses.
+const (
+	ImportBatchStatusPreviewed        ImportBatchStatus = "PREVIEWED"
+	ImportBatchStatusValidationFailed ImportBatchStatus = "VALIDATION_FAILED"
+	ImportBatchStatusQueued           ImportBatchStatus = "QUEUED"
+	ImportBatchStatusProcessing       ImportBatchStatus = "PROCESSING"
+	ImportBatchStatusCompleted        ImportBatchStatus = "COMPLETED"
+	ImportBatchStatusFailed           ImportBatchStatus = "FAILED"
+)
+
+// String returns the import batch status as a string.
+func (status ImportBatchStatus) String() string {
+	return string(status)
+}
+
+// ImportSource represents where an import file originated.
+type ImportSource string
+
+// Set of valid admissions import sources.
+const (
+	ImportSourceManualUpload ImportSource = "MANUAL_UPLOAD"
+	ImportSourceSISExport    ImportSource = "SIS_EXPORT"
+)
+
+// String returns the import source as a string.
+func (source ImportSource) String() string {
+	return string(source)
+}
+
+// ImportFileType represents the supported import file formats.
+type ImportFileType string
+
+// Set of valid admissions import file types.
+const (
+	ImportFileTypeCSV  ImportFileType = "CSV"
+	ImportFileTypeXLSX ImportFileType = "XLSX"
+)
+
+// String returns the import file type as a string.
+func (fileType ImportFileType) String() string {
+	return string(fileType)
+}
+
+// ImportTarget represents the admissions aggregate receiving imported rows.
+type ImportTarget string
+
+// Set of supported import targets.
+const (
+	ImportTargetConstituents ImportTarget = "CONSTITUENTS"
+	ImportTargetApplications ImportTarget = "APPLICATIONS"
+)
+
+// String returns the import target as a string.
+func (target ImportTarget) String() string {
+	return string(target)
+}
+
 // SyncJobStatus represents the operational state of a SIS batch reconciliation run.
 type SyncJobStatus string
 
@@ -736,6 +796,68 @@ type NewDocumentVerification struct {
 	Status        DocumentStatus
 	ReviewerID    uuid.UUID
 	ReviewerNotes *string
+}
+
+// ImportBatch records one import preview or commit run.
+type ImportBatch struct {
+	ID                uuid.UUID
+	Source            ImportSource
+	FileType          ImportFileType
+	Target            ImportTarget
+	Status            ImportBatchStatus
+	FileName          string
+	StorageKey        *string
+	UploadedByID      uuid.UUID
+	TotalRows         int
+	ValidRows         int
+	InvalidRows       int
+	DuplicateRows     int
+	FieldMapping      map[string]string
+	InvalidReportKey  *string
+	ValidationSummary *string
+	CommittedAt       *time.Time
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
+// NewImportBatch is what we require to record an admissions import preview or commit.
+type NewImportBatch struct {
+	Source            ImportSource
+	FileType          ImportFileType
+	Target            ImportTarget
+	Status            ImportBatchStatus
+	FileName          string
+	StorageKey        *string
+	UploadedByID      uuid.UUID
+	TotalRows         int
+	ValidRows         int
+	InvalidRows       int
+	DuplicateRows     int
+	FieldMapping      map[string]string
+	InvalidReportKey  *string
+	ValidationSummary *string
+}
+
+// ImportInvalidRow records one invalid row discovered during preview or commit validation.
+type ImportInvalidRow struct {
+	ID          uuid.UUID
+	BatchID     uuid.UUID
+	RowNumber   int
+	FieldName   *string
+	RawData     map[string]string
+	ErrorCode   string
+	ErrorDetail string
+	DateCreated time.Time
+}
+
+// NewImportInvalidRow is what we require to attach an invalid row to an import batch.
+type NewImportInvalidRow struct {
+	BatchID     uuid.UUID
+	RowNumber   int
+	FieldName   *string
+	RawData     map[string]string
+	ErrorCode   string
+	ErrorDetail string
 }
 
 // SyncJob tracks a SIS batch reconciliation run and its operational result.
@@ -921,6 +1043,8 @@ func AggregateNames() []string {
 		"leadScore",
 		"checklist",
 		"document",
+		"importBatch",
+		"importInvalidRow",
 		"decision",
 		"syncJob",
 		"syncEvent",
@@ -1082,6 +1206,24 @@ type DocumentQueryFilter struct {
 	Status          *DocumentStatus
 	UploadedByID    *uuid.UUID
 	ReviewerID      *uuid.UUID
+}
+
+// ImportBatchQueryFilter holds fields an import batch query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ImportBatchQueryFilter struct {
+	ID           *uuid.UUID
+	Source       *ImportSource
+	FileType     *ImportFileType
+	Target       *ImportTarget
+	Status       *ImportBatchStatus
+	UploadedByID *uuid.UUID
+}
+
+// ImportInvalidRowQueryFilter holds fields an import invalid row query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ImportInvalidRowQueryFilter struct {
+	ID      *uuid.UUID
+	BatchID *uuid.UUID
 }
 
 // SyncJobQueryFilter holds fields a SIS sync job query can be filtered on.
