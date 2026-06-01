@@ -1,0 +1,300 @@
+<div class="flex min-w-0 flex-auto flex-col">
+    <div class="flex-auto p-6 sm:p-10">
+        <div
+            class="mb-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-700 to-cyan-500 p-8 text-white shadow"
+        >
+            <div
+                class="text-sm font-semibold uppercase tracking-wide opacity-80"
+            >
+                Admissions / SIS Sync
+            </div>
+            <div
+                class="mt-3 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+            >
+                <div>
+                    <h1
+                        class="text-4xl font-extrabold leading-none tracking-tight"
+                    >
+                        SIS sync operations
+                    </h1>
+                    <p class="mt-3 max-w-3xl text-base text-white/85">
+                        Batch-canonical reconciliation with selected real-time
+                        pushes for submissions, decisions, document status, and
+                        enrollment intent.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button
+                        mat-flat-button
+                        type="button"
+                        class="bg-white text-primary"
+                    >
+                        <mat-icon
+                            svgIcon="heroicons_outline:arrow-path"
+                        ></mat-icon>
+                        <span class="ml-2">Run batch sync</span>
+                    </button>
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        class="border-white/70 text-white"
+                    >
+                        Retry failed events
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <section class="bg-card rounded-2xl p-5 shadow">
+                <div
+                    class="text-secondary text-sm font-semibold uppercase tracking-wide"
+                >
+                    Last batch
+                </div>
+                <div class="mt-3 text-3xl font-extrabold">
+                    {{ lastBatchJob().recordsPulled }}
+                </div>
+                <p class="text-secondary mt-1 text-sm">
+                    records pulled · completed {{ lastBatchJob().completedAt }}
+                </p>
+            </section>
+            <section class="bg-card rounded-2xl p-5 shadow">
+                <div
+                    class="text-secondary text-sm font-semibold uppercase tracking-wide"
+                >
+                    Active jobs
+                </div>
+                <div class="mt-3 text-3xl font-extrabold">
+                    {{ activeJobCount() }}
+                </div>
+                <p class="text-secondary mt-1 text-sm">
+                    queued or currently processing
+                </p>
+            </section>
+            <section class="bg-card rounded-2xl p-5 shadow">
+                <div
+                    class="text-secondary text-sm font-semibold uppercase tracking-wide"
+                >
+                    Retry queue
+                </div>
+                <div class="mt-3 text-3xl font-extrabold">
+                    {{ failedEventCount() }}
+                </div>
+                <p class="text-secondary mt-1 text-sm">
+                    failed or retry-ready events under audit
+                </p>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-5">
+            <section class="xl:col-span-2">
+                <div
+                    class="bg-card mb-4 flex flex-col gap-3 rounded-2xl p-4 shadow sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div>
+                        <h2 class="text-xl font-bold">Batch jobs</h2>
+                        <p class="text-secondary text-sm">
+                            Terms, programs, SIS person matches, enrollment
+                            status, and retry reconciliation.
+                        </p>
+                    </div>
+                    <mat-form-field appearance="outline" class="w-full sm:w-48">
+                        <mat-label>Job status</mat-label>
+                        <mat-select
+                            [ngModel]="selectedJobStatus()"
+                            (ngModelChange)="setJobStatus($event)"
+                        >
+                            <mat-option value="">All jobs</mat-option>
+                            @for (status of jobStatuses; track status) {
+                                <mat-option [value]="status">{{
+                                    formatLabel(status)
+                                }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+
+                <div class="space-y-4">
+                    @for (job of filteredJobs(); track job.id) {
+                        <article
+                            class="bg-card rounded-2xl p-5 shadow ring-1 ring-black/5"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="font-bold">{{ job.name }}</h3>
+                                    <p class="text-secondary mt-1 text-sm">
+                                        {{ job.owner }} · {{ job.direction }}
+                                    </p>
+                                </div>
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-bold uppercase ring-1"
+                                    [class]="statusClass(job.status)"
+                                >
+                                    {{ formatLabel(job.status) }}
+                                </span>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Pulled
+                                    </div>
+                                    <div class="font-bold">
+                                        {{ job.recordsPulled }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Pushed
+                                    </div>
+                                    <div class="font-bold">
+                                        {{ job.recordsPushed }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Requeued
+                                    </div>
+                                    <div class="font-bold">
+                                        {{ job.eventsRequeued }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (job.failureReason) {
+                                <div
+                                    class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+                                >
+                                    {{ job.failureReason }}
+                                </div>
+                            }
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <section class="xl:col-span-3">
+                <div
+                    class="bg-card mb-4 flex flex-col gap-3 rounded-2xl p-4 shadow sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div>
+                        <h2 class="text-xl font-bold">Real-time events</h2>
+                        <p class="text-secondary text-sm">
+                            Approved outbound and inbound events with payload
+                            hash, attempts, and audit message.
+                        </p>
+                    </div>
+                    <mat-form-field appearance="outline" class="w-full sm:w-52">
+                        <mat-label>Event status</mat-label>
+                        <mat-select
+                            [ngModel]="selectedEventStatus()"
+                            (ngModelChange)="setEventStatus($event)"
+                        >
+                            <mat-option value="">All events</mat-option>
+                            @for (status of eventStatuses; track status) {
+                                <mat-option [value]="status">{{
+                                    formatLabel(status)
+                                }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+
+                <div class="bg-card overflow-hidden rounded-2xl shadow">
+                    @for (event of filteredEvents(); track event.id) {
+                        <article class="border-b p-5 last:border-b-0">
+                            <div
+                                class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                            >
+                                <div>
+                                    <div
+                                        class="flex flex-wrap items-center gap-2"
+                                    >
+                                        <h3 class="font-bold">
+                                            {{ formatLabel(event.eventType) }}
+                                        </h3>
+                                        <span
+                                            class="rounded-full px-3 py-1 text-xs font-bold uppercase ring-1"
+                                            [class]="statusClass(event.status)"
+                                        >
+                                            {{ formatLabel(event.status) }}
+                                        </span>
+                                        <mat-chip>{{
+                                            event.direction
+                                        }}</mat-chip>
+                                    </div>
+                                    <p class="text-secondary mt-2 text-sm">
+                                        {{ event.auditMessage }}
+                                    </p>
+                                </div>
+                                <div
+                                    class="text-secondary text-sm lg:text-right"
+                                >
+                                    <div>
+                                        {{ event.resourceType }} ·
+                                        {{ event.resourceID }}
+                                    </div>
+                                    <div>Attempts: {{ event.attempts }}</div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-3"
+                            >
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Payload hash
+                                    </div>
+                                    <div class="truncate font-mono text-xs">
+                                        {{ event.payloadHash }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Last update
+                                    </div>
+                                    <div>{{ event.dateUpdated }}</div>
+                                </div>
+                                <div
+                                    class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                                >
+                                    <div class="text-secondary text-xs">
+                                        Next retry
+                                    </div>
+                                    <div>
+                                        {{
+                                            event.nextRetryAt || 'Not scheduled'
+                                        }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (event.failureReason) {
+                                <div
+                                    class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                                >
+                                    {{ event.failureReason }}
+                                </div>
+                            }
+                        </article>
+                    } @empty {
+                        <div class="text-secondary p-8 text-center">
+                            No sync events match this filter.
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
