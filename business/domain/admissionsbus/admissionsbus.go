@@ -89,6 +89,19 @@ var (
 	ErrDocumentUploaderRequired      = errors.New("document uploader required")
 	ErrDocumentReviewerRequired      = errors.New("document reviewer required")
 	ErrDocumentStatusNotReviewable   = errors.New("document status is not a review action")
+	ErrImportBatchNotFound           = errors.New("import batch not found")
+	ErrImportInvalidRowNotFound      = errors.New("import invalid row not found")
+	ErrInvalidImportSource           = errors.New("invalid import source")
+	ErrInvalidImportFileType         = errors.New("invalid import file type")
+	ErrInvalidImportTarget           = errors.New("invalid import target")
+	ErrInvalidImportStatus           = errors.New("invalid import status")
+	ErrImportFileNameRequired        = errors.New("import file name required")
+	ErrImportUploaderRequired        = errors.New("import uploader required")
+	ErrImportRowsInvalid             = errors.New("import row counts are invalid")
+	ErrImportFieldMappingRequired    = errors.New("import field mapping required")
+	ErrImportInvalidRowNumberInvalid = errors.New("import invalid row number must be greater than zero")
+	ErrImportInvalidRowDataRequired  = errors.New("import invalid row raw data required")
+	ErrImportInvalidRowErrorRequired = errors.New("import invalid row error required")
 	ErrSyncJobNotFound               = errors.New("sync job not found")
 	ErrSyncJobNameRequired           = errors.New("sync job name required")
 	ErrInvalidSyncJobStatus          = errors.New("invalid sync job status")
@@ -197,6 +210,15 @@ type Storer interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateImportBatch(ctx context.Context, batch ImportBatch) error
+	UpdateImportBatch(ctx context.Context, batch ImportBatch) error
+	QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error)
+	CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error)
+	QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error)
+	CreateImportInvalidRows(ctx context.Context, rows []ImportInvalidRow) error
+	QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error)
+	CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error)
+	QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error)
 	CreateSyncJob(ctx context.Context, job SyncJob) error
 	UpdateSyncJob(ctx context.Context, job SyncJob) error
 	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
@@ -294,6 +316,15 @@ type ExtBusiness interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateImportBatch(ctx context.Context, nb NewImportBatch) (ImportBatch, error)
+	UpdateImportBatch(ctx context.Context, batch ImportBatch, nb NewImportBatch) (ImportBatch, error)
+	QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error)
+	CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error)
+	QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error)
+	CreateImportInvalidRows(ctx context.Context, rows []NewImportInvalidRow) ([]ImportInvalidRow, error)
+	QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error)
+	CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error)
+	QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error)
 	CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error)
 	UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error)
 	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
@@ -1814,6 +1845,158 @@ func (b *Business) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) 
 	return document, nil
 }
 
+// CreateImportBatch records an admissions import preview or commit batch.
+func (b *Business) CreateImportBatch(ctx context.Context, nb NewImportBatch) (ImportBatch, error) {
+	if err := validateNewImportBatch(nb); err != nil {
+		return ImportBatch{}, err
+	}
+
+	now := time.Now()
+	batch := ImportBatch{
+		ID:                uuid.New(),
+		Source:            nb.Source,
+		FileType:          nb.FileType,
+		Target:            nb.Target,
+		Status:            nb.Status,
+		FileName:          strings.TrimSpace(nb.FileName),
+		StorageKey:        trimStringPtr(nb.StorageKey),
+		UploadedByID:      nb.UploadedByID,
+		TotalRows:         nb.TotalRows,
+		ValidRows:         nb.ValidRows,
+		InvalidRows:       nb.InvalidRows,
+		DuplicateRows:     nb.DuplicateRows,
+		FieldMapping:      normalizeImportFieldMapping(nb.FieldMapping),
+		InvalidReportKey:  trimStringPtr(nb.InvalidReportKey),
+		ValidationSummary: trimStringPtr(nb.ValidationSummary),
+		DateCreated:       now,
+		DateUpdated:       now,
+	}
+	if batch.Status == ImportBatchStatusCompleted {
+		batch.CommittedAt = &now
+	}
+
+	if err := b.storer.CreateImportBatch(ctx, batch); err != nil {
+		return ImportBatch{}, fmt.Errorf("create import batch: %w", err)
+	}
+
+	return batch, nil
+}
+
+// UpdateImportBatch replaces mutable import batch metadata and processing totals.
+func (b *Business) UpdateImportBatch(ctx context.Context, batch ImportBatch, nb NewImportBatch) (ImportBatch, error) {
+	if err := validateNewImportBatch(nb); err != nil {
+		return ImportBatch{}, err
+	}
+
+	now := time.Now()
+	batch.Source = nb.Source
+	batch.FileType = nb.FileType
+	batch.Target = nb.Target
+	batch.Status = nb.Status
+	batch.FileName = strings.TrimSpace(nb.FileName)
+	batch.StorageKey = trimStringPtr(nb.StorageKey)
+	batch.UploadedByID = nb.UploadedByID
+	batch.TotalRows = nb.TotalRows
+	batch.ValidRows = nb.ValidRows
+	batch.InvalidRows = nb.InvalidRows
+	batch.DuplicateRows = nb.DuplicateRows
+	batch.FieldMapping = normalizeImportFieldMapping(nb.FieldMapping)
+	batch.InvalidReportKey = trimStringPtr(nb.InvalidReportKey)
+	batch.ValidationSummary = trimStringPtr(nb.ValidationSummary)
+	batch.DateUpdated = now
+	if batch.Status == ImportBatchStatusCompleted && batch.CommittedAt == nil {
+		batch.CommittedAt = &now
+	}
+
+	if err := b.storer.UpdateImportBatch(ctx, batch); err != nil {
+		return ImportBatch{}, fmt.Errorf("update import batch: %w", err)
+	}
+
+	return batch, nil
+}
+
+// QueryImportBatches retrieves admissions import batch records.
+func (b *Business) QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error) {
+	batches, err := b.storer.QueryImportBatches(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query import batches: %w", err)
+	}
+
+	return batches, nil
+}
+
+// CountImportBatches returns the total number of admissions import batches.
+func (b *Business) CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error) {
+	return b.storer.CountImportBatches(ctx, filter)
+}
+
+// QueryImportBatchByID finds an admissions import batch by ID.
+func (b *Business) QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error) {
+	batch, err := b.storer.QueryImportBatchByID(ctx, batchID)
+	if err != nil {
+		return ImportBatch{}, fmt.Errorf("query import batch: batchID[%s]: %w", batchID, err)
+	}
+
+	return batch, nil
+}
+
+// CreateImportInvalidRows records invalid import rows for correction downloads.
+func (b *Business) CreateImportInvalidRows(ctx context.Context, rows []NewImportInvalidRow) ([]ImportInvalidRow, error) {
+	if len(rows) == 0 {
+		return []ImportInvalidRow{}, nil
+	}
+
+	now := time.Now()
+	invalidRows := make([]ImportInvalidRow, len(rows))
+	for i, row := range rows {
+		if err := validateNewImportInvalidRow(row); err != nil {
+			return nil, err
+		}
+
+		invalidRows[i] = ImportInvalidRow{
+			ID:          uuid.New(),
+			BatchID:     row.BatchID,
+			RowNumber:   row.RowNumber,
+			FieldName:   trimStringPtr(row.FieldName),
+			RawData:     normalizeImportFieldMapping(row.RawData),
+			ErrorCode:   strings.TrimSpace(row.ErrorCode),
+			ErrorDetail: strings.TrimSpace(row.ErrorDetail),
+			DateCreated: now,
+		}
+	}
+
+	if err := b.storer.CreateImportInvalidRows(ctx, invalidRows); err != nil {
+		return nil, fmt.Errorf("create import invalid rows: %w", err)
+	}
+
+	return invalidRows, nil
+}
+
+// QueryImportInvalidRows retrieves invalid rows for an admissions import batch.
+func (b *Business) QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error) {
+	rows, err := b.storer.QueryImportInvalidRows(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query import invalid rows: %w", err)
+	}
+
+	return rows, nil
+}
+
+// CountImportInvalidRows returns the total number of invalid rows for import reports.
+func (b *Business) CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error) {
+	return b.storer.CountImportInvalidRows(ctx, filter)
+}
+
+// QueryImportInvalidRowByID finds an import invalid row by ID.
+func (b *Business) QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error) {
+	row, err := b.storer.QueryImportInvalidRowByID(ctx, rowID)
+	if err != nil {
+		return ImportInvalidRow{}, fmt.Errorf("query import invalid row: rowID[%s]: %w", rowID, err)
+	}
+
+	return row, nil
+}
+
 // CreateSyncJob schedules or starts a SIS batch reconciliation run.
 func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error) {
 	if err := validateNewSyncJob(nj); err != nil {
@@ -2820,6 +3003,117 @@ func isReviewDocumentStatus(status DocumentStatus) bool {
 	default:
 		return false
 	}
+}
+
+func validateNewImportBatch(nb NewImportBatch) error {
+	if err := validateImportSource(nb.Source); err != nil {
+		return err
+	}
+
+	if err := validateImportFileType(nb.FileType); err != nil {
+		return err
+	}
+
+	if err := validateImportTarget(nb.Target); err != nil {
+		return err
+	}
+
+	if err := validateImportBatchStatus(nb.Status); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nb.FileName) == "" {
+		return ErrImportFileNameRequired
+	}
+
+	if nb.UploadedByID == uuid.Nil {
+		return ErrImportUploaderRequired
+	}
+
+	if nb.TotalRows < 0 || nb.ValidRows < 0 || nb.InvalidRows < 0 || nb.DuplicateRows < 0 || nb.ValidRows+nb.InvalidRows > nb.TotalRows {
+		return ErrImportRowsInvalid
+	}
+
+	if len(normalizeImportFieldMapping(nb.FieldMapping)) == 0 {
+		return ErrImportFieldMappingRequired
+	}
+
+	return nil
+}
+
+func validateImportSource(source ImportSource) error {
+	switch source {
+	case ImportSourceManualUpload, ImportSourceSISExport:
+		return nil
+	default:
+		return ErrInvalidImportSource
+	}
+}
+
+func validateImportFileType(fileType ImportFileType) error {
+	switch fileType {
+	case ImportFileTypeCSV, ImportFileTypeXLSX:
+		return nil
+	default:
+		return ErrInvalidImportFileType
+	}
+}
+
+func validateImportTarget(target ImportTarget) error {
+	switch target {
+	case ImportTargetConstituents, ImportTargetApplications:
+		return nil
+	default:
+		return ErrInvalidImportTarget
+	}
+}
+
+func validateImportBatchStatus(status ImportBatchStatus) error {
+	switch status {
+	case ImportBatchStatusPreviewed,
+		ImportBatchStatusValidationFailed,
+		ImportBatchStatusQueued,
+		ImportBatchStatusProcessing,
+		ImportBatchStatusCompleted,
+		ImportBatchStatusFailed:
+		return nil
+	default:
+		return ErrInvalidImportStatus
+	}
+}
+
+func validateNewImportInvalidRow(row NewImportInvalidRow) error {
+	if row.BatchID == uuid.Nil {
+		return ErrImportBatchNotFound
+	}
+
+	if row.RowNumber <= 0 {
+		return ErrImportInvalidRowNumberInvalid
+	}
+
+	if len(normalizeImportFieldMapping(row.RawData)) == 0 {
+		return ErrImportInvalidRowDataRequired
+	}
+
+	if strings.TrimSpace(row.ErrorCode) == "" || strings.TrimSpace(row.ErrorDetail) == "" {
+		return ErrImportInvalidRowErrorRequired
+	}
+
+	return nil
+}
+
+func normalizeImportFieldMapping(mapping map[string]string) map[string]string {
+	normalized := make(map[string]string, len(mapping))
+	for key, value := range mapping {
+		trimmedKey := strings.TrimSpace(key)
+		trimmedValue := strings.TrimSpace(value)
+		if trimmedKey == "" || trimmedValue == "" {
+			continue
+		}
+		normalized[trimmedKey] = trimmedValue
+	}
+
+	return normalized
 }
 
 func isApplicationActive(status ApplicationStatus) bool {

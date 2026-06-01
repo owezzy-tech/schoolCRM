@@ -434,6 +434,161 @@ func TestSetCustomFieldValueRequiresDefinitionOwnerAndRecord(t *testing.T) {
 	}
 }
 
+func TestCreateImportBatchValidatesSupportedFileTypesAndMapping(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nb   NewImportBatch
+		want error
+	}{
+		{
+			name: "file type",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileType("PDF"),
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.pdf",
+				UploadedByID: uuid.New(),
+				FieldMapping: map[string]string{"First Name": "firstName"},
+			},
+			want: ErrInvalidImportFileType,
+		},
+		{
+			name: "uploader",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeCSV,
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.csv",
+				FieldMapping: map[string]string{"First Name": "firstName"},
+			},
+			want: ErrImportUploaderRequired,
+		},
+		{
+			name: "rows",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeXLSX,
+				Target:       ImportTargetApplications,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "applications.xlsx",
+				UploadedByID: uuid.New(),
+				TotalRows:    1,
+				ValidRows:    1,
+				InvalidRows:  1,
+				FieldMapping: map[string]string{"Program": "programID"},
+			},
+			want: ErrImportRowsInvalid,
+		},
+		{
+			name: "mapping",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeCSV,
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.csv",
+				UploadedByID: uuid.New(),
+				TotalRows:    1,
+			},
+			want: ErrImportFieldMappingRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateImportBatch(context.Background(), tt.nb)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateImportBatchStoresAuditReadyPreview(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	uploaderID := uuid.New()
+	storageKey := "imports/constituents-2026.csv"
+	reportKey := "imports/constituents-2026-invalid.csv"
+	summary := "2 invalid rows require correction"
+
+	batch, err := bus.CreateImportBatch(context.Background(), NewImportBatch{
+		Source:            ImportSourceManualUpload,
+		FileType:          ImportFileTypeCSV,
+		Target:            ImportTargetConstituents,
+		Status:            ImportBatchStatusValidationFailed,
+		FileName:          " constituents-2026.csv ",
+		StorageKey:        &storageKey,
+		UploadedByID:      uploaderID,
+		TotalRows:         10,
+		ValidRows:         8,
+		InvalidRows:       2,
+		DuplicateRows:     1,
+		FieldMapping:      map[string]string{" First Name ": " firstName ", "": "ignored"},
+		InvalidReportKey:  &reportKey,
+		ValidationSummary: &summary,
+	})
+	if err != nil {
+		t.Fatalf("CreateImportBatch returned error: %v", err)
+	}
+
+	if batch.FileType != ImportFileTypeCSV {
+		t.Fatalf("FileType = %s, want %s", batch.FileType, ImportFileTypeCSV)
+	}
+	if batch.FileName != "constituents-2026.csv" {
+		t.Fatalf("FileName = %q, want constituents-2026.csv", batch.FileName)
+	}
+	if batch.FieldMapping["First Name"] != "firstName" {
+		t.Fatalf("FieldMapping = %v, want normalized First Name mapping", batch.FieldMapping)
+	}
+	if len(store.importBatches) != 1 {
+		t.Fatalf("stored import batches = %d, want 1", len(store.importBatches))
+	}
+}
+
+func TestCreateImportInvalidRowsStoresCorrectionReportRows(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	batchID := uuid.New()
+	fieldName := "primaryEmail"
+
+	rows, err := bus.CreateImportInvalidRows(context.Background(), []NewImportInvalidRow{
+		{
+			BatchID:     batchID,
+			RowNumber:   3,
+			FieldName:   &fieldName,
+			RawData:     map[string]string{" Email ": " not-an-email "},
+			ErrorCode:   "INVALID_EMAIL",
+			ErrorDetail: "Primary email must be valid",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateImportInvalidRows returned error: %v", err)
+	}
+
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d, want 1", len(rows))
+	}
+	if rows[0].RawData["Email"] != "not-an-email" {
+		t.Fatalf("RawData = %v, want normalized email data", rows[0].RawData)
+	}
+	if len(store.importInvalidRows) != 1 {
+		t.Fatalf("stored invalid rows = %d, want 1", len(store.importInvalidRows))
+	}
+}
+
 func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 	t.Parallel()
 
@@ -1654,6 +1809,8 @@ type stubStore struct {
 	applicationTransitions []ApplicationTransition
 	checklistItems         []ChecklistItem
 	documents              []Document
+	importBatches          []ImportBatch
+	importInvalidRows      []ImportInvalidRow
 	syncJobs               []SyncJob
 	syncEvents             []SyncEvent
 }
@@ -2248,6 +2405,61 @@ func (s *stubStore) QueryDocumentByID(_ context.Context, documentID uuid.UUID) (
 		}
 	}
 	return Document{}, ErrDocumentNotFound
+}
+
+func (s *stubStore) CreateImportBatch(_ context.Context, batch ImportBatch) error {
+	s.importBatches = append(s.importBatches, batch)
+	return nil
+}
+
+func (s *stubStore) UpdateImportBatch(_ context.Context, batch ImportBatch) error {
+	for i, existing := range s.importBatches {
+		if existing.ID == batch.ID {
+			s.importBatches[i] = batch
+			return nil
+		}
+	}
+	s.importBatches = append(s.importBatches, batch)
+	return nil
+}
+
+func (s *stubStore) QueryImportBatches(context.Context, ImportBatchQueryFilter, order.By, page.Page) ([]ImportBatch, error) {
+	return s.importBatches, nil
+}
+
+func (s *stubStore) CountImportBatches(context.Context, ImportBatchQueryFilter) (int, error) {
+	return len(s.importBatches), nil
+}
+
+func (s *stubStore) QueryImportBatchByID(_ context.Context, batchID uuid.UUID) (ImportBatch, error) {
+	for _, batch := range s.importBatches {
+		if batch.ID == batchID {
+			return batch, nil
+		}
+	}
+	return ImportBatch{}, ErrImportBatchNotFound
+}
+
+func (s *stubStore) CreateImportInvalidRows(_ context.Context, rows []ImportInvalidRow) error {
+	s.importInvalidRows = append(s.importInvalidRows, rows...)
+	return nil
+}
+
+func (s *stubStore) QueryImportInvalidRows(context.Context, ImportInvalidRowQueryFilter, order.By, page.Page) ([]ImportInvalidRow, error) {
+	return s.importInvalidRows, nil
+}
+
+func (s *stubStore) CountImportInvalidRows(context.Context, ImportInvalidRowQueryFilter) (int, error) {
+	return len(s.importInvalidRows), nil
+}
+
+func (s *stubStore) QueryImportInvalidRowByID(_ context.Context, rowID uuid.UUID) (ImportInvalidRow, error) {
+	for _, row := range s.importInvalidRows {
+		if row.ID == rowID {
+			return row, nil
+		}
+	}
+	return ImportInvalidRow{}, ErrImportInvalidRowNotFound
 }
 
 func (s *stubStore) CreateSyncJob(_ context.Context, job SyncJob) error {
