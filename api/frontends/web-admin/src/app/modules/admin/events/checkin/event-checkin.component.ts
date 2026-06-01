@@ -32,11 +32,11 @@ export class EventCheckinComponent implements OnInit {
     
     // Mock registrants
     readonly registrants = signal<EventRegistration[]>([
-        { id: 'reg_1', constituentId: 'c_1', constituentName: 'Sofia Martinez', status: 'registered', registeredAt: '2026-05-10T10:00:00Z' },
-        { id: 'reg_2', constituentId: 'c_2', constituentName: 'James Okoro', status: 'checked-in', registeredAt: '2026-05-12T14:30:00Z' },
-        { id: 'reg_3', constituentId: 'c_3', constituentName: 'Liam Chen', status: 'registered', registeredAt: '2026-05-15T09:15:00Z' },
-        { id: 'reg_4', constituentId: 'c_4', constituentName: 'Aisha Bello', status: 'registered', registeredAt: '2026-05-16T11:45:00Z' },
-        { id: 'reg_5', constituentId: 'c_5', constituentName: 'Priya Patel', status: 'checked-in', registeredAt: '2026-05-18T16:20:00Z' },
+        { id: 'reg_1', constituentId: 'c_1', constituentName: 'Sofia Martinez', email: 'sofia.martinez@example.edu', status: 'registered', registeredAt: '2026-05-10T10:00:00Z', matchStatus: 'matched', source: 'portal' },
+        { id: 'reg_2', constituentId: 'c_2', constituentName: 'James Okoro', email: 'james.okoro@example.edu', status: 'checked-in', registeredAt: '2026-05-12T14:30:00Z', matchStatus: 'matched', source: 'campaign', checkedInAt: '2026-06-05T09:20:00Z' },
+        { id: 'reg_3', constituentId: 'c_3', constituentName: 'Liam Chen', email: 'liam.chen@example.edu', status: 'registered', registeredAt: '2026-05-15T09:15:00Z', matchStatus: 'matched', source: 'portal' },
+        { id: 'reg_4', constituentName: 'Aisha Bello', email: 'aisha.bello@example.com', status: 'registered', registeredAt: '2026-05-16T11:45:00Z', matchStatus: 'new-prospect', source: 'portal' },
+        { id: 'reg_5', constituentId: 'c_5', constituentName: 'Priya Patel', email: 'priya.patel@example.edu', status: 'checked-in', registeredAt: '2026-05-18T16:20:00Z', matchStatus: 'matched', source: 'staff', checkedInAt: '2026-06-05T09:34:00Z' },
     ]);
 
     ngOnInit() {
@@ -63,7 +63,17 @@ export class EventCheckinComponent implements OnInit {
         this.registrants.update(regs => 
             regs.map(r => {
                 if (r.id === id) {
-                    return { ...r, status: r.status === 'checked-in' ? 'registered' : 'checked-in' };
+                    return {
+                        ...r,
+                        checkedInAt:
+                            r.status === 'checked-in'
+                                ? undefined
+                                : new Date().toISOString(),
+                        status:
+                            r.status === 'checked-in'
+                                ? 'registered'
+                                : 'checked-in',
+                    };
                 }
                 return r;
             })
