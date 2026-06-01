@@ -1,58 +1,196 @@
-<div class="flex flex-col flex-auto">
-    <section class="flex flex-col items-center justify-center py-20 px-6 sm:py-32 text-center max-w-4xl mx-auto w-full">
-        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-8">
-            <mat-icon svgIcon="heroicons_outline:calendar" class="icon-size-4"></mat-icon>
+<div class="flex flex-auto flex-col">
+    <section
+        class="mx-auto flex w-full max-w-4xl flex-col items-center justify-center px-6 py-20 text-center sm:py-32"
+    >
+        <div
+            class="mb-8 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary"
+        >
+            <mat-icon
+                svgIcon="heroicons_outline:calendar"
+                class="icon-size-4"
+            ></mat-icon>
             <span>Fall 2026 applications open</span>
         </div>
-        
-        <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight text-default mb-6 leading-tight">
+
+        <h1
+            class="text-default mb-6 text-5xl font-extrabold leading-tight tracking-tight sm:text-7xl"
+        >
             Your future, starts here.
         </h1>
-        
-        <p class="text-lg sm:text-xl text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-            Apply to one of 40+ programs, follow your application status in real time, and reach our admissions team in one click.
+
+        <p
+            class="text-secondary mx-auto mb-10 max-w-2xl text-lg leading-relaxed sm:text-xl"
+        >
+            Apply to one of 40+ programs, follow your application status in real
+            time, and reach our admissions team in one click.
         </p>
-        
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-            <a routerLink="/portal/apply" mat-flat-button color="primary" class="w-full sm:w-auto px-8 py-6 rounded-full text-base">
+
+        <div
+            class="flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row"
+        >
+            <a
+                routerLink="/portal/apply"
+                mat-flat-button
+                color="primary"
+                class="w-full rounded-full px-8 py-6 text-base sm:w-auto"
+            >
                 Start application
-                <mat-icon svgIcon="heroicons_outline:arrow-right" class="icon-size-5 ml-2"></mat-icon>
+                <mat-icon
+                    svgIcon="heroicons_outline:arrow-right"
+                    class="ml-2 icon-size-5"
+                ></mat-icon>
             </a>
-            <a routerLink="/portal/status" mat-stroked-button class="w-full sm:w-auto px-8 py-6 rounded-full text-base border-2">
+            <a
+                routerLink="/portal/status"
+                mat-stroked-button
+                class="w-full rounded-full border-2 px-8 py-6 text-base sm:w-auto"
+            >
                 Check status
             </a>
         </div>
+
+        <div
+            class="bg-card mt-10 w-full max-w-2xl rounded-3xl border p-6 text-left shadow-sm"
+        >
+            @if (portalSession(); as session) {
+                <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div>
+                        <p
+                            class="text-sm font-semibold uppercase tracking-[0.2em] text-primary"
+                        >
+                            Portal access active
+                        </p>
+                        <h2 class="text-default mt-2 text-2xl font-bold">
+                            {{ session.applicantName }}
+                        </h2>
+                        <p class="text-secondary mt-1 text-sm">
+                            Application {{ session.applicationID }} is linked to
+                            {{ session.email }}.
+                        </p>
+                    </div>
+                    <a
+                        routerLink="/portal/status"
+                        mat-flat-button
+                        color="primary"
+                        class="rounded-full px-6"
+                    >
+                        Open status
+                    </a>
+                </div>
+            } @else {
+                <p
+                    class="text-sm font-semibold uppercase tracking-[0.2em] text-primary"
+                >
+                    Already submitted?
+                </p>
+                <h2 class="text-default mt-2 text-2xl font-bold">
+                    Email-only portal access
+                </h2>
+                <p class="text-secondary mt-2 text-sm">
+                    Enter the email used on your submitted application. We will
+                    create a temporary portal token for status and event
+                    registration.
+                </p>
+
+                <form
+                    class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start"
+                    (ngSubmit)="requestPortalAccess()"
+                >
+                    <mat-form-field class="w-full" appearance="outline">
+                        <mat-label>Application email</mat-label>
+                        <input
+                            matInput
+                            type="email"
+                            autocomplete="email"
+                            [ngModel]="email()"
+                            (ngModelChange)="email.set($event)"
+                            name="portalEmail"
+                            required
+                        />
+                    </mat-form-field>
+                    <button
+                        mat-flat-button
+                        color="primary"
+                        class="h-14 rounded-full px-8"
+                        type="submit"
+                        [disabled]="requestingAccess()"
+                    >
+                        {{ requestingAccess() ? 'Checking…' : 'Get access' }}
+                    </button>
+                </form>
+
+                @if (accessError()) {
+                    <div
+                        class="mt-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-200"
+                    >
+                        {{ accessError() }}
+                    </div>
+                }
+            }
+        </div>
     </section>
 
-    <section class="py-16 px-6 bg-default">
-        <div class="max-w-6xl mx-auto w-full">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <section class="bg-default px-6 py-16">
+        <div class="mx-auto w-full max-w-6xl">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 @for (card of cards; track card.title) {
-                    <div class="flex flex-col p-8 rounded-2xl bg-card shadow-sm border hover:shadow-md transition-shadow">
-                        <div class="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                            <mat-icon [svgIcon]="card.icon" class="icon-size-6"></mat-icon>
+                    <div
+                        class="bg-card flex flex-col rounded-2xl border p-8 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                        <div
+                            class="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                        >
+                            <mat-icon
+                                [svgIcon]="card.icon"
+                                class="icon-size-6"
+                            ></mat-icon>
                         </div>
-                        <h3 class="text-xl font-bold text-default mb-3">{{card.title}}</h3>
-                        <p class="text-secondary leading-relaxed">{{card.description}}</p>
+                        <h3 class="text-default mb-3 text-xl font-bold">
+                            {{ card.title }}
+                        </h3>
+                        <p class="text-secondary leading-relaxed">
+                            {{ card.description }}
+                        </p>
                     </div>
                 }
             </div>
         </div>
     </section>
 
-    <section class="py-20 px-6 bg-card">
-        <div class="max-w-6xl mx-auto w-full">
-            <h2 class="text-3xl font-bold text-default mb-10 text-center">Important deadlines</h2>
+    <section class="bg-card px-6 py-20">
+        <div class="mx-auto w-full max-w-6xl">
+            <h2 class="text-default mb-10 text-center text-3xl font-bold">
+                Important deadlines
+            </h2>
 
-            <div class="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-12">
-                @for (deadline of deadlines; track deadline.title; let last = $last) {
+            <div
+                class="flex flex-col items-center justify-center gap-8 md:flex-row lg:gap-12"
+            >
+                @for (
+                    deadline of deadlines;
+                    track deadline.title;
+                    let last = $last
+                ) {
                     <div class="flex flex-col items-center text-center">
-                        <span class="text-2xl font-extrabold text-primary mb-2">{{deadline.date}}</span>
-                        <span class="text-secondary font-medium">{{deadline.title}}</span>
+                        <span
+                            class="mb-2 text-2xl font-extrabold text-primary"
+                            >{{ deadline.date }}</span
+                        >
+                        <span class="text-secondary font-medium">{{
+                            deadline.title
+                        }}</span>
                     </div>
                     @if (!last) {
-                        <div class="hidden md:block w-px h-12" style="background-color: var(--fuse-border)"></div>
-                        <div class="md:hidden h-px w-12" style="background-color: var(--fuse-border)"></div>
+                        <div
+                            class="hidden h-12 w-px md:block"
+                            style="background-color: var(--fuse-border)"
+                        ></div>
+                        <div
+                            class="h-px w-12 md:hidden"
+                            style="background-color: var(--fuse-border)"
+                        ></div>
                     }
                 }
             </div>
