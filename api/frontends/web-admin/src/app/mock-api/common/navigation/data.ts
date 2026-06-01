@@ -50,6 +50,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
                 link: '/applications',
             },
             {
+                id: 'admissions.reviews',
+                title: 'Review Workspace',
+                type: 'basic',
+                icon: 'heroicons_outline:clipboard-document-check',
+                link: '/applications/review',
+            },
+            {
                 id: 'admissions.leads',
                 title: 'Leads',
                 type: 'basic',
