@@ -478,3 +478,117 @@ CREATE TABLE admissions_lead_scores (
 CREATE INDEX idx_admissions_lead_scores_constituent ON admissions_lead_scores (constituent_id);
 CREATE INDEX idx_admissions_lead_scores_band ON admissions_lead_scores (score_band);
 CREATE INDEX idx_admissions_lead_scores_total_score ON admissions_lead_scores (total_score DESC);
+
+-- Version: 1.17
+-- Description: Create admissions custom field registry and values
+CREATE TABLE admissions_custom_field_definitions (
+    custom_field_definition_id UUID      NOT NULL,
+    owner                      TEXT      NOT NULL,
+    field_key                  TEXT      NOT NULL,
+    label                      TEXT      NOT NULL,
+    description                TEXT      NULL,
+    data_type                  TEXT      NOT NULL,
+    is_required                BOOLEAN   NOT NULL,
+    options                    TEXT[]    NOT NULL,
+    validation                 TEXT      NULL,
+    is_searchable              BOOLEAN   NOT NULL,
+    is_reportable              BOOLEAN   NOT NULL,
+    is_importable              BOOLEAN   NOT NULL,
+    is_exportable              BOOLEAN   NOT NULL,
+    display_order              INT       NOT NULL,
+    is_active                  BOOLEAN   NOT NULL,
+    date_created               TIMESTAMP NOT NULL,
+    date_updated               TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (custom_field_definition_id),
+    CONSTRAINT admissions_custom_field_definitions_owner CHECK (owner IN ('CONSTITUENT', 'APPLICATION')),
+    CONSTRAINT admissions_custom_field_definitions_key_not_empty CHECK (trim(field_key) <> ''),
+    CONSTRAINT admissions_custom_field_definitions_label_not_empty CHECK (trim(label) <> ''),
+    CONSTRAINT admissions_custom_field_definitions_data_type CHECK (data_type IN ('TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'SELECT', 'BOOLEAN')),
+    CONSTRAINT admissions_custom_field_definitions_select_options CHECK (data_type <> 'SELECT' OR cardinality(options) > 0),
+    CONSTRAINT admissions_custom_field_definitions_order_non_negative CHECK (display_order >= 0),
+    CONSTRAINT admissions_custom_field_definitions_unique_key UNIQUE (owner, field_key)
+);
+
+CREATE INDEX idx_admissions_custom_field_definitions_owner ON admissions_custom_field_definitions (owner);
+CREATE INDEX idx_admissions_custom_field_definitions_active ON admissions_custom_field_definitions (is_active);
+CREATE INDEX idx_admissions_custom_field_definitions_display_order ON admissions_custom_field_definitions (display_order);
+
+CREATE TABLE admissions_custom_field_values (
+    custom_field_value_id      UUID      NOT NULL,
+    custom_field_definition_id UUID      NOT NULL,
+    owner                      TEXT      NOT NULL,
+    owner_id                   UUID      NOT NULL,
+    value                      TEXT      NOT NULL,
+    date_created               TIMESTAMP NOT NULL,
+    date_updated               TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (custom_field_value_id),
+    FOREIGN KEY (custom_field_definition_id) REFERENCES admissions_custom_field_definitions(custom_field_definition_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_custom_field_values_owner CHECK (owner IN ('CONSTITUENT', 'APPLICATION')),
+    CONSTRAINT admissions_custom_field_values_value_not_empty CHECK (trim(value) <> ''),
+    CONSTRAINT admissions_custom_field_values_unique_owner UNIQUE (custom_field_definition_id, owner, owner_id)
+);
+
+CREATE INDEX idx_admissions_custom_field_values_definition ON admissions_custom_field_values (custom_field_definition_id);
+CREATE INDEX idx_admissions_custom_field_values_owner ON admissions_custom_field_values (owner, owner_id);
+
+-- Version: 1.18
+-- Description: Create admissions import batch and invalid row report tables
+CREATE TABLE admissions_import_batches (
+    import_batch_id    UUID      NOT NULL,
+    source             TEXT      NOT NULL,
+    file_type          TEXT      NOT NULL,
+    target             TEXT      NOT NULL,
+    status             TEXT      NOT NULL,
+    file_name          TEXT      NOT NULL,
+    storage_key        TEXT      NULL,
+    uploaded_by_id     UUID      NOT NULL,
+    total_rows         INT       NOT NULL,
+    valid_rows         INT       NOT NULL,
+    invalid_rows       INT       NOT NULL,
+    duplicate_rows     INT       NOT NULL,
+    field_mapping      JSONB     NOT NULL,
+    invalid_report_key TEXT      NULL,
+    validation_summary TEXT      NULL,
+    committed_at       TIMESTAMP NULL,
+    date_created       TIMESTAMP NOT NULL,
+    date_updated       TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (import_batch_id),
+    FOREIGN KEY (uploaded_by_id) REFERENCES users(user_id),
+    CONSTRAINT admissions_import_batches_source CHECK (source IN ('MANUAL_UPLOAD', 'SIS_EXPORT')),
+    CONSTRAINT admissions_import_batches_file_type CHECK (file_type IN ('CSV', 'XLSX')),
+    CONSTRAINT admissions_import_batches_target CHECK (target IN ('CONSTITUENTS', 'APPLICATIONS')),
+    CONSTRAINT admissions_import_batches_status CHECK (status IN ('PREVIEWED', 'VALIDATION_FAILED', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED')),
+    CONSTRAINT admissions_import_batches_file_name_not_empty CHECK (trim(file_name) <> ''),
+    CONSTRAINT admissions_import_batches_rows_non_negative CHECK (total_rows >= 0 AND valid_rows >= 0 AND invalid_rows >= 0 AND duplicate_rows >= 0),
+    CONSTRAINT admissions_import_batches_rows_consistent CHECK (valid_rows + invalid_rows <= total_rows),
+    CONSTRAINT admissions_import_batches_field_mapping_object CHECK (jsonb_typeof(field_mapping) = 'object')
+);
+
+CREATE INDEX idx_admissions_import_batches_target ON admissions_import_batches (target);
+CREATE INDEX idx_admissions_import_batches_status ON admissions_import_batches (status);
+CREATE INDEX idx_admissions_import_batches_uploaded_by ON admissions_import_batches (uploaded_by_id);
+CREATE INDEX idx_admissions_import_batches_created ON admissions_import_batches (date_created);
+
+CREATE TABLE admissions_import_invalid_rows (
+    import_invalid_row_id UUID      NOT NULL,
+    import_batch_id       UUID      NOT NULL,
+    row_number            INT       NOT NULL,
+    field_name            TEXT      NULL,
+    raw_data              JSONB     NOT NULL,
+    error_code            TEXT      NOT NULL,
+    error_detail          TEXT      NOT NULL,
+    date_created          TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (import_invalid_row_id),
+    FOREIGN KEY (import_batch_id) REFERENCES admissions_import_batches(import_batch_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_import_invalid_rows_row_number CHECK (row_number > 0),
+    CONSTRAINT admissions_import_invalid_rows_raw_data_object CHECK (jsonb_typeof(raw_data) = 'object'),
+    CONSTRAINT admissions_import_invalid_rows_error_code_not_empty CHECK (trim(error_code) <> ''),
+    CONSTRAINT admissions_import_invalid_rows_error_detail_not_empty CHECK (trim(error_detail) <> '')
+);
+
+CREATE INDEX idx_admissions_import_invalid_rows_batch ON admissions_import_invalid_rows (import_batch_id);
+CREATE INDEX idx_admissions_import_invalid_rows_row_number ON admissions_import_invalid_rows (row_number);

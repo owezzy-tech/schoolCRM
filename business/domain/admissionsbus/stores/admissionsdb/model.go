@@ -147,6 +147,68 @@ type applicationFormTemplateDB struct {
 	DateUpdated     time.Time       `db:"date_updated"`
 }
 
+type customFieldDefinitionDB struct {
+	ID           uuid.UUID      `db:"custom_field_definition_id"`
+	Owner        string         `db:"owner"`
+	FieldKey     string         `db:"field_key"`
+	Label        string         `db:"label"`
+	Description  *string        `db:"description"`
+	DataType     string         `db:"data_type"`
+	Required     bool           `db:"is_required"`
+	Options      dbarray.String `db:"options"`
+	Validation   *string        `db:"validation"`
+	Searchable   bool           `db:"is_searchable"`
+	Reportable   bool           `db:"is_reportable"`
+	Importable   bool           `db:"is_importable"`
+	Exportable   bool           `db:"is_exportable"`
+	DisplayOrder int            `db:"display_order"`
+	Active       bool           `db:"is_active"`
+	DateCreated  time.Time      `db:"date_created"`
+	DateUpdated  time.Time      `db:"date_updated"`
+}
+
+type customFieldValueDB struct {
+	ID           uuid.UUID `db:"custom_field_value_id"`
+	DefinitionID uuid.UUID `db:"custom_field_definition_id"`
+	Owner        string    `db:"owner"`
+	OwnerID      uuid.UUID `db:"owner_id"`
+	Value        string    `db:"value"`
+	DateCreated  time.Time `db:"date_created"`
+	DateUpdated  time.Time `db:"date_updated"`
+}
+
+type importBatchDB struct {
+	ID                uuid.UUID       `db:"import_batch_id"`
+	Source            string          `db:"source"`
+	FileType          string          `db:"file_type"`
+	Target            string          `db:"target"`
+	Status            string          `db:"status"`
+	FileName          string          `db:"file_name"`
+	StorageKey        *string         `db:"storage_key"`
+	UploadedByID      uuid.UUID       `db:"uploaded_by_id"`
+	TotalRows         int             `db:"total_rows"`
+	ValidRows         int             `db:"valid_rows"`
+	InvalidRows       int             `db:"invalid_rows"`
+	DuplicateRows     int             `db:"duplicate_rows"`
+	FieldMapping      json.RawMessage `db:"field_mapping"`
+	InvalidReportKey  *string         `db:"invalid_report_key"`
+	ValidationSummary *string         `db:"validation_summary"`
+	CommittedAt       *time.Time      `db:"committed_at"`
+	DateCreated       time.Time       `db:"date_created"`
+	DateUpdated       time.Time       `db:"date_updated"`
+}
+
+type importInvalidRowDB struct {
+	ID          uuid.UUID       `db:"import_invalid_row_id"`
+	BatchID     uuid.UUID       `db:"import_batch_id"`
+	RowNumber   int             `db:"row_number"`
+	FieldName   *string         `db:"field_name"`
+	RawData     json.RawMessage `db:"raw_data"`
+	ErrorCode   string          `db:"error_code"`
+	ErrorDetail string          `db:"error_detail"`
+	DateCreated time.Time       `db:"date_created"`
+}
+
 type applicationTransitionDB struct {
 	ID            uuid.UUID       `db:"application_transition_id"`
 	ApplicationID uuid.UUID       `db:"application_id"`
@@ -726,6 +788,223 @@ func toBusApplicationFormTemplates(dbs []applicationFormTemplateDB) ([]admission
 	for i, db := range dbs {
 		var err error
 		bus[i], err = toBusApplicationFormTemplate(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBCustomFieldDefinition(bus admissionsbus.CustomFieldDefinition) customFieldDefinitionDB {
+	return customFieldDefinitionDB{
+		ID:           bus.ID,
+		Owner:        bus.Owner.String(),
+		FieldKey:     bus.FieldKey,
+		Label:        bus.Label,
+		Description:  bus.Description,
+		DataType:     bus.DataType.String(),
+		Required:     bus.Required,
+		Options:      bus.Options,
+		Validation:   bus.Validation,
+		Searchable:   bus.Searchable,
+		Reportable:   bus.Reportable,
+		Importable:   bus.Importable,
+		Exportable:   bus.Exportable,
+		DisplayOrder: bus.DisplayOrder,
+		Active:       bus.Active,
+		DateCreated:  bus.DateCreated.UTC(),
+		DateUpdated:  bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusCustomFieldDefinition(db customFieldDefinitionDB) admissionsbus.CustomFieldDefinition {
+	return admissionsbus.CustomFieldDefinition{
+		ID:           db.ID,
+		Owner:        admissionsbus.CustomFieldOwner(db.Owner),
+		FieldKey:     db.FieldKey,
+		Label:        db.Label,
+		Description:  db.Description,
+		DataType:     admissionsbus.CustomFieldDataType(db.DataType),
+		Required:     db.Required,
+		Options:      []string(db.Options),
+		Validation:   db.Validation,
+		Searchable:   db.Searchable,
+		Reportable:   db.Reportable,
+		Importable:   db.Importable,
+		Exportable:   db.Exportable,
+		DisplayOrder: db.DisplayOrder,
+		Active:       db.Active,
+		DateCreated:  db.DateCreated.In(time.Local),
+		DateUpdated:  db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCustomFieldDefinitions(dbs []customFieldDefinitionDB) []admissionsbus.CustomFieldDefinition {
+	bus := make([]admissionsbus.CustomFieldDefinition, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCustomFieldDefinition(db)
+	}
+
+	return bus
+}
+
+func toDBCustomFieldValue(bus admissionsbus.CustomFieldValue) customFieldValueDB {
+	return customFieldValueDB{
+		ID:           bus.ID,
+		DefinitionID: bus.DefinitionID,
+		Owner:        bus.Owner.String(),
+		OwnerID:      bus.OwnerID,
+		Value:        bus.Value,
+		DateCreated:  bus.DateCreated.UTC(),
+		DateUpdated:  bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusCustomFieldValue(db customFieldValueDB) admissionsbus.CustomFieldValue {
+	return admissionsbus.CustomFieldValue{
+		ID:           db.ID,
+		DefinitionID: db.DefinitionID,
+		Owner:        admissionsbus.CustomFieldOwner(db.Owner),
+		OwnerID:      db.OwnerID,
+		Value:        db.Value,
+		DateCreated:  db.DateCreated.In(time.Local),
+		DateUpdated:  db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCustomFieldValues(dbs []customFieldValueDB) []admissionsbus.CustomFieldValue {
+	bus := make([]admissionsbus.CustomFieldValue, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCustomFieldValue(db)
+	}
+
+	return bus
+}
+
+func toDBImportBatch(bus admissionsbus.ImportBatch) (importBatchDB, error) {
+	fieldMapping, err := json.Marshal(bus.FieldMapping)
+	if err != nil {
+		return importBatchDB{}, err
+	}
+
+	return importBatchDB{
+		ID:                bus.ID,
+		Source:            bus.Source.String(),
+		FileType:          bus.FileType.String(),
+		Target:            bus.Target.String(),
+		Status:            bus.Status.String(),
+		FileName:          bus.FileName,
+		StorageKey:        bus.StorageKey,
+		UploadedByID:      bus.UploadedByID,
+		TotalRows:         bus.TotalRows,
+		ValidRows:         bus.ValidRows,
+		InvalidRows:       bus.InvalidRows,
+		DuplicateRows:     bus.DuplicateRows,
+		FieldMapping:      fieldMapping,
+		InvalidReportKey:  bus.InvalidReportKey,
+		ValidationSummary: bus.ValidationSummary,
+		CommittedAt:       utcTimePtr(bus.CommittedAt),
+		DateCreated:       bus.DateCreated.UTC(),
+		DateUpdated:       bus.DateUpdated.UTC(),
+	}, nil
+}
+
+func toBusImportBatch(db importBatchDB) (admissionsbus.ImportBatch, error) {
+	var fieldMapping map[string]string
+	if err := json.Unmarshal(db.FieldMapping, &fieldMapping); err != nil {
+		return admissionsbus.ImportBatch{}, err
+	}
+
+	return admissionsbus.ImportBatch{
+		ID:                db.ID,
+		Source:            admissionsbus.ImportSource(db.Source),
+		FileType:          admissionsbus.ImportFileType(db.FileType),
+		Target:            admissionsbus.ImportTarget(db.Target),
+		Status:            admissionsbus.ImportBatchStatus(db.Status),
+		FileName:          db.FileName,
+		StorageKey:        db.StorageKey,
+		UploadedByID:      db.UploadedByID,
+		TotalRows:         db.TotalRows,
+		ValidRows:         db.ValidRows,
+		InvalidRows:       db.InvalidRows,
+		DuplicateRows:     db.DuplicateRows,
+		FieldMapping:      fieldMapping,
+		InvalidReportKey:  db.InvalidReportKey,
+		ValidationSummary: db.ValidationSummary,
+		CommittedAt:       localTimePtr(db.CommittedAt),
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}, nil
+}
+
+func toBusImportBatches(dbs []importBatchDB) ([]admissionsbus.ImportBatch, error) {
+	bus := make([]admissionsbus.ImportBatch, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusImportBatch(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return bus, nil
+}
+
+func toDBImportInvalidRow(bus admissionsbus.ImportInvalidRow) (importInvalidRowDB, error) {
+	rawData, err := json.Marshal(bus.RawData)
+	if err != nil {
+		return importInvalidRowDB{}, err
+	}
+
+	return importInvalidRowDB{
+		ID:          bus.ID,
+		BatchID:     bus.BatchID,
+		RowNumber:   bus.RowNumber,
+		FieldName:   bus.FieldName,
+		RawData:     rawData,
+		ErrorCode:   bus.ErrorCode,
+		ErrorDetail: bus.ErrorDetail,
+		DateCreated: bus.DateCreated.UTC(),
+	}, nil
+}
+
+func toDBImportInvalidRows(bus []admissionsbus.ImportInvalidRow) ([]importInvalidRowDB, error) {
+	dbs := make([]importInvalidRowDB, len(bus))
+	for i, row := range bus {
+		var err error
+		dbs[i], err = toDBImportInvalidRow(row)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dbs, nil
+}
+
+func toBusImportInvalidRow(db importInvalidRowDB) (admissionsbus.ImportInvalidRow, error) {
+	var rawData map[string]string
+	if err := json.Unmarshal(db.RawData, &rawData); err != nil {
+		return admissionsbus.ImportInvalidRow{}, err
+	}
+
+	return admissionsbus.ImportInvalidRow{
+		ID:          db.ID,
+		BatchID:     db.BatchID,
+		RowNumber:   db.RowNumber,
+		FieldName:   db.FieldName,
+		RawData:     rawData,
+		ErrorCode:   db.ErrorCode,
+		ErrorDetail: db.ErrorDetail,
+		DateCreated: db.DateCreated.In(time.Local),
+	}, nil
+}
+
+func toBusImportInvalidRows(dbs []importInvalidRowDB) ([]admissionsbus.ImportInvalidRow, error) {
+	bus := make([]admissionsbus.ImportInvalidRow, len(dbs))
+	for i, db := range dbs {
+		var err error
+		bus[i], err = toBusImportInvalidRow(db)
 		if err != nil {
 			return nil, err
 		}

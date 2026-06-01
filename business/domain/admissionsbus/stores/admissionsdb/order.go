@@ -89,6 +89,22 @@ var applicationFormTemplateOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationFormTemplateDateCreated: "date_created",
 }
 
+var customFieldDefinitionOrderByFields = map[string]string{
+	admissionsbus.OrderByCustomFieldDefinitionID:           "custom_field_definition_id",
+	admissionsbus.OrderByCustomFieldDefinitionOwner:        "owner",
+	admissionsbus.OrderByCustomFieldDefinitionFieldKey:     "field_key",
+	admissionsbus.OrderByCustomFieldDefinitionDisplayOrder: "display_order",
+	admissionsbus.OrderByCustomFieldDefinitionDateCreated:  "date_created",
+}
+
+var customFieldValueOrderByFields = map[string]string{
+	admissionsbus.OrderByCustomFieldValueID:          "custom_field_value_id",
+	admissionsbus.OrderByCustomFieldValueDefinition:  "custom_field_definition_id",
+	admissionsbus.OrderByCustomFieldValueOwner:       "owner",
+	admissionsbus.OrderByCustomFieldValueOwnerID:     "owner_id",
+	admissionsbus.OrderByCustomFieldValueDateCreated: "date_created",
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationTransitionID:          "application_transition_id",
 	admissionsbus.OrderByApplicationTransitionApplication: "application_id",
@@ -111,6 +127,21 @@ var documentOrderByFields = map[string]string{
 	admissionsbus.OrderByDocumentStatus:        "status",
 	admissionsbus.OrderByDocumentUploadedAt:    "uploaded_at",
 	admissionsbus.OrderByDocumentReviewedAt:    "reviewed_at",
+}
+
+var importBatchOrderByFields = map[string]string{
+	admissionsbus.OrderByImportBatchID:          "import_batch_id",
+	admissionsbus.OrderByImportBatchTarget:      "target",
+	admissionsbus.OrderByImportBatchStatus:      "status",
+	admissionsbus.OrderByImportBatchUploadedBy:  "uploaded_by_id",
+	admissionsbus.OrderByImportBatchDateCreated: "date_created",
+}
+
+var importInvalidRowOrderByFields = map[string]string{
+	admissionsbus.OrderByImportInvalidRowID:          "import_invalid_row_id",
+	admissionsbus.OrderByImportInvalidRowBatch:       "import_batch_id",
+	admissionsbus.OrderByImportInvalidRowNumber:      "row_number",
+	admissionsbus.OrderByImportInvalidRowDateCreated: "date_created",
 }
 
 func programOrderByClause(orderBy order.By) (string, error) {
@@ -212,6 +243,24 @@ func applicationFormTemplateOrderByClause(orderBy order.By) (string, error) {
 	return " ORDER BY " + by + " " + orderBy.Direction, nil
 }
 
+func customFieldDefinitionOrderByClause(orderBy order.By) (string, error) {
+	by, exists := customFieldDefinitionOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func customFieldValueOrderByClause(orderBy order.By) (string, error) {
+	by, exists := customFieldValueOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
 func applicationTransitionOrderByClause(orderBy order.By) (string, error) {
 	by, exists := applicationTransitionOrderByFields[orderBy.Field]
 	if !exists {
@@ -232,6 +281,24 @@ func checklistItemOrderByClause(orderBy order.By) (string, error) {
 
 func documentOrderByClause(orderBy order.By) (string, error) {
 	by, exists := documentOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func importBatchOrderByClause(orderBy order.By) (string, error) {
+	by, exists := importBatchOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func importInvalidRowOrderByClause(orderBy order.By) (string, error) {
+	by, exists := importInvalidRowOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}
