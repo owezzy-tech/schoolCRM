@@ -65,6 +65,9 @@ type constituentQueryParams struct {
 	ID              string
 	PrimaryEmail    string
 	ExternalSISID   string
+	NationalID      string
+	UPI             string
+	KCSEIndexNumber string
 	LifecycleStage  string
 	DuplicateStatus string
 }
@@ -299,6 +302,9 @@ func parseConstituentQueryParams(r *http.Request) constituentQueryParams {
 		ID:              values.Get("constituent_id"),
 		PrimaryEmail:    values.Get("primary_email"),
 		ExternalSISID:   values.Get("external_sis_id"),
+		NationalID:      values.Get("national_id"),
+		UPI:             values.Get("upi"),
+		KCSEIndexNumber: values.Get("kcse_index_number"),
 		LifecycleStage:  values.Get("lifecycle_stage"),
 		DuplicateStatus: values.Get("duplicate_status"),
 	}
@@ -735,6 +741,36 @@ func parseConstituentFilter(qp constituentQueryParams) (admissionsbus.Constituen
 
 	if qp.ExternalSISID != "" {
 		filter.ExternalSISID = &qp.ExternalSISID
+	}
+
+	if qp.NationalID != "" {
+		nationalID, err := admissionsbus.ParseKenyaNationalID(qp.NationalID)
+		if err != nil {
+			fieldErrors.Add("national_id", err)
+		} else {
+			value := nationalID.String()
+			filter.NationalID = &value
+		}
+	}
+
+	if qp.UPI != "" {
+		upi, err := admissionsbus.ParseKenyaUPI(qp.UPI)
+		if err != nil {
+			fieldErrors.Add("upi", err)
+		} else {
+			value := upi.String()
+			filter.UPI = &value
+		}
+	}
+
+	if qp.KCSEIndexNumber != "" {
+		indexNumber, err := admissionsbus.ParseKenyaKCSEIndexNumber(qp.KCSEIndexNumber)
+		if err != nil {
+			fieldErrors.Add("kcse_index_number", err)
+		} else {
+			value := indexNumber.String()
+			filter.KCSEIndexNumber = &value
+		}
 	}
 
 	if qp.LifecycleStage != "" {

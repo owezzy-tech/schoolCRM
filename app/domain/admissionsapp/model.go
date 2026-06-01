@@ -360,22 +360,31 @@ func toAppHealth(health admissionsbus.Health) Health {
 
 // Constituent represents durable admissions identity data.
 type Constituent struct {
-	ID              string  `json:"id"`
-	FirstName       string  `json:"firstName"`
-	LastName        string  `json:"lastName"`
-	PreferredName   *string `json:"preferredName,omitempty"`
-	MiddleName      *string `json:"middleName,omitempty"`
-	Suffix          *string `json:"suffix,omitempty"`
-	DateOfBirth     string  `json:"dateOfBirth"`
-	PrimaryEmail    string  `json:"primaryEmail"`
-	PrimaryPhone    string  `json:"primaryPhone"`
-	ExternalSISID   *string `json:"externalSISID,omitempty"`
-	LifecycleStage  string  `json:"lifecycleStage"`
-	DuplicateStatus string  `json:"duplicateStatus"`
-	DuplicateOfID   *string `json:"duplicateOfID,omitempty"`
-	SISSyncedAt     *string `json:"sisSyncedAt,omitempty"`
-	DateCreated     string  `json:"dateCreated"`
-	DateUpdated     string  `json:"dateUpdated"`
+	ID                          string  `json:"id"`
+	FirstName                   string  `json:"firstName"`
+	LastName                    string  `json:"lastName"`
+	PreferredName               *string `json:"preferredName,omitempty"`
+	MiddleName                  *string `json:"middleName,omitempty"`
+	Suffix                      *string `json:"suffix,omitempty"`
+	DateOfBirth                 string  `json:"dateOfBirth"`
+	PrimaryEmail                string  `json:"primaryEmail"`
+	PrimaryPhone                string  `json:"primaryPhone"`
+	ExternalSISID               *string `json:"externalSISID,omitempty"`
+	NationalID                  *string `json:"nationalID,omitempty"`
+	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt,omitempty"`
+	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter,omitempty"`
+	UPI                         *string `json:"upi,omitempty"`
+	UPIVerifiedAt               *string `json:"upiVerifiedAt,omitempty"`
+	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter,omitempty"`
+	KCSEIndexNumber             *string `json:"kcseIndexNumber,omitempty"`
+	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt,omitempty"`
+	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter,omitempty"`
+	LifecycleStage              string  `json:"lifecycleStage"`
+	DuplicateStatus             string  `json:"duplicateStatus"`
+	DuplicateOfID               *string `json:"duplicateOfID,omitempty"`
+	SISSyncedAt                 *string `json:"sisSyncedAt,omitempty"`
+	DateCreated                 string  `json:"dateCreated"`
+	DateUpdated                 string  `json:"dateUpdated"`
 }
 
 // Encode implements the encoder interface.
@@ -386,22 +395,31 @@ func (app Constituent) Encode() ([]byte, string, error) {
 
 func toAppConstituent(cst admissionsbus.Constituent) Constituent {
 	return Constituent{
-		ID:              cst.ID.String(),
-		FirstName:       cst.FirstName,
-		LastName:        cst.LastName,
-		PreferredName:   cst.PreferredName,
-		MiddleName:      cst.MiddleName,
-		Suffix:          cst.Suffix,
-		DateOfBirth:     cst.DateOfBirth.Format(time.RFC3339),
-		PrimaryEmail:    cst.PrimaryEmail.String(),
-		PrimaryPhone:    cst.PrimaryPhone,
-		ExternalSISID:   cst.ExternalSISID,
-		LifecycleStage:  cst.LifecycleStage.String(),
-		DuplicateStatus: cst.DuplicateStatus.String(),
-		DuplicateOfID:   uuidStringPtr(cst.DuplicateOfID),
-		SISSyncedAt:     formatTimePtr(cst.SISSyncedAt),
-		DateCreated:     cst.DateCreated.Format(time.RFC3339),
-		DateUpdated:     cst.DateUpdated.Format(time.RFC3339),
+		ID:                          cst.ID.String(),
+		FirstName:                   cst.FirstName,
+		LastName:                    cst.LastName,
+		PreferredName:               cst.PreferredName,
+		MiddleName:                  cst.MiddleName,
+		Suffix:                      cst.Suffix,
+		DateOfBirth:                 cst.DateOfBirth.Format(time.RFC3339),
+		PrimaryEmail:                cst.PrimaryEmail.String(),
+		PrimaryPhone:                cst.PrimaryPhone,
+		ExternalSISID:               cst.ExternalSISID,
+		NationalID:                  cst.NationalID,
+		NationalIDVerifiedAt:        formatTimePtr(cst.NationalIDVerifiedAt),
+		NationalIDVerifiedByAdapter: cst.NationalIDVerifiedByAdapter,
+		UPI:                         cst.UPI,
+		UPIVerifiedAt:               formatTimePtr(cst.UPIVerifiedAt),
+		UPIVerifiedByAdapter:        cst.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             cst.KCSEIndexNumber,
+		KCSEIndexVerifiedAt:         formatTimePtr(cst.KCSEIndexVerifiedAt),
+		KCSEIndexVerifiedByAdapter:  cst.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              cst.LifecycleStage.String(),
+		DuplicateStatus:             cst.DuplicateStatus.String(),
+		DuplicateOfID:               uuidStringPtr(cst.DuplicateOfID),
+		SISSyncedAt:                 formatTimePtr(cst.SISSyncedAt),
+		DateCreated:                 cst.DateCreated.Format(time.RFC3339),
+		DateUpdated:                 cst.DateUpdated.Format(time.RFC3339),
 	}
 }
 
@@ -416,16 +434,25 @@ func toAppConstituents(constituents []admissionsbus.Constituent) []Constituent {
 
 // NewConstituent defines the data needed to add a new constituent.
 type NewConstituent struct {
-	FirstName      string  `json:"firstName"`
-	LastName       string  `json:"lastName"`
-	PreferredName  *string `json:"preferredName"`
-	MiddleName     *string `json:"middleName"`
-	Suffix         *string `json:"suffix"`
-	DateOfBirth    string  `json:"dateOfBirth"`
-	PrimaryEmail   string  `json:"primaryEmail"`
-	PrimaryPhone   string  `json:"primaryPhone"`
-	ExternalSISID  *string `json:"externalSISID"`
-	LifecycleStage string  `json:"lifecycleStage"`
+	FirstName                   string  `json:"firstName"`
+	LastName                    string  `json:"lastName"`
+	PreferredName               *string `json:"preferredName"`
+	MiddleName                  *string `json:"middleName"`
+	Suffix                      *string `json:"suffix"`
+	DateOfBirth                 string  `json:"dateOfBirth"`
+	PrimaryEmail                string  `json:"primaryEmail"`
+	PrimaryPhone                string  `json:"primaryPhone"`
+	ExternalSISID               *string `json:"externalSISID"`
+	NationalID                  *string `json:"nationalID"`
+	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string `json:"upi"`
+	UPIVerifiedAt               *string `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              string  `json:"lifecycleStage"`
 }
 
 // Decode implements the decoder interface.
@@ -448,22 +475,61 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 
 	stage := admissionsbus.LifecycleStage(app.LifecycleStage)
 
+	nationalID, err := parseKenyaNationalIDPtr(app.NationalID)
+	if err != nil {
+		fieldErrors.Add("nationalID", err)
+	}
+
+	upi, err := parseKenyaUPIPtr(app.UPI)
+	if err != nil {
+		fieldErrors.Add("upi", err)
+	}
+
+	kcseIndexNumber, err := parseKenyaKCSEIndexNumberPtr(app.KCSEIndexNumber)
+	if err != nil {
+		fieldErrors.Add("kcseIndexNumber", err)
+	}
+
+	nationalIDVerifiedAt, err := parseTimePtr(app.NationalIDVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("nationalIDVerifiedAt", err)
+	}
+
+	upiVerifiedAt, err := parseTimePtr(app.UPIVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("upiVerifiedAt", err)
+	}
+
+	kcseIndexVerifiedAt, err := parseTimePtr(app.KCSEIndexVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("kcseIndexVerifiedAt", err)
+	}
+
 	if len(fieldErrors) > 0 {
 		return admissionsbus.NewConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
 
 	return admissionsbus.NewConstituent{
-		FirstName:       app.FirstName,
-		LastName:        app.LastName,
-		PreferredName:   app.PreferredName,
-		MiddleName:      app.MiddleName,
-		Suffix:          app.Suffix,
-		DateOfBirth:     dob,
-		PrimaryEmail:    *email,
-		PrimaryPhone:    app.PrimaryPhone,
-		ExternalSISID:   app.ExternalSISID,
-		LifecycleStage:  stage,
-		DuplicateStatus: admissionsbus.DuplicateStatusActive,
+		FirstName:                   app.FirstName,
+		LastName:                    app.LastName,
+		PreferredName:               app.PreferredName,
+		MiddleName:                  app.MiddleName,
+		Suffix:                      app.Suffix,
+		DateOfBirth:                 dob,
+		PrimaryEmail:                *email,
+		PrimaryPhone:                app.PrimaryPhone,
+		ExternalSISID:               app.ExternalSISID,
+		NationalID:                  nationalID,
+		NationalIDVerifiedAt:        nationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: app.NationalIDVerifiedByAdapter,
+		UPI:                         upi,
+		UPIVerifiedAt:               upiVerifiedAt,
+		UPIVerifiedByAdapter:        app.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             kcseIndexNumber,
+		KCSEIndexVerifiedAt:         kcseIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              stage,
+		DuplicateStatus:             admissionsbus.DuplicateStatusActive,
 	}, nil
 }
 
@@ -591,12 +657,21 @@ func toBusNewInquiry(app NewInquiry) (admissionsbus.NewInquiry, error) {
 
 // UpdateConstituent defines the data needed to update a constituent.
 type UpdateConstituent struct {
-	PreferredName  *string `json:"preferredName"`
-	MiddleName     *string `json:"middleName"`
-	Suffix         *string `json:"suffix"`
-	PrimaryEmail   *string `json:"primaryEmail"`
-	PrimaryPhone   *string `json:"primaryPhone"`
-	LifecycleStage *string `json:"lifecycleStage"`
+	PreferredName               *string `json:"preferredName"`
+	MiddleName                  *string `json:"middleName"`
+	Suffix                      *string `json:"suffix"`
+	PrimaryEmail                *string `json:"primaryEmail"`
+	PrimaryPhone                *string `json:"primaryPhone"`
+	NationalID                  *string `json:"nationalID"`
+	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string `json:"upi"`
+	UPIVerifiedAt               *string `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              *string `json:"lifecycleStage"`
 }
 
 // Decode implements the decoder interface.
@@ -623,17 +698,56 @@ func toBusUpdateConstituent(app UpdateConstituent) (admissionsbus.UpdateConstitu
 		stage = &parsed
 	}
 
+	nationalID, err := parseKenyaNationalIDPtr(app.NationalID)
+	if err != nil {
+		fieldErrors.Add("nationalID", err)
+	}
+
+	upi, err := parseKenyaUPIPtr(app.UPI)
+	if err != nil {
+		fieldErrors.Add("upi", err)
+	}
+
+	kcseIndexNumber, err := parseKenyaKCSEIndexNumberPtr(app.KCSEIndexNumber)
+	if err != nil {
+		fieldErrors.Add("kcseIndexNumber", err)
+	}
+
+	nationalIDVerifiedAt, err := parseTimePtr(app.NationalIDVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("nationalIDVerifiedAt", err)
+	}
+
+	upiVerifiedAt, err := parseTimePtr(app.UPIVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("upiVerifiedAt", err)
+	}
+
+	kcseIndexVerifiedAt, err := parseTimePtr(app.KCSEIndexVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("kcseIndexVerifiedAt", err)
+	}
+
 	if len(fieldErrors) > 0 {
 		return admissionsbus.UpdateConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
 
 	return admissionsbus.UpdateConstituent{
-		PreferredName:  app.PreferredName,
-		MiddleName:     app.MiddleName,
-		Suffix:         app.Suffix,
-		PrimaryEmail:   email,
-		PrimaryPhone:   app.PrimaryPhone,
-		LifecycleStage: stage,
+		PreferredName:               app.PreferredName,
+		MiddleName:                  app.MiddleName,
+		Suffix:                      app.Suffix,
+		PrimaryEmail:                email,
+		PrimaryPhone:                app.PrimaryPhone,
+		NationalID:                  nationalID,
+		NationalIDVerifiedAt:        nationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: app.NationalIDVerifiedByAdapter,
+		UPI:                         upi,
+		UPIVerifiedAt:               upiVerifiedAt,
+		UPIVerifiedByAdapter:        app.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             kcseIndexNumber,
+		KCSEIndexVerifiedAt:         kcseIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              stage,
 	}, nil
 }
 
@@ -1942,6 +2056,48 @@ func parseTimePtr(value *string) (*time.Time, error) {
 	}
 
 	return &parsed, nil
+}
+
+func parseKenyaNationalIDPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	id, err := admissionsbus.ParseKenyaNationalID(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := id.String()
+	return &normalized, nil
+}
+
+func parseKenyaUPIPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	upi, err := admissionsbus.ParseKenyaUPI(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := upi.String()
+	return &normalized, nil
+}
+
+func parseKenyaKCSEIndexNumberPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	indexNumber, err := admissionsbus.ParseKenyaKCSEIndexNumber(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := indexNumber.String()
+	return &normalized, nil
 }
 
 func parseUUIDPtr(value *string) (*uuid.UUID, error) {

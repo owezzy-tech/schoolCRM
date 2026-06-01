@@ -312,6 +312,30 @@ func (ext *Extension) QueryConstituentByExternalSISID(ctx context.Context, exter
 	return ext.bus.QueryConstituentByExternalSISID(ctx, externalSISID)
 }
 
+// QueryConstituentByNationalID applies otel to Constituent national ID lookups.
+func (ext *Extension) QueryConstituentByNationalID(ctx context.Context, nationalID string) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbynationalid")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByNationalID(ctx, nationalID)
+}
+
+// QueryConstituentByUPI applies otel to Constituent UPI lookups.
+func (ext *Extension) QueryConstituentByUPI(ctx context.Context, upi string) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbyupi")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByUPI(ctx, upi)
+}
+
+// QueryConstituentByKCSEIndexNumber applies otel to Constituent KCSE index lookups.
+func (ext *Extension) QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (admissionsbus.Constituent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryconstituentbykcseindexnumber")
+	defer span.End()
+
+	return ext.bus.QueryConstituentByKCSEIndexNumber(ctx, kcseIndexNumber)
+}
+
 // UpsertProgram applies otel to Program sync/import upserts.
 func (ext *Extension) UpsertProgram(ctx context.Context, up admissionsbus.UpsertProgram) (admissionsbus.Program, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.upsertprogram")

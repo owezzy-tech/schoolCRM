@@ -162,6 +162,9 @@ type Storer interface {
 	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
 	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
 	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
+	QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error)
+	QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error)
+	QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error)
 	UpsertProgram(ctx context.Context, prg Program) error
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -270,6 +273,9 @@ type ExtBusiness interface {
 	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
 	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
 	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
+	QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error)
+	QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error)
+	QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error)
 	UpsertProgram(ctx context.Context, up UpsertProgram) (Program, error)
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -840,22 +846,31 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 
 	now := time.Now()
 	cst := Constituent{
-		ID:              uuid.New(),
-		FirstName:       strings.TrimSpace(nc.FirstName),
-		LastName:        strings.TrimSpace(nc.LastName),
-		PreferredName:   trimStringPtr(nc.PreferredName),
-		MiddleName:      trimStringPtr(nc.MiddleName),
-		Suffix:          trimStringPtr(nc.Suffix),
-		DateOfBirth:     nc.DateOfBirth,
-		PrimaryEmail:    nc.PrimaryEmail,
-		PrimaryPhone:    strings.TrimSpace(nc.PrimaryPhone),
-		ExternalSISID:   trimStringPtr(nc.ExternalSISID),
-		LifecycleStage:  stage,
-		DuplicateStatus: status,
-		DuplicateOfID:   nc.DuplicateOfID,
-		SISSyncedAt:     nc.SISSyncedAt,
-		DateCreated:     now,
-		DateUpdated:     now,
+		ID:                          uuid.New(),
+		FirstName:                   strings.TrimSpace(nc.FirstName),
+		LastName:                    strings.TrimSpace(nc.LastName),
+		PreferredName:               trimStringPtr(nc.PreferredName),
+		MiddleName:                  trimStringPtr(nc.MiddleName),
+		Suffix:                      trimStringPtr(nc.Suffix),
+		DateOfBirth:                 nc.DateOfBirth,
+		PrimaryEmail:                nc.PrimaryEmail,
+		PrimaryPhone:                strings.TrimSpace(nc.PrimaryPhone),
+		ExternalSISID:               trimStringPtr(nc.ExternalSISID),
+		NationalID:                  trimStringPtr(nc.NationalID),
+		NationalIDVerifiedAt:        nc.NationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: trimStringPtr(nc.NationalIDVerifiedByAdapter),
+		UPI:                         trimStringPtr(nc.UPI),
+		UPIVerifiedAt:               nc.UPIVerifiedAt,
+		UPIVerifiedByAdapter:        trimStringPtr(nc.UPIVerifiedByAdapter),
+		KCSEIndexNumber:             trimStringPtr(nc.KCSEIndexNumber),
+		KCSEIndexVerifiedAt:         nc.KCSEIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  trimStringPtr(nc.KCSEIndexVerifiedByAdapter),
+		LifecycleStage:              stage,
+		DuplicateStatus:             status,
+		DuplicateOfID:               nc.DuplicateOfID,
+		SISSyncedAt:                 nc.SISSyncedAt,
+		DateCreated:                 now,
+		DateUpdated:                 now,
 	}
 
 	match, err := b.queryTrustedExactDuplicate(ctx, cst)
@@ -903,6 +918,42 @@ func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc Up
 			return Constituent{}, ErrPrimaryPhoneRequired
 		}
 		cst.PrimaryPhone = phone
+	}
+
+	if uc.NationalID != nil {
+		cst.NationalID = trimStringPtr(uc.NationalID)
+	}
+
+	if uc.NationalIDVerifiedAt != nil {
+		cst.NationalIDVerifiedAt = uc.NationalIDVerifiedAt
+	}
+
+	if uc.NationalIDVerifiedByAdapter != nil {
+		cst.NationalIDVerifiedByAdapter = trimStringPtr(uc.NationalIDVerifiedByAdapter)
+	}
+
+	if uc.UPI != nil {
+		cst.UPI = trimStringPtr(uc.UPI)
+	}
+
+	if uc.UPIVerifiedAt != nil {
+		cst.UPIVerifiedAt = uc.UPIVerifiedAt
+	}
+
+	if uc.UPIVerifiedByAdapter != nil {
+		cst.UPIVerifiedByAdapter = trimStringPtr(uc.UPIVerifiedByAdapter)
+	}
+
+	if uc.KCSEIndexNumber != nil {
+		cst.KCSEIndexNumber = trimStringPtr(uc.KCSEIndexNumber)
+	}
+
+	if uc.KCSEIndexVerifiedAt != nil {
+		cst.KCSEIndexVerifiedAt = uc.KCSEIndexVerifiedAt
+	}
+
+	if uc.KCSEIndexVerifiedByAdapter != nil {
+		cst.KCSEIndexVerifiedByAdapter = trimStringPtr(uc.KCSEIndexVerifiedByAdapter)
 	}
 
 	if uc.LifecycleStage != nil {
@@ -989,6 +1040,36 @@ func (b *Business) QueryConstituentByExternalSISID(ctx context.Context, external
 	cst, err := b.storer.QueryConstituentByExternalSISID(ctx, externalSISID)
 	if err != nil {
 		return Constituent{}, fmt.Errorf("query constituent: externalSISID[%s]: %w", externalSISID, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByNationalID finds a Constituent by Kenyan national ID.
+func (b *Business) QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByNationalID(ctx, nationalID)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: nationalID[%s]: %w", nationalID, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByUPI finds a Constituent by Kenyan UPI.
+func (b *Business) QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByUPI(ctx, upi)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: upi[%s]: %w", upi, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByKCSEIndexNumber finds a Constituent by KCSE index number.
+func (b *Business) QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByKCSEIndexNumber(ctx, kcseIndexNumber)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: kcseIndexNumber[%s]: %w", kcseIndexNumber, err)
 	}
 
 	return cst, nil

@@ -2080,6 +2080,18 @@ func (s *stubStore) QueryConstituentByExternalSISID(context.Context, string) (Co
 	return Constituent{}, ErrConstituentNotFound
 }
 
+func (s *stubStore) QueryConstituentByNationalID(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
+func (s *stubStore) QueryConstituentByUPI(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
+func (s *stubStore) QueryConstituentByKCSEIndexNumber(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
 func (s *stubStore) UpsertProgram(context.Context, Program) error {
 	return nil
 }

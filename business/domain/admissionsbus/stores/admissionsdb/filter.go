@@ -25,6 +25,21 @@ func (s *Store) applyConstituentFilter(filter admissionsbus.ConstituentQueryFilt
 		wc = append(wc, "external_sis_id = :external_sis_id")
 	}
 
+	if filter.NationalID != nil {
+		data["national_id"] = filter.NationalID
+		wc = append(wc, "national_id = :national_id")
+	}
+
+	if filter.UPI != nil {
+		data["upi"] = filter.UPI
+		wc = append(wc, "upi = :upi")
+	}
+
+	if filter.KCSEIndexNumber != nil {
+		data["kcse_index_number"] = filter.KCSEIndexNumber
+		wc = append(wc, "kcse_index_number = :kcse_index_number")
+	}
+
 	if filter.LifecycleStage != nil {
 		data["lifecycle_stage"] = filter.LifecycleStage.String()
 		wc = append(wc, "lifecycle_stage = :lifecycle_stage")
