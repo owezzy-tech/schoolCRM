@@ -1533,6 +1533,248 @@ func (s *Store) queryApplicationFormTemplate(ctx context.Context, filter admissi
 	return toBusApplicationFormTemplate(dbTemplate)
 }
 
+// CreateCustomFieldDefinition inserts a custom field definition.
+func (s *Store) CreateCustomFieldDefinition(ctx context.Context, definition admissionsbus.CustomFieldDefinition) error {
+	const q = `
+	INSERT INTO admissions_custom_field_definitions
+		(custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated)
+	VALUES
+		(:custom_field_definition_id, :owner, :field_key, :label, :description, :data_type, :is_required, :options, :validation, :is_searchable, :is_reportable, :is_importable, :is_exportable, :display_order, :is_active, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldDefinition(definition)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateCustomFieldDefinition replaces mutable custom field definition data.
+func (s *Store) UpdateCustomFieldDefinition(ctx context.Context, definition admissionsbus.CustomFieldDefinition) error {
+	const q = `
+	UPDATE
+		admissions_custom_field_definitions
+	SET
+		owner = :owner,
+		field_key = :field_key,
+		label = :label,
+		description = :description,
+		data_type = :data_type,
+		is_required = :is_required,
+		options = :options,
+		validation = :validation,
+		is_searchable = :is_searchable,
+		is_reportable = :is_reportable,
+		is_importable = :is_importable,
+		is_exportable = :is_exportable,
+		display_order = :display_order,
+		is_active = :is_active,
+		date_updated = :date_updated
+	WHERE
+		custom_field_definition_id = :custom_field_definition_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldDefinition(definition)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryCustomFieldDefinitions retrieves custom field definitions.
+func (s *Store) QueryCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldDefinition, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	orderByClause, err := customFieldDefinitionOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbDefinitions []customFieldDefinitionDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbDefinitions); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCustomFieldDefinitions(dbDefinitions), nil
+}
+
+// CountCustomFieldDefinitions returns the total number of custom field definitions.
+func (s *Store) CountCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCustomFieldDefinitionByID finds a custom field definition by ID.
+func (s *Store) QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (admissionsbus.CustomFieldDefinition, error) {
+	filter := admissionsbus.CustomFieldDefinitionQueryFilter{ID: &definitionID}
+	definition, err := s.queryCustomFieldDefinition(ctx, filter)
+	if err != nil {
+		return admissionsbus.CustomFieldDefinition{}, err
+	}
+
+	return definition, nil
+}
+
+func (s *Store) queryCustomFieldDefinition(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter) (admissionsbus.CustomFieldDefinition, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	var dbDefinition customFieldDefinitionDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbDefinition); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.CustomFieldDefinition{}, fmt.Errorf("db: %w", admissionsbus.ErrCustomFieldDefinitionNotFound)
+		}
+		return admissionsbus.CustomFieldDefinition{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCustomFieldDefinition(dbDefinition), nil
+}
+
+// SetCustomFieldValue creates or replaces a custom field value for an owner record.
+func (s *Store) SetCustomFieldValue(ctx context.Context, value admissionsbus.CustomFieldValue) error {
+	const q = `
+	INSERT INTO admissions_custom_field_values
+		(custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated)
+	VALUES
+		(:custom_field_value_id, :custom_field_definition_id, :owner, :owner_id, :value, :date_created, :date_updated)
+	ON CONFLICT (custom_field_definition_id, owner, owner_id) DO UPDATE SET
+		value = EXCLUDED.value,
+		date_updated = EXCLUDED.date_updated`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldValue(value)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryCustomFieldValues retrieves custom field values.
+func (s *Store) QueryCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldValue, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	orderByClause, err := customFieldValueOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbValues []customFieldValueDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbValues); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCustomFieldValues(dbValues), nil
+}
+
+// CountCustomFieldValues returns the total number of custom field values.
+func (s *Store) CountCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCustomFieldValueByID finds a custom field value by ID.
+func (s *Store) QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (admissionsbus.CustomFieldValue, error) {
+	filter := admissionsbus.CustomFieldValueQueryFilter{ID: &valueID}
+	value, err := s.queryCustomFieldValue(ctx, filter)
+	if err != nil {
+		return admissionsbus.CustomFieldValue{}, err
+	}
+
+	return value, nil
+}
+
+func (s *Store) queryCustomFieldValue(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter) (admissionsbus.CustomFieldValue, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	var dbValue customFieldValueDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbValue); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.CustomFieldValue{}, fmt.Errorf("db: %w", admissionsbus.ErrCustomFieldValueNotFound)
+		}
+		return admissionsbus.CustomFieldValue{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCustomFieldValue(dbValue), nil
+}
+
 // CreateApplicationTransition inserts immutable Application transition history.
 func (s *Store) CreateApplicationTransition(ctx context.Context, transition admissionsbus.ApplicationTransition) error {
 	const q = `
@@ -1912,6 +2154,265 @@ func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.Document
 	}
 
 	return toBusDocument(dbDocument), nil
+}
+
+// CreateImportBatch inserts an admissions import batch record.
+func (s *Store) CreateImportBatch(ctx context.Context, batch admissionsbus.ImportBatch) error {
+	const q = `
+	INSERT INTO admissions_import_batches
+		(import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated)
+	VALUES
+		(:import_batch_id, :source, :file_type, :target, :status, :file_name, :storage_key, :uploaded_by_id, :total_rows, :valid_rows, :invalid_rows, :duplicate_rows, :field_mapping, :invalid_report_key, :validation_summary, :committed_at, :date_created, :date_updated)`
+
+	dbBatch, err := toDBImportBatch(batch)
+	if err != nil {
+		return fmt.Errorf("to db import batch: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbBatch); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateImportBatch replaces mutable admissions import batch fields.
+func (s *Store) UpdateImportBatch(ctx context.Context, batch admissionsbus.ImportBatch) error {
+	const q = `
+	UPDATE
+		admissions_import_batches
+	SET
+		source = :source,
+		file_type = :file_type,
+		target = :target,
+		status = :status,
+		file_name = :file_name,
+		storage_key = :storage_key,
+		uploaded_by_id = :uploaded_by_id,
+		total_rows = :total_rows,
+		valid_rows = :valid_rows,
+		invalid_rows = :invalid_rows,
+		duplicate_rows = :duplicate_rows,
+		field_mapping = :field_mapping,
+		invalid_report_key = :invalid_report_key,
+		validation_summary = :validation_summary,
+		committed_at = :committed_at,
+		date_updated = :date_updated
+	WHERE
+		import_batch_id = :import_batch_id`
+
+	dbBatch, err := toDBImportBatch(batch)
+	if err != nil {
+		return fmt.Errorf("to db import batch: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbBatch); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryImportBatches retrieves admissions import batch records.
+func (s *Store) QueryImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportBatch, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	orderByClause, err := importBatchOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbBatches []importBatchDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbBatches); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusImportBatches(dbBatches)
+}
+
+// CountImportBatches returns the total number of admissions import batch records.
+func (s *Store) CountImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryImportBatchByID finds an admissions import batch by ID.
+func (s *Store) QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (admissionsbus.ImportBatch, error) {
+	filter := admissionsbus.ImportBatchQueryFilter{ID: &batchID}
+	batch, err := s.queryImportBatch(ctx, filter)
+	if err != nil {
+		return admissionsbus.ImportBatch{}, err
+	}
+
+	return batch, nil
+}
+
+func (s *Store) queryImportBatch(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter) (admissionsbus.ImportBatch, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	var dbBatch importBatchDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbBatch); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ImportBatch{}, fmt.Errorf("db: %w", admissionsbus.ErrImportBatchNotFound)
+		}
+		return admissionsbus.ImportBatch{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusImportBatch(dbBatch)
+}
+
+// CreateImportInvalidRows inserts invalid import rows for correction reports.
+func (s *Store) CreateImportInvalidRows(ctx context.Context, rows []admissionsbus.ImportInvalidRow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	const q = `
+	INSERT INTO admissions_import_invalid_rows
+		(import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created)
+	VALUES
+		(:import_invalid_row_id, :import_batch_id, :row_number, :field_name, :raw_data, :error_code, :error_detail, :date_created)`
+
+	dbRows, err := toDBImportInvalidRows(rows)
+	if err != nil {
+		return fmt.Errorf("to db import invalid rows: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbRows); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryImportInvalidRows retrieves invalid import rows for correction reports.
+func (s *Store) QueryImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportInvalidRow, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	orderByClause, err := importInvalidRowOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbRows []importInvalidRowDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbRows); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusImportInvalidRows(dbRows)
+}
+
+// CountImportInvalidRows returns the total number of invalid import rows.
+func (s *Store) CountImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryImportInvalidRowByID finds an invalid import row by ID.
+func (s *Store) QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (admissionsbus.ImportInvalidRow, error) {
+	filter := admissionsbus.ImportInvalidRowQueryFilter{ID: &rowID}
+	row, err := s.queryImportInvalidRow(ctx, filter)
+	if err != nil {
+		return admissionsbus.ImportInvalidRow{}, err
+	}
+
+	return row, nil
+}
+
+func (s *Store) queryImportInvalidRow(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter) (admissionsbus.ImportInvalidRow, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	var dbRow importInvalidRowDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbRow); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ImportInvalidRow{}, fmt.Errorf("db: %w", admissionsbus.ErrImportInvalidRowNotFound)
+		}
+		return admissionsbus.ImportInvalidRow{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusImportInvalidRow(dbRow)
 }
 
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {
