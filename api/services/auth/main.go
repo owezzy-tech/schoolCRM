@@ -19,6 +19,9 @@ import (
 	"github.com/owezzy/schoolCRM/app/sdk/auth"
 	"github.com/owezzy/schoolCRM/app/sdk/debug"
 	"github.com/owezzy/schoolCRM/app/sdk/mux"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus/extensions/admissionsotel"
+	"github.com/owezzy/schoolCRM/business/domain/admissionsbus/stores/admissionsdb"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/stores/usercache"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/stores/userdb"
@@ -153,6 +156,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	delegate := delegate.New(log)
 	userBus := userbus.NewBusiness(log, delegate, usercache.NewStore(log, userdb.NewStore(log, db), time.Minute))
 
+	admissionsOtelExt := admissionsotel.NewExtension()
+	admissionsStorage := admissionsdb.NewStore(log, db)
+	admissionsBus := admissionsbus.NewBusiness(log, delegate, admissionsStorage, admissionsOtelExt)
+
 	// -------------------------------------------------------------------------
 	// Initialize authentication support
 
@@ -235,7 +242,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		DB:     db,
 		Tracer: tracer,
 		BusConfig: mux.BusConfig{
-			UserBus: userBus,
+			AdmissionsBus: admissionsBus,
+			UserBus:       userBus,
 		},
 		AuthConfig: mux.AuthConfig{
 			Auth:     ath,
