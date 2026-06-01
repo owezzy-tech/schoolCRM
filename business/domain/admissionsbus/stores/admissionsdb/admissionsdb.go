@@ -23,6 +23,33 @@ type Store struct {
 	db  sqlx.ExtContext
 }
 
+const constituentColumns = `
+		constituent_id,
+		first_name,
+		last_name,
+		preferred_name,
+		middle_name,
+		suffix,
+		date_of_birth,
+		primary_email,
+		primary_phone,
+		external_sis_id,
+		national_id,
+		national_id_verified_at,
+		national_id_verified_by_adapter,
+		upi,
+		upi_verified_at,
+		upi_verified_by_adapter,
+		kcse_index_number,
+		kcse_index_verified_at,
+		kcse_index_verified_by_adapter,
+		lifecycle_stage,
+		duplicate_status,
+		duplicate_of_id,
+		sis_synced_at,
+		date_created,
+		date_updated`
+
 // NewStore constructs the API for data access.
 func NewStore(log *logger.Logger, db *sqlx.DB) *Store {
 	return &Store{
@@ -606,9 +633,9 @@ func (s *Store) queryLeadScore(ctx context.Context, filter admissionsbus.LeadSco
 func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
 	const q = `
 	INSERT INTO admissions_constituents
-		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated)
+		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, national_id, national_id_verified_at, national_id_verified_by_adapter, upi, upi_verified_at, upi_verified_by_adapter, kcse_index_number, kcse_index_verified_at, kcse_index_verified_by_adapter, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated)
 	VALUES
-		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sis_synced_at, :date_created, :date_updated)`
+		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :national_id, :national_id_verified_at, :national_id_verified_by_adapter, :upi, :upi_verified_at, :upi_verified_by_adapter, :kcse_index_number, :kcse_index_verified_at, :kcse_index_verified_by_adapter, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sis_synced_at, :date_created, :date_updated)`
 
 	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBConstituent(cst)); err != nil {
 		return fmt.Errorf("namedexeccontext: %w", err)
@@ -628,6 +655,15 @@ func (s *Store) UpdateConstituent(ctx context.Context, cst admissionsbus.Constit
 		suffix = :suffix,
 		primary_email = :primary_email,
 		primary_phone = :primary_phone,
+		national_id = :national_id,
+		national_id_verified_at = :national_id_verified_at,
+		national_id_verified_by_adapter = :national_id_verified_by_adapter,
+		upi = :upi,
+		upi_verified_at = :upi_verified_at,
+		upi_verified_by_adapter = :upi_verified_by_adapter,
+		kcse_index_number = :kcse_index_number,
+		kcse_index_verified_at = :kcse_index_verified_at,
+		kcse_index_verified_by_adapter = :kcse_index_verified_by_adapter,
 		lifecycle_stage = :lifecycle_stage,
 		duplicate_status = :duplicate_status,
 		duplicate_of_id = :duplicate_of_id,
@@ -652,7 +688,7 @@ func (s *Store) QueryConstituents(ctx context.Context, filter admissionsbus.Cons
 
 	const q = `
 	SELECT
-		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+		` + constituentColumns + `
 	FROM
 		admissions_constituents`
 
@@ -736,12 +772,45 @@ func (s *Store) QueryConstituentByExternalSISID(ctx context.Context, externalSIS
 	return cst, nil
 }
 
+// QueryConstituentByNationalID finds a Constituent by Kenyan national ID.
+func (s *Store) QueryConstituentByNationalID(ctx context.Context, nationalID string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{NationalID: &nationalID}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByUPI finds a Constituent by Kenyan UPI.
+func (s *Store) QueryConstituentByUPI(ctx context.Context, upi string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{UPI: &upi}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByKCSEIndexNumber finds a Constituent by KCSE index number.
+func (s *Store) QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{KCSEIndexNumber: &kcseIndexNumber}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
 func (s *Store) queryConstituent(ctx context.Context, filter admissionsbus.ConstituentQueryFilter) (admissionsbus.Constituent, error) {
 	data := map[string]any{}
 
 	const q = `
 	SELECT
-		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+		` + constituentColumns + `
 	FROM
 		admissions_constituents`
 

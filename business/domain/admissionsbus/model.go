@@ -135,52 +135,79 @@ func (resolution DuplicateReviewResolution) String() string {
 
 // Constituent is the durable person identity root for admissions workflows.
 type Constituent struct {
-	ID              uuid.UUID
-	FirstName       string
-	LastName        string
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	DateOfBirth     time.Time
-	PrimaryEmail    mail.Address
-	PrimaryPhone    string
-	ExternalSISID   *string
-	LifecycleStage  LifecycleStage
-	DuplicateStatus DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
-	DateCreated     time.Time
-	DateUpdated     time.Time
+	ID                          uuid.UUID
+	FirstName                   string
+	LastName                    string
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	DateOfBirth                 time.Time
+	PrimaryEmail                mail.Address
+	PrimaryPhone                string
+	ExternalSISID               *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              LifecycleStage
+	DuplicateStatus             DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	SISSyncedAt                 *time.Time
+	DateCreated                 time.Time
+	DateUpdated                 time.Time
 }
 
 // NewConstituent is what we require from clients when adding a Constituent.
 type NewConstituent struct {
-	FirstName       string
-	LastName        string
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	DateOfBirth     time.Time
-	PrimaryEmail    mail.Address
-	PrimaryPhone    string
-	ExternalSISID   *string
-	LifecycleStage  LifecycleStage
-	DuplicateStatus DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
+	FirstName                   string
+	LastName                    string
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	DateOfBirth                 time.Time
+	PrimaryEmail                mail.Address
+	PrimaryPhone                string
+	ExternalSISID               *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              LifecycleStage
+	DuplicateStatus             DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	SISSyncedAt                 *time.Time
 }
 
 // UpdateConstituent defines what information may be provided to modify a Constituent.
 type UpdateConstituent struct {
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	PrimaryEmail    *mail.Address
-	PrimaryPhone    *string
-	LifecycleStage  *LifecycleStage
-	DuplicateStatus *DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	PrimaryEmail                *mail.Address
+	PrimaryPhone                *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              *LifecycleStage
+	DuplicateStatus             *DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	SISSyncedAt                 *time.Time
 }
 
 // InquiryStatus represents staff follow-up state for an inquiry.
@@ -1122,6 +1149,9 @@ type ConstituentQueryFilter struct {
 	ID              *uuid.UUID
 	PrimaryEmail    *mail.Address
 	ExternalSISID   *string
+	NationalID      *string
+	UPI             *string
+	KCSEIndexNumber *string
 	LifecycleStage  *LifecycleStage
 	DuplicateStatus *DuplicateStatus
 	CustomFields    map[string]string

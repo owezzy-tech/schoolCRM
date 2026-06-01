@@ -52,22 +52,31 @@ type leadScoreDB struct {
 }
 
 type constituentDB struct {
-	ID              uuid.UUID  `db:"constituent_id"`
-	FirstName       string     `db:"first_name"`
-	LastName        string     `db:"last_name"`
-	PreferredName   *string    `db:"preferred_name"`
-	MiddleName      *string    `db:"middle_name"`
-	Suffix          *string    `db:"suffix"`
-	DateOfBirth     time.Time  `db:"date_of_birth"`
-	PrimaryEmail    string     `db:"primary_email"`
-	PrimaryPhone    string     `db:"primary_phone"`
-	ExternalSISID   *string    `db:"external_sis_id"`
-	LifecycleStage  string     `db:"lifecycle_stage"`
-	DuplicateStatus string     `db:"duplicate_status"`
-	DuplicateOfID   *uuid.UUID `db:"duplicate_of_id"`
-	SISSyncedAt     *time.Time `db:"sis_synced_at"`
-	DateCreated     time.Time  `db:"date_created"`
-	DateUpdated     time.Time  `db:"date_updated"`
+	ID                          uuid.UUID  `db:"constituent_id"`
+	FirstName                   string     `db:"first_name"`
+	LastName                    string     `db:"last_name"`
+	PreferredName               *string    `db:"preferred_name"`
+	MiddleName                  *string    `db:"middle_name"`
+	Suffix                      *string    `db:"suffix"`
+	DateOfBirth                 time.Time  `db:"date_of_birth"`
+	PrimaryEmail                string     `db:"primary_email"`
+	PrimaryPhone                string     `db:"primary_phone"`
+	ExternalSISID               *string    `db:"external_sis_id"`
+	NationalID                  *string    `db:"national_id"`
+	NationalIDVerifiedAt        *time.Time `db:"national_id_verified_at"`
+	NationalIDVerifiedByAdapter *string    `db:"national_id_verified_by_adapter"`
+	UPI                         *string    `db:"upi"`
+	UPIVerifiedAt               *time.Time `db:"upi_verified_at"`
+	UPIVerifiedByAdapter        *string    `db:"upi_verified_by_adapter"`
+	KCSEIndexNumber             *string    `db:"kcse_index_number"`
+	KCSEIndexVerifiedAt         *time.Time `db:"kcse_index_verified_at"`
+	KCSEIndexVerifiedByAdapter  *string    `db:"kcse_index_verified_by_adapter"`
+	LifecycleStage              string     `db:"lifecycle_stage"`
+	DuplicateStatus             string     `db:"duplicate_status"`
+	DuplicateOfID               *uuid.UUID `db:"duplicate_of_id"`
+	SISSyncedAt                 *time.Time `db:"sis_synced_at"`
+	DateCreated                 time.Time  `db:"date_created"`
+	DateUpdated                 time.Time  `db:"date_updated"`
 }
 
 type inquiryDB struct {
@@ -425,22 +434,31 @@ func toBusLeadScores(dbs []leadScoreDB) ([]admissionsbus.LeadScore, error) {
 
 func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
 	return constituentDB{
-		ID:              bus.ID,
-		FirstName:       bus.FirstName,
-		LastName:        bus.LastName,
-		PreferredName:   bus.PreferredName,
-		MiddleName:      bus.MiddleName,
-		Suffix:          bus.Suffix,
-		DateOfBirth:     bus.DateOfBirth.UTC(),
-		PrimaryEmail:    bus.PrimaryEmail.String(),
-		PrimaryPhone:    bus.PrimaryPhone,
-		ExternalSISID:   bus.ExternalSISID,
-		LifecycleStage:  bus.LifecycleStage.String(),
-		DuplicateStatus: bus.DuplicateStatus.String(),
-		DuplicateOfID:   bus.DuplicateOfID,
-		SISSyncedAt:     utcTimePtr(bus.SISSyncedAt),
-		DateCreated:     bus.DateCreated.UTC(),
-		DateUpdated:     bus.DateUpdated.UTC(),
+		ID:                          bus.ID,
+		FirstName:                   bus.FirstName,
+		LastName:                    bus.LastName,
+		PreferredName:               bus.PreferredName,
+		MiddleName:                  bus.MiddleName,
+		Suffix:                      bus.Suffix,
+		DateOfBirth:                 bus.DateOfBirth.UTC(),
+		PrimaryEmail:                bus.PrimaryEmail.String(),
+		PrimaryPhone:                bus.PrimaryPhone,
+		ExternalSISID:               bus.ExternalSISID,
+		NationalID:                  bus.NationalID,
+		NationalIDVerifiedAt:        utcTimePtr(bus.NationalIDVerifiedAt),
+		NationalIDVerifiedByAdapter: bus.NationalIDVerifiedByAdapter,
+		UPI:                         bus.UPI,
+		UPIVerifiedAt:               utcTimePtr(bus.UPIVerifiedAt),
+		UPIVerifiedByAdapter:        bus.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             bus.KCSEIndexNumber,
+		KCSEIndexVerifiedAt:         utcTimePtr(bus.KCSEIndexVerifiedAt),
+		KCSEIndexVerifiedByAdapter:  bus.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              bus.LifecycleStage.String(),
+		DuplicateStatus:             bus.DuplicateStatus.String(),
+		DuplicateOfID:               bus.DuplicateOfID,
+		SISSyncedAt:                 utcTimePtr(bus.SISSyncedAt),
+		DateCreated:                 bus.DateCreated.UTC(),
+		DateUpdated:                 bus.DateUpdated.UTC(),
 	}
 }
 
@@ -451,22 +469,31 @@ func toBusConstituent(db constituentDB) (admissionsbus.Constituent, error) {
 	}
 
 	return admissionsbus.Constituent{
-		ID:              db.ID,
-		FirstName:       db.FirstName,
-		LastName:        db.LastName,
-		PreferredName:   db.PreferredName,
-		MiddleName:      db.MiddleName,
-		Suffix:          db.Suffix,
-		DateOfBirth:     db.DateOfBirth.In(time.Local),
-		PrimaryEmail:    *email,
-		PrimaryPhone:    db.PrimaryPhone,
-		ExternalSISID:   db.ExternalSISID,
-		LifecycleStage:  admissionsbus.LifecycleStage(db.LifecycleStage),
-		DuplicateStatus: admissionsbus.DuplicateStatus(db.DuplicateStatus),
-		DuplicateOfID:   db.DuplicateOfID,
-		SISSyncedAt:     localTimePtr(db.SISSyncedAt),
-		DateCreated:     db.DateCreated.In(time.Local),
-		DateUpdated:     db.DateUpdated.In(time.Local),
+		ID:                          db.ID,
+		FirstName:                   db.FirstName,
+		LastName:                    db.LastName,
+		PreferredName:               db.PreferredName,
+		MiddleName:                  db.MiddleName,
+		Suffix:                      db.Suffix,
+		DateOfBirth:                 db.DateOfBirth.In(time.Local),
+		PrimaryEmail:                *email,
+		PrimaryPhone:                db.PrimaryPhone,
+		ExternalSISID:               db.ExternalSISID,
+		NationalID:                  db.NationalID,
+		NationalIDVerifiedAt:        localTimePtr(db.NationalIDVerifiedAt),
+		NationalIDVerifiedByAdapter: db.NationalIDVerifiedByAdapter,
+		UPI:                         db.UPI,
+		UPIVerifiedAt:               localTimePtr(db.UPIVerifiedAt),
+		UPIVerifiedByAdapter:        db.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             db.KCSEIndexNumber,
+		KCSEIndexVerifiedAt:         localTimePtr(db.KCSEIndexVerifiedAt),
+		KCSEIndexVerifiedByAdapter:  db.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              admissionsbus.LifecycleStage(db.LifecycleStage),
+		DuplicateStatus:             admissionsbus.DuplicateStatus(db.DuplicateStatus),
+		DuplicateOfID:               db.DuplicateOfID,
+		SISSyncedAt:                 localTimePtr(db.SISSyncedAt),
+		DateCreated:                 db.DateCreated.In(time.Local),
+		DateUpdated:                 db.DateUpdated.In(time.Local),
 	}, nil
 }
 
