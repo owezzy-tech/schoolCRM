@@ -250,6 +250,190 @@ func TestCreateApplicantProfileLinksIdentityToConstituent(t *testing.T) {
 	}
 }
 
+func TestCreateCustomFieldDefinitionValidatesRegistryFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nd   NewCustomFieldDefinition
+		want error
+	}{
+		{
+			name: "owner",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwner("INQUIRY"),
+				FieldKey:     "scholarship_level",
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldOwnerInvalid,
+		},
+		{
+			name: "key required",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerConstituent,
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldKeyRequired,
+		},
+		{
+			name: "label required",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerConstituent,
+				FieldKey:     "scholarship_level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldLabelRequired,
+		},
+		{
+			name: "data type",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "portfolio_score",
+				Label:        "Portfolio score",
+				DataType:     CustomFieldDataType("RANGE"),
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldDataTypeInvalid,
+		},
+		{
+			name: "select options",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "scholarship_level",
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeSelect,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldOptionsRequired,
+		},
+		{
+			name: "display order",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "portfolio_score",
+				Label:        "Portfolio score",
+				DataType:     CustomFieldDataTypeNumber,
+				DisplayOrder: -1,
+			},
+			want: ErrCustomFieldOrderInvalid,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateCustomFieldDefinition(context.Background(), tt.nd)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateCustomFieldDefinitionStoresNormalizedSeams(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	description := " Used for imports and reports "
+	validation := " max:50 "
+
+	definition, err := bus.CreateCustomFieldDefinition(context.Background(), NewCustomFieldDefinition{
+		Owner:        CustomFieldOwnerConstituent,
+		FieldKey:     " scholarship_level ",
+		Label:        " Scholarship level ",
+		Description:  &description,
+		DataType:     CustomFieldDataTypeSelect,
+		Options:      []string{" Full ", "Partial", "Full", ""},
+		Validation:   &validation,
+		Searchable:   true,
+		Reportable:   true,
+		Importable:   true,
+		Exportable:   true,
+		DisplayOrder: 4,
+		Active:       true,
+	})
+	if err != nil {
+		t.Fatalf("CreateCustomFieldDefinition returned error: %v", err)
+	}
+
+	if definition.Owner != CustomFieldOwnerConstituent {
+		t.Fatalf("Owner = %s, want %s", definition.Owner, CustomFieldOwnerConstituent)
+	}
+	if definition.FieldKey != "scholarship_level" {
+		t.Fatalf("FieldKey = %q, want scholarship_level", definition.FieldKey)
+	}
+	if definition.Label != "Scholarship level" {
+		t.Fatalf("Label = %q, want Scholarship level", definition.Label)
+	}
+	if len(definition.Options) != 2 {
+		t.Fatalf("Options = %v, want 2 unique options", definition.Options)
+	}
+	if !definition.Searchable || !definition.Reportable || !definition.Importable || !definition.Exportable {
+		t.Fatalf("seams not enabled: %+v", definition)
+	}
+	if len(store.customFieldDefinitions) != 1 {
+		t.Fatalf("stored definitions = %d, want 1", len(store.customFieldDefinitions))
+	}
+}
+
+func TestSetCustomFieldValueRequiresDefinitionOwnerAndRecord(t *testing.T) {
+	t.Parallel()
+
+	definitionID := uuid.New()
+	constituentID := uuid.New()
+	store := &stubStore{
+		customFieldDefinitions: []CustomFieldDefinition{
+			{
+				ID:       definitionID,
+				Owner:    CustomFieldOwnerConstituent,
+				FieldKey: "scholarship_level",
+				Label:    "Scholarship level",
+				DataType: CustomFieldDataTypeText,
+				Active:   true,
+			},
+		},
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant},
+		},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	value, err := bus.SetCustomFieldValue(context.Background(), NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        CustomFieldOwnerConstituent,
+		OwnerID:      constituentID,
+		Value:        " Full scholarship ",
+	})
+	if err != nil {
+		t.Fatalf("SetCustomFieldValue returned error: %v", err)
+	}
+	if value.Value != "Full scholarship" {
+		t.Fatalf("Value = %q, want Full scholarship", value.Value)
+	}
+	if len(store.customFieldValues) != 1 {
+		t.Fatalf("stored values = %d, want 1", len(store.customFieldValues))
+	}
+
+	_, err = bus.SetCustomFieldValue(context.Background(), NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        CustomFieldOwnerApplication,
+		OwnerID:      constituentID,
+		Value:        "Full scholarship",
+	})
+	if !errors.Is(err, ErrCustomFieldOwnerInvalid) {
+		t.Fatalf("err = %v, want %v", err, ErrCustomFieldOwnerInvalid)
+	}
+}
+
 func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 	t.Parallel()
 
@@ -1459,6 +1643,8 @@ type stubStore struct {
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	applicationTemplates   []ApplicationFormTemplate
+	customFieldDefinitions []CustomFieldDefinition
+	customFieldValues      []CustomFieldValue
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -1883,6 +2069,106 @@ func (s *stubStore) QueryApplicationFormTemplateByID(_ context.Context, template
 		}
 	}
 	return ApplicationFormTemplate{}, ErrFormTemplateNotFound
+}
+
+func (s *stubStore) CreateCustomFieldDefinition(_ context.Context, definition CustomFieldDefinition) error {
+	s.customFieldDefinitions = append(s.customFieldDefinitions, definition)
+	return nil
+}
+
+func (s *stubStore) UpdateCustomFieldDefinition(_ context.Context, definition CustomFieldDefinition) error {
+	for i, existing := range s.customFieldDefinitions {
+		if existing.ID == definition.ID {
+			s.customFieldDefinitions[i] = definition
+			return nil
+		}
+	}
+	s.customFieldDefinitions = append(s.customFieldDefinitions, definition)
+	return nil
+}
+
+func (s *stubStore) QueryCustomFieldDefinitions(_ context.Context, filter CustomFieldDefinitionQueryFilter, _ order.By, _ page.Page) ([]CustomFieldDefinition, error) {
+	var definitions []CustomFieldDefinition
+	for _, definition := range s.customFieldDefinitions {
+		if filter.ID != nil && definition.ID != *filter.ID {
+			continue
+		}
+		if filter.Owner != nil && definition.Owner != *filter.Owner {
+			continue
+		}
+		if filter.Active != nil && definition.Active != *filter.Active {
+			continue
+		}
+		definitions = append(definitions, definition)
+	}
+	return definitions, nil
+}
+
+func (s *stubStore) CountCustomFieldDefinitions(_ context.Context, filter CustomFieldDefinitionQueryFilter) (int, error) {
+	definitions, err := s.QueryCustomFieldDefinitions(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+	return len(definitions), nil
+}
+
+func (s *stubStore) QueryCustomFieldDefinitionByID(_ context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error) {
+	for _, definition := range s.customFieldDefinitions {
+		if definition.ID == definitionID {
+			return definition, nil
+		}
+	}
+	return CustomFieldDefinition{}, ErrCustomFieldDefinitionNotFound
+}
+
+func (s *stubStore) SetCustomFieldValue(_ context.Context, value CustomFieldValue) error {
+	for i, existing := range s.customFieldValues {
+		if existing.DefinitionID == value.DefinitionID && existing.Owner == value.Owner && existing.OwnerID == value.OwnerID {
+			value.ID = existing.ID
+			value.DateCreated = existing.DateCreated
+			s.customFieldValues[i] = value
+			return nil
+		}
+	}
+	s.customFieldValues = append(s.customFieldValues, value)
+	return nil
+}
+
+func (s *stubStore) QueryCustomFieldValues(_ context.Context, filter CustomFieldValueQueryFilter, _ order.By, _ page.Page) ([]CustomFieldValue, error) {
+	var values []CustomFieldValue
+	for _, value := range s.customFieldValues {
+		if filter.ID != nil && value.ID != *filter.ID {
+			continue
+		}
+		if filter.DefinitionID != nil && value.DefinitionID != *filter.DefinitionID {
+			continue
+		}
+		if filter.Owner != nil && value.Owner != *filter.Owner {
+			continue
+		}
+		if filter.OwnerID != nil && value.OwnerID != *filter.OwnerID {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values, nil
+}
+
+func (s *stubStore) CountCustomFieldValues(_ context.Context, filter CustomFieldValueQueryFilter) (int, error) {
+	values, err := s.QueryCustomFieldValues(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+	return len(values), nil
+}
+
+func (s *stubStore) QueryCustomFieldValueByID(_ context.Context, valueID uuid.UUID) (CustomFieldValue, error) {
+	for _, value := range s.customFieldValues {
+		if value.ID == valueID {
+			return value, nil
+		}
+	}
+	return CustomFieldValue{}, ErrCustomFieldValueNotFound
 }
 
 func (s *stubStore) CreateApplicationTransition(_ context.Context, transition ApplicationTransition) error {
