@@ -24,7 +24,16 @@ export const LIFECYCLE_STAGES = [
     'ALUMNI',
 ] as const;
 
-export const APPLICATION_TYPES = ['FRESHMAN', 'TRANSFER', 'GRADUATE'] as const;
+export const APPLICATION_TYPES = [
+    'KUCCPS_PLACEMENT',
+    'SELF_SPONSORED_UNDERGRAD',
+    'DIPLOMA',
+    'MASTERS',
+    'PHD',
+    'TVET',
+    'BRIDGING',
+    'CERTIFICATE',
+] as const;
 
 export const APPLICATION_STATUSES = [
     'DRAFT',
@@ -456,6 +465,57 @@ export interface ApplicationFormTemplateQuery {
     orderBy?: string;
     application_type?: ApplicationType;
     active?: boolean;
+}
+
+export interface KUCCPSPlacement {
+    placementID: string;
+    admissionNumber?: string;
+    institutionCode: string;
+    programmeCode: string;
+    programmeName: string;
+    placementYear: number;
+    clusterCode?: string;
+    clusterPoints?: number;
+    weightedPointsNote?: string;
+}
+
+export interface ApplicationKCSESubject {
+    subjectCode: string;
+    grade: string;
+    points: number;
+}
+
+export interface ApplicationKCSEResult {
+    indexNumber: string;
+    examYear: number;
+    subjects: ApplicationKCSESubject[];
+    meanGrade: string;
+    meanPoints: number;
+}
+
+export interface Application {
+    id: string;
+    constituentID: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    status: ApplicationStatus;
+    kuccpsPlacement?: KUCCPSPlacement;
+    kcseResult?: ApplicationKCSEResult;
+    assignedReviewerID?: string;
+    submittedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ApplicationRequest {
+    constituentID: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    kuccpsPlacement?: KUCCPSPlacement | null;
+    kcseResult?: ApplicationKCSEResult | null;
+    assignedReviewerID?: string | null;
 }
 
 export interface ChecklistItem {

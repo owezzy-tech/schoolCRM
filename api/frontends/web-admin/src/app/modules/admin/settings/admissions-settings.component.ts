@@ -122,18 +122,25 @@ const emptyForm: LeadScoreRuleForm = {
 
 const defaultRequiredFields: ApplicationFormField[] = [
     {
-        fieldName: 'personal_statement',
-        fieldType: 'textarea',
+        fieldName: 'kcse_index_number',
+        fieldType: 'text',
         required: true,
         displayOrder: 1,
+        validation: 'kenya-kcse-index',
+    },
+    {
+        fieldName: 'programme_id',
+        fieldType: 'select',
+        required: true,
+        displayOrder: 2,
     },
 ];
 
 const defaultChecklistItems: ApplicationChecklistTemplateItem[] = [
     {
-        itemKey: 'transcript',
-        documentName: 'Transcript',
-        description: 'Official transcript for this application type.',
+        itemKey: 'kcse_result_slip',
+        documentName: 'KCSE result slip',
+        description: 'Official KCSE result slip or KNEC verification evidence.',
         required: true,
         displayOrder: 1,
     },
@@ -143,7 +150,7 @@ const emptyTemplateForm: ApplicationFormTemplateForm = {
     id: '',
     programID: '',
     academicTermID: '',
-    applicationType: 'FRESHMAN',
+    applicationType: 'KUCCPS_PLACEMENT',
     name: '',
     description: '',
     requiredFieldsText: JSON.stringify(defaultRequiredFields, null, 2),
@@ -172,15 +179,48 @@ const emptyCustomFieldForm: CustomFieldDefinitionForm = {
 
 const CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [
     {
-        id: 'field-scholarship-level',
-        owner: 'CONSTITUENT',
-        fieldKey: 'scholarship_level',
-        label: 'Scholarship level',
+        id: 'field-kuccps-placement-id',
+        owner: 'APPLICATION',
+        fieldKey: 'kuccps_placement_id',
+        label: 'KUCCPS placement ID',
         description:
-            'Recruiter-maintained qualifier used for reports and import templates.',
+            'KUCCPS placement reference captured before admissions review.',
+        dataType: 'TEXT',
+        required: false,
+        options: [],
+        validation: 'max:40',
+        searchable: true,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 5,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-kcse-mean-grade',
+        owner: 'CONSTITUENT',
+        fieldKey: 'kcse_mean_grade',
+        label: 'KCSE mean grade',
+        description:
+            'Normalized KCSE mean grade for application eligibility reporting.',
         dataType: 'SELECT',
         required: false,
-        options: ['None', 'Partial', 'Full'],
+        options: [
+            'A',
+            'A-',
+            'B+',
+            'B',
+            'B-',
+            'C+',
+            'C',
+            'C-',
+            'D+',
+            'D',
+            'D-',
+            'E',
+        ],
         searchable: true,
         reportable: true,
         importable: true,
@@ -191,18 +231,18 @@ const CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [
         dateUpdated: '2026-06-01T08:00:00Z',
     },
     {
-        id: 'field-interview-window',
+        id: 'field-kuccps-cluster-points',
         owner: 'APPLICATION',
-        fieldKey: 'preferred_interview_window',
-        label: 'Preferred interview window',
+        fieldKey: 'kuccps_cluster_points',
+        label: 'KUCCPS cluster points',
         description:
-            'Applicant scheduling preference collected after submission.',
-        dataType: 'TEXT',
+            'Public cluster-point approximation used until private KNEC PI data is available.',
+        dataType: 'NUMBER',
         required: false,
         options: [],
-        validation: 'max:80',
+        validation: 'min:0|max:48',
         searchable: true,
-        reportable: false,
+        reportable: true,
         importable: true,
         exportable: true,
         displayOrder: 20,
@@ -251,14 +291,14 @@ const TERRITORIES = [
 ] as const;
 
 const PROGRAMS = [
-    'Computer Science',
-    'Business Analytics',
-    'B.Sc. CS',
-    'M.B.A.',
-    'B.A. Econ',
+    'B.Sc. Computer Science',
+    'Bachelor of Commerce',
+    'Diploma in ICT',
+    'M.A. Education',
+    'Certificate in Data Support',
 ] as const;
 
-const TERMS = ['Fall 2026', 'Spring 2027', 'Spring 2026'] as const;
+const TERMS = ['September 2026', 'January 2027', 'May 2027'] as const;
 
 const LEAD_SOURCES = [
     'Web form',
@@ -352,7 +392,7 @@ const ASSIGNMENT_RULES: LeadAssignmentRule[] = [
             {
                 field: 'application_type',
                 operator: 'IN',
-                values: ['FRESHMAN', 'TRANSFER'],
+                values: ['KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD'],
             },
         ],
         assignee: 'Avery',
@@ -496,24 +536,31 @@ const IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
     },
     {
         key: 'program_id',
-        label: 'Program code',
-        required: false,
+        label: 'Programme ID',
+        required: true,
         owner: 'Core',
-        example: 'BS-CS',
+        example: 'BSC-CS',
     },
     {
-        key: 'scholarship_level',
-        label: 'Scholarship level',
-        required: false,
-        owner: 'Custom Field',
-        example: 'Partial',
+        key: 'kcse_index_number',
+        label: 'KCSE index number',
+        required: true,
+        owner: 'Core',
+        example: '204003024',
     },
     {
-        key: 'preferred_interview_window',
-        label: 'Preferred interview window',
+        key: 'kuccps_placement_id',
+        label: 'KUCCPS placement ID',
         required: false,
         owner: 'Custom Field',
-        example: 'Weekday afternoons',
+        example: 'KUCCPS-2026-003024',
+    },
+    {
+        key: 'kcse_mean_grade',
+        label: 'KCSE mean grade',
+        required: false,
+        owner: 'Custom Field',
+        example: 'A-',
     },
 ];
 
