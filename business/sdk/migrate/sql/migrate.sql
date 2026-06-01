@@ -592,3 +592,36 @@ CREATE TABLE admissions_import_invalid_rows (
 
 CREATE INDEX idx_admissions_import_invalid_rows_batch ON admissions_import_invalid_rows (import_batch_id);
 CREATE INDEX idx_admissions_import_invalid_rows_row_number ON admissions_import_invalid_rows (row_number);
+
+-- Version: 1.19
+-- Description: Create Kenya counties reference table
+CREATE TABLE counties (
+    code         TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT counties_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT counties_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_counties_name ON counties (name);
+
+-- Version: 1.20
+-- Description: Create Kenya sub-counties reference table
+CREATE TABLE sub_counties (
+    code         TEXT      NOT NULL,
+    county_code  TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (county_code) REFERENCES counties(code),
+    CONSTRAINT sub_counties_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT sub_counties_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_sub_counties_county_code ON sub_counties (county_code);
+CREATE INDEX idx_sub_counties_name ON sub_counties (name);
