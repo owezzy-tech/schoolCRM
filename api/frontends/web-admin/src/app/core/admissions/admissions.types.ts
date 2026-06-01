@@ -118,6 +118,17 @@ export const SIS_SYNC_EVENT_STATUSES = [
 
 export const SIS_SYNC_DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
 
+export const CUSTOM_FIELD_OWNERS = ['CONSTITUENT', 'APPLICATION'] as const;
+
+export const CUSTOM_FIELD_DATA_TYPES = [
+    'TEXT',
+    'TEXTAREA',
+    'NUMBER',
+    'DATE',
+    'SELECT',
+    'BOOLEAN',
+] as const;
+
 export const SIS_SYNC_EVENT_TYPES = [
     'BATCH_TERMS_PULL',
     'BATCH_PROGRAMS_PULL',
@@ -149,6 +160,70 @@ export type SisSyncJobStatus = (typeof SIS_SYNC_JOB_STATUSES)[number];
 export type SisSyncEventStatus = (typeof SIS_SYNC_EVENT_STATUSES)[number];
 export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
 export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
+export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
+export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
+
+export interface CustomFieldDefinition {
+    id: string;
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description?: string;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    options: string[];
+    validation?: string;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
+    active: boolean;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CustomFieldDefinitionRequest {
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description?: string | null;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    options: string[];
+    validation?: string | null;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
+    active: boolean;
+}
+
+export interface CustomFieldDefinitionQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    owner?: CustomFieldOwner;
+    active?: boolean;
+}
+
+export interface CustomFieldValue {
+    id: string;
+    definitionID: string;
+    owner: CustomFieldOwner;
+    ownerID: string;
+    value: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CustomFieldValueRequest {
+    definitionID: string;
+    owner: CustomFieldOwner;
+    ownerID: string;
+    value: string;
+}
 
 export interface SisSyncJob {
     id: string;

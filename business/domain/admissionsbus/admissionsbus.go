@@ -19,85 +19,94 @@ import (
 
 // Set of error variables for admissions reference data operations.
 var (
-	ErrConstituentNotFound          = errors.New("constituent not found")
-	ErrFirstNameRequired            = errors.New("first name required")
-	ErrLastNameRequired             = errors.New("last name required")
-	ErrDateOfBirthRequired          = errors.New("date of birth required")
-	ErrDateOfBirthInFuture          = errors.New("date of birth cannot be in the future")
-	ErrPrimaryPhoneRequired         = errors.New("primary phone required")
-	ErrInvalidLifecycleStage        = errors.New("invalid lifecycle stage")
-	ErrInvalidDuplicateStatus       = errors.New("invalid duplicate status")
-	ErrInvalidDuplicateLink         = errors.New("duplicate status does not match duplicate link")
-	ErrInvalidLifecycleChange       = errors.New("invalid lifecycle stage change")
-	ErrInquiryNotFound              = errors.New("inquiry not found")
-	ErrInquirySourceRequired        = errors.New("inquiry source required")
-	ErrInvalidInquiryStatus         = errors.New("invalid inquiry status")
-	ErrProgramNotFound              = errors.New("program not found")
-	ErrAcademicTermNotFound         = errors.New("academic term not found")
-	ErrInvalidTermDateRange         = errors.New("term start date must be before end date")
-	ErrInvalidApplicationWindow     = errors.New("application deadline must be on or after application start date")
-	ErrDuplicateReviewNotFound      = errors.New("duplicate review not found")
-	ErrInvalidDuplicateReview       = errors.New("invalid duplicate review")
-	ErrInvalidMatchType             = errors.New("invalid duplicate match type")
-	ErrInvalidMatchScore            = errors.New("duplicate match score must be between 0 and 100")
-	ErrMatchReasonRequired          = errors.New("duplicate match reason required")
-	ErrInvalidReviewStatus          = errors.New("invalid duplicate review status")
-	ErrInvalidResolution            = errors.New("invalid duplicate review resolution")
-	ErrDuplicateReviewResolved      = errors.New("duplicate review already resolved")
-	ErrResolutionActorRequired      = errors.New("resolution actor required")
-	ErrApplicationNotFound          = errors.New("application not found")
-	ErrInvalidApplicationType       = errors.New("invalid application type")
-	ErrInvalidApplicationStatus     = errors.New("invalid application status")
-	ErrDuplicateApplication         = errors.New("active application already exists for constituent term and program")
-	ErrConstituentIDRequired        = errors.New("constituent id required")
-	ErrProgramIDRequired            = errors.New("program id required")
-	ErrAcademicTermIDRequired       = errors.New("academic term id required")
-	ErrInactiveProgram              = errors.New("program is inactive")
-	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
-	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
-	ErrApplicationActorRequired     = errors.New("application transition actor required")
-	ErrFormTemplateNotFound         = errors.New("application form template not found")
-	ErrFormTemplateNameRequired     = errors.New("application form template name required")
-	ErrFormTemplateFieldsRequired   = errors.New("application form template required fields required")
-	ErrFormTemplateFieldInvalid     = errors.New("application form template field invalid")
-	ErrFormTemplateChecklistInvalid = errors.New("application form template checklist item invalid")
-	ErrFormTemplatePriorityInvalid  = errors.New("application form template priority must be greater than or equal to zero")
-	ErrStaffProfileNotFound         = errors.New("staff profile not found")
-	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
-	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
-	ErrApplicantProfileNotFound     = errors.New("applicant profile not found")
-	ErrApplicantProfileUserRequired = errors.New("applicant profile user id required")
-	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
-	ErrLeadScoreRuleNotFound        = errors.New("lead score rule not found")
-	ErrLeadScoreNotFound            = errors.New("lead score not found")
-	ErrLeadScoreRuleNameRequired    = errors.New("lead score rule name required")
-	ErrLeadScoreCriteriaRequired    = errors.New("lead score criteria required")
-	ErrInvalidLeadScoreCriterion    = errors.New("invalid lead score criterion")
-	ErrInvalidLeadScorePoints       = errors.New("lead score points must be greater than or equal to zero")
-	ErrInvalidLeadScorePriority     = errors.New("lead score priority must be greater than or equal to zero")
-	ErrInvalidLeadScoreBand         = errors.New("invalid lead score band")
-	ErrChecklistItemNotFound        = errors.New("checklist item not found")
-	ErrChecklistItemKeyRequired     = errors.New("checklist item key required")
-	ErrChecklistItemNameRequired    = errors.New("checklist item document name required")
-	ErrChecklistItemOrderInvalid    = errors.New("checklist item display order must be greater than or equal to zero")
-	ErrDocumentNotFound             = errors.New("document not found")
-	ErrInvalidDocumentStatus        = errors.New("invalid document status")
-	ErrDocumentFileNameRequired     = errors.New("document file name required")
-	ErrDocumentContentTypeRequired  = errors.New("document content type required")
-	ErrDocumentSizeInvalid          = errors.New("document size must be greater than zero")
-	ErrDocumentStorageKeyRequired   = errors.New("document storage key required")
-	ErrDocumentUploaderRequired     = errors.New("document uploader required")
-	ErrDocumentReviewerRequired     = errors.New("document reviewer required")
-	ErrDocumentStatusNotReviewable  = errors.New("document status is not a review action")
-	ErrSyncJobNotFound              = errors.New("sync job not found")
-	ErrSyncJobNameRequired          = errors.New("sync job name required")
-	ErrInvalidSyncJobStatus         = errors.New("invalid sync job status")
-	ErrInvalidSyncEventStatus       = errors.New("invalid sync event status")
-	ErrInvalidSyncDirection         = errors.New("invalid sync direction")
-	ErrInvalidSyncEventType         = errors.New("invalid sync event type")
-	ErrSyncEventNotFound            = errors.New("sync event not found")
-	ErrSyncEventResourceRequired    = errors.New("sync event resource required")
-	ErrSyncEventPayloadHashRequired = errors.New("sync event payload hash required")
+	ErrConstituentNotFound           = errors.New("constituent not found")
+	ErrFirstNameRequired             = errors.New("first name required")
+	ErrLastNameRequired              = errors.New("last name required")
+	ErrDateOfBirthRequired           = errors.New("date of birth required")
+	ErrDateOfBirthInFuture           = errors.New("date of birth cannot be in the future")
+	ErrPrimaryPhoneRequired          = errors.New("primary phone required")
+	ErrInvalidLifecycleStage         = errors.New("invalid lifecycle stage")
+	ErrInvalidDuplicateStatus        = errors.New("invalid duplicate status")
+	ErrInvalidDuplicateLink          = errors.New("duplicate status does not match duplicate link")
+	ErrInvalidLifecycleChange        = errors.New("invalid lifecycle stage change")
+	ErrInquiryNotFound               = errors.New("inquiry not found")
+	ErrInquirySourceRequired         = errors.New("inquiry source required")
+	ErrInvalidInquiryStatus          = errors.New("invalid inquiry status")
+	ErrProgramNotFound               = errors.New("program not found")
+	ErrAcademicTermNotFound          = errors.New("academic term not found")
+	ErrInvalidTermDateRange          = errors.New("term start date must be before end date")
+	ErrInvalidApplicationWindow      = errors.New("application deadline must be on or after application start date")
+	ErrDuplicateReviewNotFound       = errors.New("duplicate review not found")
+	ErrInvalidDuplicateReview        = errors.New("invalid duplicate review")
+	ErrInvalidMatchType              = errors.New("invalid duplicate match type")
+	ErrInvalidMatchScore             = errors.New("duplicate match score must be between 0 and 100")
+	ErrMatchReasonRequired           = errors.New("duplicate match reason required")
+	ErrInvalidReviewStatus           = errors.New("invalid duplicate review status")
+	ErrInvalidResolution             = errors.New("invalid duplicate review resolution")
+	ErrDuplicateReviewResolved       = errors.New("duplicate review already resolved")
+	ErrResolutionActorRequired       = errors.New("resolution actor required")
+	ErrApplicationNotFound           = errors.New("application not found")
+	ErrInvalidApplicationType        = errors.New("invalid application type")
+	ErrInvalidApplicationStatus      = errors.New("invalid application status")
+	ErrDuplicateApplication          = errors.New("active application already exists for constituent term and program")
+	ErrConstituentIDRequired         = errors.New("constituent id required")
+	ErrProgramIDRequired             = errors.New("program id required")
+	ErrAcademicTermIDRequired        = errors.New("academic term id required")
+	ErrInactiveProgram               = errors.New("program is inactive")
+	ErrInactiveAcademicTerm          = errors.New("academic term is inactive")
+	ErrInvalidApplicationTransition  = errors.New("invalid application status transition")
+	ErrApplicationActorRequired      = errors.New("application transition actor required")
+	ErrFormTemplateNotFound          = errors.New("application form template not found")
+	ErrFormTemplateNameRequired      = errors.New("application form template name required")
+	ErrFormTemplateFieldsRequired    = errors.New("application form template required fields required")
+	ErrFormTemplateFieldInvalid      = errors.New("application form template field invalid")
+	ErrFormTemplateChecklistInvalid  = errors.New("application form template checklist item invalid")
+	ErrFormTemplatePriorityInvalid   = errors.New("application form template priority must be greater than or equal to zero")
+	ErrStaffProfileNotFound          = errors.New("staff profile not found")
+	ErrStaffProfileUserRequired      = errors.New("staff profile user id required")
+	ErrStaffProfileRoleRequired      = errors.New("staff profile role required")
+	ErrApplicantProfileNotFound      = errors.New("applicant profile not found")
+	ErrApplicantProfileUserRequired  = errors.New("applicant profile user id required")
+	ErrInvalidAdmissionsRole         = errors.New("invalid admissions role")
+	ErrLeadScoreRuleNotFound         = errors.New("lead score rule not found")
+	ErrLeadScoreNotFound             = errors.New("lead score not found")
+	ErrLeadScoreRuleNameRequired     = errors.New("lead score rule name required")
+	ErrLeadScoreCriteriaRequired     = errors.New("lead score criteria required")
+	ErrInvalidLeadScoreCriterion     = errors.New("invalid lead score criterion")
+	ErrInvalidLeadScorePoints        = errors.New("lead score points must be greater than or equal to zero")
+	ErrInvalidLeadScorePriority      = errors.New("lead score priority must be greater than or equal to zero")
+	ErrInvalidLeadScoreBand          = errors.New("invalid lead score band")
+	ErrChecklistItemNotFound         = errors.New("checklist item not found")
+	ErrChecklistItemKeyRequired      = errors.New("checklist item key required")
+	ErrChecklistItemNameRequired     = errors.New("checklist item document name required")
+	ErrChecklistItemOrderInvalid     = errors.New("checklist item display order must be greater than or equal to zero")
+	ErrDocumentNotFound              = errors.New("document not found")
+	ErrInvalidDocumentStatus         = errors.New("invalid document status")
+	ErrDocumentFileNameRequired      = errors.New("document file name required")
+	ErrDocumentContentTypeRequired   = errors.New("document content type required")
+	ErrDocumentSizeInvalid           = errors.New("document size must be greater than zero")
+	ErrDocumentStorageKeyRequired    = errors.New("document storage key required")
+	ErrDocumentUploaderRequired      = errors.New("document uploader required")
+	ErrDocumentReviewerRequired      = errors.New("document reviewer required")
+	ErrDocumentStatusNotReviewable   = errors.New("document status is not a review action")
+	ErrSyncJobNotFound               = errors.New("sync job not found")
+	ErrSyncJobNameRequired           = errors.New("sync job name required")
+	ErrInvalidSyncJobStatus          = errors.New("invalid sync job status")
+	ErrInvalidSyncEventStatus        = errors.New("invalid sync event status")
+	ErrInvalidSyncDirection          = errors.New("invalid sync direction")
+	ErrInvalidSyncEventType          = errors.New("invalid sync event type")
+	ErrSyncEventNotFound             = errors.New("sync event not found")
+	ErrSyncEventResourceRequired     = errors.New("sync event resource required")
+	ErrSyncEventPayloadHashRequired  = errors.New("sync event payload hash required")
+	ErrCustomFieldDefinitionNotFound = errors.New("custom field definition not found")
+	ErrCustomFieldValueNotFound      = errors.New("custom field value not found")
+	ErrCustomFieldOwnerInvalid       = errors.New("custom field owner must be constituent or application")
+	ErrCustomFieldKeyRequired        = errors.New("custom field key required")
+	ErrCustomFieldLabelRequired      = errors.New("custom field label required")
+	ErrCustomFieldDataTypeInvalid    = errors.New("invalid custom field data type")
+	ErrCustomFieldOptionsRequired    = errors.New("select custom fields require options")
+	ErrCustomFieldOrderInvalid       = errors.New("custom field display order must be greater than or equal to zero")
+	ErrCustomFieldValueRequired      = errors.New("custom field value required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -166,6 +175,15 @@ type Storer interface {
 	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
 	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
 	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
+	CreateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition) error
+	UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition) error
+	QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error)
+	CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error)
+	QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error)
+	SetCustomFieldValue(ctx context.Context, value CustomFieldValue) error
+	QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error)
+	CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error)
+	QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error)
 	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
@@ -255,6 +273,15 @@ type ExtBusiness interface {
 	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
 	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
 	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
+	CreateCustomFieldDefinition(ctx context.Context, nd NewCustomFieldDefinition) (CustomFieldDefinition, error)
+	UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition, nd NewCustomFieldDefinition) (CustomFieldDefinition, error)
+	QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error)
+	CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error)
+	QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error)
+	SetCustomFieldValue(ctx context.Context, nv NewCustomFieldValue) (CustomFieldValue, error)
+	QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error)
+	CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error)
+	QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
 	CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error)
@@ -1391,6 +1418,161 @@ func (b *Business) QueryApplicationFormTemplateByID(ctx context.Context, templat
 	return template, nil
 }
 
+// CreateCustomFieldDefinition adds a custom field definition for constituents or applications only.
+func (b *Business) CreateCustomFieldDefinition(ctx context.Context, nd NewCustomFieldDefinition) (CustomFieldDefinition, error) {
+	if err := validateNewCustomFieldDefinition(nd); err != nil {
+		return CustomFieldDefinition{}, err
+	}
+
+	now := time.Now()
+	definition := CustomFieldDefinition{
+		ID:           uuid.New(),
+		Owner:        nd.Owner,
+		FieldKey:     strings.TrimSpace(nd.FieldKey),
+		Label:        strings.TrimSpace(nd.Label),
+		Description:  trimStringPtr(nd.Description),
+		DataType:     nd.DataType,
+		Required:     nd.Required,
+		Options:      normalizeCustomFieldOptions(nd.Options),
+		Validation:   trimStringPtr(nd.Validation),
+		Searchable:   nd.Searchable,
+		Reportable:   nd.Reportable,
+		Importable:   nd.Importable,
+		Exportable:   nd.Exportable,
+		DisplayOrder: nd.DisplayOrder,
+		Active:       nd.Active,
+		DateCreated:  now,
+		DateUpdated:  now,
+	}
+
+	if err := b.storer.CreateCustomFieldDefinition(ctx, definition); err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("create custom field definition: %w", err)
+	}
+
+	return definition, nil
+}
+
+// UpdateCustomFieldDefinition replaces mutable custom field definition metadata.
+func (b *Business) UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition, nd NewCustomFieldDefinition) (CustomFieldDefinition, error) {
+	if err := validateNewCustomFieldDefinition(nd); err != nil {
+		return CustomFieldDefinition{}, err
+	}
+
+	definition.Owner = nd.Owner
+	definition.FieldKey = strings.TrimSpace(nd.FieldKey)
+	definition.Label = strings.TrimSpace(nd.Label)
+	definition.Description = trimStringPtr(nd.Description)
+	definition.DataType = nd.DataType
+	definition.Required = nd.Required
+	definition.Options = normalizeCustomFieldOptions(nd.Options)
+	definition.Validation = trimStringPtr(nd.Validation)
+	definition.Searchable = nd.Searchable
+	definition.Reportable = nd.Reportable
+	definition.Importable = nd.Importable
+	definition.Exportable = nd.Exportable
+	definition.DisplayOrder = nd.DisplayOrder
+	definition.Active = nd.Active
+	definition.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateCustomFieldDefinition(ctx, definition); err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("update custom field definition: %w", err)
+	}
+
+	return definition, nil
+}
+
+// QueryCustomFieldDefinitions retrieves custom field definitions for settings, search, reporting, import, and export seams.
+func (b *Business) QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error) {
+	definitions, err := b.storer.QueryCustomFieldDefinitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query custom field definitions: %w", err)
+	}
+
+	return definitions, nil
+}
+
+// CountCustomFieldDefinitions returns the total number of custom field definitions.
+func (b *Business) CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error) {
+	return b.storer.CountCustomFieldDefinitions(ctx, filter)
+}
+
+// QueryCustomFieldDefinitionByID finds a custom field definition by ID.
+func (b *Business) QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error) {
+	definition, err := b.storer.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("query custom field definition: definitionID[%s]: %w", definitionID, err)
+	}
+
+	return definition, nil
+}
+
+// SetCustomFieldValue creates or replaces one custom field value for a constituent or application.
+func (b *Business) SetCustomFieldValue(ctx context.Context, nv NewCustomFieldValue) (CustomFieldValue, error) {
+	if err := validateNewCustomFieldValue(nv); err != nil {
+		return CustomFieldValue{}, err
+	}
+
+	definition, err := b.QueryCustomFieldDefinitionByID(ctx, nv.DefinitionID)
+	if err != nil {
+		return CustomFieldValue{}, err
+	}
+	if definition.Owner != nv.Owner {
+		return CustomFieldValue{}, ErrCustomFieldOwnerInvalid
+	}
+
+	if nv.Owner == CustomFieldOwnerConstituent {
+		if _, err := b.QueryConstituentByID(ctx, nv.OwnerID); err != nil {
+			return CustomFieldValue{}, err
+		}
+	} else {
+		if _, err := b.QueryApplicationByID(ctx, nv.OwnerID); err != nil {
+			return CustomFieldValue{}, err
+		}
+	}
+
+	now := time.Now()
+	value := CustomFieldValue{
+		ID:           uuid.New(),
+		DefinitionID: nv.DefinitionID,
+		Owner:        nv.Owner,
+		OwnerID:      nv.OwnerID,
+		Value:        strings.TrimSpace(nv.Value),
+		DateCreated:  now,
+		DateUpdated:  now,
+	}
+
+	if err := b.storer.SetCustomFieldValue(ctx, value); err != nil {
+		return CustomFieldValue{}, fmt.Errorf("set custom field value: %w", err)
+	}
+
+	return value, nil
+}
+
+// QueryCustomFieldValues retrieves custom field values by definition or owner.
+func (b *Business) QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error) {
+	values, err := b.storer.QueryCustomFieldValues(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query custom field values: %w", err)
+	}
+
+	return values, nil
+}
+
+// CountCustomFieldValues returns the total number of custom field values.
+func (b *Business) CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error) {
+	return b.storer.CountCustomFieldValues(ctx, filter)
+}
+
+// QueryCustomFieldValueByID finds a custom field value by ID.
+func (b *Business) QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error) {
+	value, err := b.storer.QueryCustomFieldValueByID(ctx, valueID)
+	if err != nil {
+		return CustomFieldValue{}, fmt.Errorf("query custom field value: valueID[%s]: %w", valueID, err)
+	}
+
+	return value, nil
+}
+
 // TransitionApplicationStatus changes an Application status and records immutable transition history.
 func (b *Business) TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error) {
 	if nt.ActorID == uuid.Nil {
@@ -1903,6 +2085,78 @@ func validateApplicationFormField(field ApplicationFormField) error {
 	return nil
 }
 
+func validateNewCustomFieldDefinition(nd NewCustomFieldDefinition) error {
+	if err := validateCustomFieldOwner(nd.Owner); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nd.FieldKey) == "" {
+		return ErrCustomFieldKeyRequired
+	}
+
+	if strings.TrimSpace(nd.Label) == "" {
+		return ErrCustomFieldLabelRequired
+	}
+
+	if err := validateCustomFieldDataType(nd.DataType); err != nil {
+		return err
+	}
+
+	if nd.DataType == CustomFieldDataTypeSelect && len(normalizeCustomFieldOptions(nd.Options)) == 0 {
+		return ErrCustomFieldOptionsRequired
+	}
+
+	if nd.DisplayOrder < 0 {
+		return ErrCustomFieldOrderInvalid
+	}
+
+	return nil
+}
+
+func validateNewCustomFieldValue(nv NewCustomFieldValue) error {
+	if nv.DefinitionID == uuid.Nil {
+		return ErrCustomFieldDefinitionNotFound
+	}
+
+	if err := validateCustomFieldOwner(nv.Owner); err != nil {
+		return err
+	}
+
+	if nv.OwnerID == uuid.Nil {
+		return ErrCustomFieldOwnerInvalid
+	}
+
+	if strings.TrimSpace(nv.Value) == "" {
+		return ErrCustomFieldValueRequired
+	}
+
+	return nil
+}
+
+func validateCustomFieldOwner(owner CustomFieldOwner) error {
+	switch owner {
+	case CustomFieldOwnerConstituent,
+		CustomFieldOwnerApplication:
+		return nil
+	default:
+		return ErrCustomFieldOwnerInvalid
+	}
+}
+
+func validateCustomFieldDataType(dataType CustomFieldDataType) error {
+	switch dataType {
+	case CustomFieldDataTypeText,
+		CustomFieldDataTypeTextarea,
+		CustomFieldDataTypeNumber,
+		CustomFieldDataTypeDate,
+		CustomFieldDataTypeSelect,
+		CustomFieldDataTypeBoolean:
+		return nil
+	default:
+		return ErrCustomFieldDataTypeInvalid
+	}
+}
+
 func validateChecklistTemplateItem(item ApplicationChecklistTemplateItem) error {
 	if strings.TrimSpace(item.ItemKey) == "" || strings.TrimSpace(item.DocumentName) == "" || item.DisplayOrder < 0 {
 		return ErrFormTemplateChecklistInvalid
@@ -2084,6 +2338,26 @@ func normalizeChecklistTemplateItems(items []ApplicationChecklistTemplateItem) [
 			Required:     item.Required,
 			DisplayOrder: item.DisplayOrder,
 		}
+	}
+
+	return normalized
+}
+
+func normalizeCustomFieldOptions(options []string) []string {
+	normalized := make([]string, 0, len(options))
+	seen := make(map[string]struct{}, len(options))
+
+	for _, option := range options {
+		trimmed := strings.TrimSpace(option)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := seen[trimmed]; exists {
+			continue
+		}
+
+		seen[trimmed] = struct{}{}
+		normalized = append(normalized, trimmed)
 	}
 
 	return normalized

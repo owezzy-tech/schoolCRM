@@ -1,4 +1,4 @@
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,6 +18,12 @@ import {
     ApplicationFormTemplateRequest,
     ApplicationType,
     AssignmentCandidate,
+    CUSTOM_FIELD_DATA_TYPES,
+    CUSTOM_FIELD_OWNERS,
+    CustomFieldDataType,
+    CustomFieldDefinition,
+    CustomFieldDefinitionRequest,
+    CustomFieldOwner,
     EVENT_ATTENDANCE_STATUSES,
     LEAD_ASSIGNMENT_CRITERION_FIELDS,
     LEAD_ASSIGNMENT_CRITERION_OPERATORS,
@@ -56,6 +62,24 @@ interface ApplicationFormTemplateForm {
     requiredFieldsText: string;
     checklistItemsText: string;
     priority: number;
+    active: boolean;
+}
+
+interface CustomFieldDefinitionForm {
+    id: string;
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description: string;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    optionsText: string;
+    validation: string;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
     active: boolean;
 }
 
@@ -114,6 +138,85 @@ const emptyTemplateForm: ApplicationFormTemplateForm = {
     priority: 100,
     active: true,
 };
+
+const emptyCustomFieldForm: CustomFieldDefinitionForm = {
+    id: '',
+    owner: 'CONSTITUENT',
+    fieldKey: '',
+    label: '',
+    description: '',
+    dataType: 'TEXT',
+    required: false,
+    optionsText: '',
+    validation: '',
+    searchable: true,
+    reportable: true,
+    importable: true,
+    exportable: true,
+    displayOrder: 100,
+    active: true,
+};
+
+const CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [
+    {
+        id: 'field-scholarship-level',
+        owner: 'CONSTITUENT',
+        fieldKey: 'scholarship_level',
+        label: 'Scholarship level',
+        description:
+            'Recruiter-maintained qualifier used for reports and import templates.',
+        dataType: 'SELECT',
+        required: false,
+        options: ['None', 'Partial', 'Full'],
+        searchable: true,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 10,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-interview-window',
+        owner: 'APPLICATION',
+        fieldKey: 'preferred_interview_window',
+        label: 'Preferred interview window',
+        description:
+            'Applicant scheduling preference collected after submission.',
+        dataType: 'TEXT',
+        required: false,
+        options: [],
+        validation: 'max:80',
+        searchable: true,
+        reportable: false,
+        importable: true,
+        exportable: true,
+        displayOrder: 20,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-alumni-connection',
+        owner: 'CONSTITUENT',
+        fieldKey: 'alumni_connection',
+        label: 'Alumni connection',
+        description:
+            'Optional context for family or mentor relationship reporting.',
+        dataType: 'BOOLEAN',
+        required: false,
+        options: [],
+        searchable: false,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 30,
+        active: false,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+];
 
 const emptyAssignmentForm: AssignmentRuleForm = {
     id: '',
@@ -308,6 +411,7 @@ const ASSIGNMENT_CANDIDATES: AssignmentCandidate[] = [
     selector: 'app-admissions-settings',
     imports: [
         AsyncPipe,
+        JsonPipe,
         FormsModule,
         MatButtonModule,
         MatChipsModule,
@@ -330,23 +434,94 @@ export class AdmissionsSettingsComponent {
     readonly lifecycleStages = LIFECYCLE_STAGES;
     readonly applicationTypes = APPLICATION_TYPES;
     readonly applicationStatuses = APPLICATION_STATUSES;
+    readonly customFieldOwners = CUSTOM_FIELD_OWNERS;
+    readonly customFieldDataTypes = CUSTOM_FIELD_DATA_TYPES;
+    readonly customFieldDefinitions = CUSTOM_FIELD_DEFINITIONS;
     readonly eventAttendanceStatuses = EVENT_ATTENDANCE_STATUSES;
     readonly assignmentRules = ASSIGNMENT_RULES;
     readonly assignmentCandidates = ASSIGNMENT_CANDIDATES;
     readonly assignees = ASSIGNEES;
     readonly rules$ = this.admissionsService.rules$;
     readonly templates$ = this.admissionsService.templates$;
+    readonly customFieldDefinitions$ =
+        this.admissionsService.customFieldDefinitions$;
 
     errorMessage = '';
     saving = false;
     form: LeadScoreRuleForm = { ...emptyForm };
     templateSaving = false;
     templateForm: ApplicationFormTemplateForm = { ...emptyTemplateForm };
+    customFieldForm: CustomFieldDefinitionForm = { ...emptyCustomFieldForm };
     assignmentForm: AssignmentRuleForm = { ...emptyAssignmentForm };
 
     constructor() {
         this.loadRules();
         this.loadTemplates();
+    }
+
+    editCustomField(definition: CustomFieldDefinition): void {
+        this.customFieldForm = {
+            id: definition.id,
+            owner: definition.owner,
+            fieldKey: definition.fieldKey,
+            label: definition.label,
+            description: definition.description ?? '',
+            dataType: definition.dataType,
+            required: definition.required,
+            optionsText: definition.options.join(', '),
+            validation: definition.validation ?? '',
+            searchable: definition.searchable,
+            reportable: definition.reportable,
+            importable: definition.importable,
+            exportable: definition.exportable,
+            displayOrder: definition.displayOrder,
+            active: definition.active,
+        };
+    }
+
+    resetCustomFieldForm(): void {
+        this.customFieldForm = { ...emptyCustomFieldForm };
+    }
+
+    customFieldSummary(definition: CustomFieldDefinition): string {
+        const flags = [
+            definition.searchable ? 'Search' : '',
+            definition.reportable ? 'Report' : '',
+            definition.importable ? 'Import' : '',
+            definition.exportable ? 'Export' : '',
+        ].filter(Boolean);
+
+        return `${definition.dataType} · ${definition.required ? 'Required' : 'Optional'} · ${flags.join(' / ')}`;
+    }
+
+    customFieldOptionsLabel(definition: CustomFieldDefinition): string {
+        return definition.options.length > 0
+            ? definition.options.join(', ')
+            : 'No fixed options';
+    }
+
+    toCustomFieldRequest(
+        form: CustomFieldDefinitionForm
+    ): CustomFieldDefinitionRequest {
+        return {
+            owner: form.owner,
+            fieldKey: form.fieldKey.trim(),
+            label: form.label.trim(),
+            description: form.description.trim() || null,
+            dataType: form.dataType,
+            required: form.required,
+            options: form.optionsText
+                .split(',')
+                .map((value) => value.trim())
+                .filter((value) => value.length > 0),
+            validation: form.validation.trim() || null,
+            searchable: form.searchable,
+            reportable: form.reportable,
+            importable: form.importable,
+            exportable: form.exportable,
+            displayOrder: Number(form.displayOrder),
+            active: form.active,
+        };
     }
 
     loadRules(): void {

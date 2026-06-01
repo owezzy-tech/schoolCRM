@@ -126,6 +126,25 @@ type applicationFormTemplateQueryParams struct {
 	Version         string
 }
 
+type customFieldDefinitionQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	Owner   string
+	Active  string
+}
+
+type customFieldValueQueryParams struct {
+	Page         string
+	Rows         string
+	OrderBy      string
+	ID           string
+	DefinitionID string
+	Owner        string
+	OwnerID      string
+}
+
 type applicationTransitionQueryParams struct {
 	Page          string
 	Rows          string
@@ -339,6 +358,33 @@ func parseApplicationFormTemplateQueryParams(r *http.Request) applicationFormTem
 		ApplicationType: values.Get("application_type"),
 		Active:          values.Get("active"),
 		Version:         values.Get("version"),
+	}
+}
+
+func parseCustomFieldDefinitionQueryParams(r *http.Request) customFieldDefinitionQueryParams {
+	values := r.URL.Query()
+
+	return customFieldDefinitionQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("custom_field_definition_id"),
+		Owner:   values.Get("owner"),
+		Active:  values.Get("active"),
+	}
+}
+
+func parseCustomFieldValueQueryParams(r *http.Request) customFieldValueQueryParams {
+	values := r.URL.Query()
+
+	return customFieldValueQueryParams{
+		Page:         values.Get("page"),
+		Rows:         values.Get("rows"),
+		OrderBy:      values.Get("orderBy"),
+		ID:           values.Get("custom_field_value_id"),
+		DefinitionID: values.Get("custom_field_definition_id"),
+		Owner:        values.Get("owner"),
+		OwnerID:      values.Get("owner_id"),
 	}
 }
 
@@ -914,6 +960,83 @@ func parseApplicationFormTemplateFilter(qp applicationFormTemplateQueryParams) (
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationFormTemplateQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseCustomFieldDefinitionFilter(qp customFieldDefinitionQueryParams) (admissionsbus.CustomFieldDefinitionQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CustomFieldDefinitionQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("custom_field_definition_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Owner != "" {
+		owner := admissionsbus.CustomFieldOwner(qp.Owner)
+		filter.Owner = &owner
+	}
+
+	if qp.Active != "" {
+		active, err := strconv.ParseBool(qp.Active)
+		if err != nil {
+			fieldErrors.Add("active", err)
+		} else {
+			filter.Active = &active
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.CustomFieldDefinitionQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseCustomFieldValueFilter(qp customFieldValueQueryParams) (admissionsbus.CustomFieldValueQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CustomFieldValueQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("custom_field_value_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.DefinitionID != "" {
+		id, err := uuid.Parse(qp.DefinitionID)
+		if err != nil {
+			fieldErrors.Add("custom_field_definition_id", err)
+		} else {
+			filter.DefinitionID = &id
+		}
+	}
+
+	if qp.Owner != "" {
+		owner := admissionsbus.CustomFieldOwner(qp.Owner)
+		filter.Owner = &owner
+	}
+
+	if qp.OwnerID != "" {
+		id, err := uuid.Parse(qp.OwnerID)
+		if err != nil {
+			fieldErrors.Add("owner_id", err)
+		} else {
+			filter.OwnerID = &id
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.CustomFieldValueQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

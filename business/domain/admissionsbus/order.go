@@ -35,6 +35,12 @@ var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order
 // DefaultApplicationFormTemplateOrderBy represents the default way we sort application form templates.
 var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTemplatePriority, order.ASC)
 
+// DefaultCustomFieldDefinitionOrderBy represents the default way we sort custom field definitions.
+var DefaultCustomFieldDefinitionOrderBy = order.NewBy(OrderByCustomFieldDefinitionDisplayOrder, order.ASC)
+
+// DefaultCustomFieldValueOrderBy represents the default way we sort custom field values.
+var DefaultCustomFieldValueOrderBy = order.NewBy(OrderByCustomFieldValueDateCreated, order.ASC)
+
 // DefaultApplicationTransitionOrderBy represents the default way we sort application transitions.
 var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
 
@@ -141,6 +147,24 @@ const (
 	OrderByApplicationFormTemplateVersion     = "d"
 	OrderByApplicationFormTemplatePriority    = "e"
 	OrderByApplicationFormTemplateDateCreated = "f"
+)
+
+// Set of fields that custom field definitions can be ordered by.
+const (
+	OrderByCustomFieldDefinitionID           = "a"
+	OrderByCustomFieldDefinitionOwner        = "b"
+	OrderByCustomFieldDefinitionFieldKey     = "c"
+	OrderByCustomFieldDefinitionDisplayOrder = "d"
+	OrderByCustomFieldDefinitionDateCreated  = "e"
+)
+
+// Set of fields that custom field values can be ordered by.
+const (
+	OrderByCustomFieldValueID          = "a"
+	OrderByCustomFieldValueDefinition  = "b"
+	OrderByCustomFieldValueOwner       = "c"
+	OrderByCustomFieldValueOwnerID     = "d"
+	OrderByCustomFieldValueDateCreated = "e"
 )
 
 // Set of fields that application transitions can be ordered by.
