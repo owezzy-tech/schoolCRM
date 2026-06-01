@@ -128,16 +128,18 @@ type duplicateReviewDB struct {
 }
 
 type applicationDB struct {
-	ID                 uuid.UUID  `db:"application_id"`
-	ConstituentID      uuid.UUID  `db:"constituent_id"`
-	ProgramID          uuid.UUID  `db:"program_id"`
-	AcademicTermID     uuid.UUID  `db:"academic_term_id"`
-	ApplicationType    string     `db:"application_type"`
-	Status             string     `db:"status"`
-	AssignedReviewerID *uuid.UUID `db:"assigned_reviewer_id"`
-	SubmittedAt        *time.Time `db:"submitted_at"`
-	DateCreated        time.Time  `db:"date_created"`
-	DateUpdated        time.Time  `db:"date_updated"`
+	ID                 uuid.UUID       `db:"application_id"`
+	ConstituentID      uuid.UUID       `db:"constituent_id"`
+	ProgramID          uuid.UUID       `db:"program_id"`
+	AcademicTermID     uuid.UUID       `db:"academic_term_id"`
+	ApplicationType    string          `db:"application_type"`
+	Status             string          `db:"status"`
+	KUCCPSPlacement    json.RawMessage `db:"kuccps_placement"`
+	KCSEResult         json.RawMessage `db:"kcse_result"`
+	AssignedReviewerID *uuid.UUID      `db:"assigned_reviewer_id"`
+	SubmittedAt        *time.Time      `db:"submitted_at"`
+	DateCreated        time.Time       `db:"date_created"`
+	DateUpdated        time.Time       `db:"date_updated"`
 }
 
 type applicationFormTemplateDB struct {
@@ -715,7 +717,17 @@ func toBusDuplicateReviews(dbs []duplicateReviewDB) []admissionsbus.DuplicateRev
 	return bus
 }
 
-func toDBApplication(bus admissionsbus.Application) applicationDB {
+func toDBApplication(bus admissionsbus.Application) (applicationDB, error) {
+	kuccpsPlacement, err := json.Marshal(bus.KUCCPSPlacement)
+	if err != nil {
+		return applicationDB{}, err
+	}
+
+	kcseResult, err := json.Marshal(bus.KCSEResult)
+	if err != nil {
+		return applicationDB{}, err
+	}
+
 	return applicationDB{
 		ID:                 bus.ID,
 		ConstituentID:      bus.ConstituentID,
@@ -723,14 +735,30 @@ func toDBApplication(bus admissionsbus.Application) applicationDB {
 		AcademicTermID:     bus.AcademicTermID,
 		ApplicationType:    bus.ApplicationType.String(),
 		Status:             bus.Status.String(),
+		KUCCPSPlacement:    json.RawMessage(kuccpsPlacement),
+		KCSEResult:         json.RawMessage(kcseResult),
 		AssignedReviewerID: bus.AssignedReviewerID,
 		SubmittedAt:        utcTimePtr(bus.SubmittedAt),
 		DateCreated:        bus.DateCreated.UTC(),
 		DateUpdated:        bus.DateUpdated.UTC(),
-	}
+	}, nil
 }
 
-func toBusApplication(db applicationDB) admissionsbus.Application {
+func toBusApplication(db applicationDB) (admissionsbus.Application, error) {
+	var kuccpsPlacement *admissionsbus.KUCCPSPlacement
+	if len(db.KUCCPSPlacement) > 0 {
+		if err := json.Unmarshal(db.KUCCPSPlacement, &kuccpsPlacement); err != nil {
+			return admissionsbus.Application{}, err
+		}
+	}
+
+	var kcseResult *admissionsbus.ApplicationKCSEResult
+	if len(db.KCSEResult) > 0 {
+		if err := json.Unmarshal(db.KCSEResult, &kcseResult); err != nil {
+			return admissionsbus.Application{}, err
+		}
+	}
+
 	return admissionsbus.Application{
 		ID:                 db.ID,
 		ConstituentID:      db.ConstituentID,
@@ -738,20 +766,26 @@ func toBusApplication(db applicationDB) admissionsbus.Application {
 		AcademicTermID:     db.AcademicTermID,
 		ApplicationType:    admissionsbus.ApplicationType(db.ApplicationType),
 		Status:             admissionsbus.ApplicationStatus(db.Status),
+		KUCCPSPlacement:    kuccpsPlacement,
+		KCSEResult:         kcseResult,
 		AssignedReviewerID: db.AssignedReviewerID,
 		SubmittedAt:        localTimePtr(db.SubmittedAt),
 		DateCreated:        db.DateCreated.In(time.Local),
 		DateUpdated:        db.DateUpdated.In(time.Local),
-	}
+	}, nil
 }
 
-func toBusApplications(dbs []applicationDB) []admissionsbus.Application {
+func toBusApplications(dbs []applicationDB) ([]admissionsbus.Application, error) {
 	bus := make([]admissionsbus.Application, len(dbs))
 	for i, db := range dbs {
-		bus[i] = toBusApplication(db)
+		var err error
+		bus[i], err = toBusApplication(db)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return bus
+	return bus, nil
 }
 
 func toDBApplicationFormTemplate(bus admissionsbus.ApplicationFormTemplate) (applicationFormTemplateDB, error) {

@@ -677,3 +677,15 @@ ON CONFLICT DO NOTHING;
 
 CREATE INDEX idx_admissions_identity_backfill_reviews_constituent ON admissions_identity_backfill_reviews (constituent_id);
 CREATE INDEX idx_admissions_identity_backfill_reviews_status ON admissions_identity_backfill_reviews (status);
+
+-- Version: 1.22
+-- Description: Localize admissions applications for Kenya
+ALTER TABLE admissions_applications
+    DROP CONSTRAINT admissions_applications_type,
+    ADD COLUMN kuccps_placement JSONB NULL,
+    ADD COLUMN kcse_result JSONB NULL,
+    ADD CONSTRAINT admissions_applications_type CHECK (application_type IN ('KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD', 'DIPLOMA', 'MASTERS', 'PHD', 'TVET', 'BRIDGING', 'CERTIFICATE'));
+
+ALTER TABLE admissions_application_form_templates
+    DROP CONSTRAINT admissions_form_templates_type,
+    ADD CONSTRAINT admissions_form_templates_type CHECK (application_type IN ('KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD', 'DIPLOMA', 'MASTERS', 'PHD', 'TVET', 'BRIDGING', 'CERTIFICATE'));
