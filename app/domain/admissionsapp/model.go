@@ -1274,6 +1274,182 @@ func toAppDocuments(documents []admissionsbus.Document) []Document {
 	return app
 }
 
+// ImportBatch represents an admissions CSV or Excel import batch.
+type ImportBatch struct {
+	ID                string            `json:"id"`
+	Source            string            `json:"source"`
+	FileType          string            `json:"fileType"`
+	Target            string            `json:"target"`
+	Status            string            `json:"status"`
+	FileName          string            `json:"fileName"`
+	StorageKey        *string           `json:"storageKey,omitempty"`
+	UploadedByID      string            `json:"uploadedByID"`
+	TotalRows         int               `json:"totalRows"`
+	ValidRows         int               `json:"validRows"`
+	InvalidRows       int               `json:"invalidRows"`
+	DuplicateRows     int               `json:"duplicateRows"`
+	FieldMapping      map[string]string `json:"fieldMapping"`
+	InvalidReportKey  *string           `json:"invalidReportKey,omitempty"`
+	ValidationSummary *string           `json:"validationSummary,omitempty"`
+	CommittedAt       *string           `json:"committedAt,omitempty"`
+	DateCreated       string            `json:"dateCreated"`
+	DateUpdated       string            `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ImportBatch) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppImportBatch(batch admissionsbus.ImportBatch) ImportBatch {
+	return ImportBatch{
+		ID:                batch.ID.String(),
+		Source:            batch.Source.String(),
+		FileType:          batch.FileType.String(),
+		Target:            batch.Target.String(),
+		Status:            batch.Status.String(),
+		FileName:          batch.FileName,
+		StorageKey:        batch.StorageKey,
+		UploadedByID:      batch.UploadedByID.String(),
+		TotalRows:         batch.TotalRows,
+		ValidRows:         batch.ValidRows,
+		InvalidRows:       batch.InvalidRows,
+		DuplicateRows:     batch.DuplicateRows,
+		FieldMapping:      batch.FieldMapping,
+		InvalidReportKey:  batch.InvalidReportKey,
+		ValidationSummary: batch.ValidationSummary,
+		CommittedAt:       formatTimePtr(batch.CommittedAt),
+		DateCreated:       batch.DateCreated.Format(time.RFC3339),
+		DateUpdated:       batch.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppImportBatches(batches []admissionsbus.ImportBatch) []ImportBatch {
+	app := make([]ImportBatch, len(batches))
+	for i, batch := range batches {
+		app[i] = toAppImportBatch(batch)
+	}
+
+	return app
+}
+
+// ImportInvalidRow represents one invalid import row available for correction download.
+type ImportInvalidRow struct {
+	ID          string            `json:"id"`
+	BatchID     string            `json:"batchID"`
+	RowNumber   int               `json:"rowNumber"`
+	FieldName   *string           `json:"fieldName,omitempty"`
+	RawData     map[string]string `json:"rawData"`
+	ErrorCode   string            `json:"errorCode"`
+	ErrorDetail string            `json:"errorDetail"`
+	DateCreated string            `json:"dateCreated"`
+}
+
+// Encode implements the encoder interface.
+func (app ImportInvalidRow) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppImportInvalidRow(row admissionsbus.ImportInvalidRow) ImportInvalidRow {
+	return ImportInvalidRow{
+		ID:          row.ID.String(),
+		BatchID:     row.BatchID.String(),
+		RowNumber:   row.RowNumber,
+		FieldName:   row.FieldName,
+		RawData:     row.RawData,
+		ErrorCode:   row.ErrorCode,
+		ErrorDetail: row.ErrorDetail,
+		DateCreated: row.DateCreated.Format(time.RFC3339),
+	}
+}
+
+func toAppImportInvalidRows(rows []admissionsbus.ImportInvalidRow) []ImportInvalidRow {
+	app := make([]ImportInvalidRow, len(rows))
+	for i, row := range rows {
+		app[i] = toAppImportInvalidRow(row)
+	}
+
+	return app
+}
+
+// NewImportBatch defines the data needed to record an import preview or commit.
+type NewImportBatch struct {
+	Source            string            `json:"source"`
+	FileType          string            `json:"fileType"`
+	Target            string            `json:"target"`
+	Status            string            `json:"status"`
+	FileName          string            `json:"fileName"`
+	StorageKey        *string           `json:"storageKey"`
+	TotalRows         int               `json:"totalRows"`
+	ValidRows         int               `json:"validRows"`
+	InvalidRows       int               `json:"invalidRows"`
+	DuplicateRows     int               `json:"duplicateRows"`
+	FieldMapping      map[string]string `json:"fieldMapping"`
+	InvalidReportKey  *string           `json:"invalidReportKey"`
+	ValidationSummary *string           `json:"validationSummary"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewImportBatch) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewImportBatch(app NewImportBatch, uploadedByID uuid.UUID) admissionsbus.NewImportBatch {
+	return admissionsbus.NewImportBatch{
+		Source:            admissionsbus.ImportSource(app.Source),
+		FileType:          admissionsbus.ImportFileType(app.FileType),
+		Target:            admissionsbus.ImportTarget(app.Target),
+		Status:            admissionsbus.ImportBatchStatus(app.Status),
+		FileName:          app.FileName,
+		StorageKey:        app.StorageKey,
+		UploadedByID:      uploadedByID,
+		TotalRows:         app.TotalRows,
+		ValidRows:         app.ValidRows,
+		InvalidRows:       app.InvalidRows,
+		DuplicateRows:     app.DuplicateRows,
+		FieldMapping:      app.FieldMapping,
+		InvalidReportKey:  app.InvalidReportKey,
+		ValidationSummary: app.ValidationSummary,
+	}
+}
+
+// NewImportInvalidRow defines invalid row details attached to an import batch.
+type NewImportInvalidRow struct {
+	RowNumber   int               `json:"rowNumber"`
+	FieldName   *string           `json:"fieldName"`
+	RawData     map[string]string `json:"rawData"`
+	ErrorCode   string            `json:"errorCode"`
+	ErrorDetail string            `json:"errorDetail"`
+}
+
+// NewImportInvalidRows defines the rows attached to an import batch.
+type NewImportInvalidRows struct {
+	Rows []NewImportInvalidRow `json:"rows"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewImportInvalidRows) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewImportInvalidRows(app NewImportInvalidRows, batchID uuid.UUID) []admissionsbus.NewImportInvalidRow {
+	rows := make([]admissionsbus.NewImportInvalidRow, len(app.Rows))
+	for i, row := range app.Rows {
+		rows[i] = admissionsbus.NewImportInvalidRow{
+			BatchID:     batchID,
+			RowNumber:   row.RowNumber,
+			FieldName:   row.FieldName,
+			RawData:     row.RawData,
+			ErrorCode:   row.ErrorCode,
+			ErrorDetail: row.ErrorDetail,
+		}
+	}
+
+	return rows
+}
+
 // Encode implements the encoder interface.
 func (app Application) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
