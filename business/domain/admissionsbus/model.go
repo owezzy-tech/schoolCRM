@@ -298,6 +298,96 @@ type ApplicationFormField struct {
 	Validation   *string
 }
 
+// CustomFieldOwner represents the admissions aggregate a custom field belongs to.
+type CustomFieldOwner string
+
+// Set of aggregates that may own custom fields.
+const (
+	CustomFieldOwnerConstituent CustomFieldOwner = "CONSTITUENT"
+	CustomFieldOwnerApplication CustomFieldOwner = "APPLICATION"
+)
+
+// String returns the custom field owner as a string.
+func (owner CustomFieldOwner) String() string {
+	return string(owner)
+}
+
+// CustomFieldDataType represents the validated storage type for custom field values.
+type CustomFieldDataType string
+
+// Set of supported custom field data types.
+const (
+	CustomFieldDataTypeText     CustomFieldDataType = "TEXT"
+	CustomFieldDataTypeTextarea CustomFieldDataType = "TEXTAREA"
+	CustomFieldDataTypeNumber   CustomFieldDataType = "NUMBER"
+	CustomFieldDataTypeDate     CustomFieldDataType = "DATE"
+	CustomFieldDataTypeSelect   CustomFieldDataType = "SELECT"
+	CustomFieldDataTypeBoolean  CustomFieldDataType = "BOOLEAN"
+)
+
+// String returns the custom field data type as a string.
+func (dataType CustomFieldDataType) String() string {
+	return string(dataType)
+}
+
+// CustomFieldDefinition describes one user-defined admissions field without making core fields dynamic.
+type CustomFieldDefinition struct {
+	ID           uuid.UUID
+	Owner        CustomFieldOwner
+	FieldKey     string
+	Label        string
+	Description  *string
+	DataType     CustomFieldDataType
+	Required     bool
+	Options      []string
+	Validation   *string
+	Searchable   bool
+	Reportable   bool
+	Importable   bool
+	Exportable   bool
+	DisplayOrder int
+	Active       bool
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+// NewCustomFieldDefinition is what we require to create or update a custom field definition.
+type NewCustomFieldDefinition struct {
+	Owner        CustomFieldOwner
+	FieldKey     string
+	Label        string
+	Description  *string
+	DataType     CustomFieldDataType
+	Required     bool
+	Options      []string
+	Validation   *string
+	Searchable   bool
+	Reportable   bool
+	Importable   bool
+	Exportable   bool
+	DisplayOrder int
+	Active       bool
+}
+
+// CustomFieldValue stores one validated custom field value for a constituent or application.
+type CustomFieldValue struct {
+	ID           uuid.UUID
+	DefinitionID uuid.UUID
+	Owner        CustomFieldOwner
+	OwnerID      uuid.UUID
+	Value        string
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+// NewCustomFieldValue is what we require to set one custom field value.
+type NewCustomFieldValue struct {
+	DefinitionID uuid.UUID
+	Owner        CustomFieldOwner
+	OwnerID      uuid.UUID
+	Value        string
+}
+
 // ApplicationChecklistTemplateItem defines a document/checklist requirement attached to a form template.
 type ApplicationChecklistTemplateItem struct {
 	ItemKey      string
@@ -825,6 +915,8 @@ func AggregateNames() []string {
 		"constituent",
 		"inquiry",
 		"application",
+		"customFieldDefinition",
+		"customFieldValue",
 		"leadScoreRule",
 		"leadScore",
 		"checklist",
@@ -908,6 +1000,7 @@ type ConstituentQueryFilter struct {
 	ExternalSISID   *string
 	LifecycleStage  *LifecycleStage
 	DuplicateStatus *DuplicateStatus
+	CustomFields    map[string]string
 }
 
 // DuplicateReviewQueryFilter holds the available fields a duplicate review query can be filtered on.
@@ -930,6 +1023,24 @@ type ApplicationQueryFilter struct {
 	ApplicationType *ApplicationType
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
+	CustomFields    map[string]string
+}
+
+// CustomFieldDefinitionQueryFilter holds fields a custom field definition query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type CustomFieldDefinitionQueryFilter struct {
+	ID     *uuid.UUID
+	Owner  *CustomFieldOwner
+	Active *bool
+}
+
+// CustomFieldValueQueryFilter holds fields a custom field value query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type CustomFieldValueQueryFilter struct {
+	ID           *uuid.UUID
+	DefinitionID *uuid.UUID
+	Owner        *CustomFieldOwner
+	OwnerID      *uuid.UUID
 }
 
 // ApplicationFormTemplateQueryFilter holds fields an application form template query can be filtered on.
