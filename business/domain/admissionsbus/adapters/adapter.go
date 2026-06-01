@@ -13,12 +13,12 @@ import (
 type AdapterName string
 
 const (
-	AdapterKUCCPS         AdapterName = "kuccps"
-	AdapterKNEC           AdapterName = "knec"
-	AdapterIPRS           AdapterName = "iprs"
-	AdapterMPesaDaraja    AdapterName = "mpesa_daraja"
-	AdapterAfricasTalking AdapterName = "africas_talking"
-	AdapterWhatsAppCloud  AdapterName = "whatsapp_cloud"
+	AdapterKUCCPS        AdapterName = "kuccps"
+	AdapterKNEC          AdapterName = "knec"
+	AdapterIPRS          AdapterName = "iprs"
+	AdapterMPesaDaraja   AdapterName = "mpesa_daraja"
+	AdapterCelcomAfrica  AdapterName = "celcom_africa"
+	AdapterWhatsAppCloud AdapterName = "whatsapp_cloud"
 )
 
 // ErrCircuitOpen is returned when an adapter circuit breaker is rejecting calls.

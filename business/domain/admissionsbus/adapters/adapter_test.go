@@ -73,7 +73,7 @@ func TestExternalAdapterEmitsObserverEvents(t *testing.T) {
 	t.Parallel()
 
 	var events []OperationEvent
-	adapter := NewExternalAdapter(AdapterAfricasTalking, Config{Enabled: true}, ObserverFunc(func(_ context.Context, event OperationEvent) {
+	adapter := NewExternalAdapter(AdapterCelcomAfrica, Config{Enabled: true}, ObserverFunc(func(_ context.Context, event OperationEvent) {
 		events = append(events, event)
 	}))
 
