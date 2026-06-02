@@ -611,6 +611,8 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 			name: "valid status",
 			nj: NewSyncJob{
 				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Operation: "BATCH_PLACEMENT_PULL",
 				Status:    SyncJobStatus("UNKNOWN"),
 				Direction: SyncDirectionInbound,
 			},
@@ -620,10 +622,44 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 			name: "valid direction",
 			nj: NewSyncJob{
 				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Operation: "BATCH_PLACEMENT_PULL",
 				Status:    SyncJobStatusQueued,
 				Direction: SyncDirection("UNKNOWN"),
 			},
 			want: ErrInvalidSyncDirection,
+		},
+		{
+			name: "adapter required",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Operation: "BATCH_PLACEMENT_PULL",
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrInvalidIntegrationAdapter,
+		},
+		{
+			name: "operation required",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrSyncJobOperationRequired,
+		},
+		{
+			name: "max attempts invalid",
+			nj: NewSyncJob{
+				Name:        "Nightly SIS reconciliation",
+				Adapter:     IntegrationAdapterKUCCPS,
+				Operation:   "BATCH_PLACEMENT_PULL",
+				Status:      SyncJobStatusQueued,
+				Direction:   SyncDirectionInbound,
+				MaxAttempts: -1,
+			},
+			want: ErrInvalidMaxAttempts,
 		},
 	}
 
@@ -639,6 +675,144 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 	}
 }
 
+func TestCreateSyncJobDefaultsAdapterRetryMetadata(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	job, err := bus.CreateSyncJob(context.Background(), NewSyncJob{
+		Name:      " KUCCPS nightly placement pull ",
+		Adapter:   IntegrationAdapterKUCCPS,
+		Operation: " BATCH_PLACEMENT_PULL ",
+		Status:    SyncJobStatusQueued,
+		Direction: SyncDirectionInbound,
+	})
+	if err != nil {
+		t.Fatalf("CreateSyncJob returned error: %v", err)
+	}
+
+	if job.Name != "KUCCPS nightly placement pull" {
+		t.Fatalf("Name = %q, want trimmed name", job.Name)
+	}
+	if job.Operation != "BATCH_PLACEMENT_PULL" {
+		t.Fatalf("Operation = %q, want trimmed operation", job.Operation)
+	}
+	if job.Adapter != IntegrationAdapterKUCCPS {
+		t.Fatalf("Adapter = %s, want %s", job.Adapter, IntegrationAdapterKUCCPS)
+	}
+	if job.MaxAttempts != 3 {
+		t.Fatalf("MaxAttempts = %d, want 3", job.MaxAttempts)
+	}
+	if len(store.syncJobs) != 1 {
+		t.Fatalf("stored sync jobs = %d, want 1", len(store.syncJobs))
+	}
+}
+
+func TestUpdateSyncJobRetryStateTransitions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		initial    SyncJobStatus
+		update     UpdateSyncJob
+		wantStatus SyncJobStatus
+		wantErr    error
+	}{
+		{
+			name:       "queued to running",
+			initial:    SyncJobStatusQueued,
+			update:     UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 1},
+			wantStatus: SyncJobStatusRunning,
+		},
+		{
+			name:       "running to succeeded",
+			initial:    SyncJobStatusRunning,
+			update:     UpdateSyncJob{Status: SyncJobStatusSucceeded, AttemptCount: 1},
+			wantStatus: SyncJobStatusSucceeded,
+		},
+		{
+			name:       "running to retry ready",
+			initial:    SyncJobStatusRunning,
+			update:     UpdateSyncJob{Status: SyncJobStatusRetryReady, AttemptCount: 1, Retryable: true},
+			wantStatus: SyncJobStatusRetryReady,
+		},
+		{
+			name:       "retry ready to running",
+			initial:    SyncJobStatusRetryReady,
+			update:     UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 2},
+			wantStatus: SyncJobStatusRunning,
+		},
+		{
+			name:    "succeeded cannot rerun",
+			initial: SyncJobStatusSucceeded,
+			update:  UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 1},
+			wantErr: ErrInvalidSyncJobTransition,
+		},
+		{
+			name:    "attempts cannot exceed max",
+			initial: SyncJobStatusRunning,
+			update:  UpdateSyncJob{Status: SyncJobStatusFailed, AttemptCount: 4},
+			wantErr: ErrMaxAttemptsExceeded,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := &stubStore{}
+			bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+			job := SyncJob{
+				ID:          uuid.New(),
+				Name:        "KNEC result verification",
+				Adapter:     IntegrationAdapterKNEC,
+				Operation:   "RESULT_VERIFICATION",
+				Status:      tt.initial,
+				Direction:   SyncDirectionInbound,
+				MaxAttempts: 3,
+			}
+
+			updated, err := bus.UpdateSyncJob(context.Background(), job, tt.update)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+			if tt.wantErr != nil {
+				return
+			}
+			if updated.Status != tt.wantStatus {
+				t.Fatalf("Status = %s, want %s", updated.Status, tt.wantStatus)
+			}
+			if len(store.syncJobs) != 1 {
+				t.Fatalf("stored sync jobs = %d, want 1", len(store.syncJobs))
+			}
+		})
+	}
+}
+
+func TestQuerySyncJobsFiltersByAdapterIsolation(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	kuccps := SyncJob{ID: uuid.New(), Name: "KUCCPS", Adapter: IntegrationAdapterKUCCPS, Operation: "PLACEMENT_PULL", Status: SyncJobStatusRunning, Direction: SyncDirectionInbound, MaxAttempts: 3}
+	knec := SyncJob{ID: uuid.New(), Name: "KNEC", Adapter: IntegrationAdapterKNEC, Operation: "RESULT_VERIFICATION", Status: SyncJobStatusFailed, Direction: SyncDirectionInbound, MaxAttempts: 3}
+	store.syncJobs = []SyncJob{kuccps, knec}
+	adapter := IntegrationAdapterKNEC
+	status := SyncJobStatusFailed
+
+	jobs, err := bus.QuerySyncJobs(context.Background(), SyncJobQueryFilter{Adapter: &adapter, Status: &status}, DefaultSyncJobOrderBy, page.MustParse("1", "10"))
+	if err != nil {
+		t.Fatalf("QuerySyncJobs returned error: %v", err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("jobs = %d, want 1", len(jobs))
+	}
+	if jobs[0].ID != knec.ID {
+		t.Fatalf("job ID = %s, want KNEC failed job %s", jobs[0].ID, knec.ID)
+	}
+}
+
 func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 	t.Parallel()
 
@@ -647,6 +821,8 @@ func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 	applicationID := uuid.New()
 
 	event, err := bus.EnqueueSyncEvent(context.Background(), NewSyncEvent{
+		Adapter:      IntegrationAdapterKUCCPS,
+		Operation:    "APPLICATION_SUBMISSION",
 		EventType:    SyncEventTypeApplicationSubmission,
 		Direction:    SyncDirectionOutbound,
 		ResourceType: "application",
@@ -664,6 +840,12 @@ func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 
 	if event.EventType != SyncEventTypeApplicationSubmission {
 		t.Fatalf("EventType = %s, want %s", event.EventType, SyncEventTypeApplicationSubmission)
+	}
+	if event.Adapter != IntegrationAdapterKUCCPS {
+		t.Fatalf("Adapter = %s, want %s", event.Adapter, IntegrationAdapterKUCCPS)
+	}
+	if event.MaxAttempts != 3 {
+		t.Fatalf("MaxAttempts = %d, want 3", event.MaxAttempts)
 	}
 
 	if len(store.syncEvents) != 1 {
@@ -684,6 +866,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "event type",
 			ne: NewSyncEvent{
+				Adapter:      IntegrationAdapterKUCCPS,
+				Operation:    "APPLICATION_SUBMISSION",
 				EventType:    SyncEventType("CUSTOM_FIELD_SYNC"),
 				Direction:    SyncDirectionOutbound,
 				ResourceType: "application",
@@ -695,6 +879,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "resource",
 			ne: NewSyncEvent{
+				Adapter:     IntegrationAdapterKUCCPS,
+				Operation:   "APPLICATION_DECISION",
 				EventType:   SyncEventTypeApplicationDecision,
 				Direction:   SyncDirectionOutbound,
 				ResourceID:  uuid.New(),
@@ -705,6 +891,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "payload hash",
 			ne: NewSyncEvent{
+				Adapter:      IntegrationAdapterKUCCPS,
+				Operation:    "DOCUMENT_STATUS",
 				EventType:    SyncEventTypeDocumentStatus,
 				Direction:    SyncDirectionOutbound,
 				ResourceType: "document",
@@ -2490,8 +2678,25 @@ func (s *stubStore) UpdateSyncJob(_ context.Context, job SyncJob) error {
 	return nil
 }
 
-func (s *stubStore) QuerySyncJobs(context.Context, SyncJobQueryFilter, order.By, page.Page) ([]SyncJob, error) {
-	return s.syncJobs, nil
+func (s *stubStore) QuerySyncJobs(_ context.Context, filter SyncJobQueryFilter, _ order.By, _ page.Page) ([]SyncJob, error) {
+	jobs := make([]SyncJob, 0, len(s.syncJobs))
+	for _, job := range s.syncJobs {
+		if filter.Adapter != nil && job.Adapter != *filter.Adapter {
+			continue
+		}
+		if filter.Status != nil && job.Status != *filter.Status {
+			continue
+		}
+		if filter.Direction != nil && job.Direction != *filter.Direction {
+			continue
+		}
+		if filter.Retryable != nil && job.Retryable != *filter.Retryable {
+			continue
+		}
+		jobs = append(jobs, job)
+	}
+
+	return jobs, nil
 }
 
 func (s *stubStore) CountSyncJobs(context.Context, SyncJobQueryFilter) (int, error) {
@@ -2523,8 +2728,19 @@ func (s *stubStore) UpdateSyncEvent(_ context.Context, event SyncEvent) error {
 	return nil
 }
 
-func (s *stubStore) QuerySyncEvents(context.Context, SyncEventQueryFilter, order.By, page.Page) ([]SyncEvent, error) {
-	return s.syncEvents, nil
+func (s *stubStore) QuerySyncEvents(_ context.Context, filter SyncEventQueryFilter, _ order.By, _ page.Page) ([]SyncEvent, error) {
+	events := make([]SyncEvent, 0, len(s.syncEvents))
+	for _, event := range s.syncEvents {
+		if filter.Adapter != nil && event.Adapter != *filter.Adapter {
+			continue
+		}
+		if filter.Status != nil && event.Status != *filter.Status {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
 
 func (s *stubStore) CountSyncEvents(context.Context, SyncEventQueryFilter) (int, error) {
