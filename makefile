@@ -293,6 +293,9 @@ dev-apply:
 	kustomize build zarf/k8s/dev/auth | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
 
+	kustomize build zarf/k8s/dev/rag | kubectl apply -f -
+	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(RAG_APP) --timeout=120s --for=condition=Ready
+
 	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
@@ -301,6 +304,7 @@ dev-apply:
 
 dev-restart:
 	kubectl rollout restart deployment $(AUTH_APP) --namespace=$(NAMESPACE)
+	kubectl rollout restart deployment $(RAG_APP) --namespace=$(NAMESPACE)
 	kubectl rollout restart deployment $(SCHOOLCRM_APP) --namespace=$(NAMESPACE)
 	kubectl rollout restart deployment $(WEB_ADMIN_APP) --namespace=$(NAMESPACE)
 
@@ -318,6 +322,9 @@ dev-logs-auth:
 
 dev-logs-web-admin:
 	kubectl logs --namespace=$(NAMESPACE) -l app=$(WEB_ADMIN_APP) --all-containers=true -f --tail=100
+
+dev-logs-rag:
+	kubectl logs --namespace=$(NAMESPACE) -l app=$(RAG_APP) --all-containers=true -f --tail=100
 
 # ------------------------------------------------------------------------------
 
@@ -362,6 +369,7 @@ dev-logs-promtail:
 # ------------------------------------------------------------------------------
 
 dev-services-delete:
+	kustomize build zarf/k8s/dev/rag | kubectl delete -f -
 	kustomize build zarf/k8s/dev/schoolcrm | kubectl delete -f -
 	kustomize build zarf/k8s/dev/grafana | kubectl delete -f -
 	kustomize build zarf/k8s/dev/tempo | kubectl delete -f -
@@ -441,20 +449,38 @@ local-schoolcrm:
 
 local-rag:
 	cd api/services/RAG && \
+	uv sync --extra dev --locked && \
 	RAG_API_HOST=0.0.0.0 \
 	RAG_API_PORT=4545 \
 	RAG_AUTH_SERVICE_URL=http://localhost:6000 \
 	RAG_ALLOW_ANONYMOUS=false \
 	RAG_FILE_STORAGE_DIR=./var/files \
-	python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 4545
+	RAG_GRAPH_RETRIEVER=neo4j \
+	RAG_NEO4J_URI=bolt://localhost:7687 \
+	RAG_NEO4J_USERNAME=neo4j \
+	RAG_NEO4J_PASSWORD=password \
+	RAG_ADMISSIONS_ANSWER_PROVIDER=ollama \
+	RAG_OLLAMA_BASE_URL=http://localhost:11434 \
+	RAG_OLLAMA_MODEL=nemotron-3-super:cloud \
+	uv run uvicorn main:app --reload --host 0.0.0.0 --port 4545
 
 local-rag-dev:
 	cd api/services/RAG && \
+	uv sync --extra dev --locked && \
 	RAG_API_HOST=0.0.0.0 \
 	RAG_API_PORT=4545 \
 	RAG_ALLOW_ANONYMOUS=true \
 	RAG_FILE_STORAGE_DIR=./var/files \
-	python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 4545
+	RAG_GRAPH_RETRIEVER=memory \
+	RAG_ADMISSIONS_ANSWER_PROVIDER=stub \
+	uv run uvicorn main:app --reload --host 0.0.0.0 --port 4545
+
+local-rag-check:
+	cd api/services/RAG && \
+	uv sync --extra dev --locked && \
+	uv run ruff check . && \
+	uv run python -m compileall -q adapters domain infrastructure use_cases main.py && \
+	uv run pytest tests -v
 
 local-web-admin:
 	npm --prefix api/frontends/web-admin start
@@ -467,6 +493,7 @@ local-run-help:
 	@echo "  make local-schoolcrm    # SchoolCRM API on :3000"
 	@echo "  make local-rag          # RAG API on :4545 using auth service"
 	@echo "  make local-rag-dev      # RAG API on :4545 with anonymous auth"
+	@echo "  make local-rag-check    # validate RAG lint, compile, and tests"
 	@echo "  make local-web-admin    # Angular admin app on :4200"
 
 # ==============================================================================
