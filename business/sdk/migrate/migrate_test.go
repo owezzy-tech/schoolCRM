@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -114,6 +115,26 @@ func TestKenyaReferenceCatalogSeedCoversCanonicalLookups(t *testing.T) {
 	}
 }
 
+func TestKenyaReferenceCatalogSeedCoversCanonicalCounts(t *testing.T) {
+	t.Parallel()
+
+	checks := map[string]int{
+		"counties":           47,
+		"sub_counties":       321,
+		"wards":              10,
+		"universities":       5,
+		"programme_clusters": 4,
+		"knqf_levels":        10,
+		"programmes":         5,
+	}
+
+	for table, want := range checks {
+		if got := seedInsertRowCount(seedDoc, table); got != want {
+			t.Fatalf("expected %d %s seed rows, got %d", want, table, got)
+		}
+	}
+}
+
 func migrationBlock(t *testing.T, marker string) string {
 	t.Helper()
 
@@ -129,4 +150,21 @@ func migrationBlock(t *testing.T, marker string) string {
 	}
 
 	return migrateDoc[start : start+len(marker)+next]
+}
+
+func seedInsertRowCount(seed string, table string) int {
+	marker := fmt.Sprintf("INSERT INTO %s", table)
+	start := strings.Index(seed, marker)
+	if start == -1 {
+		return 0
+	}
+
+	remaining := seed[start+len(marker):]
+	end := strings.Index(remaining, "ON CONFLICT DO NOTHING;")
+	if end == -1 {
+		return 0
+	}
+
+	block := remaining[:end]
+	return strings.Count(block, "\t('")
 }
