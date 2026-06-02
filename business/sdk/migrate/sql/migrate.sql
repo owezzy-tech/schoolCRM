@@ -839,3 +839,99 @@ ALTER TABLE admissions_constituents
         AND array_position(notification_priority, 'SMS') <> array_position(notification_priority, 'EMAIL')
         AND array_position(notification_priority, 'WHATSAPP') <> array_position(notification_priority, 'EMAIL')
     );
+
+-- Version: 1.27
+-- Description: Complete Kenya reference catalog tables
+CREATE TABLE wards (
+    code            TEXT      NOT NULL,
+    county_code     TEXT      NOT NULL,
+    sub_county_code TEXT      NOT NULL,
+    name            TEXT      NOT NULL,
+    date_created    TIMESTAMP NOT NULL,
+    date_updated    TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (county_code) REFERENCES counties(code),
+    FOREIGN KEY (sub_county_code) REFERENCES sub_counties(code),
+    CONSTRAINT wards_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT wards_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_wards_county_code ON wards (county_code);
+CREATE INDEX idx_wards_sub_county_code ON wards (sub_county_code);
+CREATE INDEX idx_wards_name ON wards (name);
+
+CREATE TABLE universities (
+    code             TEXT      NOT NULL,
+    name             TEXT      NOT NULL,
+    institution_type TEXT      NOT NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT universities_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT universities_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT universities_institution_type CHECK (institution_type IN ('PUBLIC_UNIVERSITY', 'PRIVATE_UNIVERSITY', 'CONSTITUENT_COLLEGE', 'TVET'))
+);
+
+CREATE INDEX idx_universities_name ON universities (name);
+CREATE INDEX idx_universities_type ON universities (institution_type);
+
+CREATE TABLE programme_clusters (
+    code         TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    description  TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT programme_clusters_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT programme_clusters_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT programme_clusters_description_not_empty CHECK (trim(description) <> '')
+);
+
+CREATE INDEX idx_programme_clusters_name ON programme_clusters (name);
+
+CREATE TABLE knqf_levels (
+    code          TEXT      NOT NULL,
+    level         INT       NOT NULL,
+    name          TEXT      NOT NULL,
+    descriptor    TEXT      NOT NULL,
+    qualification TEXT      NOT NULL,
+    date_created  TIMESTAMP NOT NULL,
+    date_updated  TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT knqf_levels_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT knqf_levels_level_range CHECK (level BETWEEN 1 AND 10),
+    CONSTRAINT knqf_levels_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT knqf_levels_descriptor_not_empty CHECK (trim(descriptor) <> ''),
+    CONSTRAINT knqf_levels_qualification_not_empty CHECK (trim(qualification) <> ''),
+    CONSTRAINT knqf_levels_unique_level UNIQUE (level)
+);
+
+CREATE INDEX idx_knqf_levels_name ON knqf_levels (name);
+
+CREATE TABLE programmes (
+    code            TEXT      NOT NULL,
+    university_code TEXT      NOT NULL,
+    cluster_code    TEXT      NOT NULL,
+    knqf_level_code TEXT      NOT NULL,
+    name            TEXT      NOT NULL,
+    award_type      TEXT      NOT NULL,
+    date_created    TIMESTAMP NOT NULL,
+    date_updated    TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (university_code) REFERENCES universities(code),
+    FOREIGN KEY (cluster_code) REFERENCES programme_clusters(code),
+    FOREIGN KEY (knqf_level_code) REFERENCES knqf_levels(code),
+    CONSTRAINT programmes_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT programmes_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT programmes_award_type_not_empty CHECK (trim(award_type) <> '')
+);
+
+CREATE INDEX idx_programmes_university_code ON programmes (university_code);
+CREATE INDEX idx_programmes_cluster_code ON programmes (cluster_code);
+CREATE INDEX idx_programmes_knqf_level_code ON programmes (knqf_level_code);
+CREATE INDEX idx_programmes_name ON programmes (name);
