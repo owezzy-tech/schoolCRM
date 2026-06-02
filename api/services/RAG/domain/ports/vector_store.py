@@ -17,7 +17,12 @@ class IVectorStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def search(self, embedding: Embedding, limit: int) -> list[SearchMatch]:
+    async def search(
+        self,
+        embedding: Embedding,
+        limit: int,
+        collection: str | None = None,
+    ) -> list[SearchMatch]:
         raise NotImplementedError
 
     @abstractmethod
