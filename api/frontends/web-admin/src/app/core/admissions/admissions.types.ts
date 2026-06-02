@@ -162,6 +162,40 @@ export const SIS_SYNC_EVENT_TYPES = [
     'APPLICATION_DECISION',
     'DOCUMENT_STATUS',
     'ENROLLMENT_INTENT',
+    'KUCCPS_PLACEMENT_PULL',
+    'KUCCPS_PLACEMENT_CONFIRM',
+    'KNEC_RESULT_VERIFICATION',
+    'IPRS_IDENTITY_VERIFICATION',
+    'MPESA_STK_PUSH',
+    'MPESA_C2B_CALLBACK',
+    'MPESA_TRANSACTION_QUERY',
+    'SMS_OUTBOUND',
+    'SMS_DELIVERY_REPORT',
+    'WHATSAPP_MESSAGE_SEND',
+    'WHATSAPP_WEBHOOK_INBOUND',
+] as const;
+
+export const KENYA_ADAPTERS = [
+    'KUCCPS',
+    'KNEC',
+    'IPRS',
+    'MPESA_DARAJA',
+    'CELCOM_AFRICA_SMS',
+    'WHATSAPP_CLOUD',
+] as const;
+
+export const SIS_SYNC_OPERATIONS = [
+    'PLACEMENT_PULL',
+    'PLACEMENT_CONFIRM',
+    'RESULT_VERIFICATION',
+    'IDENTITY_VERIFICATION',
+    'STK_PUSH',
+    'C2B_CALLBACK',
+    'TRANSACTION_QUERY',
+    'SMS_OUTBOUND',
+    'DELIVERY_REPORT_PULL',
+    'WA_MESSAGE_SEND',
+    'WA_WEBHOOK_INBOUND',
 ] as const;
 
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
@@ -184,6 +218,8 @@ export type SisSyncJobStatus = (typeof SIS_SYNC_JOB_STATUSES)[number];
 export type SisSyncEventStatus = (typeof SIS_SYNC_EVENT_STATUSES)[number];
 export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
 export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
+export type KenyaAdapter = (typeof KENYA_ADAPTERS)[number];
+export type SisSyncOperation = (typeof SIS_SYNC_OPERATIONS)[number];
 export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
 export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
@@ -256,6 +292,8 @@ export interface CustomFieldValueRequest {
 export interface SisSyncJob {
     id: string;
     name: string;
+    adapter: KenyaAdapter;
+    operation: SisSyncOperation;
     status: SisSyncJobStatus;
     direction: SisSyncDirection;
     startedAt?: string;
@@ -263,6 +301,14 @@ export interface SisSyncJob {
     recordsPulled: number;
     recordsPushed: number;
     eventsRequeued: number;
+    attempts: number;
+    maxAttempts: number;
+    nextRetryAt?: string;
+    externalRef?: string;
+    externalReceiptID?: string;
+    errorCode?: string;
+    errorDetail?: string;
+    lastErrorAt?: string;
     failureReason?: string;
     retryable: boolean;
     owner: string;
@@ -273,14 +319,22 @@ export interface SisSyncJob {
 export interface SisSyncEvent {
     id: string;
     jobID?: string;
+    adapter: KenyaAdapter;
+    operation: SisSyncOperation;
     eventType: SisSyncEventType;
     status: SisSyncEventStatus;
     direction: SisSyncDirection;
     resourceType: string;
     resourceID: string;
+    externalRef?: string;
+    externalReceiptID?: string;
     payloadHash: string;
     attempts: number;
+    maxAttempts: number;
     nextRetryAt?: string;
+    errorCode?: string;
+    errorDetail?: string;
+    lastErrorAt?: string;
     failureReason?: string;
     auditMessage: string;
     dateCreated: string;
