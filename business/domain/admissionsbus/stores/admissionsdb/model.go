@@ -52,31 +52,35 @@ type leadScoreDB struct {
 }
 
 type constituentDB struct {
-	ID                          uuid.UUID  `db:"constituent_id"`
-	FirstName                   string     `db:"first_name"`
-	LastName                    string     `db:"last_name"`
-	PreferredName               *string    `db:"preferred_name"`
-	MiddleName                  *string    `db:"middle_name"`
-	Suffix                      *string    `db:"suffix"`
-	DateOfBirth                 time.Time  `db:"date_of_birth"`
-	PrimaryEmail                string     `db:"primary_email"`
-	PrimaryPhone                string     `db:"primary_phone"`
-	ExternalSISID               *string    `db:"external_sis_id"`
-	NationalID                  *string    `db:"national_id"`
-	NationalIDVerifiedAt        *time.Time `db:"national_id_verified_at"`
-	NationalIDVerifiedByAdapter *string    `db:"national_id_verified_by_adapter"`
-	UPI                         *string    `db:"upi"`
-	UPIVerifiedAt               *time.Time `db:"upi_verified_at"`
-	UPIVerifiedByAdapter        *string    `db:"upi_verified_by_adapter"`
-	KCSEIndexNumber             *string    `db:"kcse_index_number"`
-	KCSEIndexVerifiedAt         *time.Time `db:"kcse_index_verified_at"`
-	KCSEIndexVerifiedByAdapter  *string    `db:"kcse_index_verified_by_adapter"`
-	LifecycleStage              string     `db:"lifecycle_stage"`
-	DuplicateStatus             string     `db:"duplicate_status"`
-	DuplicateOfID               *uuid.UUID `db:"duplicate_of_id"`
-	SISSyncedAt                 *time.Time `db:"sis_synced_at"`
-	DateCreated                 time.Time  `db:"date_created"`
-	DateUpdated                 time.Time  `db:"date_updated"`
+	ID                          uuid.UUID      `db:"constituent_id"`
+	FirstName                   string         `db:"first_name"`
+	LastName                    string         `db:"last_name"`
+	PreferredName               *string        `db:"preferred_name"`
+	MiddleName                  *string        `db:"middle_name"`
+	Suffix                      *string        `db:"suffix"`
+	DateOfBirth                 time.Time      `db:"date_of_birth"`
+	PrimaryEmail                string         `db:"primary_email"`
+	PrimaryPhone                string         `db:"primary_phone"`
+	ExternalSISID               *string        `db:"external_sis_id"`
+	NationalID                  *string        `db:"national_id"`
+	NationalIDVerifiedAt        *time.Time     `db:"national_id_verified_at"`
+	NationalIDVerifiedByAdapter *string        `db:"national_id_verified_by_adapter"`
+	UPI                         *string        `db:"upi"`
+	UPIVerifiedAt               *time.Time     `db:"upi_verified_at"`
+	UPIVerifiedByAdapter        *string        `db:"upi_verified_by_adapter"`
+	KCSEIndexNumber             *string        `db:"kcse_index_number"`
+	KCSEIndexVerifiedAt         *time.Time     `db:"kcse_index_verified_at"`
+	KCSEIndexVerifiedByAdapter  *string        `db:"kcse_index_verified_by_adapter"`
+	LifecycleStage              string         `db:"lifecycle_stage"`
+	DuplicateStatus             string         `db:"duplicate_status"`
+	DuplicateOfID               *uuid.UUID     `db:"duplicate_of_id"`
+	SMSOptIn                    bool           `db:"sms_opt_in"`
+	WhatsAppOptIn               bool           `db:"whatsapp_opt_in"`
+	EmailOptIn                  bool           `db:"email_opt_in"`
+	NotificationPriority        dbarray.String `db:"notification_priority"`
+	SISSyncedAt                 *time.Time     `db:"sis_synced_at"`
+	DateCreated                 time.Time      `db:"date_created"`
+	DateUpdated                 time.Time      `db:"date_updated"`
 }
 
 type inquiryDB struct {
@@ -458,6 +462,10 @@ func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
 		LifecycleStage:              bus.LifecycleStage.String(),
 		DuplicateStatus:             bus.DuplicateStatus.String(),
 		DuplicateOfID:               bus.DuplicateOfID,
+		SMSOptIn:                    bus.NotificationPreferences.SMSOptIn,
+		WhatsAppOptIn:               bus.NotificationPreferences.WhatsAppOptIn,
+		EmailOptIn:                  bus.NotificationPreferences.EmailOptIn,
+		NotificationPriority:        dbarray.String(admissionsbus.NotificationChannelsToStrings(bus.NotificationPreferences.Priority)),
 		SISSyncedAt:                 utcTimePtr(bus.SISSyncedAt),
 		DateCreated:                 bus.DateCreated.UTC(),
 		DateUpdated:                 bus.DateUpdated.UTC(),
@@ -466,6 +474,21 @@ func toDBConstituent(bus admissionsbus.Constituent) constituentDB {
 
 func toBusConstituent(db constituentDB) (admissionsbus.Constituent, error) {
 	email, err := mail.ParseAddress(db.PrimaryEmail)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	priority, err := admissionsbus.ParseNotificationChannels([]string(db.NotificationPriority))
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	notificationPreferences, err := admissionsbus.NormalizeNotificationPreferences(admissionsbus.NotificationPreferences{
+		SMSOptIn:      db.SMSOptIn,
+		WhatsAppOptIn: db.WhatsAppOptIn,
+		EmailOptIn:    db.EmailOptIn,
+		Priority:      priority,
+	})
 	if err != nil {
 		return admissionsbus.Constituent{}, err
 	}
@@ -493,6 +516,7 @@ func toBusConstituent(db constituentDB) (admissionsbus.Constituent, error) {
 		LifecycleStage:              admissionsbus.LifecycleStage(db.LifecycleStage),
 		DuplicateStatus:             admissionsbus.DuplicateStatus(db.DuplicateStatus),
 		DuplicateOfID:               db.DuplicateOfID,
+		NotificationPreferences:     notificationPreferences,
 		SISSyncedAt:                 localTimePtr(db.SISSyncedAt),
 		DateCreated:                 db.DateCreated.In(time.Local),
 		DateUpdated:                 db.DateUpdated.In(time.Local),

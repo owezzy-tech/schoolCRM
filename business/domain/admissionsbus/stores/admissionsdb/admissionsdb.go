@@ -47,6 +47,10 @@ const constituentColumns = `
 		lifecycle_stage,
 		duplicate_status,
 		duplicate_of_id,
+		sms_opt_in,
+		whatsapp_opt_in,
+		email_opt_in,
+		notification_priority,
 		sis_synced_at,
 		date_created,
 		date_updated`
@@ -634,9 +638,9 @@ func (s *Store) queryLeadScore(ctx context.Context, filter admissionsbus.LeadSco
 func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
 	const q = `
 	INSERT INTO admissions_constituents
-		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, national_id, national_id_verified_at, national_id_verified_by_adapter, upi, upi_verified_at, upi_verified_by_adapter, kcse_index_number, kcse_index_verified_at, kcse_index_verified_by_adapter, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated)
+		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, national_id, national_id_verified_at, national_id_verified_by_adapter, upi, upi_verified_at, upi_verified_by_adapter, kcse_index_number, kcse_index_verified_at, kcse_index_verified_by_adapter, lifecycle_stage, duplicate_status, duplicate_of_id, sms_opt_in, whatsapp_opt_in, email_opt_in, notification_priority, sis_synced_at, date_created, date_updated)
 	VALUES
-		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :national_id, :national_id_verified_at, :national_id_verified_by_adapter, :upi, :upi_verified_at, :upi_verified_by_adapter, :kcse_index_number, :kcse_index_verified_at, :kcse_index_verified_by_adapter, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sis_synced_at, :date_created, :date_updated)`
+		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :national_id, :national_id_verified_at, :national_id_verified_by_adapter, :upi, :upi_verified_at, :upi_verified_by_adapter, :kcse_index_number, :kcse_index_verified_at, :kcse_index_verified_by_adapter, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sms_opt_in, :whatsapp_opt_in, :email_opt_in, :notification_priority, :sis_synced_at, :date_created, :date_updated)`
 
 	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBConstituent(cst)); err != nil {
 		return fmt.Errorf("namedexeccontext: %w", err)
@@ -668,6 +672,10 @@ func (s *Store) UpdateConstituent(ctx context.Context, cst admissionsbus.Constit
 		lifecycle_stage = :lifecycle_stage,
 		duplicate_status = :duplicate_status,
 		duplicate_of_id = :duplicate_of_id,
+		sms_opt_in = :sms_opt_in,
+		whatsapp_opt_in = :whatsapp_opt_in,
+		email_opt_in = :email_opt_in,
+		notification_priority = :notification_priority,
 		sis_synced_at = :sis_synced_at,
 		date_updated = :date_updated
 	WHERE

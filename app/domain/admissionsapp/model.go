@@ -360,31 +360,40 @@ func toAppHealth(health admissionsbus.Health) Health {
 
 // Constituent represents durable admissions identity data.
 type Constituent struct {
-	ID                          string  `json:"id"`
-	FirstName                   string  `json:"firstName"`
-	LastName                    string  `json:"lastName"`
-	PreferredName               *string `json:"preferredName,omitempty"`
-	MiddleName                  *string `json:"middleName,omitempty"`
-	Suffix                      *string `json:"suffix,omitempty"`
-	DateOfBirth                 string  `json:"dateOfBirth"`
-	PrimaryEmail                string  `json:"primaryEmail"`
-	PrimaryPhone                string  `json:"primaryPhone"`
-	ExternalSISID               *string `json:"externalSISID,omitempty"`
-	NationalID                  *string `json:"nationalID,omitempty"`
-	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt,omitempty"`
-	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter,omitempty"`
-	UPI                         *string `json:"upi,omitempty"`
-	UPIVerifiedAt               *string `json:"upiVerifiedAt,omitempty"`
-	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter,omitempty"`
-	KCSEIndexNumber             *string `json:"kcseIndexNumber,omitempty"`
-	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt,omitempty"`
-	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter,omitempty"`
-	LifecycleStage              string  `json:"lifecycleStage"`
-	DuplicateStatus             string  `json:"duplicateStatus"`
-	DuplicateOfID               *string `json:"duplicateOfID,omitempty"`
-	SISSyncedAt                 *string `json:"sisSyncedAt,omitempty"`
-	DateCreated                 string  `json:"dateCreated"`
-	DateUpdated                 string  `json:"dateUpdated"`
+	ID                          string                  `json:"id"`
+	FirstName                   string                  `json:"firstName"`
+	LastName                    string                  `json:"lastName"`
+	PreferredName               *string                 `json:"preferredName,omitempty"`
+	MiddleName                  *string                 `json:"middleName,omitempty"`
+	Suffix                      *string                 `json:"suffix,omitempty"`
+	DateOfBirth                 string                  `json:"dateOfBirth"`
+	PrimaryEmail                string                  `json:"primaryEmail"`
+	PrimaryPhone                string                  `json:"primaryPhone"`
+	ExternalSISID               *string                 `json:"externalSISID,omitempty"`
+	NationalID                  *string                 `json:"nationalID,omitempty"`
+	NationalIDVerifiedAt        *string                 `json:"nationalIDVerifiedAt,omitempty"`
+	NationalIDVerifiedByAdapter *string                 `json:"nationalIDVerifiedByAdapter,omitempty"`
+	UPI                         *string                 `json:"upi,omitempty"`
+	UPIVerifiedAt               *string                 `json:"upiVerifiedAt,omitempty"`
+	UPIVerifiedByAdapter        *string                 `json:"upiVerifiedByAdapter,omitempty"`
+	KCSEIndexNumber             *string                 `json:"kcseIndexNumber,omitempty"`
+	KCSEIndexVerifiedAt         *string                 `json:"kcseIndexVerifiedAt,omitempty"`
+	KCSEIndexVerifiedByAdapter  *string                 `json:"kcseIndexVerifiedByAdapter,omitempty"`
+	LifecycleStage              string                  `json:"lifecycleStage"`
+	DuplicateStatus             string                  `json:"duplicateStatus"`
+	DuplicateOfID               *string                 `json:"duplicateOfID,omitempty"`
+	NotificationPreferences     NotificationPreferences `json:"notificationPreferences"`
+	SISSyncedAt                 *string                 `json:"sisSyncedAt,omitempty"`
+	DateCreated                 string                  `json:"dateCreated"`
+	DateUpdated                 string                  `json:"dateUpdated"`
+}
+
+// NotificationPreferences represents constituent notification opt-ins and priority order.
+type NotificationPreferences struct {
+	SMSOptIn      bool     `json:"smsOptIn"`
+	WhatsAppOptIn bool     `json:"whatsAppOptIn"`
+	EmailOptIn    bool     `json:"emailOptIn"`
+	Priority      []string `json:"priority"`
 }
 
 // Encode implements the encoder interface.
@@ -417,10 +426,34 @@ func toAppConstituent(cst admissionsbus.Constituent) Constituent {
 		LifecycleStage:              cst.LifecycleStage.String(),
 		DuplicateStatus:             cst.DuplicateStatus.String(),
 		DuplicateOfID:               uuidStringPtr(cst.DuplicateOfID),
+		NotificationPreferences:     toAppNotificationPreferences(cst.NotificationPreferences),
 		SISSyncedAt:                 formatTimePtr(cst.SISSyncedAt),
 		DateCreated:                 cst.DateCreated.Format(time.RFC3339),
 		DateUpdated:                 cst.DateUpdated.Format(time.RFC3339),
 	}
+}
+
+func toAppNotificationPreferences(preferences admissionsbus.NotificationPreferences) NotificationPreferences {
+	return NotificationPreferences{
+		SMSOptIn:      preferences.SMSOptIn,
+		WhatsAppOptIn: preferences.WhatsAppOptIn,
+		EmailOptIn:    preferences.EmailOptIn,
+		Priority:      admissionsbus.NotificationChannelsToStrings(preferences.Priority),
+	}
+}
+
+func toBusNotificationPreferences(app NotificationPreferences) (admissionsbus.NotificationPreferences, error) {
+	channels, err := admissionsbus.ParseNotificationChannels(app.Priority)
+	if err != nil {
+		return admissionsbus.NotificationPreferences{}, err
+	}
+
+	return admissionsbus.NormalizeNotificationPreferences(admissionsbus.NotificationPreferences{
+		SMSOptIn:      app.SMSOptIn,
+		WhatsAppOptIn: app.WhatsAppOptIn,
+		EmailOptIn:    app.EmailOptIn,
+		Priority:      channels,
+	})
 }
 
 func toAppConstituents(constituents []admissionsbus.Constituent) []Constituent {
@@ -434,25 +467,26 @@ func toAppConstituents(constituents []admissionsbus.Constituent) []Constituent {
 
 // NewConstituent defines the data needed to add a new constituent.
 type NewConstituent struct {
-	FirstName                   string  `json:"firstName"`
-	LastName                    string  `json:"lastName"`
-	PreferredName               *string `json:"preferredName"`
-	MiddleName                  *string `json:"middleName"`
-	Suffix                      *string `json:"suffix"`
-	DateOfBirth                 string  `json:"dateOfBirth"`
-	PrimaryEmail                string  `json:"primaryEmail"`
-	PrimaryPhone                string  `json:"primaryPhone"`
-	ExternalSISID               *string `json:"externalSISID"`
-	NationalID                  *string `json:"nationalID"`
-	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt"`
-	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter"`
-	UPI                         *string `json:"upi"`
-	UPIVerifiedAt               *string `json:"upiVerifiedAt"`
-	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter"`
-	KCSEIndexNumber             *string `json:"kcseIndexNumber"`
-	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt"`
-	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter"`
-	LifecycleStage              string  `json:"lifecycleStage"`
+	FirstName                   string                   `json:"firstName"`
+	LastName                    string                   `json:"lastName"`
+	PreferredName               *string                  `json:"preferredName"`
+	MiddleName                  *string                  `json:"middleName"`
+	Suffix                      *string                  `json:"suffix"`
+	DateOfBirth                 string                   `json:"dateOfBirth"`
+	PrimaryEmail                string                   `json:"primaryEmail"`
+	PrimaryPhone                string                   `json:"primaryPhone"`
+	ExternalSISID               *string                  `json:"externalSISID"`
+	NationalID                  *string                  `json:"nationalID"`
+	NationalIDVerifiedAt        *string                  `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string                  `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string                  `json:"upi"`
+	UPIVerifiedAt               *string                  `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string                  `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string                  `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string                  `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string                  `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              string                   `json:"lifecycleStage"`
+	NotificationPreferences     *NotificationPreferences `json:"notificationPreferences"`
 }
 
 // Decode implements the decoder interface.
@@ -509,6 +543,20 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 		return admissionsbus.NewConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
 
+	var notificationPreferences *admissionsbus.NotificationPreferences
+	if app.NotificationPreferences != nil {
+		preferences, err := toBusNotificationPreferences(*app.NotificationPreferences)
+		if err != nil {
+			fieldErrors.Add("notificationPreferences", err)
+		} else {
+			notificationPreferences = &preferences
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
 	return admissionsbus.NewConstituent{
 		FirstName:                   app.FirstName,
 		LastName:                    app.LastName,
@@ -530,6 +578,7 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
 		LifecycleStage:              stage,
 		DuplicateStatus:             admissionsbus.DuplicateStatusActive,
+		NotificationPreferences:     notificationPreferences,
 	}, nil
 }
 
@@ -657,21 +706,22 @@ func toBusNewInquiry(app NewInquiry) (admissionsbus.NewInquiry, error) {
 
 // UpdateConstituent defines the data needed to update a constituent.
 type UpdateConstituent struct {
-	PreferredName               *string `json:"preferredName"`
-	MiddleName                  *string `json:"middleName"`
-	Suffix                      *string `json:"suffix"`
-	PrimaryEmail                *string `json:"primaryEmail"`
-	PrimaryPhone                *string `json:"primaryPhone"`
-	NationalID                  *string `json:"nationalID"`
-	NationalIDVerifiedAt        *string `json:"nationalIDVerifiedAt"`
-	NationalIDVerifiedByAdapter *string `json:"nationalIDVerifiedByAdapter"`
-	UPI                         *string `json:"upi"`
-	UPIVerifiedAt               *string `json:"upiVerifiedAt"`
-	UPIVerifiedByAdapter        *string `json:"upiVerifiedByAdapter"`
-	KCSEIndexNumber             *string `json:"kcseIndexNumber"`
-	KCSEIndexVerifiedAt         *string `json:"kcseIndexVerifiedAt"`
-	KCSEIndexVerifiedByAdapter  *string `json:"kcseIndexVerifiedByAdapter"`
-	LifecycleStage              *string `json:"lifecycleStage"`
+	PreferredName               *string                  `json:"preferredName"`
+	MiddleName                  *string                  `json:"middleName"`
+	Suffix                      *string                  `json:"suffix"`
+	PrimaryEmail                *string                  `json:"primaryEmail"`
+	PrimaryPhone                *string                  `json:"primaryPhone"`
+	NationalID                  *string                  `json:"nationalID"`
+	NationalIDVerifiedAt        *string                  `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string                  `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string                  `json:"upi"`
+	UPIVerifiedAt               *string                  `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string                  `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string                  `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string                  `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string                  `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              *string                  `json:"lifecycleStage"`
+	NotificationPreferences     *NotificationPreferences `json:"notificationPreferences"`
 }
 
 // Decode implements the decoder interface.
@@ -728,6 +778,16 @@ func toBusUpdateConstituent(app UpdateConstituent) (admissionsbus.UpdateConstitu
 		fieldErrors.Add("kcseIndexVerifiedAt", err)
 	}
 
+	var notificationPreferences *admissionsbus.NotificationPreferences
+	if app.NotificationPreferences != nil {
+		preferences, err := toBusNotificationPreferences(*app.NotificationPreferences)
+		if err != nil {
+			fieldErrors.Add("notificationPreferences", err)
+		} else {
+			notificationPreferences = &preferences
+		}
+	}
+
 	if len(fieldErrors) > 0 {
 		return admissionsbus.UpdateConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
@@ -748,6 +808,7 @@ func toBusUpdateConstituent(app UpdateConstituent) (admissionsbus.UpdateConstitu
 		KCSEIndexVerifiedAt:         kcseIndexVerifiedAt,
 		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
 		LifecycleStage:              stage,
+		NotificationPreferences:     notificationPreferences,
 	}, nil
 }
 

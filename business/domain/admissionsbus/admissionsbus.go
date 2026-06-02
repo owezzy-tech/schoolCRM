@@ -19,112 +19,116 @@ import (
 
 // Set of error variables for admissions reference data operations.
 var (
-	ErrConstituentNotFound           = errors.New("constituent not found")
-	ErrFirstNameRequired             = errors.New("first name required")
-	ErrLastNameRequired              = errors.New("last name required")
-	ErrDateOfBirthRequired           = errors.New("date of birth required")
-	ErrDateOfBirthInFuture           = errors.New("date of birth cannot be in the future")
-	ErrPrimaryPhoneRequired          = errors.New("primary phone required")
-	ErrInvalidLifecycleStage         = errors.New("invalid lifecycle stage")
-	ErrInvalidDuplicateStatus        = errors.New("invalid duplicate status")
-	ErrInvalidDuplicateLink          = errors.New("duplicate status does not match duplicate link")
-	ErrInvalidLifecycleChange        = errors.New("invalid lifecycle stage change")
-	ErrInquiryNotFound               = errors.New("inquiry not found")
-	ErrInquirySourceRequired         = errors.New("inquiry source required")
-	ErrInvalidInquiryStatus          = errors.New("invalid inquiry status")
-	ErrProgramNotFound               = errors.New("program not found")
-	ErrAcademicTermNotFound          = errors.New("academic term not found")
-	ErrInvalidTermDateRange          = errors.New("term start date must be before end date")
-	ErrInvalidApplicationWindow      = errors.New("application deadline must be on or after application start date")
-	ErrDuplicateReviewNotFound       = errors.New("duplicate review not found")
-	ErrInvalidDuplicateReview        = errors.New("invalid duplicate review")
-	ErrInvalidMatchType              = errors.New("invalid duplicate match type")
-	ErrInvalidMatchScore             = errors.New("duplicate match score must be between 0 and 100")
-	ErrMatchReasonRequired           = errors.New("duplicate match reason required")
-	ErrInvalidReviewStatus           = errors.New("invalid duplicate review status")
-	ErrInvalidResolution             = errors.New("invalid duplicate review resolution")
-	ErrDuplicateReviewResolved       = errors.New("duplicate review already resolved")
-	ErrResolutionActorRequired       = errors.New("resolution actor required")
-	ErrApplicationNotFound           = errors.New("application not found")
-	ErrInvalidApplicationType        = errors.New("invalid application type")
-	ErrInvalidApplicationStatus      = errors.New("invalid application status")
-	ErrDuplicateApplication          = errors.New("active application already exists for constituent term and program")
-	ErrConstituentIDRequired         = errors.New("constituent id required")
-	ErrProgramIDRequired             = errors.New("program id required")
-	ErrAcademicTermIDRequired        = errors.New("academic term id required")
-	ErrInactiveProgram               = errors.New("program is inactive")
-	ErrInactiveAcademicTerm          = errors.New("academic term is inactive")
-	ErrInvalidApplicationTransition  = errors.New("invalid application status transition")
-	ErrApplicationActorRequired      = errors.New("application transition actor required")
-	ErrFormTemplateNotFound          = errors.New("application form template not found")
-	ErrFormTemplateNameRequired      = errors.New("application form template name required")
-	ErrFormTemplateFieldsRequired    = errors.New("application form template required fields required")
-	ErrFormTemplateFieldInvalid      = errors.New("application form template field invalid")
-	ErrFormTemplateChecklistInvalid  = errors.New("application form template checklist item invalid")
-	ErrFormTemplatePriorityInvalid   = errors.New("application form template priority must be greater than or equal to zero")
-	ErrStaffProfileNotFound          = errors.New("staff profile not found")
-	ErrStaffProfileUserRequired      = errors.New("staff profile user id required")
-	ErrStaffProfileRoleRequired      = errors.New("staff profile role required")
-	ErrApplicantProfileNotFound      = errors.New("applicant profile not found")
-	ErrApplicantProfileUserRequired  = errors.New("applicant profile user id required")
-	ErrInvalidAdmissionsRole         = errors.New("invalid admissions role")
-	ErrLeadScoreRuleNotFound         = errors.New("lead score rule not found")
-	ErrLeadScoreNotFound             = errors.New("lead score not found")
-	ErrLeadScoreRuleNameRequired     = errors.New("lead score rule name required")
-	ErrLeadScoreCriteriaRequired     = errors.New("lead score criteria required")
-	ErrInvalidLeadScoreCriterion     = errors.New("invalid lead score criterion")
-	ErrInvalidLeadScorePoints        = errors.New("lead score points must be greater than or equal to zero")
-	ErrInvalidLeadScorePriority      = errors.New("lead score priority must be greater than or equal to zero")
-	ErrInvalidLeadScoreBand          = errors.New("invalid lead score band")
-	ErrChecklistItemNotFound         = errors.New("checklist item not found")
-	ErrChecklistItemKeyRequired      = errors.New("checklist item key required")
-	ErrChecklistItemNameRequired     = errors.New("checklist item document name required")
-	ErrChecklistItemOrderInvalid     = errors.New("checklist item display order must be greater than or equal to zero")
-	ErrDocumentNotFound              = errors.New("document not found")
-	ErrInvalidDocumentStatus         = errors.New("invalid document status")
-	ErrDocumentFileNameRequired      = errors.New("document file name required")
-	ErrDocumentContentTypeRequired   = errors.New("document content type required")
-	ErrDocumentSizeInvalid           = errors.New("document size must be greater than zero")
-	ErrDocumentStorageKeyRequired    = errors.New("document storage key required")
-	ErrDocumentUploaderRequired      = errors.New("document uploader required")
-	ErrDocumentReviewerRequired      = errors.New("document reviewer required")
-	ErrDocumentStatusNotReviewable   = errors.New("document status is not a review action")
-	ErrImportBatchNotFound           = errors.New("import batch not found")
-	ErrImportInvalidRowNotFound      = errors.New("import invalid row not found")
-	ErrInvalidImportSource           = errors.New("invalid import source")
-	ErrInvalidImportFileType         = errors.New("invalid import file type")
-	ErrInvalidImportTarget           = errors.New("invalid import target")
-	ErrInvalidImportStatus           = errors.New("invalid import status")
-	ErrImportFileNameRequired        = errors.New("import file name required")
-	ErrImportUploaderRequired        = errors.New("import uploader required")
-	ErrImportRowsInvalid             = errors.New("import row counts are invalid")
-	ErrImportFieldMappingRequired    = errors.New("import field mapping required")
-	ErrImportInvalidRowNumberInvalid = errors.New("import invalid row number must be greater than zero")
-	ErrImportInvalidRowDataRequired  = errors.New("import invalid row raw data required")
-	ErrImportInvalidRowErrorRequired = errors.New("import invalid row error required")
-	ErrSyncJobNotFound               = errors.New("sync job not found")
-	ErrSyncJobNameRequired           = errors.New("sync job name required")
-	ErrInvalidIntegrationAdapter     = errors.New("invalid integration adapter")
-	ErrSyncJobOperationRequired      = errors.New("sync job operation required")
-	ErrInvalidMaxAttempts            = errors.New("max attempts must be greater than zero")
-	ErrInvalidSyncJobTransition      = errors.New("invalid sync job status transition")
-	ErrMaxAttemptsExceeded           = errors.New("attempt count exceeds max attempts")
-	ErrInvalidSyncJobStatus          = errors.New("invalid sync job status")
-	ErrInvalidSyncEventStatus        = errors.New("invalid sync event status")
-	ErrInvalidSyncDirection          = errors.New("invalid sync direction")
-	ErrInvalidSyncEventType          = errors.New("invalid sync event type")
-	ErrSyncEventNotFound             = errors.New("sync event not found")
-	ErrSyncEventResourceRequired     = errors.New("sync event resource required")
-	ErrSyncEventPayloadHashRequired  = errors.New("sync event payload hash required")
-	ErrCustomFieldDefinitionNotFound = errors.New("custom field definition not found")
-	ErrCustomFieldValueNotFound      = errors.New("custom field value not found")
-	ErrCustomFieldOwnerInvalid       = errors.New("custom field owner must be constituent or application")
-	ErrCustomFieldKeyRequired        = errors.New("custom field key required")
-	ErrCustomFieldLabelRequired      = errors.New("custom field label required")
-	ErrCustomFieldDataTypeInvalid    = errors.New("invalid custom field data type")
-	ErrCustomFieldOptionsRequired    = errors.New("select custom fields require options")
-	ErrCustomFieldOrderInvalid       = errors.New("custom field display order must be greater than or equal to zero")
-	ErrCustomFieldValueRequired      = errors.New("custom field value required")
+	ErrConstituentNotFound            = errors.New("constituent not found")
+	ErrFirstNameRequired              = errors.New("first name required")
+	ErrLastNameRequired               = errors.New("last name required")
+	ErrDateOfBirthRequired            = errors.New("date of birth required")
+	ErrDateOfBirthInFuture            = errors.New("date of birth cannot be in the future")
+	ErrPrimaryPhoneRequired           = errors.New("primary phone required")
+	ErrInvalidLifecycleStage          = errors.New("invalid lifecycle stage")
+	ErrInvalidDuplicateStatus         = errors.New("invalid duplicate status")
+	ErrInvalidDuplicateLink           = errors.New("duplicate status does not match duplicate link")
+	ErrInvalidNotificationChannel     = errors.New("invalid notification channel")
+	ErrNotificationPriorityRequired   = errors.New("notification priority required")
+	ErrNotificationPriorityIncomplete = errors.New("notification priority must include sms, whatsapp, and email")
+	ErrNotificationPriorityDuplicate  = errors.New("notification priority contains duplicate channel")
+	ErrInvalidLifecycleChange         = errors.New("invalid lifecycle stage change")
+	ErrInquiryNotFound                = errors.New("inquiry not found")
+	ErrInquirySourceRequired          = errors.New("inquiry source required")
+	ErrInvalidInquiryStatus           = errors.New("invalid inquiry status")
+	ErrProgramNotFound                = errors.New("program not found")
+	ErrAcademicTermNotFound           = errors.New("academic term not found")
+	ErrInvalidTermDateRange           = errors.New("term start date must be before end date")
+	ErrInvalidApplicationWindow       = errors.New("application deadline must be on or after application start date")
+	ErrDuplicateReviewNotFound        = errors.New("duplicate review not found")
+	ErrInvalidDuplicateReview         = errors.New("invalid duplicate review")
+	ErrInvalidMatchType               = errors.New("invalid duplicate match type")
+	ErrInvalidMatchScore              = errors.New("duplicate match score must be between 0 and 100")
+	ErrMatchReasonRequired            = errors.New("duplicate match reason required")
+	ErrInvalidReviewStatus            = errors.New("invalid duplicate review status")
+	ErrInvalidResolution              = errors.New("invalid duplicate review resolution")
+	ErrDuplicateReviewResolved        = errors.New("duplicate review already resolved")
+	ErrResolutionActorRequired        = errors.New("resolution actor required")
+	ErrApplicationNotFound            = errors.New("application not found")
+	ErrInvalidApplicationType         = errors.New("invalid application type")
+	ErrInvalidApplicationStatus       = errors.New("invalid application status")
+	ErrDuplicateApplication           = errors.New("active application already exists for constituent term and program")
+	ErrConstituentIDRequired          = errors.New("constituent id required")
+	ErrProgramIDRequired              = errors.New("program id required")
+	ErrAcademicTermIDRequired         = errors.New("academic term id required")
+	ErrInactiveProgram                = errors.New("program is inactive")
+	ErrInactiveAcademicTerm           = errors.New("academic term is inactive")
+	ErrInvalidApplicationTransition   = errors.New("invalid application status transition")
+	ErrApplicationActorRequired       = errors.New("application transition actor required")
+	ErrFormTemplateNotFound           = errors.New("application form template not found")
+	ErrFormTemplateNameRequired       = errors.New("application form template name required")
+	ErrFormTemplateFieldsRequired     = errors.New("application form template required fields required")
+	ErrFormTemplateFieldInvalid       = errors.New("application form template field invalid")
+	ErrFormTemplateChecklistInvalid   = errors.New("application form template checklist item invalid")
+	ErrFormTemplatePriorityInvalid    = errors.New("application form template priority must be greater than or equal to zero")
+	ErrStaffProfileNotFound           = errors.New("staff profile not found")
+	ErrStaffProfileUserRequired       = errors.New("staff profile user id required")
+	ErrStaffProfileRoleRequired       = errors.New("staff profile role required")
+	ErrApplicantProfileNotFound       = errors.New("applicant profile not found")
+	ErrApplicantProfileUserRequired   = errors.New("applicant profile user id required")
+	ErrInvalidAdmissionsRole          = errors.New("invalid admissions role")
+	ErrLeadScoreRuleNotFound          = errors.New("lead score rule not found")
+	ErrLeadScoreNotFound              = errors.New("lead score not found")
+	ErrLeadScoreRuleNameRequired      = errors.New("lead score rule name required")
+	ErrLeadScoreCriteriaRequired      = errors.New("lead score criteria required")
+	ErrInvalidLeadScoreCriterion      = errors.New("invalid lead score criterion")
+	ErrInvalidLeadScorePoints         = errors.New("lead score points must be greater than or equal to zero")
+	ErrInvalidLeadScorePriority       = errors.New("lead score priority must be greater than or equal to zero")
+	ErrInvalidLeadScoreBand           = errors.New("invalid lead score band")
+	ErrChecklistItemNotFound          = errors.New("checklist item not found")
+	ErrChecklistItemKeyRequired       = errors.New("checklist item key required")
+	ErrChecklistItemNameRequired      = errors.New("checklist item document name required")
+	ErrChecklistItemOrderInvalid      = errors.New("checklist item display order must be greater than or equal to zero")
+	ErrDocumentNotFound               = errors.New("document not found")
+	ErrInvalidDocumentStatus          = errors.New("invalid document status")
+	ErrDocumentFileNameRequired       = errors.New("document file name required")
+	ErrDocumentContentTypeRequired    = errors.New("document content type required")
+	ErrDocumentSizeInvalid            = errors.New("document size must be greater than zero")
+	ErrDocumentStorageKeyRequired     = errors.New("document storage key required")
+	ErrDocumentUploaderRequired       = errors.New("document uploader required")
+	ErrDocumentReviewerRequired       = errors.New("document reviewer required")
+	ErrDocumentStatusNotReviewable    = errors.New("document status is not a review action")
+	ErrImportBatchNotFound            = errors.New("import batch not found")
+	ErrImportInvalidRowNotFound       = errors.New("import invalid row not found")
+	ErrInvalidImportSource            = errors.New("invalid import source")
+	ErrInvalidImportFileType          = errors.New("invalid import file type")
+	ErrInvalidImportTarget            = errors.New("invalid import target")
+	ErrInvalidImportStatus            = errors.New("invalid import status")
+	ErrImportFileNameRequired         = errors.New("import file name required")
+	ErrImportUploaderRequired         = errors.New("import uploader required")
+	ErrImportRowsInvalid              = errors.New("import row counts are invalid")
+	ErrImportFieldMappingRequired     = errors.New("import field mapping required")
+	ErrImportInvalidRowNumberInvalid  = errors.New("import invalid row number must be greater than zero")
+	ErrImportInvalidRowDataRequired   = errors.New("import invalid row raw data required")
+	ErrImportInvalidRowErrorRequired  = errors.New("import invalid row error required")
+	ErrSyncJobNotFound                = errors.New("sync job not found")
+	ErrSyncJobNameRequired            = errors.New("sync job name required")
+	ErrInvalidIntegrationAdapter      = errors.New("invalid integration adapter")
+	ErrSyncJobOperationRequired       = errors.New("sync job operation required")
+	ErrInvalidMaxAttempts             = errors.New("max attempts must be greater than zero")
+	ErrInvalidSyncJobTransition       = errors.New("invalid sync job status transition")
+	ErrMaxAttemptsExceeded            = errors.New("attempt count exceeds max attempts")
+	ErrInvalidSyncJobStatus           = errors.New("invalid sync job status")
+	ErrInvalidSyncEventStatus         = errors.New("invalid sync event status")
+	ErrInvalidSyncDirection           = errors.New("invalid sync direction")
+	ErrInvalidSyncEventType           = errors.New("invalid sync event type")
+	ErrSyncEventNotFound              = errors.New("sync event not found")
+	ErrSyncEventResourceRequired      = errors.New("sync event resource required")
+	ErrSyncEventPayloadHashRequired   = errors.New("sync event payload hash required")
+	ErrCustomFieldDefinitionNotFound  = errors.New("custom field definition not found")
+	ErrCustomFieldValueNotFound       = errors.New("custom field value not found")
+	ErrCustomFieldOwnerInvalid        = errors.New("custom field owner must be constituent or application")
+	ErrCustomFieldKeyRequired         = errors.New("custom field key required")
+	ErrCustomFieldLabelRequired       = errors.New("custom field label required")
+	ErrCustomFieldDataTypeInvalid     = errors.New("invalid custom field data type")
+	ErrCustomFieldOptionsRequired     = errors.New("select custom fields require options")
+	ErrCustomFieldOrderInvalid        = errors.New("custom field display order must be greater than or equal to zero")
+	ErrCustomFieldValueRequired       = errors.New("custom field value required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -849,6 +853,15 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 		return Constituent{}, err
 	}
 
+	notificationPreferences := KenyaDefaultNotificationPreferences()
+	if nc.NotificationPreferences != nil {
+		var err error
+		notificationPreferences, err = NormalizeNotificationPreferences(*nc.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+	}
+
 	now := time.Now()
 	cst := Constituent{
 		ID:                          uuid.New(),
@@ -873,6 +886,7 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 		LifecycleStage:              stage,
 		DuplicateStatus:             status,
 		DuplicateOfID:               nc.DuplicateOfID,
+		NotificationPreferences:     notificationPreferences,
 		SISSyncedAt:                 nc.SISSyncedAt,
 		DateCreated:                 now,
 		DateUpdated:                 now,
@@ -901,6 +915,16 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 
 // UpdateConstituent modifies mutable information for a Constituent.
 func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error) {
+	if len(cst.NotificationPreferences.Priority) == 0 {
+		cst.NotificationPreferences = KenyaDefaultNotificationPreferences()
+	} else {
+		notificationPreferences, err := NormalizeNotificationPreferences(cst.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+		cst.NotificationPreferences = notificationPreferences
+	}
+
 	if uc.PreferredName != nil {
 		cst.PreferredName = trimStringPtr(uc.PreferredName)
 	}
@@ -990,6 +1014,14 @@ func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc Up
 
 		cst.DuplicateStatus = status
 		cst.DuplicateOfID = duplicateOfID
+	}
+
+	if uc.NotificationPreferences != nil {
+		notificationPreferences, err := NormalizeNotificationPreferences(*uc.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+		cst.NotificationPreferences = notificationPreferences
 	}
 
 	if uc.SISSyncedAt != nil {
@@ -2848,6 +2880,107 @@ func AdmissionsPermissionsToStrings(permissions []AdmissionsPermission) []string
 	}
 
 	return values
+}
+
+// KenyaDefaultNotificationPriority returns the localized channel priority order.
+func KenyaDefaultNotificationPriority() []NotificationChannel {
+	return []NotificationChannel{
+		NotificationChannelSMS,
+		NotificationChannelWhatsApp,
+		NotificationChannelEmail,
+	}
+}
+
+// KenyaDefaultNotificationPreferences returns the safe default for Kenya admissions communications.
+func KenyaDefaultNotificationPreferences() NotificationPreferences {
+	return NotificationPreferences{
+		SMSOptIn:      true,
+		WhatsAppOptIn: false,
+		EmailOptIn:    true,
+		Priority:      KenyaDefaultNotificationPriority(),
+	}
+}
+
+// ParseNotificationChannels converts persisted channel strings into notification channels.
+func ParseNotificationChannels(values []string) ([]NotificationChannel, error) {
+	channels := make([]NotificationChannel, len(values))
+	for i, value := range values {
+		channel := NotificationChannel(value)
+		if err := validateNotificationChannel(channel); err != nil {
+			return nil, err
+		}
+		channels[i] = channel
+	}
+
+	return channels, nil
+}
+
+// NotificationChannelsToStrings converts notification channels into strings for storage and clients.
+func NotificationChannelsToStrings(channels []NotificationChannel) []string {
+	values := make([]string, len(channels))
+	for i, channel := range channels {
+		values[i] = channel.String()
+	}
+
+	return values
+}
+
+// NormalizeNotificationPreferences validates and defaults notification preferences.
+func NormalizeNotificationPreferences(preferences NotificationPreferences) (NotificationPreferences, error) {
+	if len(preferences.Priority) == 0 {
+		preferences.Priority = KenyaDefaultNotificationPriority()
+	}
+
+	if err := validateNotificationPriority(preferences.Priority); err != nil {
+		return NotificationPreferences{}, err
+	}
+
+	priority := make([]NotificationChannel, len(preferences.Priority))
+	copy(priority, preferences.Priority)
+	preferences.Priority = priority
+
+	return preferences, nil
+}
+
+func validateNotificationChannel(channel NotificationChannel) error {
+	switch channel {
+	case NotificationChannelSMS,
+		NotificationChannelWhatsApp,
+		NotificationChannelEmail:
+		return nil
+	default:
+		return ErrInvalidNotificationChannel
+	}
+}
+
+func validateNotificationPriority(priority []NotificationChannel) error {
+	if len(priority) == 0 {
+		return ErrNotificationPriorityRequired
+	}
+
+	if len(priority) != len(KenyaDefaultNotificationPriority()) {
+		return ErrNotificationPriorityIncomplete
+	}
+
+	seen := make(map[NotificationChannel]struct{}, len(priority))
+	for _, channel := range priority {
+		if err := validateNotificationChannel(channel); err != nil {
+			return err
+		}
+
+		if _, exists := seen[channel]; exists {
+			return ErrNotificationPriorityDuplicate
+		}
+		seen[channel] = struct{}{}
+	}
+
+	for _, channel := range KenyaDefaultNotificationPriority() {
+		if _, exists := seen[channel]; !exists {
+			return ErrNotificationPriorityIncomplete
+		}
+	}
+
+	return nil
 }
 
 func validateNewLeadScoreRule(nr NewLeadScoreRule) error {

@@ -124,6 +124,128 @@ func TestCreateConstituentRequiresIdentityFields(t *testing.T) {
 	}
 }
 
+func TestCreateConstituentDefaultsKenyaNotificationPreferences(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{constituents: map[uuid.UUID]Constituent{}}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	email := mail.Address{Address: "applicant@example.com"}
+
+	created, err := bus.CreateConstituent(context.Background(), NewConstituent{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+254712345678",
+	})
+	if err != nil {
+		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+
+	want := KenyaDefaultNotificationPreferences()
+	assertNotificationPreferences(t, created.NotificationPreferences, want)
+	assertNotificationPreferences(t, store.constituents[created.ID].NotificationPreferences, want)
+}
+
+func TestUpdateConstituentNotificationOptOut(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	cst := Constituent{
+		ID:                      uuid.New(),
+		LifecycleStage:          LifecycleStageProspect,
+		DuplicateStatus:         DuplicateStatusActive,
+		NotificationPreferences: KenyaDefaultNotificationPreferences(),
+	}
+
+	preferences := NotificationPreferences{
+		SMSOptIn:      false,
+		WhatsAppOptIn: false,
+		EmailOptIn:    true,
+		Priority: []NotificationChannel{
+			NotificationChannelSMS,
+			NotificationChannelWhatsApp,
+			NotificationChannelEmail,
+		},
+	}
+	updated, err := bus.UpdateConstituent(context.Background(), cst, UpdateConstituent{NotificationPreferences: &preferences})
+	if err != nil {
+		t.Fatalf("UpdateConstituent returned error: %v", err)
+	}
+
+	assertNotificationPreferences(t, updated.NotificationPreferences, preferences)
+}
+
+func TestCreateConstituentValidatesNotificationPriority(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	email := mail.Address{Address: "applicant@example.com"}
+
+	tests := []struct {
+		name        string
+		preferences NotificationPreferences
+		want        error
+	}{
+		{
+			name: "duplicate channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannelSMS,
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrNotificationPriorityDuplicate,
+		},
+		{
+			name: "missing channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrNotificationPriorityIncomplete,
+		},
+		{
+			name: "unknown channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannel("PUSH"),
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrInvalidNotificationChannel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateConstituent(context.Background(), NewConstituent{
+				FirstName:               "Ada",
+				LastName:                "Applicant",
+				DateOfBirth:             time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail:            email,
+				PrimaryPhone:            "+254712345678",
+				NotificationPreferences: &tt.preferences,
+			})
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestCreateStaffProfileRequiresContextRoles(t *testing.T) {
 	t.Parallel()
 
@@ -1483,6 +1605,28 @@ func TestCreateConstituentIgnoresMissingExactDuplicate(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+}
+
+func assertNotificationPreferences(t *testing.T, got NotificationPreferences, want NotificationPreferences) {
+	t.Helper()
+
+	if got.SMSOptIn != want.SMSOptIn {
+		t.Fatalf("SMSOptIn = %t, want %t", got.SMSOptIn, want.SMSOptIn)
+	}
+	if got.WhatsAppOptIn != want.WhatsAppOptIn {
+		t.Fatalf("WhatsAppOptIn = %t, want %t", got.WhatsAppOptIn, want.WhatsAppOptIn)
+	}
+	if got.EmailOptIn != want.EmailOptIn {
+		t.Fatalf("EmailOptIn = %t, want %t", got.EmailOptIn, want.EmailOptIn)
+	}
+	if len(got.Priority) != len(want.Priority) {
+		t.Fatalf("Priority length = %d, want %d", len(got.Priority), len(want.Priority))
+	}
+	for i, channel := range want.Priority {
+		if got.Priority[i] != channel {
+			t.Fatalf("Priority[%d] = %s, want %s", i, got.Priority[i], channel)
+		}
 	}
 }
 
