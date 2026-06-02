@@ -1,6 +1,7 @@
 export const COMMUNICATION_CHANNELS = [
-    'EMAIL',
     'SMS',
+    'WHATSAPP',
+    'EMAIL',
     'PHONE_CALL',
     'NOTIFICATION',
 ] as const;

@@ -198,6 +198,8 @@ export const SIS_SYNC_OPERATIONS = [
     'WA_WEBHOOK_INBOUND',
 ] as const;
 
+export const NOTIFICATION_CHANNELS = ['SMS', 'WHATSAPP', 'EMAIL'] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -220,6 +222,7 @@ export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
 export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
 export type KenyaAdapter = (typeof KENYA_ADAPTERS)[number];
 export type SisSyncOperation = (typeof SIS_SYNC_OPERATIONS)[number];
+export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
 export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
@@ -362,6 +365,13 @@ export interface ApplicationFee {
     waiverReason?: string;
     waiverGrantedAt?: string;
     auditTrail: ApplicationFeeAuditEvent[];
+}
+
+export interface NotificationPreferences {
+    smsOptIn: boolean;
+    whatsAppOptIn: boolean;
+    emailOptIn: boolean;
+    priority: NotificationChannel[];
 }
 
 export interface LeadScoreCriterion {
