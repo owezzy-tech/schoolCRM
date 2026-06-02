@@ -751,6 +751,41 @@ func (status SyncJobStatus) String() string {
 	return string(status)
 }
 
+// IntegrationAdapter identifies the external Kenya integration provider for sync tracking.
+// It intentionally lives in the root admissions domain to avoid importing adapters/* back
+// into the package that adapter implementations already depend on.
+type IntegrationAdapter string
+
+// Set of supported Kenya integration adapters.
+const (
+	IntegrationAdapterKUCCPS        IntegrationAdapter = "kuccps"
+	IntegrationAdapterKNEC          IntegrationAdapter = "knec"
+	IntegrationAdapterIPRS          IntegrationAdapter = "iprs"
+	IntegrationAdapterMPesaDaraja   IntegrationAdapter = "mpesa_daraja"
+	IntegrationAdapterCelcomAfrica  IntegrationAdapter = "celcom_africa"
+	IntegrationAdapterWhatsAppCloud IntegrationAdapter = "whatsapp_cloud"
+)
+
+// String returns the integration adapter as a string.
+func (adapter IntegrationAdapter) String() string {
+	return string(adapter)
+}
+
+// Valid reports whether the adapter is one of the supported Kenya providers.
+func (adapter IntegrationAdapter) Valid() bool {
+	switch adapter {
+	case IntegrationAdapterKUCCPS,
+		IntegrationAdapterKNEC,
+		IntegrationAdapterIPRS,
+		IntegrationAdapterMPesaDaraja,
+		IntegrationAdapterCelcomAfrica,
+		IntegrationAdapterWhatsAppCloud:
+		return true
+	default:
+		return false
+	}
+}
+
 // SyncEventStatus represents the queue state for a real-time SIS sync event.
 type SyncEventStatus string
 
@@ -795,6 +830,17 @@ const (
 	SyncEventTypeApplicationDecision    SyncEventType = "APPLICATION_DECISION"
 	SyncEventTypeDocumentStatus         SyncEventType = "DOCUMENT_STATUS"
 	SyncEventTypeEnrollmentIntent       SyncEventType = "ENROLLMENT_INTENT"
+	SyncEventTypeKUCCPSPlacementPull    SyncEventType = "KUCCPS_PLACEMENT_PULL"
+	SyncEventTypeKUCCPSPlacementConfirm SyncEventType = "KUCCPS_PLACEMENT_CONFIRM"
+	SyncEventTypeKNECResultVerification SyncEventType = "KNEC_RESULT_VERIFICATION"
+	SyncEventTypeIPRSIdentityVerify     SyncEventType = "IPRS_IDENTITY_VERIFICATION"
+	SyncEventTypeMPesaSTKPush           SyncEventType = "MPESA_STK_PUSH"
+	SyncEventTypeMPesaC2BCallback       SyncEventType = "MPESA_C2B_CALLBACK"
+	SyncEventTypeMPesaTransactionQuery  SyncEventType = "MPESA_TRANSACTION_QUERY"
+	SyncEventTypeSMSOutbound            SyncEventType = "SMS_OUTBOUND"
+	SyncEventTypeSMSDeliveryReport      SyncEventType = "SMS_DELIVERY_REPORT"
+	SyncEventTypeWhatsAppMessageSend    SyncEventType = "WHATSAPP_MESSAGE_SEND"
+	SyncEventTypeWhatsAppWebhookInbound SyncEventType = "WHATSAPP_WEBHOOK_INBOUND"
 )
 
 // String returns the sync event type as a string.
@@ -927,78 +973,116 @@ type NewImportInvalidRow struct {
 
 // SyncJob tracks a SIS batch reconciliation run and its operational result.
 type SyncJob struct {
-	ID             uuid.UUID
-	Name           string
-	Status         SyncJobStatus
-	Direction      SyncDirection
-	StartedAt      *time.Time
-	CompletedAt    *time.Time
-	RecordsPulled  int
-	RecordsPushed  int
-	EventsRequeued int
-	FailureReason  *string
-	Retryable      bool
-	CreatedByID    *uuid.UUID
-	DateCreated    time.Time
-	DateUpdated    time.Time
+	ID                uuid.UUID
+	Name              string
+	Adapter           IntegrationAdapter
+	Operation         string
+	Status            SyncJobStatus
+	Direction         SyncDirection
+	StartedAt         *time.Time
+	CompletedAt       *time.Time
+	RecordsPulled     int
+	RecordsPushed     int
+	EventsRequeued    int
+	AttemptCount      int
+	MaxAttempts       int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	Retryable         bool
+	CreatedByID       *uuid.UUID
+	DateCreated       time.Time
+	DateUpdated       time.Time
 }
 
 // NewSyncJob is what the sync runner requires when starting or scheduling a batch reconciliation run.
 type NewSyncJob struct {
 	Name        string
+	Adapter     IntegrationAdapter
+	Operation   string
 	Direction   SyncDirection
 	Status      SyncJobStatus
 	StartedAt   *time.Time
+	MaxAttempts int
 	CreatedByID *uuid.UUID
 }
 
 // UpdateSyncJob is what the sync runner may change as a batch reconciliation run progresses.
 type UpdateSyncJob struct {
-	Status         SyncJobStatus
-	CompletedAt    *time.Time
-	RecordsPulled  int
-	RecordsPushed  int
-	EventsRequeued int
-	FailureReason  *string
-	Retryable      bool
+	Status            SyncJobStatus
+	CompletedAt       *time.Time
+	RecordsPulled     int
+	RecordsPushed     int
+	EventsRequeued    int
+	AttemptCount      int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	Retryable         bool
 }
 
 // SyncEvent tracks a selected real-time SIS event, including retries and failure visibility.
 type SyncEvent struct {
-	ID            uuid.UUID
-	JobID         *uuid.UUID
-	EventType     SyncEventType
-	Status        SyncEventStatus
-	Direction     SyncDirection
-	ResourceType  string
-	ResourceID    uuid.UUID
-	PayloadHash   string
-	Attempts      int
-	NextRetryAt   *time.Time
-	FailureReason *string
-	AuditMessage  string
-	DateCreated   time.Time
-	DateUpdated   time.Time
+	ID                uuid.UUID
+	JobID             *uuid.UUID
+	Adapter           IntegrationAdapter
+	Operation         string
+	EventType         SyncEventType
+	Status            SyncEventStatus
+	Direction         SyncDirection
+	ResourceType      string
+	ResourceID        uuid.UUID
+	ExternalRef       *string
+	ExternalReceiptID *string
+	PayloadHash       string
+	Attempts          int
+	MaxAttempts       int
+	NextRetryAt       *time.Time
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	AuditMessage      string
+	DateCreated       time.Time
+	DateUpdated       time.Time
 }
 
 // NewSyncEvent is what workflow hooks provide when enqueueing a selected real-time SIS event.
 type NewSyncEvent struct {
-	JobID        *uuid.UUID
-	EventType    SyncEventType
-	Direction    SyncDirection
-	ResourceType string
-	ResourceID   uuid.UUID
-	PayloadHash  string
-	AuditMessage string
+	JobID             *uuid.UUID
+	Adapter           IntegrationAdapter
+	Operation         string
+	EventType         SyncEventType
+	Direction         SyncDirection
+	ResourceType      string
+	ResourceID        uuid.UUID
+	ExternalRef       *string
+	ExternalReceiptID *string
+	PayloadHash       string
+	MaxAttempts       int
+	AuditMessage      string
 }
 
 // UpdateSyncEvent is what the queue runner may change as an event is processed or retried.
 type UpdateSyncEvent struct {
-	Status        SyncEventStatus
-	Attempts      int
-	NextRetryAt   *time.Time
-	FailureReason *string
-	AuditMessage  string
+	Status            SyncEventStatus
+	Attempts          int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	AuditMessage      string
 }
 
 // Decision represents the outcome of an application review.
@@ -1297,10 +1381,12 @@ type ImportInvalidRowQueryFilter struct {
 // SyncJobQueryFilter holds fields a SIS sync job query can be filtered on.
 // We are using pointer semantics because the With API mutates the value.
 type SyncJobQueryFilter struct {
-	ID        *uuid.UUID
-	Status    *SyncJobStatus
-	Direction *SyncDirection
-	Retryable *bool
+	ID              *uuid.UUID
+	Adapter         *IntegrationAdapter
+	Status          *SyncJobStatus
+	Direction       *SyncDirection
+	Retryable       *bool
+	NextRetryBefore *time.Time
 }
 
 // SyncEventQueryFilter holds fields a SIS sync event query can be filtered on.
@@ -1308,6 +1394,7 @@ type SyncJobQueryFilter struct {
 type SyncEventQueryFilter struct {
 	ID           *uuid.UUID
 	JobID        *uuid.UUID
+	Adapter      *IntegrationAdapter
 	EventType    *SyncEventType
 	Status       *SyncEventStatus
 	Direction    *SyncDirection
