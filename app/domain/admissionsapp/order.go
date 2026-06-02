@@ -84,6 +84,22 @@ var applicationFormTemplateOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationFormTemplateDateCreated,
 }
 
+var customFieldDefinitionOrderByFields = map[string]string{
+	"custom_field_definition_id": admissionsbus.OrderByCustomFieldDefinitionID,
+	"owner":                      admissionsbus.OrderByCustomFieldDefinitionOwner,
+	"field_key":                  admissionsbus.OrderByCustomFieldDefinitionFieldKey,
+	"display_order":              admissionsbus.OrderByCustomFieldDefinitionDisplayOrder,
+	"date_created":               admissionsbus.OrderByCustomFieldDefinitionDateCreated,
+}
+
+var customFieldValueOrderByFields = map[string]string{
+	"custom_field_value_id":      admissionsbus.OrderByCustomFieldValueID,
+	"custom_field_definition_id": admissionsbus.OrderByCustomFieldValueDefinition,
+	"owner":                      admissionsbus.OrderByCustomFieldValueOwner,
+	"owner_id":                   admissionsbus.OrderByCustomFieldValueOwnerID,
+	"date_created":               admissionsbus.OrderByCustomFieldValueDateCreated,
+}
+
 var applicationTransitionOrderByFields = map[string]string{
 	"application_transition_id": admissionsbus.OrderByApplicationTransitionID,
 	"application_id":            admissionsbus.OrderByApplicationTransitionApplication,
@@ -106,6 +122,21 @@ var documentOrderByFields = map[string]string{
 	"status":            admissionsbus.OrderByDocumentStatus,
 	"uploaded_at":       admissionsbus.OrderByDocumentUploadedAt,
 	"reviewed_at":       admissionsbus.OrderByDocumentReviewedAt,
+}
+
+var importBatchOrderByFields = map[string]string{
+	"import_batch_id": admissionsbus.OrderByImportBatchID,
+	"target":          admissionsbus.OrderByImportBatchTarget,
+	"status":          admissionsbus.OrderByImportBatchStatus,
+	"uploaded_by_id":  admissionsbus.OrderByImportBatchUploadedBy,
+	"date_created":    admissionsbus.OrderByImportBatchDateCreated,
+}
+
+var importInvalidRowOrderByFields = map[string]string{
+	"import_invalid_row_id": admissionsbus.OrderByImportInvalidRowID,
+	"import_batch_id":       admissionsbus.OrderByImportInvalidRowBatch,
+	"row_number":            admissionsbus.OrderByImportInvalidRowNumber,
+	"date_created":          admissionsbus.OrderByImportInvalidRowDateCreated,
 }
 
 var syncJobOrderByFields = map[string]string{

@@ -4,6 +4,8 @@
 
 Admissions CRM v1 is a bounded context focused on enrollment and admissions workflows. It should not be modeled as a generic school CRM or as a broad school operations module. The core language is `Constituent`, `Inquiry`, `Application`, `Checklist`, `Document`, `Decision`, `Campaign`, `Event`, and `SIS Sync`.
 
+For Kenyan institutions, use [`docs/kenya-localization-prd.md`](kenya-localization-prd.md) as the active localization overlay. In that deployment mode, PeopleSoft/SIS sync is replaced by Kenya-specific adapters such as KUCCPS, KNEC, IPRS, M-Pesa Daraja, SMS, and WhatsApp, and applicant geography is normalized through the Kenya Reference Data Catalog.
+
 ## Bounded Contexts
 
 Rendered diagram: [`docs/diagrams/admissions-crm-bounded-contexts.svg`](diagrams/admissions-crm-bounded-contexts.svg)  

@@ -25,6 +25,21 @@ func (s *Store) applyConstituentFilter(filter admissionsbus.ConstituentQueryFilt
 		wc = append(wc, "external_sis_id = :external_sis_id")
 	}
 
+	if filter.NationalID != nil {
+		data["national_id"] = filter.NationalID
+		wc = append(wc, "national_id = :national_id")
+	}
+
+	if filter.UPI != nil {
+		data["upi"] = filter.UPI
+		wc = append(wc, "upi = :upi")
+	}
+
+	if filter.KCSEIndexNumber != nil {
+		data["kcse_index_number"] = filter.KCSEIndexNumber
+		wc = append(wc, "kcse_index_number = :kcse_index_number")
+	}
+
 	if filter.LifecycleStage != nil {
 		data["lifecycle_stage"] = filter.LifecycleStage.String()
 		wc = append(wc, "lifecycle_stage = :lifecycle_stage")
@@ -212,6 +227,59 @@ func (s *Store) applyApplicationFormTemplateFilter(filter admissionsbus.Applicat
 	if filter.Version != nil {
 		data["version"] = filter.Version
 		wc = append(wc, "version = :version")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyCustomFieldDefinitionFilter(filter admissionsbus.CustomFieldDefinitionQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["custom_field_definition_id"] = filter.ID
+		wc = append(wc, "custom_field_definition_id = :custom_field_definition_id")
+	}
+
+	if filter.Owner != nil {
+		data["owner"] = filter.Owner.String()
+		wc = append(wc, "owner = :owner")
+	}
+
+	if filter.Active != nil {
+		data["is_active"] = filter.Active
+		wc = append(wc, "is_active = :is_active")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyCustomFieldValueFilter(filter admissionsbus.CustomFieldValueQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["custom_field_value_id"] = filter.ID
+		wc = append(wc, "custom_field_value_id = :custom_field_value_id")
+	}
+
+	if filter.DefinitionID != nil {
+		data["custom_field_definition_id"] = filter.DefinitionID
+		wc = append(wc, "custom_field_definition_id = :custom_field_definition_id")
+	}
+
+	if filter.Owner != nil {
+		data["owner"] = filter.Owner.String()
+		wc = append(wc, "owner = :owner")
+	}
+
+	if filter.OwnerID != nil {
+		data["owner_id"] = filter.OwnerID
+		wc = append(wc, "owner_id = :owner_id")
 	}
 
 	if len(wc) > 0 {
@@ -450,6 +518,152 @@ func (s *Store) applyDocumentFilter(filter admissionsbus.DocumentQueryFilter, da
 	if filter.ReviewerID != nil {
 		data["reviewer_id"] = filter.ReviewerID
 		wc = append(wc, "reviewer_id = :reviewer_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyImportBatchFilter(filter admissionsbus.ImportBatchQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["import_batch_id"] = filter.ID
+		wc = append(wc, "import_batch_id = :import_batch_id")
+	}
+
+	if filter.Source != nil {
+		data["source"] = filter.Source.String()
+		wc = append(wc, "source = :source")
+	}
+
+	if filter.FileType != nil {
+		data["file_type"] = filter.FileType.String()
+		wc = append(wc, "file_type = :file_type")
+	}
+
+	if filter.Target != nil {
+		data["target"] = filter.Target.String()
+		wc = append(wc, "target = :target")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.UploadedByID != nil {
+		data["uploaded_by_id"] = filter.UploadedByID
+		wc = append(wc, "uploaded_by_id = :uploaded_by_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyImportInvalidRowFilter(filter admissionsbus.ImportInvalidRowQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["import_invalid_row_id"] = filter.ID
+		wc = append(wc, "import_invalid_row_id = :import_invalid_row_id")
+	}
+
+	if filter.BatchID != nil {
+		data["import_batch_id"] = filter.BatchID
+		wc = append(wc, "import_batch_id = :import_batch_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applySyncJobFilter(filter admissionsbus.SyncJobQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["sync_job_id"] = filter.ID
+		wc = append(wc, "sync_job_id = :sync_job_id")
+	}
+
+	if filter.Adapter != nil {
+		data["adapter"] = filter.Adapter.String()
+		wc = append(wc, "adapter = :adapter")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Direction != nil {
+		data["direction"] = filter.Direction.String()
+		wc = append(wc, "direction = :direction")
+	}
+
+	if filter.Retryable != nil {
+		data["retryable"] = filter.Retryable
+		wc = append(wc, "retryable = :retryable")
+	}
+
+	if filter.NextRetryBefore != nil {
+		data["next_retry_before"] = filter.NextRetryBefore.UTC()
+		wc = append(wc, "next_retry_at <= :next_retry_before")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applySyncEventFilter(filter admissionsbus.SyncEventQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["sync_event_id"] = filter.ID
+		wc = append(wc, "sync_event_id = :sync_event_id")
+	}
+
+	if filter.JobID != nil {
+		data["sync_job_id"] = filter.JobID
+		wc = append(wc, "sync_job_id = :sync_job_id")
+	}
+
+	if filter.Adapter != nil {
+		data["adapter"] = filter.Adapter.String()
+		wc = append(wc, "adapter = :adapter")
+	}
+
+	if filter.EventType != nil {
+		data["event_type"] = filter.EventType.String()
+		wc = append(wc, "event_type = :event_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Direction != nil {
+		data["direction"] = filter.Direction.String()
+		wc = append(wc, "direction = :direction")
+	}
+
+	if filter.ResourceType != nil {
+		data["resource_type"] = filter.ResourceType
+		wc = append(wc, "resource_type = :resource_type")
+	}
+
+	if filter.ResourceID != nil {
+		data["resource_id"] = filter.ResourceID
+		wc = append(wc, "resource_id = :resource_id")
 	}
 
 	if len(wc) > 0 {

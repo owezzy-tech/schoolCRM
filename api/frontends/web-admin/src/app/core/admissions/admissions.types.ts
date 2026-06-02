@@ -24,7 +24,16 @@ export const LIFECYCLE_STAGES = [
     'ALUMNI',
 ] as const;
 
-export const APPLICATION_TYPES = ['FRESHMAN', 'TRANSFER', 'GRADUATE'] as const;
+export const APPLICATION_TYPES = [
+    'KUCCPS_PLACEMENT',
+    'SELF_SPONSORED_UNDERGRAD',
+    'DIPLOMA',
+    'MASTERS',
+    'PHD',
+    'TVET',
+    'BRIDGING',
+    'CERTIFICATE',
+] as const;
 
 export const APPLICATION_STATUSES = [
     'DRAFT',
@@ -118,6 +127,32 @@ export const SIS_SYNC_EVENT_STATUSES = [
 
 export const SIS_SYNC_DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
 
+export const CUSTOM_FIELD_OWNERS = ['CONSTITUENT', 'APPLICATION'] as const;
+
+export const CUSTOM_FIELD_DATA_TYPES = [
+    'TEXT',
+    'TEXTAREA',
+    'NUMBER',
+    'DATE',
+    'SELECT',
+    'BOOLEAN',
+] as const;
+
+export const IMPORT_BATCH_STATUSES = [
+    'PREVIEWED',
+    'VALIDATION_FAILED',
+    'QUEUED',
+    'PROCESSING',
+    'COMPLETED',
+    'FAILED',
+] as const;
+
+export const IMPORT_SOURCES = ['MANUAL_UPLOAD', 'SIS_EXPORT'] as const;
+
+export const IMPORT_FILE_TYPES = ['CSV', 'XLSX'] as const;
+
+export const IMPORT_TARGETS = ['CONSTITUENTS', 'APPLICATIONS'] as const;
+
 export const SIS_SYNC_EVENT_TYPES = [
     'BATCH_TERMS_PULL',
     'BATCH_PROGRAMS_PULL',
@@ -127,7 +162,43 @@ export const SIS_SYNC_EVENT_TYPES = [
     'APPLICATION_DECISION',
     'DOCUMENT_STATUS',
     'ENROLLMENT_INTENT',
+    'KUCCPS_PLACEMENT_PULL',
+    'KUCCPS_PLACEMENT_CONFIRM',
+    'KNEC_RESULT_VERIFICATION',
+    'IPRS_IDENTITY_VERIFICATION',
+    'MPESA_STK_PUSH',
+    'MPESA_C2B_CALLBACK',
+    'MPESA_TRANSACTION_QUERY',
+    'SMS_OUTBOUND',
+    'SMS_DELIVERY_REPORT',
+    'WHATSAPP_MESSAGE_SEND',
+    'WHATSAPP_WEBHOOK_INBOUND',
 ] as const;
+
+export const KENYA_ADAPTERS = [
+    'KUCCPS',
+    'KNEC',
+    'IPRS',
+    'MPESA_DARAJA',
+    'CELCOM_AFRICA_SMS',
+    'WHATSAPP_CLOUD',
+] as const;
+
+export const SIS_SYNC_OPERATIONS = [
+    'PLACEMENT_PULL',
+    'PLACEMENT_CONFIRM',
+    'RESULT_VERIFICATION',
+    'IDENTITY_VERIFICATION',
+    'STK_PUSH',
+    'C2B_CALLBACK',
+    'TRANSACTION_QUERY',
+    'SMS_OUTBOUND',
+    'DELIVERY_REPORT_PULL',
+    'WA_MESSAGE_SEND',
+    'WA_WEBHOOK_INBOUND',
+] as const;
+
+export const NOTIFICATION_CHANNELS = ['SMS', 'WHATSAPP', 'EMAIL'] as const;
 
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
@@ -149,10 +220,83 @@ export type SisSyncJobStatus = (typeof SIS_SYNC_JOB_STATUSES)[number];
 export type SisSyncEventStatus = (typeof SIS_SYNC_EVENT_STATUSES)[number];
 export type SisSyncDirection = (typeof SIS_SYNC_DIRECTIONS)[number];
 export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
+export type KenyaAdapter = (typeof KENYA_ADAPTERS)[number];
+export type SisSyncOperation = (typeof SIS_SYNC_OPERATIONS)[number];
+export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
+export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
+export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
+export type ImportSource = (typeof IMPORT_SOURCES)[number];
+export type ImportFileType = (typeof IMPORT_FILE_TYPES)[number];
+export type ImportTarget = (typeof IMPORT_TARGETS)[number];
+
+export interface CustomFieldDefinition {
+    id: string;
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description?: string;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    options: string[];
+    validation?: string;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
+    active: boolean;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CustomFieldDefinitionRequest {
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description?: string | null;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    options: string[];
+    validation?: string | null;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
+    active: boolean;
+}
+
+export interface CustomFieldDefinitionQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    owner?: CustomFieldOwner;
+    active?: boolean;
+}
+
+export interface CustomFieldValue {
+    id: string;
+    definitionID: string;
+    owner: CustomFieldOwner;
+    ownerID: string;
+    value: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CustomFieldValueRequest {
+    definitionID: string;
+    owner: CustomFieldOwner;
+    ownerID: string;
+    value: string;
+}
 
 export interface SisSyncJob {
     id: string;
     name: string;
+    adapter: KenyaAdapter;
+    operation: SisSyncOperation;
     status: SisSyncJobStatus;
     direction: SisSyncDirection;
     startedAt?: string;
@@ -160,6 +304,14 @@ export interface SisSyncJob {
     recordsPulled: number;
     recordsPushed: number;
     eventsRequeued: number;
+    attempts: number;
+    maxAttempts: number;
+    nextRetryAt?: string;
+    externalRef?: string;
+    externalReceiptID?: string;
+    errorCode?: string;
+    errorDetail?: string;
+    lastErrorAt?: string;
     failureReason?: string;
     retryable: boolean;
     owner: string;
@@ -170,14 +322,22 @@ export interface SisSyncJob {
 export interface SisSyncEvent {
     id: string;
     jobID?: string;
+    adapter: KenyaAdapter;
+    operation: SisSyncOperation;
     eventType: SisSyncEventType;
     status: SisSyncEventStatus;
     direction: SisSyncDirection;
     resourceType: string;
     resourceID: string;
+    externalRef?: string;
+    externalReceiptID?: string;
     payloadHash: string;
     attempts: number;
+    maxAttempts: number;
     nextRetryAt?: string;
+    errorCode?: string;
+    errorDetail?: string;
+    lastErrorAt?: string;
     failureReason?: string;
     auditMessage: string;
     dateCreated: string;
@@ -205,6 +365,13 @@ export interface ApplicationFee {
     waiverReason?: string;
     waiverGrantedAt?: string;
     auditTrail: ApplicationFeeAuditEvent[];
+}
+
+export interface NotificationPreferences {
+    smsOptIn: boolean;
+    whatsAppOptIn: boolean;
+    emailOptIn: boolean;
+    priority: NotificationChannel[];
 }
 
 export interface LeadScoreCriterion {
@@ -364,6 +531,57 @@ export interface ApplicationFormTemplateQuery {
     active?: boolean;
 }
 
+export interface KUCCPSPlacement {
+    placementID: string;
+    admissionNumber?: string;
+    institutionCode: string;
+    programmeCode: string;
+    programmeName: string;
+    placementYear: number;
+    clusterCode?: string;
+    clusterPoints?: number;
+    weightedPointsNote?: string;
+}
+
+export interface ApplicationKCSESubject {
+    subjectCode: string;
+    grade: string;
+    points: number;
+}
+
+export interface ApplicationKCSEResult {
+    indexNumber: string;
+    examYear: number;
+    subjects: ApplicationKCSESubject[];
+    meanGrade: string;
+    meanPoints: number;
+}
+
+export interface Application {
+    id: string;
+    constituentID: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    status: ApplicationStatus;
+    kuccpsPlacement?: KUCCPSPlacement;
+    kcseResult?: ApplicationKCSEResult;
+    assignedReviewerID?: string;
+    submittedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ApplicationRequest {
+    constituentID: string;
+    programID: string;
+    academicTermID: string;
+    applicationType: ApplicationType;
+    kuccpsPlacement?: KUCCPSPlacement | null;
+    kcseResult?: ApplicationKCSEResult | null;
+    assignedReviewerID?: string | null;
+}
+
 export interface ChecklistItem {
     id: string;
     applicationID: string;
@@ -430,6 +648,84 @@ export interface AdmissionsDocumentQuery {
     orderBy?: string;
     checklist_item_id?: string;
     status?: DocumentStatus;
+}
+
+export interface ImportBatch {
+    id: string;
+    source: ImportSource;
+    fileType: ImportFileType;
+    target: ImportTarget;
+    status: ImportBatchStatus;
+    fileName: string;
+    storageKey?: string;
+    uploadedByID: string;
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    fieldMapping: Record<string, string>;
+    invalidReportKey?: string;
+    validationSummary?: string;
+    committedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ImportBatchRequest {
+    source: ImportSource;
+    fileType: ImportFileType;
+    target: ImportTarget;
+    status: ImportBatchStatus;
+    fileName: string;
+    storageKey?: string | null;
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    fieldMapping: Record<string, string>;
+    invalidReportKey?: string | null;
+    validationSummary?: string | null;
+}
+
+export interface ImportBatchQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    source?: ImportSource;
+    file_type?: ImportFileType;
+    target?: ImportTarget;
+    status?: ImportBatchStatus;
+    uploaded_by_id?: string;
+}
+
+export interface ImportInvalidRow {
+    id: string;
+    batchID: string;
+    rowNumber: number;
+    fieldName?: string;
+    rawData: Record<string, string>;
+    errorCode: string;
+    errorDetail: string;
+    dateCreated: string;
+}
+
+export interface ImportInvalidRowRequest {
+    rowNumber: number;
+    fieldName?: string | null;
+    rawData: Record<string, string>;
+    errorCode: string;
+    errorDetail: string;
+}
+
+export interface ImportInvalidRowsRequest {
+    rows: ImportInvalidRowRequest[];
+}
+
+export interface ImportInvalidRowQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    import_batch_id?: string;
 }
 
 export interface Inquiry {

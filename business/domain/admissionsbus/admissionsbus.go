@@ -19,85 +19,116 @@ import (
 
 // Set of error variables for admissions reference data operations.
 var (
-	ErrConstituentNotFound          = errors.New("constituent not found")
-	ErrFirstNameRequired            = errors.New("first name required")
-	ErrLastNameRequired             = errors.New("last name required")
-	ErrDateOfBirthRequired          = errors.New("date of birth required")
-	ErrDateOfBirthInFuture          = errors.New("date of birth cannot be in the future")
-	ErrPrimaryPhoneRequired         = errors.New("primary phone required")
-	ErrInvalidLifecycleStage        = errors.New("invalid lifecycle stage")
-	ErrInvalidDuplicateStatus       = errors.New("invalid duplicate status")
-	ErrInvalidDuplicateLink         = errors.New("duplicate status does not match duplicate link")
-	ErrInvalidLifecycleChange       = errors.New("invalid lifecycle stage change")
-	ErrInquiryNotFound              = errors.New("inquiry not found")
-	ErrInquirySourceRequired        = errors.New("inquiry source required")
-	ErrInvalidInquiryStatus         = errors.New("invalid inquiry status")
-	ErrProgramNotFound              = errors.New("program not found")
-	ErrAcademicTermNotFound         = errors.New("academic term not found")
-	ErrInvalidTermDateRange         = errors.New("term start date must be before end date")
-	ErrInvalidApplicationWindow     = errors.New("application deadline must be on or after application start date")
-	ErrDuplicateReviewNotFound      = errors.New("duplicate review not found")
-	ErrInvalidDuplicateReview       = errors.New("invalid duplicate review")
-	ErrInvalidMatchType             = errors.New("invalid duplicate match type")
-	ErrInvalidMatchScore            = errors.New("duplicate match score must be between 0 and 100")
-	ErrMatchReasonRequired          = errors.New("duplicate match reason required")
-	ErrInvalidReviewStatus          = errors.New("invalid duplicate review status")
-	ErrInvalidResolution            = errors.New("invalid duplicate review resolution")
-	ErrDuplicateReviewResolved      = errors.New("duplicate review already resolved")
-	ErrResolutionActorRequired      = errors.New("resolution actor required")
-	ErrApplicationNotFound          = errors.New("application not found")
-	ErrInvalidApplicationType       = errors.New("invalid application type")
-	ErrInvalidApplicationStatus     = errors.New("invalid application status")
-	ErrDuplicateApplication         = errors.New("active application already exists for constituent term and program")
-	ErrConstituentIDRequired        = errors.New("constituent id required")
-	ErrProgramIDRequired            = errors.New("program id required")
-	ErrAcademicTermIDRequired       = errors.New("academic term id required")
-	ErrInactiveProgram              = errors.New("program is inactive")
-	ErrInactiveAcademicTerm         = errors.New("academic term is inactive")
-	ErrInvalidApplicationTransition = errors.New("invalid application status transition")
-	ErrApplicationActorRequired     = errors.New("application transition actor required")
-	ErrFormTemplateNotFound         = errors.New("application form template not found")
-	ErrFormTemplateNameRequired     = errors.New("application form template name required")
-	ErrFormTemplateFieldsRequired   = errors.New("application form template required fields required")
-	ErrFormTemplateFieldInvalid     = errors.New("application form template field invalid")
-	ErrFormTemplateChecklistInvalid = errors.New("application form template checklist item invalid")
-	ErrFormTemplatePriorityInvalid  = errors.New("application form template priority must be greater than or equal to zero")
-	ErrStaffProfileNotFound         = errors.New("staff profile not found")
-	ErrStaffProfileUserRequired     = errors.New("staff profile user id required")
-	ErrStaffProfileRoleRequired     = errors.New("staff profile role required")
-	ErrApplicantProfileNotFound     = errors.New("applicant profile not found")
-	ErrApplicantProfileUserRequired = errors.New("applicant profile user id required")
-	ErrInvalidAdmissionsRole        = errors.New("invalid admissions role")
-	ErrLeadScoreRuleNotFound        = errors.New("lead score rule not found")
-	ErrLeadScoreNotFound            = errors.New("lead score not found")
-	ErrLeadScoreRuleNameRequired    = errors.New("lead score rule name required")
-	ErrLeadScoreCriteriaRequired    = errors.New("lead score criteria required")
-	ErrInvalidLeadScoreCriterion    = errors.New("invalid lead score criterion")
-	ErrInvalidLeadScorePoints       = errors.New("lead score points must be greater than or equal to zero")
-	ErrInvalidLeadScorePriority     = errors.New("lead score priority must be greater than or equal to zero")
-	ErrInvalidLeadScoreBand         = errors.New("invalid lead score band")
-	ErrChecklistItemNotFound        = errors.New("checklist item not found")
-	ErrChecklistItemKeyRequired     = errors.New("checklist item key required")
-	ErrChecklistItemNameRequired    = errors.New("checklist item document name required")
-	ErrChecklistItemOrderInvalid    = errors.New("checklist item display order must be greater than or equal to zero")
-	ErrDocumentNotFound             = errors.New("document not found")
-	ErrInvalidDocumentStatus        = errors.New("invalid document status")
-	ErrDocumentFileNameRequired     = errors.New("document file name required")
-	ErrDocumentContentTypeRequired  = errors.New("document content type required")
-	ErrDocumentSizeInvalid          = errors.New("document size must be greater than zero")
-	ErrDocumentStorageKeyRequired   = errors.New("document storage key required")
-	ErrDocumentUploaderRequired     = errors.New("document uploader required")
-	ErrDocumentReviewerRequired     = errors.New("document reviewer required")
-	ErrDocumentStatusNotReviewable  = errors.New("document status is not a review action")
-	ErrSyncJobNotFound              = errors.New("sync job not found")
-	ErrSyncJobNameRequired          = errors.New("sync job name required")
-	ErrInvalidSyncJobStatus         = errors.New("invalid sync job status")
-	ErrInvalidSyncEventStatus       = errors.New("invalid sync event status")
-	ErrInvalidSyncDirection         = errors.New("invalid sync direction")
-	ErrInvalidSyncEventType         = errors.New("invalid sync event type")
-	ErrSyncEventNotFound            = errors.New("sync event not found")
-	ErrSyncEventResourceRequired    = errors.New("sync event resource required")
-	ErrSyncEventPayloadHashRequired = errors.New("sync event payload hash required")
+	ErrConstituentNotFound            = errors.New("constituent not found")
+	ErrFirstNameRequired              = errors.New("first name required")
+	ErrLastNameRequired               = errors.New("last name required")
+	ErrDateOfBirthRequired            = errors.New("date of birth required")
+	ErrDateOfBirthInFuture            = errors.New("date of birth cannot be in the future")
+	ErrPrimaryPhoneRequired           = errors.New("primary phone required")
+	ErrInvalidLifecycleStage          = errors.New("invalid lifecycle stage")
+	ErrInvalidDuplicateStatus         = errors.New("invalid duplicate status")
+	ErrInvalidDuplicateLink           = errors.New("duplicate status does not match duplicate link")
+	ErrInvalidNotificationChannel     = errors.New("invalid notification channel")
+	ErrNotificationPriorityRequired   = errors.New("notification priority required")
+	ErrNotificationPriorityIncomplete = errors.New("notification priority must include sms, whatsapp, and email")
+	ErrNotificationPriorityDuplicate  = errors.New("notification priority contains duplicate channel")
+	ErrInvalidLifecycleChange         = errors.New("invalid lifecycle stage change")
+	ErrInquiryNotFound                = errors.New("inquiry not found")
+	ErrInquirySourceRequired          = errors.New("inquiry source required")
+	ErrInvalidInquiryStatus           = errors.New("invalid inquiry status")
+	ErrProgramNotFound                = errors.New("program not found")
+	ErrAcademicTermNotFound           = errors.New("academic term not found")
+	ErrInvalidTermDateRange           = errors.New("term start date must be before end date")
+	ErrInvalidApplicationWindow       = errors.New("application deadline must be on or after application start date")
+	ErrDuplicateReviewNotFound        = errors.New("duplicate review not found")
+	ErrInvalidDuplicateReview         = errors.New("invalid duplicate review")
+	ErrInvalidMatchType               = errors.New("invalid duplicate match type")
+	ErrInvalidMatchScore              = errors.New("duplicate match score must be between 0 and 100")
+	ErrMatchReasonRequired            = errors.New("duplicate match reason required")
+	ErrInvalidReviewStatus            = errors.New("invalid duplicate review status")
+	ErrInvalidResolution              = errors.New("invalid duplicate review resolution")
+	ErrDuplicateReviewResolved        = errors.New("duplicate review already resolved")
+	ErrResolutionActorRequired        = errors.New("resolution actor required")
+	ErrApplicationNotFound            = errors.New("application not found")
+	ErrInvalidApplicationType         = errors.New("invalid application type")
+	ErrInvalidApplicationStatus       = errors.New("invalid application status")
+	ErrDuplicateApplication           = errors.New("active application already exists for constituent term and program")
+	ErrConstituentIDRequired          = errors.New("constituent id required")
+	ErrProgramIDRequired              = errors.New("program id required")
+	ErrAcademicTermIDRequired         = errors.New("academic term id required")
+	ErrInactiveProgram                = errors.New("program is inactive")
+	ErrInactiveAcademicTerm           = errors.New("academic term is inactive")
+	ErrInvalidApplicationTransition   = errors.New("invalid application status transition")
+	ErrApplicationActorRequired       = errors.New("application transition actor required")
+	ErrFormTemplateNotFound           = errors.New("application form template not found")
+	ErrFormTemplateNameRequired       = errors.New("application form template name required")
+	ErrFormTemplateFieldsRequired     = errors.New("application form template required fields required")
+	ErrFormTemplateFieldInvalid       = errors.New("application form template field invalid")
+	ErrFormTemplateChecklistInvalid   = errors.New("application form template checklist item invalid")
+	ErrFormTemplatePriorityInvalid    = errors.New("application form template priority must be greater than or equal to zero")
+	ErrStaffProfileNotFound           = errors.New("staff profile not found")
+	ErrStaffProfileUserRequired       = errors.New("staff profile user id required")
+	ErrStaffProfileRoleRequired       = errors.New("staff profile role required")
+	ErrApplicantProfileNotFound       = errors.New("applicant profile not found")
+	ErrApplicantProfileUserRequired   = errors.New("applicant profile user id required")
+	ErrInvalidAdmissionsRole          = errors.New("invalid admissions role")
+	ErrLeadScoreRuleNotFound          = errors.New("lead score rule not found")
+	ErrLeadScoreNotFound              = errors.New("lead score not found")
+	ErrLeadScoreRuleNameRequired      = errors.New("lead score rule name required")
+	ErrLeadScoreCriteriaRequired      = errors.New("lead score criteria required")
+	ErrInvalidLeadScoreCriterion      = errors.New("invalid lead score criterion")
+	ErrInvalidLeadScorePoints         = errors.New("lead score points must be greater than or equal to zero")
+	ErrInvalidLeadScorePriority       = errors.New("lead score priority must be greater than or equal to zero")
+	ErrInvalidLeadScoreBand           = errors.New("invalid lead score band")
+	ErrChecklistItemNotFound          = errors.New("checklist item not found")
+	ErrChecklistItemKeyRequired       = errors.New("checklist item key required")
+	ErrChecklistItemNameRequired      = errors.New("checklist item document name required")
+	ErrChecklistItemOrderInvalid      = errors.New("checklist item display order must be greater than or equal to zero")
+	ErrDocumentNotFound               = errors.New("document not found")
+	ErrInvalidDocumentStatus          = errors.New("invalid document status")
+	ErrDocumentFileNameRequired       = errors.New("document file name required")
+	ErrDocumentContentTypeRequired    = errors.New("document content type required")
+	ErrDocumentSizeInvalid            = errors.New("document size must be greater than zero")
+	ErrDocumentStorageKeyRequired     = errors.New("document storage key required")
+	ErrDocumentUploaderRequired       = errors.New("document uploader required")
+	ErrDocumentReviewerRequired       = errors.New("document reviewer required")
+	ErrDocumentStatusNotReviewable    = errors.New("document status is not a review action")
+	ErrImportBatchNotFound            = errors.New("import batch not found")
+	ErrImportInvalidRowNotFound       = errors.New("import invalid row not found")
+	ErrInvalidImportSource            = errors.New("invalid import source")
+	ErrInvalidImportFileType          = errors.New("invalid import file type")
+	ErrInvalidImportTarget            = errors.New("invalid import target")
+	ErrInvalidImportStatus            = errors.New("invalid import status")
+	ErrImportFileNameRequired         = errors.New("import file name required")
+	ErrImportUploaderRequired         = errors.New("import uploader required")
+	ErrImportRowsInvalid              = errors.New("import row counts are invalid")
+	ErrImportFieldMappingRequired     = errors.New("import field mapping required")
+	ErrImportInvalidRowNumberInvalid  = errors.New("import invalid row number must be greater than zero")
+	ErrImportInvalidRowDataRequired   = errors.New("import invalid row raw data required")
+	ErrImportInvalidRowErrorRequired  = errors.New("import invalid row error required")
+	ErrSyncJobNotFound                = errors.New("sync job not found")
+	ErrSyncJobNameRequired            = errors.New("sync job name required")
+	ErrInvalidIntegrationAdapter      = errors.New("invalid integration adapter")
+	ErrSyncJobOperationRequired       = errors.New("sync job operation required")
+	ErrInvalidMaxAttempts             = errors.New("max attempts must be greater than zero")
+	ErrInvalidSyncJobTransition       = errors.New("invalid sync job status transition")
+	ErrMaxAttemptsExceeded            = errors.New("attempt count exceeds max attempts")
+	ErrInvalidSyncJobStatus           = errors.New("invalid sync job status")
+	ErrInvalidSyncEventStatus         = errors.New("invalid sync event status")
+	ErrInvalidSyncDirection           = errors.New("invalid sync direction")
+	ErrInvalidSyncEventType           = errors.New("invalid sync event type")
+	ErrSyncEventNotFound              = errors.New("sync event not found")
+	ErrSyncEventResourceRequired      = errors.New("sync event resource required")
+	ErrSyncEventPayloadHashRequired   = errors.New("sync event payload hash required")
+	ErrCustomFieldDefinitionNotFound  = errors.New("custom field definition not found")
+	ErrCustomFieldValueNotFound       = errors.New("custom field value not found")
+	ErrCustomFieldOwnerInvalid        = errors.New("custom field owner must be constituent or application")
+	ErrCustomFieldKeyRequired         = errors.New("custom field key required")
+	ErrCustomFieldLabelRequired       = errors.New("custom field label required")
+	ErrCustomFieldDataTypeInvalid     = errors.New("invalid custom field data type")
+	ErrCustomFieldOptionsRequired     = errors.New("select custom fields require options")
+	ErrCustomFieldOrderInvalid        = errors.New("custom field display order must be greater than or equal to zero")
+	ErrCustomFieldValueRequired       = errors.New("custom field value required")
 )
 
 // Storer interface declares the behavior this package needs to persist and
@@ -140,6 +171,9 @@ type Storer interface {
 	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
 	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
 	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
+	QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error)
+	QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error)
+	QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error)
 	UpsertProgram(ctx context.Context, prg Program) error
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -166,6 +200,15 @@ type Storer interface {
 	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
 	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
 	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
+	CreateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition) error
+	UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition) error
+	QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error)
+	CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error)
+	QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error)
+	SetCustomFieldValue(ctx context.Context, value CustomFieldValue) error
+	QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error)
+	CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error)
+	QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error)
 	CreateApplicationTransition(ctx context.Context, transition ApplicationTransition) error
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
@@ -179,6 +222,15 @@ type Storer interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateImportBatch(ctx context.Context, batch ImportBatch) error
+	UpdateImportBatch(ctx context.Context, batch ImportBatch) error
+	QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error)
+	CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error)
+	QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error)
+	CreateImportInvalidRows(ctx context.Context, rows []ImportInvalidRow) error
+	QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error)
+	CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error)
+	QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error)
 	CreateSyncJob(ctx context.Context, job SyncJob) error
 	UpdateSyncJob(ctx context.Context, job SyncJob) error
 	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
@@ -230,6 +282,9 @@ type ExtBusiness interface {
 	QueryConstituentByID(ctx context.Context, constituentID uuid.UUID) (Constituent, error)
 	QueryConstituentByPrimaryEmail(ctx context.Context, email string) (Constituent, error)
 	QueryConstituentByExternalSISID(ctx context.Context, externalSISID string) (Constituent, error)
+	QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error)
+	QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error)
+	QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error)
 	UpsertProgram(ctx context.Context, up UpsertProgram) (Program, error)
 	QueryPrograms(ctx context.Context, filter ProgramQueryFilter, orderBy order.By, page page.Page) ([]Program, error)
 	CountPrograms(ctx context.Context, filter ProgramQueryFilter) (int, error)
@@ -255,6 +310,15 @@ type ExtBusiness interface {
 	QueryApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter, orderBy order.By, page page.Page) ([]ApplicationFormTemplate, error)
 	CountApplicationFormTemplates(ctx context.Context, filter ApplicationFormTemplateQueryFilter) (int, error)
 	QueryApplicationFormTemplateByID(ctx context.Context, templateID uuid.UUID) (ApplicationFormTemplate, error)
+	CreateCustomFieldDefinition(ctx context.Context, nd NewCustomFieldDefinition) (CustomFieldDefinition, error)
+	UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition, nd NewCustomFieldDefinition) (CustomFieldDefinition, error)
+	QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error)
+	CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error)
+	QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error)
+	SetCustomFieldValue(ctx context.Context, nv NewCustomFieldValue) (CustomFieldValue, error)
+	QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error)
+	CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error)
+	QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error)
 	QueryApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter, orderBy order.By, page page.Page) ([]ApplicationTransition, error)
 	CountApplicationTransitions(ctx context.Context, filter ApplicationTransitionQueryFilter) (int, error)
 	CreateChecklistItem(ctx context.Context, ni NewChecklistItem) (ChecklistItem, error)
@@ -267,6 +331,15 @@ type ExtBusiness interface {
 	QueryDocuments(ctx context.Context, filter DocumentQueryFilter, orderBy order.By, page page.Page) ([]Document, error)
 	CountDocuments(ctx context.Context, filter DocumentQueryFilter) (int, error)
 	QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (Document, error)
+	CreateImportBatch(ctx context.Context, nb NewImportBatch) (ImportBatch, error)
+	UpdateImportBatch(ctx context.Context, batch ImportBatch, nb NewImportBatch) (ImportBatch, error)
+	QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error)
+	CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error)
+	QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error)
+	CreateImportInvalidRows(ctx context.Context, rows []NewImportInvalidRow) ([]ImportInvalidRow, error)
+	QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error)
+	CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error)
+	QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error)
 	CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error)
 	UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error)
 	QuerySyncJobs(ctx context.Context, filter SyncJobQueryFilter, orderBy order.By, page page.Page) ([]SyncJob, error)
@@ -780,24 +853,43 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 		return Constituent{}, err
 	}
 
+	notificationPreferences := KenyaDefaultNotificationPreferences()
+	if nc.NotificationPreferences != nil {
+		var err error
+		notificationPreferences, err = NormalizeNotificationPreferences(*nc.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+	}
+
 	now := time.Now()
 	cst := Constituent{
-		ID:              uuid.New(),
-		FirstName:       strings.TrimSpace(nc.FirstName),
-		LastName:        strings.TrimSpace(nc.LastName),
-		PreferredName:   trimStringPtr(nc.PreferredName),
-		MiddleName:      trimStringPtr(nc.MiddleName),
-		Suffix:          trimStringPtr(nc.Suffix),
-		DateOfBirth:     nc.DateOfBirth,
-		PrimaryEmail:    nc.PrimaryEmail,
-		PrimaryPhone:    strings.TrimSpace(nc.PrimaryPhone),
-		ExternalSISID:   trimStringPtr(nc.ExternalSISID),
-		LifecycleStage:  stage,
-		DuplicateStatus: status,
-		DuplicateOfID:   nc.DuplicateOfID,
-		SISSyncedAt:     nc.SISSyncedAt,
-		DateCreated:     now,
-		DateUpdated:     now,
+		ID:                          uuid.New(),
+		FirstName:                   strings.TrimSpace(nc.FirstName),
+		LastName:                    strings.TrimSpace(nc.LastName),
+		PreferredName:               trimStringPtr(nc.PreferredName),
+		MiddleName:                  trimStringPtr(nc.MiddleName),
+		Suffix:                      trimStringPtr(nc.Suffix),
+		DateOfBirth:                 nc.DateOfBirth,
+		PrimaryEmail:                nc.PrimaryEmail,
+		PrimaryPhone:                strings.TrimSpace(nc.PrimaryPhone),
+		ExternalSISID:               trimStringPtr(nc.ExternalSISID),
+		NationalID:                  trimStringPtr(nc.NationalID),
+		NationalIDVerifiedAt:        nc.NationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: trimStringPtr(nc.NationalIDVerifiedByAdapter),
+		UPI:                         trimStringPtr(nc.UPI),
+		UPIVerifiedAt:               nc.UPIVerifiedAt,
+		UPIVerifiedByAdapter:        trimStringPtr(nc.UPIVerifiedByAdapter),
+		KCSEIndexNumber:             trimStringPtr(nc.KCSEIndexNumber),
+		KCSEIndexVerifiedAt:         nc.KCSEIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  trimStringPtr(nc.KCSEIndexVerifiedByAdapter),
+		LifecycleStage:              stage,
+		DuplicateStatus:             status,
+		DuplicateOfID:               nc.DuplicateOfID,
+		NotificationPreferences:     notificationPreferences,
+		SISSyncedAt:                 nc.SISSyncedAt,
+		DateCreated:                 now,
+		DateUpdated:                 now,
 	}
 
 	match, err := b.queryTrustedExactDuplicate(ctx, cst)
@@ -823,6 +915,16 @@ func (b *Business) CreateConstituent(ctx context.Context, nc NewConstituent) (Co
 
 // UpdateConstituent modifies mutable information for a Constituent.
 func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc UpdateConstituent) (Constituent, error) {
+	if len(cst.NotificationPreferences.Priority) == 0 {
+		cst.NotificationPreferences = KenyaDefaultNotificationPreferences()
+	} else {
+		notificationPreferences, err := NormalizeNotificationPreferences(cst.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+		cst.NotificationPreferences = notificationPreferences
+	}
+
 	if uc.PreferredName != nil {
 		cst.PreferredName = trimStringPtr(uc.PreferredName)
 	}
@@ -845,6 +947,42 @@ func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc Up
 			return Constituent{}, ErrPrimaryPhoneRequired
 		}
 		cst.PrimaryPhone = phone
+	}
+
+	if uc.NationalID != nil {
+		cst.NationalID = trimStringPtr(uc.NationalID)
+	}
+
+	if uc.NationalIDVerifiedAt != nil {
+		cst.NationalIDVerifiedAt = uc.NationalIDVerifiedAt
+	}
+
+	if uc.NationalIDVerifiedByAdapter != nil {
+		cst.NationalIDVerifiedByAdapter = trimStringPtr(uc.NationalIDVerifiedByAdapter)
+	}
+
+	if uc.UPI != nil {
+		cst.UPI = trimStringPtr(uc.UPI)
+	}
+
+	if uc.UPIVerifiedAt != nil {
+		cst.UPIVerifiedAt = uc.UPIVerifiedAt
+	}
+
+	if uc.UPIVerifiedByAdapter != nil {
+		cst.UPIVerifiedByAdapter = trimStringPtr(uc.UPIVerifiedByAdapter)
+	}
+
+	if uc.KCSEIndexNumber != nil {
+		cst.KCSEIndexNumber = trimStringPtr(uc.KCSEIndexNumber)
+	}
+
+	if uc.KCSEIndexVerifiedAt != nil {
+		cst.KCSEIndexVerifiedAt = uc.KCSEIndexVerifiedAt
+	}
+
+	if uc.KCSEIndexVerifiedByAdapter != nil {
+		cst.KCSEIndexVerifiedByAdapter = trimStringPtr(uc.KCSEIndexVerifiedByAdapter)
 	}
 
 	if uc.LifecycleStage != nil {
@@ -876,6 +1014,14 @@ func (b *Business) UpdateConstituent(ctx context.Context, cst Constituent, uc Up
 
 		cst.DuplicateStatus = status
 		cst.DuplicateOfID = duplicateOfID
+	}
+
+	if uc.NotificationPreferences != nil {
+		notificationPreferences, err := NormalizeNotificationPreferences(*uc.NotificationPreferences)
+		if err != nil {
+			return Constituent{}, err
+		}
+		cst.NotificationPreferences = notificationPreferences
 	}
 
 	if uc.SISSyncedAt != nil {
@@ -931,6 +1077,36 @@ func (b *Business) QueryConstituentByExternalSISID(ctx context.Context, external
 	cst, err := b.storer.QueryConstituentByExternalSISID(ctx, externalSISID)
 	if err != nil {
 		return Constituent{}, fmt.Errorf("query constituent: externalSISID[%s]: %w", externalSISID, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByNationalID finds a Constituent by Kenyan national ID.
+func (b *Business) QueryConstituentByNationalID(ctx context.Context, nationalID string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByNationalID(ctx, nationalID)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: nationalID[%s]: %w", nationalID, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByUPI finds a Constituent by Kenyan UPI.
+func (b *Business) QueryConstituentByUPI(ctx context.Context, upi string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByUPI(ctx, upi)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: upi[%s]: %w", upi, err)
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByKCSEIndexNumber finds a Constituent by KCSE index number.
+func (b *Business) QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (Constituent, error) {
+	cst, err := b.storer.QueryConstituentByKCSEIndexNumber(ctx, kcseIndexNumber)
+	if err != nil {
+		return Constituent{}, fmt.Errorf("query constituent: kcseIndexNumber[%s]: %w", kcseIndexNumber, err)
 	}
 
 	return cst, nil
@@ -1242,6 +1418,8 @@ func (b *Business) CreateApplication(ctx context.Context, na NewApplication) (Ap
 		AcademicTermID:     na.AcademicTermID,
 		ApplicationType:    na.ApplicationType,
 		Status:             ApplicationStatusDraft,
+		KUCCPSPlacement:    normalizeKUCCPSPlacement(na.KUCCPSPlacement),
+		KCSEResult:         normalizeApplicationKCSEResult(na.KCSEResult),
 		AssignedReviewerID: na.AssignedReviewerID,
 		DateCreated:        now,
 		DateUpdated:        now,
@@ -1389,6 +1567,161 @@ func (b *Business) QueryApplicationFormTemplateByID(ctx context.Context, templat
 	}
 
 	return template, nil
+}
+
+// CreateCustomFieldDefinition adds a custom field definition for constituents or applications only.
+func (b *Business) CreateCustomFieldDefinition(ctx context.Context, nd NewCustomFieldDefinition) (CustomFieldDefinition, error) {
+	if err := validateNewCustomFieldDefinition(nd); err != nil {
+		return CustomFieldDefinition{}, err
+	}
+
+	now := time.Now()
+	definition := CustomFieldDefinition{
+		ID:           uuid.New(),
+		Owner:        nd.Owner,
+		FieldKey:     strings.TrimSpace(nd.FieldKey),
+		Label:        strings.TrimSpace(nd.Label),
+		Description:  trimStringPtr(nd.Description),
+		DataType:     nd.DataType,
+		Required:     nd.Required,
+		Options:      normalizeCustomFieldOptions(nd.Options),
+		Validation:   trimStringPtr(nd.Validation),
+		Searchable:   nd.Searchable,
+		Reportable:   nd.Reportable,
+		Importable:   nd.Importable,
+		Exportable:   nd.Exportable,
+		DisplayOrder: nd.DisplayOrder,
+		Active:       nd.Active,
+		DateCreated:  now,
+		DateUpdated:  now,
+	}
+
+	if err := b.storer.CreateCustomFieldDefinition(ctx, definition); err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("create custom field definition: %w", err)
+	}
+
+	return definition, nil
+}
+
+// UpdateCustomFieldDefinition replaces mutable custom field definition metadata.
+func (b *Business) UpdateCustomFieldDefinition(ctx context.Context, definition CustomFieldDefinition, nd NewCustomFieldDefinition) (CustomFieldDefinition, error) {
+	if err := validateNewCustomFieldDefinition(nd); err != nil {
+		return CustomFieldDefinition{}, err
+	}
+
+	definition.Owner = nd.Owner
+	definition.FieldKey = strings.TrimSpace(nd.FieldKey)
+	definition.Label = strings.TrimSpace(nd.Label)
+	definition.Description = trimStringPtr(nd.Description)
+	definition.DataType = nd.DataType
+	definition.Required = nd.Required
+	definition.Options = normalizeCustomFieldOptions(nd.Options)
+	definition.Validation = trimStringPtr(nd.Validation)
+	definition.Searchable = nd.Searchable
+	definition.Reportable = nd.Reportable
+	definition.Importable = nd.Importable
+	definition.Exportable = nd.Exportable
+	definition.DisplayOrder = nd.DisplayOrder
+	definition.Active = nd.Active
+	definition.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateCustomFieldDefinition(ctx, definition); err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("update custom field definition: %w", err)
+	}
+
+	return definition, nil
+}
+
+// QueryCustomFieldDefinitions retrieves custom field definitions for settings, search, reporting, import, and export seams.
+func (b *Business) QueryCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldDefinition, error) {
+	definitions, err := b.storer.QueryCustomFieldDefinitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query custom field definitions: %w", err)
+	}
+
+	return definitions, nil
+}
+
+// CountCustomFieldDefinitions returns the total number of custom field definitions.
+func (b *Business) CountCustomFieldDefinitions(ctx context.Context, filter CustomFieldDefinitionQueryFilter) (int, error) {
+	return b.storer.CountCustomFieldDefinitions(ctx, filter)
+}
+
+// QueryCustomFieldDefinitionByID finds a custom field definition by ID.
+func (b *Business) QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error) {
+	definition, err := b.storer.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return CustomFieldDefinition{}, fmt.Errorf("query custom field definition: definitionID[%s]: %w", definitionID, err)
+	}
+
+	return definition, nil
+}
+
+// SetCustomFieldValue creates or replaces one custom field value for a constituent or application.
+func (b *Business) SetCustomFieldValue(ctx context.Context, nv NewCustomFieldValue) (CustomFieldValue, error) {
+	if err := validateNewCustomFieldValue(nv); err != nil {
+		return CustomFieldValue{}, err
+	}
+
+	definition, err := b.QueryCustomFieldDefinitionByID(ctx, nv.DefinitionID)
+	if err != nil {
+		return CustomFieldValue{}, err
+	}
+	if definition.Owner != nv.Owner {
+		return CustomFieldValue{}, ErrCustomFieldOwnerInvalid
+	}
+
+	if nv.Owner == CustomFieldOwnerConstituent {
+		if _, err := b.QueryConstituentByID(ctx, nv.OwnerID); err != nil {
+			return CustomFieldValue{}, err
+		}
+	} else {
+		if _, err := b.QueryApplicationByID(ctx, nv.OwnerID); err != nil {
+			return CustomFieldValue{}, err
+		}
+	}
+
+	now := time.Now()
+	value := CustomFieldValue{
+		ID:           uuid.New(),
+		DefinitionID: nv.DefinitionID,
+		Owner:        nv.Owner,
+		OwnerID:      nv.OwnerID,
+		Value:        strings.TrimSpace(nv.Value),
+		DateCreated:  now,
+		DateUpdated:  now,
+	}
+
+	if err := b.storer.SetCustomFieldValue(ctx, value); err != nil {
+		return CustomFieldValue{}, fmt.Errorf("set custom field value: %w", err)
+	}
+
+	return value, nil
+}
+
+// QueryCustomFieldValues retrieves custom field values by definition or owner.
+func (b *Business) QueryCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]CustomFieldValue, error) {
+	values, err := b.storer.QueryCustomFieldValues(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query custom field values: %w", err)
+	}
+
+	return values, nil
+}
+
+// CountCustomFieldValues returns the total number of custom field values.
+func (b *Business) CountCustomFieldValues(ctx context.Context, filter CustomFieldValueQueryFilter) (int, error) {
+	return b.storer.CountCustomFieldValues(ctx, filter)
+}
+
+// QueryCustomFieldValueByID finds a custom field value by ID.
+func (b *Business) QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (CustomFieldValue, error) {
+	value, err := b.storer.QueryCustomFieldValueByID(ctx, valueID)
+	if err != nil {
+		return CustomFieldValue{}, fmt.Errorf("query custom field value: valueID[%s]: %w", valueID, err)
+	}
+
+	return value, nil
 }
 
 // TransitionApplicationStatus changes an Application status and records immutable transition history.
@@ -1632,19 +1965,175 @@ func (b *Business) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) 
 	return document, nil
 }
 
+// CreateImportBatch records an admissions import preview or commit batch.
+func (b *Business) CreateImportBatch(ctx context.Context, nb NewImportBatch) (ImportBatch, error) {
+	if err := validateNewImportBatch(nb); err != nil {
+		return ImportBatch{}, err
+	}
+
+	now := time.Now()
+	batch := ImportBatch{
+		ID:                uuid.New(),
+		Source:            nb.Source,
+		FileType:          nb.FileType,
+		Target:            nb.Target,
+		Status:            nb.Status,
+		FileName:          strings.TrimSpace(nb.FileName),
+		StorageKey:        trimStringPtr(nb.StorageKey),
+		UploadedByID:      nb.UploadedByID,
+		TotalRows:         nb.TotalRows,
+		ValidRows:         nb.ValidRows,
+		InvalidRows:       nb.InvalidRows,
+		DuplicateRows:     nb.DuplicateRows,
+		FieldMapping:      normalizeImportFieldMapping(nb.FieldMapping),
+		InvalidReportKey:  trimStringPtr(nb.InvalidReportKey),
+		ValidationSummary: trimStringPtr(nb.ValidationSummary),
+		DateCreated:       now,
+		DateUpdated:       now,
+	}
+	if batch.Status == ImportBatchStatusCompleted {
+		batch.CommittedAt = &now
+	}
+
+	if err := b.storer.CreateImportBatch(ctx, batch); err != nil {
+		return ImportBatch{}, fmt.Errorf("create import batch: %w", err)
+	}
+
+	return batch, nil
+}
+
+// UpdateImportBatch replaces mutable import batch metadata and processing totals.
+func (b *Business) UpdateImportBatch(ctx context.Context, batch ImportBatch, nb NewImportBatch) (ImportBatch, error) {
+	if err := validateNewImportBatch(nb); err != nil {
+		return ImportBatch{}, err
+	}
+
+	now := time.Now()
+	batch.Source = nb.Source
+	batch.FileType = nb.FileType
+	batch.Target = nb.Target
+	batch.Status = nb.Status
+	batch.FileName = strings.TrimSpace(nb.FileName)
+	batch.StorageKey = trimStringPtr(nb.StorageKey)
+	batch.UploadedByID = nb.UploadedByID
+	batch.TotalRows = nb.TotalRows
+	batch.ValidRows = nb.ValidRows
+	batch.InvalidRows = nb.InvalidRows
+	batch.DuplicateRows = nb.DuplicateRows
+	batch.FieldMapping = normalizeImportFieldMapping(nb.FieldMapping)
+	batch.InvalidReportKey = trimStringPtr(nb.InvalidReportKey)
+	batch.ValidationSummary = trimStringPtr(nb.ValidationSummary)
+	batch.DateUpdated = now
+	if batch.Status == ImportBatchStatusCompleted && batch.CommittedAt == nil {
+		batch.CommittedAt = &now
+	}
+
+	if err := b.storer.UpdateImportBatch(ctx, batch); err != nil {
+		return ImportBatch{}, fmt.Errorf("update import batch: %w", err)
+	}
+
+	return batch, nil
+}
+
+// QueryImportBatches retrieves admissions import batch records.
+func (b *Business) QueryImportBatches(ctx context.Context, filter ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]ImportBatch, error) {
+	batches, err := b.storer.QueryImportBatches(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query import batches: %w", err)
+	}
+
+	return batches, nil
+}
+
+// CountImportBatches returns the total number of admissions import batches.
+func (b *Business) CountImportBatches(ctx context.Context, filter ImportBatchQueryFilter) (int, error) {
+	return b.storer.CountImportBatches(ctx, filter)
+}
+
+// QueryImportBatchByID finds an admissions import batch by ID.
+func (b *Business) QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (ImportBatch, error) {
+	batch, err := b.storer.QueryImportBatchByID(ctx, batchID)
+	if err != nil {
+		return ImportBatch{}, fmt.Errorf("query import batch: batchID[%s]: %w", batchID, err)
+	}
+
+	return batch, nil
+}
+
+// CreateImportInvalidRows records invalid import rows for correction downloads.
+func (b *Business) CreateImportInvalidRows(ctx context.Context, rows []NewImportInvalidRow) ([]ImportInvalidRow, error) {
+	if len(rows) == 0 {
+		return []ImportInvalidRow{}, nil
+	}
+
+	now := time.Now()
+	invalidRows := make([]ImportInvalidRow, len(rows))
+	for i, row := range rows {
+		if err := validateNewImportInvalidRow(row); err != nil {
+			return nil, err
+		}
+
+		invalidRows[i] = ImportInvalidRow{
+			ID:          uuid.New(),
+			BatchID:     row.BatchID,
+			RowNumber:   row.RowNumber,
+			FieldName:   trimStringPtr(row.FieldName),
+			RawData:     normalizeImportFieldMapping(row.RawData),
+			ErrorCode:   strings.TrimSpace(row.ErrorCode),
+			ErrorDetail: strings.TrimSpace(row.ErrorDetail),
+			DateCreated: now,
+		}
+	}
+
+	if err := b.storer.CreateImportInvalidRows(ctx, invalidRows); err != nil {
+		return nil, fmt.Errorf("create import invalid rows: %w", err)
+	}
+
+	return invalidRows, nil
+}
+
+// QueryImportInvalidRows retrieves invalid rows for an admissions import batch.
+func (b *Business) QueryImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]ImportInvalidRow, error) {
+	rows, err := b.storer.QueryImportInvalidRows(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query import invalid rows: %w", err)
+	}
+
+	return rows, nil
+}
+
+// CountImportInvalidRows returns the total number of invalid rows for import reports.
+func (b *Business) CountImportInvalidRows(ctx context.Context, filter ImportInvalidRowQueryFilter) (int, error) {
+	return b.storer.CountImportInvalidRows(ctx, filter)
+}
+
+// QueryImportInvalidRowByID finds an import invalid row by ID.
+func (b *Business) QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (ImportInvalidRow, error) {
+	row, err := b.storer.QueryImportInvalidRowByID(ctx, rowID)
+	if err != nil {
+		return ImportInvalidRow{}, fmt.Errorf("query import invalid row: rowID[%s]: %w", rowID, err)
+	}
+
+	return row, nil
+}
+
 // CreateSyncJob schedules or starts a SIS batch reconciliation run.
 func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, error) {
 	if err := validateNewSyncJob(nj); err != nil {
 		return SyncJob{}, err
 	}
+	maxAttempts := defaultMaxAttempts(nj.MaxAttempts)
 
 	now := time.Now()
 	job := SyncJob{
 		ID:          uuid.New(),
 		Name:        strings.TrimSpace(nj.Name),
+		Adapter:     nj.Adapter,
+		Operation:   strings.TrimSpace(nj.Operation),
 		Status:      nj.Status,
 		Direction:   nj.Direction,
 		StartedAt:   nj.StartedAt,
+		MaxAttempts: maxAttempts,
 		CreatedByID: nj.CreatedByID,
 		DateCreated: now,
 		DateUpdated: now,
@@ -1659,7 +2148,7 @@ func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, e
 
 // UpdateSyncJob records the outcome and retry state for a SIS batch reconciliation run.
 func (b *Business) UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error) {
-	if err := validateSyncJobStatus(uj.Status); err != nil {
+	if err := validateSyncJobUpdate(job, uj); err != nil {
 		return SyncJob{}, err
 	}
 
@@ -1668,6 +2157,13 @@ func (b *Business) UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSync
 	job.RecordsPulled = uj.RecordsPulled
 	job.RecordsPushed = uj.RecordsPushed
 	job.EventsRequeued = uj.EventsRequeued
+	job.AttemptCount = uj.AttemptCount
+	job.NextRetryAt = uj.NextRetryAt
+	job.ExternalRef = trimStringPtr(uj.ExternalRef)
+	job.ExternalReceiptID = trimStringPtr(uj.ExternalReceiptID)
+	job.ErrorCode = trimStringPtr(uj.ErrorCode)
+	job.ErrorDetail = trimStringPtr(uj.ErrorDetail)
+	job.LastErrorAt = uj.LastErrorAt
 	job.FailureReason = trimStringPtr(uj.FailureReason)
 	job.Retryable = uj.Retryable
 	job.DateUpdated = time.Now()
@@ -1709,20 +2205,26 @@ func (b *Business) EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncE
 	if err := validateNewSyncEvent(ne); err != nil {
 		return SyncEvent{}, err
 	}
+	maxAttempts := defaultMaxAttempts(ne.MaxAttempts)
 
 	now := time.Now()
 	event := SyncEvent{
-		ID:           uuid.New(),
-		JobID:        ne.JobID,
-		EventType:    ne.EventType,
-		Status:       SyncEventStatusQueued,
-		Direction:    ne.Direction,
-		ResourceType: strings.TrimSpace(ne.ResourceType),
-		ResourceID:   ne.ResourceID,
-		PayloadHash:  strings.TrimSpace(ne.PayloadHash),
-		AuditMessage: strings.TrimSpace(ne.AuditMessage),
-		DateCreated:  now,
-		DateUpdated:  now,
+		ID:                uuid.New(),
+		JobID:             ne.JobID,
+		Adapter:           ne.Adapter,
+		Operation:         strings.TrimSpace(ne.Operation),
+		EventType:         ne.EventType,
+		Status:            SyncEventStatusQueued,
+		Direction:         ne.Direction,
+		ResourceType:      strings.TrimSpace(ne.ResourceType),
+		ResourceID:        ne.ResourceID,
+		ExternalRef:       trimStringPtr(ne.ExternalRef),
+		ExternalReceiptID: trimStringPtr(ne.ExternalReceiptID),
+		PayloadHash:       strings.TrimSpace(ne.PayloadHash),
+		MaxAttempts:       maxAttempts,
+		AuditMessage:      strings.TrimSpace(ne.AuditMessage),
+		DateCreated:       now,
+		DateUpdated:       now,
 	}
 
 	if err := b.storer.CreateSyncEvent(ctx, event); err != nil {
@@ -1734,13 +2236,18 @@ func (b *Business) EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncE
 
 // UpdateSyncEvent records queue processing status, retry scheduling, and failure visibility.
 func (b *Business) UpdateSyncEvent(ctx context.Context, event SyncEvent, ue UpdateSyncEvent) (SyncEvent, error) {
-	if err := validateSyncEventStatus(ue.Status); err != nil {
+	if err := validateSyncEventUpdate(event, ue); err != nil {
 		return SyncEvent{}, err
 	}
 
 	event.Status = ue.Status
 	event.Attempts = ue.Attempts
 	event.NextRetryAt = ue.NextRetryAt
+	event.ExternalRef = trimStringPtr(ue.ExternalRef)
+	event.ExternalReceiptID = trimStringPtr(ue.ExternalReceiptID)
+	event.ErrorCode = trimStringPtr(ue.ErrorCode)
+	event.ErrorDetail = trimStringPtr(ue.ErrorDetail)
+	event.LastErrorAt = ue.LastErrorAt
 	event.FailureReason = trimStringPtr(ue.FailureReason)
 	event.AuditMessage = strings.TrimSpace(ue.AuditMessage)
 	event.DateUpdated = time.Now()
@@ -1903,6 +2410,78 @@ func validateApplicationFormField(field ApplicationFormField) error {
 	return nil
 }
 
+func validateNewCustomFieldDefinition(nd NewCustomFieldDefinition) error {
+	if err := validateCustomFieldOwner(nd.Owner); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nd.FieldKey) == "" {
+		return ErrCustomFieldKeyRequired
+	}
+
+	if strings.TrimSpace(nd.Label) == "" {
+		return ErrCustomFieldLabelRequired
+	}
+
+	if err := validateCustomFieldDataType(nd.DataType); err != nil {
+		return err
+	}
+
+	if nd.DataType == CustomFieldDataTypeSelect && len(normalizeCustomFieldOptions(nd.Options)) == 0 {
+		return ErrCustomFieldOptionsRequired
+	}
+
+	if nd.DisplayOrder < 0 {
+		return ErrCustomFieldOrderInvalid
+	}
+
+	return nil
+}
+
+func validateNewCustomFieldValue(nv NewCustomFieldValue) error {
+	if nv.DefinitionID == uuid.Nil {
+		return ErrCustomFieldDefinitionNotFound
+	}
+
+	if err := validateCustomFieldOwner(nv.Owner); err != nil {
+		return err
+	}
+
+	if nv.OwnerID == uuid.Nil {
+		return ErrCustomFieldOwnerInvalid
+	}
+
+	if strings.TrimSpace(nv.Value) == "" {
+		return ErrCustomFieldValueRequired
+	}
+
+	return nil
+}
+
+func validateCustomFieldOwner(owner CustomFieldOwner) error {
+	switch owner {
+	case CustomFieldOwnerConstituent,
+		CustomFieldOwnerApplication:
+		return nil
+	default:
+		return ErrCustomFieldOwnerInvalid
+	}
+}
+
+func validateCustomFieldDataType(dataType CustomFieldDataType) error {
+	switch dataType {
+	case CustomFieldDataTypeText,
+		CustomFieldDataTypeTextarea,
+		CustomFieldDataTypeNumber,
+		CustomFieldDataTypeDate,
+		CustomFieldDataTypeSelect,
+		CustomFieldDataTypeBoolean:
+		return nil
+	default:
+		return ErrCustomFieldDataTypeInvalid
+	}
+}
+
 func validateChecklistTemplateItem(item ApplicationChecklistTemplateItem) error {
 	if strings.TrimSpace(item.ItemKey) == "" || strings.TrimSpace(item.DocumentName) == "" || item.DisplayOrder < 0 {
 		return ErrFormTemplateChecklistInvalid
@@ -1979,6 +2558,15 @@ func validateNewSyncJob(nj NewSyncJob) error {
 	if strings.TrimSpace(nj.Name) == "" {
 		return ErrSyncJobNameRequired
 	}
+	if !nj.Adapter.Valid() {
+		return ErrInvalidIntegrationAdapter
+	}
+	if strings.TrimSpace(nj.Operation) == "" {
+		return ErrSyncJobOperationRequired
+	}
+	if nj.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
+	}
 
 	if err := validateSyncDirection(nj.Direction); err != nil {
 		return err
@@ -1988,6 +2576,16 @@ func validateNewSyncJob(nj NewSyncJob) error {
 }
 
 func validateNewSyncEvent(ne NewSyncEvent) error {
+	if !ne.Adapter.Valid() {
+		return ErrInvalidIntegrationAdapter
+	}
+	if strings.TrimSpace(ne.Operation) == "" {
+		return ErrSyncJobOperationRequired
+	}
+	if ne.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
+	}
+
 	if err := validateSyncEventType(ne.EventType); err != nil {
 		return err
 	}
@@ -2005,6 +2603,60 @@ func validateNewSyncEvent(ne NewSyncEvent) error {
 	}
 
 	return nil
+}
+
+func defaultMaxAttempts(maxAttempts int) int {
+	if maxAttempts == 0 {
+		return 3
+	}
+
+	return maxAttempts
+}
+
+func validateSyncJobUpdate(job SyncJob, uj UpdateSyncJob) error {
+	if err := validateSyncJobStatus(uj.Status); err != nil {
+		return err
+	}
+	if !isAllowedSyncJobTransition(job.Status, uj.Status) {
+		return ErrInvalidSyncJobTransition
+	}
+	if uj.AttemptCount < 0 || uj.AttemptCount > job.MaxAttempts {
+		return ErrMaxAttemptsExceeded
+	}
+
+	return nil
+}
+
+func validateSyncEventUpdate(event SyncEvent, ue UpdateSyncEvent) error {
+	if err := validateSyncEventStatus(ue.Status); err != nil {
+		return err
+	}
+	if ue.Attempts < 0 || ue.Attempts > event.MaxAttempts {
+		return ErrMaxAttemptsExceeded
+	}
+
+	return nil
+}
+
+func isAllowedSyncJobTransition(from SyncJobStatus, to SyncJobStatus) bool {
+	if from == to {
+		return true
+	}
+
+	switch from {
+	case SyncJobStatusQueued:
+		return to == SyncJobStatusRunning || to == SyncJobStatusFailed || to == SyncJobStatusRetryReady
+	case SyncJobStatusRunning:
+		return to == SyncJobStatusSucceeded || to == SyncJobStatusFailed || to == SyncJobStatusRetryReady
+	case SyncJobStatusFailed:
+		return to == SyncJobStatusRetryReady
+	case SyncJobStatusRetryReady:
+		return to == SyncJobStatusRunning || to == SyncJobStatusFailed
+	case SyncJobStatusSucceeded:
+		return false
+	default:
+		return false
+	}
 }
 
 func validateSyncJobStatus(status SyncJobStatus) error {
@@ -2052,7 +2704,18 @@ func validateSyncEventType(eventType SyncEventType) error {
 		SyncEventTypeApplicationSubmission,
 		SyncEventTypeApplicationDecision,
 		SyncEventTypeDocumentStatus,
-		SyncEventTypeEnrollmentIntent:
+		SyncEventTypeEnrollmentIntent,
+		SyncEventTypeKUCCPSPlacementPull,
+		SyncEventTypeKUCCPSPlacementConfirm,
+		SyncEventTypeKNECResultVerification,
+		SyncEventTypeIPRSIdentityVerify,
+		SyncEventTypeMPesaSTKPush,
+		SyncEventTypeMPesaC2BCallback,
+		SyncEventTypeMPesaTransactionQuery,
+		SyncEventTypeSMSOutbound,
+		SyncEventTypeSMSDeliveryReport,
+		SyncEventTypeWhatsAppMessageSend,
+		SyncEventTypeWhatsAppWebhookInbound:
 		return nil
 	default:
 		return ErrInvalidSyncEventType
@@ -2084,6 +2747,26 @@ func normalizeChecklistTemplateItems(items []ApplicationChecklistTemplateItem) [
 			Required:     item.Required,
 			DisplayOrder: item.DisplayOrder,
 		}
+	}
+
+	return normalized
+}
+
+func normalizeCustomFieldOptions(options []string) []string {
+	normalized := make([]string, 0, len(options))
+	seen := make(map[string]struct{}, len(options))
+
+	for _, option := range options {
+		trimmed := strings.TrimSpace(option)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := seen[trimmed]; exists {
+			continue
+		}
+
+		seen[trimmed] = struct{}{}
+		normalized = append(normalized, trimmed)
 	}
 
 	return normalized
@@ -2197,6 +2880,107 @@ func AdmissionsPermissionsToStrings(permissions []AdmissionsPermission) []string
 	}
 
 	return values
+}
+
+// KenyaDefaultNotificationPriority returns the localized channel priority order.
+func KenyaDefaultNotificationPriority() []NotificationChannel {
+	return []NotificationChannel{
+		NotificationChannelSMS,
+		NotificationChannelWhatsApp,
+		NotificationChannelEmail,
+	}
+}
+
+// KenyaDefaultNotificationPreferences returns the safe default for Kenya admissions communications.
+func KenyaDefaultNotificationPreferences() NotificationPreferences {
+	return NotificationPreferences{
+		SMSOptIn:      true,
+		WhatsAppOptIn: false,
+		EmailOptIn:    true,
+		Priority:      KenyaDefaultNotificationPriority(),
+	}
+}
+
+// ParseNotificationChannels converts persisted channel strings into notification channels.
+func ParseNotificationChannels(values []string) ([]NotificationChannel, error) {
+	channels := make([]NotificationChannel, len(values))
+	for i, value := range values {
+		channel := NotificationChannel(value)
+		if err := validateNotificationChannel(channel); err != nil {
+			return nil, err
+		}
+		channels[i] = channel
+	}
+
+	return channels, nil
+}
+
+// NotificationChannelsToStrings converts notification channels into strings for storage and clients.
+func NotificationChannelsToStrings(channels []NotificationChannel) []string {
+	values := make([]string, len(channels))
+	for i, channel := range channels {
+		values[i] = channel.String()
+	}
+
+	return values
+}
+
+// NormalizeNotificationPreferences validates and defaults notification preferences.
+func NormalizeNotificationPreferences(preferences NotificationPreferences) (NotificationPreferences, error) {
+	if len(preferences.Priority) == 0 {
+		preferences.Priority = KenyaDefaultNotificationPriority()
+	}
+
+	if err := validateNotificationPriority(preferences.Priority); err != nil {
+		return NotificationPreferences{}, err
+	}
+
+	priority := make([]NotificationChannel, len(preferences.Priority))
+	copy(priority, preferences.Priority)
+	preferences.Priority = priority
+
+	return preferences, nil
+}
+
+func validateNotificationChannel(channel NotificationChannel) error {
+	switch channel {
+	case NotificationChannelSMS,
+		NotificationChannelWhatsApp,
+		NotificationChannelEmail:
+		return nil
+	default:
+		return ErrInvalidNotificationChannel
+	}
+}
+
+func validateNotificationPriority(priority []NotificationChannel) error {
+	if len(priority) == 0 {
+		return ErrNotificationPriorityRequired
+	}
+
+	if len(priority) != len(KenyaDefaultNotificationPriority()) {
+		return ErrNotificationPriorityIncomplete
+	}
+
+	seen := make(map[NotificationChannel]struct{}, len(priority))
+	for _, channel := range priority {
+		if err := validateNotificationChannel(channel); err != nil {
+			return err
+		}
+
+		if _, exists := seen[channel]; exists {
+			return ErrNotificationPriorityDuplicate
+		}
+		seen[channel] = struct{}{}
+	}
+
+	for _, channel := range KenyaDefaultNotificationPriority() {
+		if _, exists := seen[channel]; !exists {
+			return ErrNotificationPriorityIncomplete
+		}
+	}
+
+	return nil
 }
 
 func validateNewLeadScoreRule(nr NewLeadScoreRule) error {
@@ -2493,13 +3277,68 @@ func validateNewApplication(na NewApplication) error {
 
 func validateApplicationType(applicationType ApplicationType) error {
 	switch applicationType {
-	case ApplicationTypeFreshman,
-		ApplicationTypeTransfer,
-		ApplicationTypeGraduate:
+	case ApplicationTypeKUCCPSPlacement,
+		ApplicationTypeSelfSponsoredUndergrad,
+		ApplicationTypeDiploma,
+		ApplicationTypeMasters,
+		ApplicationTypePhD,
+		ApplicationTypeTVET,
+		ApplicationTypeBridging,
+		ApplicationTypeCertificate:
 		return nil
 	default:
 		return ErrInvalidApplicationType
 	}
+}
+
+func normalizeKUCCPSPlacement(placement *KUCCPSPlacement) *KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	normalized := *placement
+	normalized.PlacementID = strings.TrimSpace(normalized.PlacementID)
+	normalized.AdmissionNumber = trimStringPtr(normalized.AdmissionNumber)
+	normalized.InstitutionCode = strings.ToUpper(strings.TrimSpace(normalized.InstitutionCode))
+	normalized.ProgrammeCode = strings.ToUpper(strings.TrimSpace(normalized.ProgrammeCode))
+	normalized.ProgrammeName = strings.TrimSpace(normalized.ProgrammeName)
+	normalized.ClusterCode = upperTrimStringPtr(normalized.ClusterCode)
+	normalized.WeightedPointsNote = trimStringPtr(normalized.WeightedPointsNote)
+
+	return &normalized
+}
+
+func normalizeApplicationKCSEResult(result *ApplicationKCSEResult) *ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	normalized := *result
+	normalized.IndexNumber = strings.TrimSpace(normalized.IndexNumber)
+	normalized.MeanGrade = strings.ToUpper(strings.TrimSpace(normalized.MeanGrade))
+	normalized.Subjects = make([]ApplicationKCSESubject, len(result.Subjects))
+	for i, subject := range result.Subjects {
+		normalized.Subjects[i] = ApplicationKCSESubject{
+			SubjectCode: strings.ToUpper(strings.TrimSpace(subject.SubjectCode)),
+			Grade:       strings.ToUpper(strings.TrimSpace(subject.Grade)),
+			Points:      subject.Points,
+		}
+	}
+
+	return &normalized
+}
+
+func upperTrimStringPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	trimmed := strings.ToUpper(strings.TrimSpace(*value))
+	if trimmed == "" {
+		return nil
+	}
+
+	return &trimmed
 }
 
 func validateApplicationStatus(status ApplicationStatus) error {
@@ -2546,6 +3385,117 @@ func isReviewDocumentStatus(status DocumentStatus) bool {
 	default:
 		return false
 	}
+}
+
+func validateNewImportBatch(nb NewImportBatch) error {
+	if err := validateImportSource(nb.Source); err != nil {
+		return err
+	}
+
+	if err := validateImportFileType(nb.FileType); err != nil {
+		return err
+	}
+
+	if err := validateImportTarget(nb.Target); err != nil {
+		return err
+	}
+
+	if err := validateImportBatchStatus(nb.Status); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(nb.FileName) == "" {
+		return ErrImportFileNameRequired
+	}
+
+	if nb.UploadedByID == uuid.Nil {
+		return ErrImportUploaderRequired
+	}
+
+	if nb.TotalRows < 0 || nb.ValidRows < 0 || nb.InvalidRows < 0 || nb.DuplicateRows < 0 || nb.ValidRows+nb.InvalidRows > nb.TotalRows {
+		return ErrImportRowsInvalid
+	}
+
+	if len(normalizeImportFieldMapping(nb.FieldMapping)) == 0 {
+		return ErrImportFieldMappingRequired
+	}
+
+	return nil
+}
+
+func validateImportSource(source ImportSource) error {
+	switch source {
+	case ImportSourceManualUpload, ImportSourceSISExport:
+		return nil
+	default:
+		return ErrInvalidImportSource
+	}
+}
+
+func validateImportFileType(fileType ImportFileType) error {
+	switch fileType {
+	case ImportFileTypeCSV, ImportFileTypeXLSX:
+		return nil
+	default:
+		return ErrInvalidImportFileType
+	}
+}
+
+func validateImportTarget(target ImportTarget) error {
+	switch target {
+	case ImportTargetConstituents, ImportTargetApplications:
+		return nil
+	default:
+		return ErrInvalidImportTarget
+	}
+}
+
+func validateImportBatchStatus(status ImportBatchStatus) error {
+	switch status {
+	case ImportBatchStatusPreviewed,
+		ImportBatchStatusValidationFailed,
+		ImportBatchStatusQueued,
+		ImportBatchStatusProcessing,
+		ImportBatchStatusCompleted,
+		ImportBatchStatusFailed:
+		return nil
+	default:
+		return ErrInvalidImportStatus
+	}
+}
+
+func validateNewImportInvalidRow(row NewImportInvalidRow) error {
+	if row.BatchID == uuid.Nil {
+		return ErrImportBatchNotFound
+	}
+
+	if row.RowNumber <= 0 {
+		return ErrImportInvalidRowNumberInvalid
+	}
+
+	if len(normalizeImportFieldMapping(row.RawData)) == 0 {
+		return ErrImportInvalidRowDataRequired
+	}
+
+	if strings.TrimSpace(row.ErrorCode) == "" || strings.TrimSpace(row.ErrorDetail) == "" {
+		return ErrImportInvalidRowErrorRequired
+	}
+
+	return nil
+}
+
+func normalizeImportFieldMapping(mapping map[string]string) map[string]string {
+	normalized := make(map[string]string, len(mapping))
+	for key, value := range mapping {
+		trimmedKey := strings.TrimSpace(key)
+		trimmedValue := strings.TrimSpace(value)
+		if trimmedKey == "" || trimmedValue == "" {
+			continue
+		}
+		normalized[trimmedKey] = trimmedValue
+	}
+
+	return normalized
 }
 
 func isApplicationActive(status ApplicationStatus) bool {

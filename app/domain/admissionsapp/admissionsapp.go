@@ -931,6 +931,153 @@ func (a *app) queryApplicationFormTemplateByID(ctx context.Context, r *http.Requ
 	return toAppApplicationFormTemplate(template)
 }
 
+func (a *app) createCustomFieldDefinition(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldDefinition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	definition, err := a.admissionsBus.CreateCustomFieldDefinition(ctx, toBusNewCustomFieldDefinition(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(definition)
+}
+
+func (a *app) updateCustomFieldDefinition(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldDefinition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	definitionID, err := uuid.Parse(web.Param(r, "custom_field_definition_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_definition_id", err)
+	}
+
+	definition, err := a.admissionsBus.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definition: %s", err)
+	}
+
+	updated, err := a.admissionsBus.UpdateCustomFieldDefinition(ctx, definition, toBusNewCustomFieldDefinition(app))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(updated)
+}
+
+func (a *app) queryCustomFieldDefinitions(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCustomFieldDefinitionQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCustomFieldDefinitionFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(customFieldDefinitionOrderByFields, qp.OrderBy, admissionsbus.DefaultCustomFieldDefinitionOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	definitions, err := a.admissionsBus.QueryCustomFieldDefinitions(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definitions: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCustomFieldDefinitions(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count custom field definitions: %s", err)
+	}
+
+	return query.NewResult(toAppCustomFieldDefinitions(definitions), total, page)
+}
+
+func (a *app) queryCustomFieldDefinitionByID(ctx context.Context, r *http.Request) web.Encoder {
+	definitionID, err := uuid.Parse(web.Param(r, "custom_field_definition_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_definition_id", err)
+	}
+
+	definition, err := a.admissionsBus.QueryCustomFieldDefinitionByID(ctx, definitionID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field definition: %s", err)
+	}
+
+	return toAppCustomFieldDefinition(definition)
+}
+
+func (a *app) setCustomFieldValue(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldValue
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nv, err := toBusNewCustomFieldValue(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	value, err := a.admissionsBus.SetCustomFieldValue(ctx, nv)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "set custom field value: %s", err)
+	}
+
+	return toAppCustomFieldValue(value)
+}
+
+func (a *app) queryCustomFieldValues(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCustomFieldValueQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCustomFieldValueFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(customFieldValueOrderByFields, qp.OrderBy, admissionsbus.DefaultCustomFieldValueOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	values, err := a.admissionsBus.QueryCustomFieldValues(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field values: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCustomFieldValues(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count custom field values: %s", err)
+	}
+
+	return query.NewResult(toAppCustomFieldValues(values), total, page)
+}
+
+func (a *app) queryCustomFieldValueByID(ctx context.Context, r *http.Request) web.Encoder {
+	valueID, err := uuid.Parse(web.Param(r, "custom_field_value_id"))
+	if err != nil {
+		return errs.NewFieldErrors("custom_field_value_id", err)
+	}
+
+	value, err := a.admissionsBus.QueryCustomFieldValueByID(ctx, valueID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query custom field value: %s", err)
+	}
+
+	return toAppCustomFieldValue(value)
+}
+
 func (a *app) transitionApplicationStatus(ctx context.Context, r *http.Request) web.Encoder {
 	var app NewApplicationTransition
 	if err := web.Decode(r, &app); err != nil {
@@ -1252,6 +1399,159 @@ func (a *app) downloadDocument(ctx context.Context, r *http.Request) web.Encoder
 	return toAppDocument(document)
 }
 
+func (a *app) createImportBatch(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewImportBatch
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	a, err := a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	nb := toBusNewImportBatch(app, mid.GetSubjectID(ctx))
+	batch, err := a.admissionsBus.CreateImportBatch(ctx, nb)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create import batch: %s", err)
+	}
+
+	if err := a.auditImportBatch(ctx, batch, nb.UploadedByID, "import_batch_create", "admissions import batch recorded"); err != nil {
+		return err
+	}
+
+	return toAppImportBatch(batch)
+}
+
+func (a *app) queryImportBatches(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseImportBatchQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseImportBatchFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(importBatchOrderByFields, qp.OrderBy, admissionsbus.DefaultImportBatchOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	batches, err := a.admissionsBus.QueryImportBatches(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query import batches: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountImportBatches(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count import batches: %s", err)
+	}
+
+	return query.NewResult(toAppImportBatches(batches), total, page)
+}
+
+func (a *app) queryImportBatchByID(ctx context.Context, r *http.Request) web.Encoder {
+	batchID, err := uuid.Parse(web.Param(r, "import_batch_id"))
+	if err != nil {
+		return errs.NewFieldErrors("import_batch_id", err)
+	}
+
+	batch, err := a.admissionsBus.QueryImportBatchByID(ctx, batchID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query import batch: %s", err)
+	}
+
+	return toAppImportBatch(batch)
+}
+
+func (a *app) createImportInvalidRows(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewImportInvalidRows
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	batchID, err := uuid.Parse(web.Param(r, "import_batch_id"))
+	if err != nil {
+		return errs.NewFieldErrors("import_batch_id", err)
+	}
+
+	rows, err := a.admissionsBus.CreateImportInvalidRows(ctx, toBusNewImportInvalidRows(app, batchID))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create import invalid rows: %s", err)
+	}
+
+	return query.NewResult(toAppImportInvalidRows(rows), len(rows), page.MustParse("1", "100"))
+}
+
+func (a *app) queryImportInvalidRows(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseImportInvalidRowQueryParams(r)
+	if qp.BatchID == "" {
+		qp.BatchID = web.Param(r, "import_batch_id")
+	}
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseImportInvalidRowFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(importInvalidRowOrderByFields, qp.OrderBy, admissionsbus.DefaultImportInvalidRowOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	rows, err := a.admissionsBus.QueryImportInvalidRows(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query import invalid rows: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountImportInvalidRows(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count import invalid rows: %s", err)
+	}
+
+	return query.NewResult(toAppImportInvalidRows(rows), total, page)
+}
+
+func (a *app) queryImportInvalidRowByID(ctx context.Context, r *http.Request) web.Encoder {
+	rowID, err := uuid.Parse(web.Param(r, "import_invalid_row_id"))
+	if err != nil {
+		return errs.NewFieldErrors("import_invalid_row_id", err)
+	}
+
+	row, err := a.admissionsBus.QueryImportInvalidRowByID(ctx, rowID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query import invalid row: %s", err)
+	}
+
+	return toAppImportInvalidRow(row)
+}
+
+func (a *app) downloadImportInvalidRows(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseImportInvalidRowQueryParams(r)
+	qp.BatchID = web.Param(r, "import_batch_id")
+
+	filter, err := parseImportInvalidRowFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	rows, err := a.admissionsBus.QueryImportInvalidRows(ctx, filter, admissionsbus.DefaultImportInvalidRowOrderBy, page.MustParse("1", "100"))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query import invalid rows download: %s", err)
+	}
+
+	return query.NewResult(toAppImportInvalidRows(rows), len(rows), page.MustParse("1", "100"))
+}
+
 func (a *app) auditDocument(ctx context.Context, document admissionsbus.Document, actorID uuid.UUID, action string, message string) *errs.Error {
 	if a.auditBus == nil {
 		return nil
@@ -1269,6 +1569,28 @@ func (a *app) auditDocument(ctx context.Context, document admissionsbus.Document
 
 	if _, err := a.auditBus.Create(ctx, na); err != nil {
 		return errs.Errorf(errs.Internal, "audit document: %s", err)
+	}
+
+	return nil
+}
+
+func (a *app) auditImportBatch(ctx context.Context, batch admissionsbus.ImportBatch, actorID uuid.UUID, action string, message string) *errs.Error {
+	if a.auditBus == nil {
+		return nil
+	}
+
+	na := auditbus.NewAudit{
+		ObjID:     batch.ID,
+		ObjDomain: domain.Admissions,
+		ObjName:   name.MustParse("Import Batch"),
+		ActorID:   actorID,
+		Action:    action,
+		Data:      toAppImportBatch(batch),
+		Message:   message,
+	}
+
+	if _, err := a.auditBus.Create(ctx, na); err != nil {
+		return errs.Errorf(errs.Internal, "audit import batch: %s", err)
 	}
 
 	return nil

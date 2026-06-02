@@ -478,3 +478,460 @@ CREATE TABLE admissions_lead_scores (
 CREATE INDEX idx_admissions_lead_scores_constituent ON admissions_lead_scores (constituent_id);
 CREATE INDEX idx_admissions_lead_scores_band ON admissions_lead_scores (score_band);
 CREATE INDEX idx_admissions_lead_scores_total_score ON admissions_lead_scores (total_score DESC);
+
+-- Version: 1.17
+-- Description: Create admissions custom field registry and values
+CREATE TABLE admissions_custom_field_definitions (
+    custom_field_definition_id UUID      NOT NULL,
+    owner                      TEXT      NOT NULL,
+    field_key                  TEXT      NOT NULL,
+    label                      TEXT      NOT NULL,
+    description                TEXT      NULL,
+    data_type                  TEXT      NOT NULL,
+    is_required                BOOLEAN   NOT NULL,
+    options                    TEXT[]    NOT NULL,
+    validation                 TEXT      NULL,
+    is_searchable              BOOLEAN   NOT NULL,
+    is_reportable              BOOLEAN   NOT NULL,
+    is_importable              BOOLEAN   NOT NULL,
+    is_exportable              BOOLEAN   NOT NULL,
+    display_order              INT       NOT NULL,
+    is_active                  BOOLEAN   NOT NULL,
+    date_created               TIMESTAMP NOT NULL,
+    date_updated               TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (custom_field_definition_id),
+    CONSTRAINT admissions_custom_field_definitions_owner CHECK (owner IN ('CONSTITUENT', 'APPLICATION')),
+    CONSTRAINT admissions_custom_field_definitions_key_not_empty CHECK (trim(field_key) <> ''),
+    CONSTRAINT admissions_custom_field_definitions_label_not_empty CHECK (trim(label) <> ''),
+    CONSTRAINT admissions_custom_field_definitions_data_type CHECK (data_type IN ('TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'SELECT', 'BOOLEAN')),
+    CONSTRAINT admissions_custom_field_definitions_select_options CHECK (data_type <> 'SELECT' OR cardinality(options) > 0),
+    CONSTRAINT admissions_custom_field_definitions_order_non_negative CHECK (display_order >= 0),
+    CONSTRAINT admissions_custom_field_definitions_unique_key UNIQUE (owner, field_key)
+);
+
+CREATE INDEX idx_admissions_custom_field_definitions_owner ON admissions_custom_field_definitions (owner);
+CREATE INDEX idx_admissions_custom_field_definitions_active ON admissions_custom_field_definitions (is_active);
+CREATE INDEX idx_admissions_custom_field_definitions_display_order ON admissions_custom_field_definitions (display_order);
+
+CREATE TABLE admissions_custom_field_values (
+    custom_field_value_id      UUID      NOT NULL,
+    custom_field_definition_id UUID      NOT NULL,
+    owner                      TEXT      NOT NULL,
+    owner_id                   UUID      NOT NULL,
+    value                      TEXT      NOT NULL,
+    date_created               TIMESTAMP NOT NULL,
+    date_updated               TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (custom_field_value_id),
+    FOREIGN KEY (custom_field_definition_id) REFERENCES admissions_custom_field_definitions(custom_field_definition_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_custom_field_values_owner CHECK (owner IN ('CONSTITUENT', 'APPLICATION')),
+    CONSTRAINT admissions_custom_field_values_value_not_empty CHECK (trim(value) <> ''),
+    CONSTRAINT admissions_custom_field_values_unique_owner UNIQUE (custom_field_definition_id, owner, owner_id)
+);
+
+CREATE INDEX idx_admissions_custom_field_values_definition ON admissions_custom_field_values (custom_field_definition_id);
+CREATE INDEX idx_admissions_custom_field_values_owner ON admissions_custom_field_values (owner, owner_id);
+
+-- Version: 1.18
+-- Description: Create admissions import batch and invalid row report tables
+CREATE TABLE admissions_import_batches (
+    import_batch_id    UUID      NOT NULL,
+    source             TEXT      NOT NULL,
+    file_type          TEXT      NOT NULL,
+    target             TEXT      NOT NULL,
+    status             TEXT      NOT NULL,
+    file_name          TEXT      NOT NULL,
+    storage_key        TEXT      NULL,
+    uploaded_by_id     UUID      NOT NULL,
+    total_rows         INT       NOT NULL,
+    valid_rows         INT       NOT NULL,
+    invalid_rows       INT       NOT NULL,
+    duplicate_rows     INT       NOT NULL,
+    field_mapping      JSONB     NOT NULL,
+    invalid_report_key TEXT      NULL,
+    validation_summary TEXT      NULL,
+    committed_at       TIMESTAMP NULL,
+    date_created       TIMESTAMP NOT NULL,
+    date_updated       TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (import_batch_id),
+    FOREIGN KEY (uploaded_by_id) REFERENCES users(user_id),
+    CONSTRAINT admissions_import_batches_source CHECK (source IN ('MANUAL_UPLOAD', 'SIS_EXPORT')),
+    CONSTRAINT admissions_import_batches_file_type CHECK (file_type IN ('CSV', 'XLSX')),
+    CONSTRAINT admissions_import_batches_target CHECK (target IN ('CONSTITUENTS', 'APPLICATIONS')),
+    CONSTRAINT admissions_import_batches_status CHECK (status IN ('PREVIEWED', 'VALIDATION_FAILED', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED')),
+    CONSTRAINT admissions_import_batches_file_name_not_empty CHECK (trim(file_name) <> ''),
+    CONSTRAINT admissions_import_batches_rows_non_negative CHECK (total_rows >= 0 AND valid_rows >= 0 AND invalid_rows >= 0 AND duplicate_rows >= 0),
+    CONSTRAINT admissions_import_batches_rows_consistent CHECK (valid_rows + invalid_rows <= total_rows),
+    CONSTRAINT admissions_import_batches_field_mapping_object CHECK (jsonb_typeof(field_mapping) = 'object')
+);
+
+CREATE INDEX idx_admissions_import_batches_target ON admissions_import_batches (target);
+CREATE INDEX idx_admissions_import_batches_status ON admissions_import_batches (status);
+CREATE INDEX idx_admissions_import_batches_uploaded_by ON admissions_import_batches (uploaded_by_id);
+CREATE INDEX idx_admissions_import_batches_created ON admissions_import_batches (date_created);
+
+CREATE TABLE admissions_import_invalid_rows (
+    import_invalid_row_id UUID      NOT NULL,
+    import_batch_id       UUID      NOT NULL,
+    row_number            INT       NOT NULL,
+    field_name            TEXT      NULL,
+    raw_data              JSONB     NOT NULL,
+    error_code            TEXT      NOT NULL,
+    error_detail          TEXT      NOT NULL,
+    date_created          TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (import_invalid_row_id),
+    FOREIGN KEY (import_batch_id) REFERENCES admissions_import_batches(import_batch_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_import_invalid_rows_row_number CHECK (row_number > 0),
+    CONSTRAINT admissions_import_invalid_rows_raw_data_object CHECK (jsonb_typeof(raw_data) = 'object'),
+    CONSTRAINT admissions_import_invalid_rows_error_code_not_empty CHECK (trim(error_code) <> ''),
+    CONSTRAINT admissions_import_invalid_rows_error_detail_not_empty CHECK (trim(error_detail) <> '')
+);
+
+CREATE INDEX idx_admissions_import_invalid_rows_batch ON admissions_import_invalid_rows (import_batch_id);
+CREATE INDEX idx_admissions_import_invalid_rows_row_number ON admissions_import_invalid_rows (row_number);
+
+-- Version: 1.19
+-- Description: Create Kenya counties reference table
+CREATE TABLE counties (
+    code         TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT counties_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT counties_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_counties_name ON counties (name);
+
+-- Version: 1.20
+-- Description: Create Kenya sub-counties reference table
+CREATE TABLE sub_counties (
+    code         TEXT      NOT NULL,
+    county_code  TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (county_code) REFERENCES counties(code),
+    CONSTRAINT sub_counties_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT sub_counties_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_sub_counties_county_code ON sub_counties (county_code);
+CREATE INDEX idx_sub_counties_name ON sub_counties (name);
+
+-- Version: 1.21
+-- Description: Add Kenya constituent identity identifiers and manual backfill review table
+ALTER TABLE admissions_constituents
+    ADD COLUMN national_id TEXT NULL,
+    ADD COLUMN national_id_verified_at TIMESTAMP NULL,
+    ADD COLUMN national_id_verified_by_adapter TEXT NULL,
+    ADD COLUMN upi TEXT NULL,
+    ADD COLUMN upi_verified_at TIMESTAMP NULL,
+    ADD COLUMN upi_verified_by_adapter TEXT NULL,
+    ADD COLUMN kcse_index_number TEXT NULL,
+    ADD COLUMN kcse_index_verified_at TIMESTAMP NULL,
+    ADD COLUMN kcse_index_verified_by_adapter TEXT NULL;
+
+CREATE UNIQUE INDEX idx_admissions_constituents_national_id ON admissions_constituents (national_id) WHERE national_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_admissions_constituents_upi ON admissions_constituents (upi) WHERE upi IS NOT NULL;
+CREATE UNIQUE INDEX idx_admissions_constituents_kcse_index_number ON admissions_constituents (kcse_index_number) WHERE kcse_index_number IS NOT NULL;
+
+CREATE TABLE admissions_identity_backfill_reviews (
+    identity_backfill_review_id UUID      NOT NULL,
+    constituent_id              UUID      NOT NULL,
+    external_sis_id             TEXT      NOT NULL,
+    review_reason               TEXT      NOT NULL,
+    status                      TEXT      NOT NULL,
+    date_created                TIMESTAMP NOT NULL,
+    date_updated                TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (identity_backfill_review_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_identity_backfill_reviews_reason_not_empty CHECK (trim(review_reason) <> ''),
+    CONSTRAINT admissions_identity_backfill_reviews_status CHECK (status IN ('PENDING', 'RESOLVED')),
+    CONSTRAINT admissions_identity_backfill_reviews_unique_constituent UNIQUE (constituent_id, external_sis_id)
+);
+
+INSERT INTO admissions_identity_backfill_reviews
+    (identity_backfill_review_id, constituent_id, external_sis_id, review_reason, status, date_created, date_updated)
+SELECT
+    gen_random_uuid(),
+    constituent_id,
+    external_sis_id,
+    'external_sis_id requires manual classification before migration to national_id, upi, or kcse_index_number',
+    'PENDING',
+    NOW(),
+    NOW()
+FROM
+    admissions_constituents
+WHERE
+    external_sis_id IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+CREATE INDEX idx_admissions_identity_backfill_reviews_constituent ON admissions_identity_backfill_reviews (constituent_id);
+CREATE INDEX idx_admissions_identity_backfill_reviews_status ON admissions_identity_backfill_reviews (status);
+
+-- Version: 1.22
+-- Description: Localize admissions applications for Kenya
+ALTER TABLE admissions_applications
+    DROP CONSTRAINT admissions_applications_type,
+    ADD COLUMN kuccps_placement JSONB NULL,
+    ADD COLUMN kcse_result JSONB NULL,
+    ADD CONSTRAINT admissions_applications_type CHECK (application_type IN ('KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD', 'DIPLOMA', 'MASTERS', 'PHD', 'TVET', 'BRIDGING', 'CERTIFICATE'));
+
+ALTER TABLE admissions_application_form_templates
+    DROP CONSTRAINT admissions_form_templates_type,
+    ADD CONSTRAINT admissions_form_templates_type CHECK (application_type IN ('KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD', 'DIPLOMA', 'MASTERS', 'PHD', 'TVET', 'BRIDGING', 'CERTIFICATE'));
+
+-- Version: 1.23
+-- Description: Create admissions sync jobs table
+CREATE TABLE admissions_sync_jobs (
+    sync_job_id      UUID      NOT NULL,
+    name             TEXT      NOT NULL,
+    status           TEXT      NOT NULL,
+    direction        TEXT      NOT NULL,
+    started_at       TIMESTAMP NULL,
+    completed_at     TIMESTAMP NULL,
+    records_pulled   INT       NOT NULL DEFAULT 0,
+    records_pushed   INT       NOT NULL DEFAULT 0,
+    events_requeued  INT       NOT NULL DEFAULT 0,
+    failure_reason   TEXT      NULL,
+    retryable        BOOLEAN   NOT NULL DEFAULT false,
+    created_by_id    UUID      NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (sync_job_id),
+    FOREIGN KEY (created_by_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT sync_jobs_status CHECK (status IN ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'RETRY_READY')),
+    CONSTRAINT sync_jobs_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT sync_jobs_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_admissions_sync_jobs_status ON admissions_sync_jobs (status);
+CREATE INDEX idx_admissions_sync_jobs_direction ON admissions_sync_jobs (direction);
+CREATE INDEX idx_admissions_sync_jobs_created ON admissions_sync_jobs (date_created DESC);
+
+-- Version: 1.24
+-- Description: Create admissions sync events table
+CREATE TABLE admissions_sync_events (
+    sync_event_id    UUID      NOT NULL,
+    sync_job_id      UUID      NULL,
+    event_type       TEXT      NOT NULL,
+    status           TEXT      NOT NULL,
+    direction        TEXT      NOT NULL,
+    resource_type    TEXT      NOT NULL,
+    resource_id      UUID      NOT NULL,
+    payload_hash     TEXT      NOT NULL,
+    attempts         INT       NOT NULL DEFAULT 0,
+    next_retry_at    TIMESTAMP NULL,
+    failure_reason   TEXT      NULL,
+    audit_message    TEXT      NOT NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (sync_event_id),
+    FOREIGN KEY (sync_job_id) REFERENCES admissions_sync_jobs(sync_job_id) ON DELETE SET NULL,
+    CONSTRAINT sync_events_event_type CHECK (event_type IN ('BATCH_TERMS_PULL', 'BATCH_PROGRAMS_PULL', 'BATCH_PERSON_MATCHES_PULL', 'BATCH_ENROLLMENT_PULL', 'APPLICATION_SUBMISSION', 'APPLICATION_DECISION', 'DOCUMENT_STATUS', 'ENROLLMENT_INTENT')),
+    CONSTRAINT sync_events_status CHECK (status IN ('QUEUED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'RETRY_READY')),
+    CONSTRAINT sync_events_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT sync_events_resource_type_not_empty CHECK (trim(resource_type) <> ''),
+    CONSTRAINT sync_events_payload_hash_not_empty CHECK (trim(payload_hash) <> '')
+);
+
+CREATE INDEX idx_admissions_sync_events_job_id ON admissions_sync_events (sync_job_id);
+CREATE INDEX idx_admissions_sync_events_status ON admissions_sync_events (status);
+CREATE INDEX idx_admissions_sync_events_event_type ON admissions_sync_events (event_type);
+CREATE INDEX idx_admissions_sync_events_resource ON admissions_sync_events (resource_type, resource_id);
+CREATE INDEX idx_admissions_sync_events_retry ON admissions_sync_events (next_retry_at) WHERE status = 'RETRY_READY';
+CREATE INDEX idx_admissions_sync_events_created ON admissions_sync_events (date_created DESC);
+
+-- Version: 1.25
+-- Description: Localize admissions sync tracking for Kenya external adapters
+ALTER TABLE admissions_sync_jobs
+    ADD COLUMN adapter TEXT NULL,
+    ADD COLUMN operation TEXT NULL,
+    ADD COLUMN attempt_count INT NOT NULL DEFAULT 0,
+    ADD COLUMN max_attempts INT NOT NULL DEFAULT 3,
+    ADD COLUMN next_retry_at TIMESTAMP NULL,
+    ADD COLUMN external_ref TEXT NULL,
+    ADD COLUMN external_receipt_id TEXT NULL,
+    ADD COLUMN error_code TEXT NULL,
+    ADD COLUMN error_detail TEXT NULL,
+    ADD COLUMN last_error_at TIMESTAMP NULL,
+    ADD CONSTRAINT sync_jobs_adapter CHECK (adapter IS NULL OR adapter IN ('kuccps', 'knec', 'iprs', 'mpesa_daraja', 'celcom_africa', 'whatsapp_cloud')),
+    ADD CONSTRAINT sync_jobs_operation_not_empty CHECK (operation IS NULL OR trim(operation) <> ''),
+    ADD CONSTRAINT sync_jobs_attempts CHECK (attempt_count >= 0 AND max_attempts > 0 AND attempt_count <= max_attempts);
+
+UPDATE admissions_sync_jobs
+SET
+    adapter = 'kuccps',
+    operation = name
+WHERE adapter IS NULL;
+
+ALTER TABLE admissions_sync_jobs
+    ALTER COLUMN adapter SET NOT NULL,
+    ALTER COLUMN operation SET NOT NULL;
+
+ALTER TABLE admissions_sync_events
+    ADD COLUMN adapter TEXT NULL,
+    ADD COLUMN operation TEXT NULL,
+    ADD COLUMN max_attempts INT NOT NULL DEFAULT 3,
+    ADD COLUMN external_ref TEXT NULL,
+    ADD COLUMN external_receipt_id TEXT NULL,
+    ADD COLUMN error_code TEXT NULL,
+    ADD COLUMN error_detail TEXT NULL,
+    ADD COLUMN last_error_at TIMESTAMP NULL,
+    ADD CONSTRAINT sync_events_adapter CHECK (adapter IS NULL OR adapter IN ('kuccps', 'knec', 'iprs', 'mpesa_daraja', 'celcom_africa', 'whatsapp_cloud')),
+    ADD CONSTRAINT sync_events_operation_not_empty CHECK (operation IS NULL OR trim(operation) <> ''),
+    ADD CONSTRAINT sync_events_attempts CHECK (attempts >= 0 AND max_attempts > 0 AND attempts <= max_attempts);
+
+UPDATE admissions_sync_events AS event
+SET
+    adapter = COALESCE(job.adapter, 'kuccps'),
+    operation = event.event_type
+FROM admissions_sync_jobs AS job
+WHERE event.sync_job_id = job.sync_job_id
+    AND event.adapter IS NULL;
+
+UPDATE admissions_sync_events
+SET
+    adapter = 'kuccps',
+    operation = event_type
+WHERE adapter IS NULL;
+
+ALTER TABLE admissions_sync_events
+    ALTER COLUMN adapter SET NOT NULL,
+    ALTER COLUMN operation SET NOT NULL;
+
+CREATE INDEX idx_admissions_sync_jobs_adapter ON admissions_sync_jobs (adapter);
+CREATE INDEX idx_admissions_sync_jobs_adapter_status ON admissions_sync_jobs (adapter, status);
+CREATE INDEX idx_admissions_sync_jobs_retry ON admissions_sync_jobs (adapter, status, next_retry_at) WHERE status = 'RETRY_READY';
+CREATE INDEX idx_admissions_sync_jobs_external_ref ON admissions_sync_jobs (adapter, external_ref) WHERE external_ref IS NOT NULL;
+
+CREATE INDEX idx_admissions_sync_events_adapter ON admissions_sync_events (adapter);
+CREATE INDEX idx_admissions_sync_events_adapter_status ON admissions_sync_events (adapter, status);
+CREATE INDEX idx_admissions_sync_events_external_ref ON admissions_sync_events (adapter, external_ref) WHERE external_ref IS NOT NULL;
+
+-- Version: 1.26
+-- Description: Localize constituent notification preferences for Kenya
+ALTER TABLE admissions_constituents
+    ADD COLUMN sms_opt_in BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN whatsapp_opt_in BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN email_opt_in BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN notification_priority TEXT[] NOT NULL DEFAULT ARRAY['SMS', 'WHATSAPP', 'EMAIL']::TEXT[],
+    ADD CONSTRAINT admissions_constituents_notification_priority_required CHECK (array_length(notification_priority, 1) IS NOT NULL),
+    ADD CONSTRAINT admissions_constituents_notification_priority_length CHECK (cardinality(notification_priority) = 3),
+    ADD CONSTRAINT admissions_constituents_notification_priority_channels CHECK (notification_priority <@ ARRAY['SMS', 'WHATSAPP', 'EMAIL']::TEXT[]),
+    ADD CONSTRAINT admissions_constituents_notification_priority_unique CHECK (
+        array_position(notification_priority, 'SMS') IS NOT NULL
+        AND array_position(notification_priority, 'WHATSAPP') IS NOT NULL
+        AND array_position(notification_priority, 'EMAIL') IS NOT NULL
+        AND
+        array_position(notification_priority, 'SMS') <> array_position(notification_priority, 'WHATSAPP')
+        AND array_position(notification_priority, 'SMS') <> array_position(notification_priority, 'EMAIL')
+        AND array_position(notification_priority, 'WHATSAPP') <> array_position(notification_priority, 'EMAIL')
+    );
+
+-- Version: 1.27
+-- Description: Complete Kenya reference catalog tables
+CREATE TABLE wards (
+    code            TEXT      NOT NULL,
+    county_code     TEXT      NOT NULL,
+    sub_county_code TEXT      NOT NULL,
+    name            TEXT      NOT NULL,
+    date_created    TIMESTAMP NOT NULL,
+    date_updated    TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (county_code) REFERENCES counties(code),
+    FOREIGN KEY (sub_county_code) REFERENCES sub_counties(code),
+    CONSTRAINT wards_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT wards_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_wards_county_code ON wards (county_code);
+CREATE INDEX idx_wards_sub_county_code ON wards (sub_county_code);
+CREATE INDEX idx_wards_name ON wards (name);
+
+CREATE TABLE universities (
+    code             TEXT      NOT NULL,
+    name             TEXT      NOT NULL,
+    institution_type TEXT      NOT NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT universities_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT universities_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT universities_institution_type CHECK (institution_type IN ('PUBLIC_UNIVERSITY', 'PRIVATE_UNIVERSITY', 'CONSTITUENT_COLLEGE', 'TVET'))
+);
+
+CREATE INDEX idx_universities_name ON universities (name);
+CREATE INDEX idx_universities_type ON universities (institution_type);
+
+CREATE TABLE programme_clusters (
+    code         TEXT      NOT NULL,
+    name         TEXT      NOT NULL,
+    description  TEXT      NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_updated TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT programme_clusters_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT programme_clusters_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT programme_clusters_description_not_empty CHECK (trim(description) <> '')
+);
+
+CREATE INDEX idx_programme_clusters_name ON programme_clusters (name);
+
+CREATE TABLE knqf_levels (
+    code          TEXT      NOT NULL,
+    level         INT       NOT NULL,
+    name          TEXT      NOT NULL,
+    descriptor    TEXT      NOT NULL,
+    qualification TEXT      NOT NULL,
+    date_created  TIMESTAMP NOT NULL,
+    date_updated  TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    CONSTRAINT knqf_levels_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT knqf_levels_level_range CHECK (level BETWEEN 1 AND 10),
+    CONSTRAINT knqf_levels_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT knqf_levels_descriptor_not_empty CHECK (trim(descriptor) <> ''),
+    CONSTRAINT knqf_levels_qualification_not_empty CHECK (trim(qualification) <> ''),
+    CONSTRAINT knqf_levels_unique_level UNIQUE (level)
+);
+
+CREATE INDEX idx_knqf_levels_name ON knqf_levels (name);
+
+CREATE TABLE programmes (
+    code            TEXT      NOT NULL,
+    university_code TEXT      NOT NULL,
+    cluster_code    TEXT      NOT NULL,
+    knqf_level_code TEXT      NOT NULL,
+    name            TEXT      NOT NULL,
+    award_type      TEXT      NOT NULL,
+    date_created    TIMESTAMP NOT NULL,
+    date_updated    TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (code),
+    FOREIGN KEY (university_code) REFERENCES universities(code),
+    FOREIGN KEY (cluster_code) REFERENCES programme_clusters(code),
+    FOREIGN KEY (knqf_level_code) REFERENCES knqf_levels(code),
+    CONSTRAINT programmes_code_not_empty CHECK (trim(code) <> ''),
+    CONSTRAINT programmes_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT programmes_award_type_not_empty CHECK (trim(award_type) <> '')
+);
+
+CREATE INDEX idx_programmes_university_code ON programmes (university_code);
+CREATE INDEX idx_programmes_cluster_code ON programmes (cluster_code);
+CREATE INDEX idx_programmes_knqf_level_code ON programmes (knqf_level_code);
+CREATE INDEX idx_programmes_name ON programmes (name);

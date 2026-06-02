@@ -35,6 +35,12 @@ var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order
 // DefaultApplicationFormTemplateOrderBy represents the default way we sort application form templates.
 var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTemplatePriority, order.ASC)
 
+// DefaultCustomFieldDefinitionOrderBy represents the default way we sort custom field definitions.
+var DefaultCustomFieldDefinitionOrderBy = order.NewBy(OrderByCustomFieldDefinitionDisplayOrder, order.ASC)
+
+// DefaultCustomFieldValueOrderBy represents the default way we sort custom field values.
+var DefaultCustomFieldValueOrderBy = order.NewBy(OrderByCustomFieldValueDateCreated, order.ASC)
+
 // DefaultApplicationTransitionOrderBy represents the default way we sort application transitions.
 var DefaultApplicationTransitionOrderBy = order.NewBy(OrderByApplicationTransitionDateCreated, order.ASC)
 
@@ -43,6 +49,12 @@ var DefaultChecklistItemOrderBy = order.NewBy(OrderByChecklistItemDisplayOrder, 
 
 // DefaultDocumentOrderBy represents the default way we sort documents.
 var DefaultDocumentOrderBy = order.NewBy(OrderByDocumentUploadedAt, order.DESC)
+
+// DefaultImportBatchOrderBy represents the default way we sort admissions import batches.
+var DefaultImportBatchOrderBy = order.NewBy(OrderByImportBatchDateCreated, order.DESC)
+
+// DefaultImportInvalidRowOrderBy represents the default way we sort admissions import invalid rows.
+var DefaultImportInvalidRowOrderBy = order.NewBy(OrderByImportInvalidRowNumber, order.ASC)
 
 // DefaultSyncJobOrderBy represents the default way we sort SIS sync jobs.
 var DefaultSyncJobOrderBy = order.NewBy(OrderBySyncJobDateCreated, order.DESC)
@@ -143,6 +155,24 @@ const (
 	OrderByApplicationFormTemplateDateCreated = "f"
 )
 
+// Set of fields that custom field definitions can be ordered by.
+const (
+	OrderByCustomFieldDefinitionID           = "a"
+	OrderByCustomFieldDefinitionOwner        = "b"
+	OrderByCustomFieldDefinitionFieldKey     = "c"
+	OrderByCustomFieldDefinitionDisplayOrder = "d"
+	OrderByCustomFieldDefinitionDateCreated  = "e"
+)
+
+// Set of fields that custom field values can be ordered by.
+const (
+	OrderByCustomFieldValueID          = "a"
+	OrderByCustomFieldValueDefinition  = "b"
+	OrderByCustomFieldValueOwner       = "c"
+	OrderByCustomFieldValueOwnerID     = "d"
+	OrderByCustomFieldValueDateCreated = "e"
+)
+
 // Set of fields that application transitions can be ordered by.
 const (
 	OrderByApplicationTransitionID          = "a"
@@ -168,6 +198,23 @@ const (
 	OrderByDocumentStatus        = "d"
 	OrderByDocumentUploadedAt    = "e"
 	OrderByDocumentReviewedAt    = "f"
+)
+
+// Set of fields that import batches can be ordered by.
+const (
+	OrderByImportBatchID          = "a"
+	OrderByImportBatchTarget      = "b"
+	OrderByImportBatchStatus      = "c"
+	OrderByImportBatchUploadedBy  = "d"
+	OrderByImportBatchDateCreated = "e"
+)
+
+// Set of fields that import invalid rows can be ordered by.
+const (
+	OrderByImportInvalidRowID          = "a"
+	OrderByImportInvalidRowBatch       = "b"
+	OrderByImportInvalidRowNumber      = "c"
+	OrderByImportInvalidRowDateCreated = "d"
 )
 
 // Set of fields that SIS sync jobs can be ordered by.

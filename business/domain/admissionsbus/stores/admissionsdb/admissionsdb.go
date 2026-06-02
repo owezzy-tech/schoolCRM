@@ -4,6 +4,7 @@ package admissionsdb
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -22,6 +23,37 @@ type Store struct {
 	log *logger.Logger
 	db  sqlx.ExtContext
 }
+
+const constituentColumns = `
+		constituent_id,
+		first_name,
+		last_name,
+		preferred_name,
+		middle_name,
+		suffix,
+		date_of_birth,
+		primary_email,
+		primary_phone,
+		external_sis_id,
+		national_id,
+		national_id_verified_at,
+		national_id_verified_by_adapter,
+		upi,
+		upi_verified_at,
+		upi_verified_by_adapter,
+		kcse_index_number,
+		kcse_index_verified_at,
+		kcse_index_verified_by_adapter,
+		lifecycle_stage,
+		duplicate_status,
+		duplicate_of_id,
+		sms_opt_in,
+		whatsapp_opt_in,
+		email_opt_in,
+		notification_priority,
+		sis_synced_at,
+		date_created,
+		date_updated`
 
 // NewStore constructs the API for data access.
 func NewStore(log *logger.Logger, db *sqlx.DB) *Store {
@@ -606,9 +638,9 @@ func (s *Store) queryLeadScore(ctx context.Context, filter admissionsbus.LeadSco
 func (s *Store) CreateConstituent(ctx context.Context, cst admissionsbus.Constituent) error {
 	const q = `
 	INSERT INTO admissions_constituents
-		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated)
+		(constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, national_id, national_id_verified_at, national_id_verified_by_adapter, upi, upi_verified_at, upi_verified_by_adapter, kcse_index_number, kcse_index_verified_at, kcse_index_verified_by_adapter, lifecycle_stage, duplicate_status, duplicate_of_id, sms_opt_in, whatsapp_opt_in, email_opt_in, notification_priority, sis_synced_at, date_created, date_updated)
 	VALUES
-		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sis_synced_at, :date_created, :date_updated)`
+		(:constituent_id, :first_name, :last_name, :preferred_name, :middle_name, :suffix, :date_of_birth, :primary_email, :primary_phone, :external_sis_id, :national_id, :national_id_verified_at, :national_id_verified_by_adapter, :upi, :upi_verified_at, :upi_verified_by_adapter, :kcse_index_number, :kcse_index_verified_at, :kcse_index_verified_by_adapter, :lifecycle_stage, :duplicate_status, :duplicate_of_id, :sms_opt_in, :whatsapp_opt_in, :email_opt_in, :notification_priority, :sis_synced_at, :date_created, :date_updated)`
 
 	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBConstituent(cst)); err != nil {
 		return fmt.Errorf("namedexeccontext: %w", err)
@@ -628,9 +660,22 @@ func (s *Store) UpdateConstituent(ctx context.Context, cst admissionsbus.Constit
 		suffix = :suffix,
 		primary_email = :primary_email,
 		primary_phone = :primary_phone,
+		national_id = :national_id,
+		national_id_verified_at = :national_id_verified_at,
+		national_id_verified_by_adapter = :national_id_verified_by_adapter,
+		upi = :upi,
+		upi_verified_at = :upi_verified_at,
+		upi_verified_by_adapter = :upi_verified_by_adapter,
+		kcse_index_number = :kcse_index_number,
+		kcse_index_verified_at = :kcse_index_verified_at,
+		kcse_index_verified_by_adapter = :kcse_index_verified_by_adapter,
 		lifecycle_stage = :lifecycle_stage,
 		duplicate_status = :duplicate_status,
 		duplicate_of_id = :duplicate_of_id,
+		sms_opt_in = :sms_opt_in,
+		whatsapp_opt_in = :whatsapp_opt_in,
+		email_opt_in = :email_opt_in,
+		notification_priority = :notification_priority,
 		sis_synced_at = :sis_synced_at,
 		date_updated = :date_updated
 	WHERE
@@ -652,7 +697,7 @@ func (s *Store) QueryConstituents(ctx context.Context, filter admissionsbus.Cons
 
 	const q = `
 	SELECT
-		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+		` + constituentColumns + `
 	FROM
 		admissions_constituents`
 
@@ -736,12 +781,45 @@ func (s *Store) QueryConstituentByExternalSISID(ctx context.Context, externalSIS
 	return cst, nil
 }
 
+// QueryConstituentByNationalID finds a Constituent by Kenyan national ID.
+func (s *Store) QueryConstituentByNationalID(ctx context.Context, nationalID string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{NationalID: &nationalID}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByUPI finds a Constituent by Kenyan UPI.
+func (s *Store) QueryConstituentByUPI(ctx context.Context, upi string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{UPI: &upi}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
+// QueryConstituentByKCSEIndexNumber finds a Constituent by KCSE index number.
+func (s *Store) QueryConstituentByKCSEIndexNumber(ctx context.Context, kcseIndexNumber string) (admissionsbus.Constituent, error) {
+	filter := admissionsbus.ConstituentQueryFilter{KCSEIndexNumber: &kcseIndexNumber}
+	cst, err := s.queryConstituent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	return cst, nil
+}
+
 func (s *Store) queryConstituent(ctx context.Context, filter admissionsbus.ConstituentQueryFilter) (admissionsbus.Constituent, error) {
 	data := map[string]any{}
 
 	const q = `
 	SELECT
-		constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated
+		` + constituentColumns + `
 	FROM
 		admissions_constituents`
 
@@ -1249,11 +1327,16 @@ func (s *Store) queryDuplicateReview(ctx context.Context, filter admissionsbus.D
 func (s *Store) CreateApplication(ctx context.Context, app admissionsbus.Application) error {
 	const q = `
 	INSERT INTO admissions_applications
-		(application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated)
+		(application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated)
 	VALUES
-		(:application_id, :constituent_id, :program_id, :academic_term_id, :application_type, :status, :assigned_reviewer_id, :submitted_at, :date_created, :date_updated)`
+		(:application_id, :constituent_id, :program_id, :academic_term_id, :application_type, :status, :kuccps_placement, :kcse_result, :assigned_reviewer_id, :submitted_at, :date_created, :date_updated)`
 
-	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+	dbApp, err := toDBApplication(app)
+	if err != nil {
+		return fmt.Errorf("to db application: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbApp); err != nil {
 		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
 			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
 		}
@@ -1270,13 +1353,20 @@ func (s *Store) UpdateApplication(ctx context.Context, app admissionsbus.Applica
 		admissions_applications
 	SET
 		status = :status,
+		kuccps_placement = :kuccps_placement,
+		kcse_result = :kcse_result,
 		assigned_reviewer_id = :assigned_reviewer_id,
 		submitted_at = :submitted_at,
 		date_updated = :date_updated
 	WHERE
 		application_id = :application_id`
 
-	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBApplication(app)); err != nil {
+	dbApp, err := toDBApplication(app)
+	if err != nil {
+		return fmt.Errorf("to db application: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbApp); err != nil {
 		if errors.Is(err, sqldb.ErrDBDuplicatedEntry) {
 			return fmt.Errorf("namedexeccontext: %w", admissionsbus.ErrDuplicateApplication)
 		}
@@ -1295,7 +1385,7 @@ func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.Appl
 
 	const q = `
 	SELECT
-		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated
 	FROM
 		admissions_applications`
 
@@ -1315,7 +1405,7 @@ func (s *Store) QueryApplications(ctx context.Context, filter admissionsbus.Appl
 		return nil, fmt.Errorf("namedqueryslice: %w", err)
 	}
 
-	return toBusApplications(dbApplications), nil
+	return toBusApplications(dbApplications)
 }
 
 // CountApplications returns the total number of Applications in the database.
@@ -1374,7 +1464,7 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 
 	const q = `
 	SELECT
-		application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated
+		application_id, constituent_id, program_id, academic_term_id, application_type, status, kuccps_placement, kcse_result, assigned_reviewer_id, submitted_at, date_created, date_updated
 	FROM
 		admissions_applications`
 
@@ -1389,7 +1479,7 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 		return admissionsbus.Application{}, fmt.Errorf("db: %w", err)
 	}
 
-	return toBusApplication(dbApplication), nil
+	return toBusApplication(dbApplication)
 }
 
 // CreateApplicationFormTemplate inserts a new application form template.
@@ -1531,6 +1621,248 @@ func (s *Store) queryApplicationFormTemplate(ctx context.Context, filter admissi
 	}
 
 	return toBusApplicationFormTemplate(dbTemplate)
+}
+
+// CreateCustomFieldDefinition inserts a custom field definition.
+func (s *Store) CreateCustomFieldDefinition(ctx context.Context, definition admissionsbus.CustomFieldDefinition) error {
+	const q = `
+	INSERT INTO admissions_custom_field_definitions
+		(custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated)
+	VALUES
+		(:custom_field_definition_id, :owner, :field_key, :label, :description, :data_type, :is_required, :options, :validation, :is_searchable, :is_reportable, :is_importable, :is_exportable, :display_order, :is_active, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldDefinition(definition)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateCustomFieldDefinition replaces mutable custom field definition data.
+func (s *Store) UpdateCustomFieldDefinition(ctx context.Context, definition admissionsbus.CustomFieldDefinition) error {
+	const q = `
+	UPDATE
+		admissions_custom_field_definitions
+	SET
+		owner = :owner,
+		field_key = :field_key,
+		label = :label,
+		description = :description,
+		data_type = :data_type,
+		is_required = :is_required,
+		options = :options,
+		validation = :validation,
+		is_searchable = :is_searchable,
+		is_reportable = :is_reportable,
+		is_importable = :is_importable,
+		is_exportable = :is_exportable,
+		display_order = :display_order,
+		is_active = :is_active,
+		date_updated = :date_updated
+	WHERE
+		custom_field_definition_id = :custom_field_definition_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldDefinition(definition)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryCustomFieldDefinitions retrieves custom field definitions.
+func (s *Store) QueryCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldDefinition, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	orderByClause, err := customFieldDefinitionOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbDefinitions []customFieldDefinitionDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbDefinitions); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCustomFieldDefinitions(dbDefinitions), nil
+}
+
+// CountCustomFieldDefinitions returns the total number of custom field definitions.
+func (s *Store) CountCustomFieldDefinitions(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCustomFieldDefinitionByID finds a custom field definition by ID.
+func (s *Store) QueryCustomFieldDefinitionByID(ctx context.Context, definitionID uuid.UUID) (admissionsbus.CustomFieldDefinition, error) {
+	filter := admissionsbus.CustomFieldDefinitionQueryFilter{ID: &definitionID}
+	definition, err := s.queryCustomFieldDefinition(ctx, filter)
+	if err != nil {
+		return admissionsbus.CustomFieldDefinition{}, err
+	}
+
+	return definition, nil
+}
+
+func (s *Store) queryCustomFieldDefinition(ctx context.Context, filter admissionsbus.CustomFieldDefinitionQueryFilter) (admissionsbus.CustomFieldDefinition, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		custom_field_definition_id, owner, field_key, label, description, data_type, is_required, options, validation, is_searchable, is_reportable, is_importable, is_exportable, display_order, is_active, date_created, date_updated
+	FROM
+		admissions_custom_field_definitions`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldDefinitionFilter(filter, data, buf)
+
+	var dbDefinition customFieldDefinitionDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbDefinition); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.CustomFieldDefinition{}, fmt.Errorf("db: %w", admissionsbus.ErrCustomFieldDefinitionNotFound)
+		}
+		return admissionsbus.CustomFieldDefinition{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCustomFieldDefinition(dbDefinition), nil
+}
+
+// SetCustomFieldValue creates or replaces a custom field value for an owner record.
+func (s *Store) SetCustomFieldValue(ctx context.Context, value admissionsbus.CustomFieldValue) error {
+	const q = `
+	INSERT INTO admissions_custom_field_values
+		(custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated)
+	VALUES
+		(:custom_field_value_id, :custom_field_definition_id, :owner, :owner_id, :value, :date_created, :date_updated)
+	ON CONFLICT (custom_field_definition_id, owner, owner_id) DO UPDATE SET
+		value = EXCLUDED.value,
+		date_updated = EXCLUDED.date_updated`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBCustomFieldValue(value)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryCustomFieldValues retrieves custom field values.
+func (s *Store) QueryCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CustomFieldValue, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	orderByClause, err := customFieldValueOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbValues []customFieldValueDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbValues); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCustomFieldValues(dbValues), nil
+}
+
+// CountCustomFieldValues returns the total number of custom field values.
+func (s *Store) CountCustomFieldValues(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCustomFieldValueByID finds a custom field value by ID.
+func (s *Store) QueryCustomFieldValueByID(ctx context.Context, valueID uuid.UUID) (admissionsbus.CustomFieldValue, error) {
+	filter := admissionsbus.CustomFieldValueQueryFilter{ID: &valueID}
+	value, err := s.queryCustomFieldValue(ctx, filter)
+	if err != nil {
+		return admissionsbus.CustomFieldValue{}, err
+	}
+
+	return value, nil
+}
+
+func (s *Store) queryCustomFieldValue(ctx context.Context, filter admissionsbus.CustomFieldValueQueryFilter) (admissionsbus.CustomFieldValue, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		custom_field_value_id, custom_field_definition_id, owner, owner_id, value, date_created, date_updated
+	FROM
+		admissions_custom_field_values`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCustomFieldValueFilter(filter, data, buf)
+
+	var dbValue customFieldValueDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbValue); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.CustomFieldValue{}, fmt.Errorf("db: %w", admissionsbus.ErrCustomFieldValueNotFound)
+		}
+		return admissionsbus.CustomFieldValue{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCustomFieldValue(dbValue), nil
 }
 
 // CreateApplicationTransition inserts immutable Application transition history.
@@ -1841,54 +2173,264 @@ func (s *Store) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (ad
 	return document, nil
 }
 
-// CreateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) CreateSyncJob(context.Context, admissionsbus.SyncJob) error {
+// CreateSyncJob persists a new SIS sync job to the database.
+func (s *Store) CreateSyncJob(ctx context.Context, job admissionsbus.SyncJob) error {
+	const q = `
+	INSERT INTO admissions_sync_jobs
+		(sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated)
+	VALUES
+		(:sync_job_id, :name, :adapter, :operation, :status, :direction, :started_at, :completed_at, :records_pulled, :records_pushed, :events_requeued, :attempt_count, :max_attempts, :next_retry_at, :external_ref, :external_receipt_id, :error_code, :error_detail, :last_error_at, :failure_reason, :retryable, :created_by_id, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncJob(job)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// UpdateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) UpdateSyncJob(context.Context, admissionsbus.SyncJob) error {
+// UpdateSyncJob replaces mutable sync job fields.
+func (s *Store) UpdateSyncJob(ctx context.Context, job admissionsbus.SyncJob) error {
+	const q = `
+	UPDATE
+		admissions_sync_jobs
+	SET
+		name = :name,
+		adapter = :adapter,
+		operation = :operation,
+		status = :status,
+		direction = :direction,
+		started_at = :started_at,
+		completed_at = :completed_at,
+		records_pulled = :records_pulled,
+		records_pushed = :records_pushed,
+		events_requeued = :events_requeued,
+		attempt_count = :attempt_count,
+		max_attempts = :max_attempts,
+		next_retry_at = :next_retry_at,
+		external_ref = :external_ref,
+		external_receipt_id = :external_receipt_id,
+		error_code = :error_code,
+		error_detail = :error_detail,
+		last_error_at = :last_error_at,
+		failure_reason = :failure_reason,
+		retryable = :retryable,
+		created_by_id = :created_by_id,
+		date_updated = :date_updated
+	WHERE
+		sync_job_id = :sync_job_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncJob(job)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// QuerySyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncJobs(context.Context, admissionsbus.SyncJobQueryFilter, order.By, page.Page) ([]admissionsbus.SyncJob, error) {
-	return []admissionsbus.SyncJob{}, nil
+// QuerySyncJobs retrieves sync jobs matching the provided filter with pagination and ordering.
+func (s *Store) QuerySyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncJob, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated
+	FROM
+		admissions_sync_jobs`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncJobFilter(filter, data, buf)
+
+	orderByClause, err := syncJobOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbJobs []syncJobDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbJobs); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return tobusSyncJobs(dbJobs), nil
 }
 
-// CountSyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) CountSyncJobs(context.Context, admissionsbus.SyncJobQueryFilter) (int, error) {
-	return 0, nil
+// CountSyncJobs returns the total number of sync jobs matching the provided filter.
+func (s *Store) CountSyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_sync_jobs`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncJobFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
 }
 
-// QuerySyncJobByID is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncJobByID(context.Context, uuid.UUID) (admissionsbus.SyncJob, error) {
-	return admissionsbus.SyncJob{}, admissionsbus.ErrSyncJobNotFound
+// QuerySyncJobByID retrieves a single sync job by its ID.
+func (s *Store) QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (admissionsbus.SyncJob, error) {
+	const q = `
+	SELECT
+		sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated
+	FROM
+		admissions_sync_jobs
+	WHERE
+		sync_job_id = :sync_job_id`
+
+	data := map[string]any{"sync_job_id": jobID}
+
+	var dbJob syncJobDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbJob); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.SyncJob{}, fmt.Errorf("db: %w", admissionsbus.ErrSyncJobNotFound)
+		}
+		return admissionsbus.SyncJob{}, fmt.Errorf("db: %w", err)
+	}
+
+	return tobusSyncJob(dbJob), nil
 }
 
-// CreateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) CreateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+// CreateSyncEvent persists a new SIS sync event to the database.
+func (s *Store) CreateSyncEvent(ctx context.Context, event admissionsbus.SyncEvent) error {
+	const q = `
+	INSERT INTO admissions_sync_events
+		(sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated)
+	VALUES
+		(:sync_event_id, :sync_job_id, :adapter, :operation, :event_type, :status, :direction, :resource_type, :resource_id, :external_ref, :external_receipt_id, :payload_hash, :attempts, :max_attempts, :next_retry_at, :error_code, :error_detail, :last_error_at, :failure_reason, :audit_message, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// UpdateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) UpdateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+// UpdateSyncEvent replaces mutable sync event fields.
+func (s *Store) UpdateSyncEvent(ctx context.Context, event admissionsbus.SyncEvent) error {
+	const q = `
+	UPDATE
+		admissions_sync_events
+	SET
+		sync_job_id = :sync_job_id,
+		adapter = :adapter,
+		operation = :operation,
+		event_type = :event_type,
+		status = :status,
+		direction = :direction,
+		resource_type = :resource_type,
+		resource_id = :resource_id,
+		external_ref = :external_ref,
+		external_receipt_id = :external_receipt_id,
+		payload_hash = :payload_hash,
+		attempts = :attempts,
+		max_attempts = :max_attempts,
+		next_retry_at = :next_retry_at,
+		error_code = :error_code,
+		error_detail = :error_detail,
+		last_error_at = :last_error_at,
+		failure_reason = :failure_reason,
+		audit_message = :audit_message,
+		date_updated = :date_updated
+	WHERE
+		sync_event_id = :sync_event_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// QuerySyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncEvents(context.Context, admissionsbus.SyncEventQueryFilter, order.By, page.Page) ([]admissionsbus.SyncEvent, error) {
-	return []admissionsbus.SyncEvent{}, nil
+// QuerySyncEvents retrieves sync events matching the provided filter with pagination and ordering.
+func (s *Store) QuerySyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncEvent, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated
+	FROM
+		admissions_sync_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncEventFilter(filter, data, buf)
+
+	orderByClause, err := syncEventOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbEvents []syncEventDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbEvents); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return tobusSyncEvents(dbEvents), nil
 }
 
-// CountSyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) CountSyncEvents(context.Context, admissionsbus.SyncEventQueryFilter) (int, error) {
-	return 0, nil
+// CountSyncEvents returns the total number of sync events matching the provided filter.
+func (s *Store) CountSyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_sync_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncEventFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
 }
 
-// QuerySyncEventByID is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncEventByID(context.Context, uuid.UUID) (admissionsbus.SyncEvent, error) {
-	return admissionsbus.SyncEvent{}, admissionsbus.ErrSyncEventNotFound
+// QuerySyncEventByID retrieves a single sync event by its ID.
+func (s *Store) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.SyncEvent, error) {
+	const q = `
+	SELECT
+		sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated
+	FROM
+		admissions_sync_events
+	WHERE
+		sync_event_id = :sync_event_id`
+
+	data := map[string]any{"sync_event_id": eventID}
+
+	var dbEvent syncEventDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbEvent); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.SyncEvent{}, fmt.Errorf("db: %w", admissionsbus.ErrSyncEventNotFound)
+		}
+		return admissionsbus.SyncEvent{}, fmt.Errorf("db: %w", err)
+	}
+
+	return tobusSyncEvent(dbEvent), nil
 }
 
 func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (admissionsbus.Document, error) {
@@ -1912,6 +2454,265 @@ func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.Document
 	}
 
 	return toBusDocument(dbDocument), nil
+}
+
+// CreateImportBatch inserts an admissions import batch record.
+func (s *Store) CreateImportBatch(ctx context.Context, batch admissionsbus.ImportBatch) error {
+	const q = `
+	INSERT INTO admissions_import_batches
+		(import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated)
+	VALUES
+		(:import_batch_id, :source, :file_type, :target, :status, :file_name, :storage_key, :uploaded_by_id, :total_rows, :valid_rows, :invalid_rows, :duplicate_rows, :field_mapping, :invalid_report_key, :validation_summary, :committed_at, :date_created, :date_updated)`
+
+	dbBatch, err := toDBImportBatch(batch)
+	if err != nil {
+		return fmt.Errorf("to db import batch: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbBatch); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateImportBatch replaces mutable admissions import batch fields.
+func (s *Store) UpdateImportBatch(ctx context.Context, batch admissionsbus.ImportBatch) error {
+	const q = `
+	UPDATE
+		admissions_import_batches
+	SET
+		source = :source,
+		file_type = :file_type,
+		target = :target,
+		status = :status,
+		file_name = :file_name,
+		storage_key = :storage_key,
+		uploaded_by_id = :uploaded_by_id,
+		total_rows = :total_rows,
+		valid_rows = :valid_rows,
+		invalid_rows = :invalid_rows,
+		duplicate_rows = :duplicate_rows,
+		field_mapping = :field_mapping,
+		invalid_report_key = :invalid_report_key,
+		validation_summary = :validation_summary,
+		committed_at = :committed_at,
+		date_updated = :date_updated
+	WHERE
+		import_batch_id = :import_batch_id`
+
+	dbBatch, err := toDBImportBatch(batch)
+	if err != nil {
+		return fmt.Errorf("to db import batch: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbBatch); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryImportBatches retrieves admissions import batch records.
+func (s *Store) QueryImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportBatch, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	orderByClause, err := importBatchOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbBatches []importBatchDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbBatches); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusImportBatches(dbBatches)
+}
+
+// CountImportBatches returns the total number of admissions import batch records.
+func (s *Store) CountImportBatches(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryImportBatchByID finds an admissions import batch by ID.
+func (s *Store) QueryImportBatchByID(ctx context.Context, batchID uuid.UUID) (admissionsbus.ImportBatch, error) {
+	filter := admissionsbus.ImportBatchQueryFilter{ID: &batchID}
+	batch, err := s.queryImportBatch(ctx, filter)
+	if err != nil {
+		return admissionsbus.ImportBatch{}, err
+	}
+
+	return batch, nil
+}
+
+func (s *Store) queryImportBatch(ctx context.Context, filter admissionsbus.ImportBatchQueryFilter) (admissionsbus.ImportBatch, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		import_batch_id, source, file_type, target, status, file_name, storage_key, uploaded_by_id, total_rows, valid_rows, invalid_rows, duplicate_rows, field_mapping, invalid_report_key, validation_summary, committed_at, date_created, date_updated
+	FROM
+		admissions_import_batches`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportBatchFilter(filter, data, buf)
+
+	var dbBatch importBatchDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbBatch); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ImportBatch{}, fmt.Errorf("db: %w", admissionsbus.ErrImportBatchNotFound)
+		}
+		return admissionsbus.ImportBatch{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusImportBatch(dbBatch)
+}
+
+// CreateImportInvalidRows inserts invalid import rows for correction reports.
+func (s *Store) CreateImportInvalidRows(ctx context.Context, rows []admissionsbus.ImportInvalidRow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	const q = `
+	INSERT INTO admissions_import_invalid_rows
+		(import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created)
+	VALUES
+		(:import_invalid_row_id, :import_batch_id, :row_number, :field_name, :raw_data, :error_code, :error_detail, :date_created)`
+
+	dbRows, err := toDBImportInvalidRows(rows)
+	if err != nil {
+		return fmt.Errorf("to db import invalid rows: %w", err)
+	}
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, dbRows); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// QueryImportInvalidRows retrieves invalid import rows for correction reports.
+func (s *Store) QueryImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.ImportInvalidRow, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	orderByClause, err := importInvalidRowOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbRows []importInvalidRowDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbRows); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusImportInvalidRows(dbRows)
+}
+
+// CountImportInvalidRows returns the total number of invalid import rows.
+func (s *Store) CountImportInvalidRows(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryImportInvalidRowByID finds an invalid import row by ID.
+func (s *Store) QueryImportInvalidRowByID(ctx context.Context, rowID uuid.UUID) (admissionsbus.ImportInvalidRow, error) {
+	filter := admissionsbus.ImportInvalidRowQueryFilter{ID: &rowID}
+	row, err := s.queryImportInvalidRow(ctx, filter)
+	if err != nil {
+		return admissionsbus.ImportInvalidRow{}, err
+	}
+
+	return row, nil
+}
+
+func (s *Store) queryImportInvalidRow(ctx context.Context, filter admissionsbus.ImportInvalidRowQueryFilter) (admissionsbus.ImportInvalidRow, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		import_invalid_row_id, import_batch_id, row_number, field_name, raw_data, error_code, error_detail, date_created
+	FROM
+		admissions_import_invalid_rows`
+
+	buf := bytes.NewBufferString(q)
+	s.applyImportInvalidRowFilter(filter, data, buf)
+
+	var dbRow importInvalidRowDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbRow); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.ImportInvalidRow{}, fmt.Errorf("db: %w", admissionsbus.ErrImportInvalidRowNotFound)
+		}
+		return admissionsbus.ImportInvalidRow{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusImportInvalidRow(dbRow)
 }
 
 func (s *Store) queryAcademicTerm(ctx context.Context, filter admissionsbus.AcademicTermQueryFilter) (admissionsbus.AcademicTerm, error) {

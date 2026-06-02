@@ -86,6 +86,29 @@ func (status DuplicateStatus) String() string {
 	return string(status)
 }
 
+// NotificationChannel identifies a constituent communication channel.
+type NotificationChannel string
+
+// Set of supported constituent notification channels.
+const (
+	NotificationChannelSMS      NotificationChannel = "SMS"
+	NotificationChannelWhatsApp NotificationChannel = "WHATSAPP"
+	NotificationChannelEmail    NotificationChannel = "EMAIL"
+)
+
+// String returns the notification channel as a string.
+func (channel NotificationChannel) String() string {
+	return string(channel)
+}
+
+// NotificationPreferences captures constituent channel consent and priority.
+type NotificationPreferences struct {
+	SMSOptIn      bool
+	WhatsAppOptIn bool
+	EmailOptIn    bool
+	Priority      []NotificationChannel
+}
+
 // DuplicateReviewStatus represents staff workflow state for a potential duplicate.
 type DuplicateReviewStatus string
 
@@ -135,52 +158,82 @@ func (resolution DuplicateReviewResolution) String() string {
 
 // Constituent is the durable person identity root for admissions workflows.
 type Constituent struct {
-	ID              uuid.UUID
-	FirstName       string
-	LastName        string
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	DateOfBirth     time.Time
-	PrimaryEmail    mail.Address
-	PrimaryPhone    string
-	ExternalSISID   *string
-	LifecycleStage  LifecycleStage
-	DuplicateStatus DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
-	DateCreated     time.Time
-	DateUpdated     time.Time
+	ID                          uuid.UUID
+	FirstName                   string
+	LastName                    string
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	DateOfBirth                 time.Time
+	PrimaryEmail                mail.Address
+	PrimaryPhone                string
+	ExternalSISID               *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              LifecycleStage
+	DuplicateStatus             DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     NotificationPreferences
+	SISSyncedAt                 *time.Time
+	DateCreated                 time.Time
+	DateUpdated                 time.Time
 }
 
 // NewConstituent is what we require from clients when adding a Constituent.
 type NewConstituent struct {
-	FirstName       string
-	LastName        string
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	DateOfBirth     time.Time
-	PrimaryEmail    mail.Address
-	PrimaryPhone    string
-	ExternalSISID   *string
-	LifecycleStage  LifecycleStage
-	DuplicateStatus DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
+	FirstName                   string
+	LastName                    string
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	DateOfBirth                 time.Time
+	PrimaryEmail                mail.Address
+	PrimaryPhone                string
+	ExternalSISID               *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              LifecycleStage
+	DuplicateStatus             DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     *NotificationPreferences
+	SISSyncedAt                 *time.Time
 }
 
 // UpdateConstituent defines what information may be provided to modify a Constituent.
 type UpdateConstituent struct {
-	PreferredName   *string
-	MiddleName      *string
-	Suffix          *string
-	PrimaryEmail    *mail.Address
-	PrimaryPhone    *string
-	LifecycleStage  *LifecycleStage
-	DuplicateStatus *DuplicateStatus
-	DuplicateOfID   *uuid.UUID
-	SISSyncedAt     *time.Time
+	PreferredName               *string
+	MiddleName                  *string
+	Suffix                      *string
+	PrimaryEmail                *mail.Address
+	PrimaryPhone                *string
+	NationalID                  *string
+	NationalIDVerifiedAt        *time.Time
+	NationalIDVerifiedByAdapter *string
+	UPI                         *string
+	UPIVerifiedAt               *time.Time
+	UPIVerifiedByAdapter        *string
+	KCSEIndexNumber             *string
+	KCSEIndexVerifiedAt         *time.Time
+	KCSEIndexVerifiedByAdapter  *string
+	LifecycleStage              *LifecycleStage
+	DuplicateStatus             *DuplicateStatus
+	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     *NotificationPreferences
+	SISSyncedAt                 *time.Time
 }
 
 // InquiryStatus represents staff follow-up state for an inquiry.
@@ -241,9 +294,14 @@ type ApplicationType string
 
 // Set of valid application types.
 const (
-	ApplicationTypeFreshman ApplicationType = "FRESHMAN"
-	ApplicationTypeTransfer ApplicationType = "TRANSFER"
-	ApplicationTypeGraduate ApplicationType = "GRADUATE"
+	ApplicationTypeKUCCPSPlacement        ApplicationType = "KUCCPS_PLACEMENT"
+	ApplicationTypeSelfSponsoredUndergrad ApplicationType = "SELF_SPONSORED_UNDERGRAD"
+	ApplicationTypeDiploma                ApplicationType = "DIPLOMA"
+	ApplicationTypeMasters                ApplicationType = "MASTERS"
+	ApplicationTypePhD                    ApplicationType = "PHD"
+	ApplicationTypeTVET                   ApplicationType = "TVET"
+	ApplicationTypeBridging               ApplicationType = "BRIDGING"
+	ApplicationTypeCertificate            ApplicationType = "CERTIFICATE"
 )
 
 // String returns the application type as a string.
@@ -283,10 +341,41 @@ type Application struct {
 	AcademicTermID     uuid.UUID
 	ApplicationType    ApplicationType
 	Status             ApplicationStatus
+	KUCCPSPlacement    *KUCCPSPlacement
+	KCSEResult         *ApplicationKCSEResult
 	AssignedReviewerID *uuid.UUID
 	SubmittedAt        *time.Time
 	DateCreated        time.Time
 	DateUpdated        time.Time
+}
+
+// KUCCPSPlacement captures a normalized KUCCPS placement snapshot on an application.
+type KUCCPSPlacement struct {
+	PlacementID        string
+	AdmissionNumber    *string
+	InstitutionCode    string
+	ProgrammeCode      string
+	ProgrammeName      string
+	PlacementYear      int
+	ClusterCode        *string
+	ClusterPoints      *float64
+	WeightedPointsNote *string
+}
+
+// ApplicationKCSESubject stores one KCSE subject grade snapshot on an application.
+type ApplicationKCSESubject struct {
+	SubjectCode string
+	Grade       string
+	Points      int
+}
+
+// ApplicationKCSEResult stores the KCSE result snapshot submitted with an application.
+type ApplicationKCSEResult struct {
+	IndexNumber string
+	ExamYear    int
+	Subjects    []ApplicationKCSESubject
+	MeanGrade   string
+	MeanPoints  int
 }
 
 // ApplicationFormField defines a configurable, non-core application form field.
@@ -296,6 +385,96 @@ type ApplicationFormField struct {
 	Required     bool
 	DisplayOrder int
 	Validation   *string
+}
+
+// CustomFieldOwner represents the admissions aggregate a custom field belongs to.
+type CustomFieldOwner string
+
+// Set of aggregates that may own custom fields.
+const (
+	CustomFieldOwnerConstituent CustomFieldOwner = "CONSTITUENT"
+	CustomFieldOwnerApplication CustomFieldOwner = "APPLICATION"
+)
+
+// String returns the custom field owner as a string.
+func (owner CustomFieldOwner) String() string {
+	return string(owner)
+}
+
+// CustomFieldDataType represents the validated storage type for custom field values.
+type CustomFieldDataType string
+
+// Set of supported custom field data types.
+const (
+	CustomFieldDataTypeText     CustomFieldDataType = "TEXT"
+	CustomFieldDataTypeTextarea CustomFieldDataType = "TEXTAREA"
+	CustomFieldDataTypeNumber   CustomFieldDataType = "NUMBER"
+	CustomFieldDataTypeDate     CustomFieldDataType = "DATE"
+	CustomFieldDataTypeSelect   CustomFieldDataType = "SELECT"
+	CustomFieldDataTypeBoolean  CustomFieldDataType = "BOOLEAN"
+)
+
+// String returns the custom field data type as a string.
+func (dataType CustomFieldDataType) String() string {
+	return string(dataType)
+}
+
+// CustomFieldDefinition describes one user-defined admissions field without making core fields dynamic.
+type CustomFieldDefinition struct {
+	ID           uuid.UUID
+	Owner        CustomFieldOwner
+	FieldKey     string
+	Label        string
+	Description  *string
+	DataType     CustomFieldDataType
+	Required     bool
+	Options      []string
+	Validation   *string
+	Searchable   bool
+	Reportable   bool
+	Importable   bool
+	Exportable   bool
+	DisplayOrder int
+	Active       bool
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+// NewCustomFieldDefinition is what we require to create or update a custom field definition.
+type NewCustomFieldDefinition struct {
+	Owner        CustomFieldOwner
+	FieldKey     string
+	Label        string
+	Description  *string
+	DataType     CustomFieldDataType
+	Required     bool
+	Options      []string
+	Validation   *string
+	Searchable   bool
+	Reportable   bool
+	Importable   bool
+	Exportable   bool
+	DisplayOrder int
+	Active       bool
+}
+
+// CustomFieldValue stores one validated custom field value for a constituent or application.
+type CustomFieldValue struct {
+	ID           uuid.UUID
+	DefinitionID uuid.UUID
+	Owner        CustomFieldOwner
+	OwnerID      uuid.UUID
+	Value        string
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+// NewCustomFieldValue is what we require to set one custom field value.
+type NewCustomFieldValue struct {
+	DefinitionID uuid.UUID
+	Owner        CustomFieldOwner
+	OwnerID      uuid.UUID
+	Value        string
 }
 
 // ApplicationChecklistTemplateItem defines a document/checklist requirement attached to a form template.
@@ -497,6 +676,8 @@ type NewApplication struct {
 	ProgramID          uuid.UUID
 	AcademicTermID     uuid.UUID
 	ApplicationType    ApplicationType
+	KUCCPSPlacement    *KUCCPSPlacement
+	KCSEResult         *ApplicationKCSEResult
 	AssignedReviewerID *uuid.UUID
 }
 
@@ -519,6 +700,66 @@ func (status DocumentStatus) String() string {
 	return string(status)
 }
 
+// ImportBatchStatus represents the operational state of an admissions import.
+type ImportBatchStatus string
+
+// Set of valid admissions import batch statuses.
+const (
+	ImportBatchStatusPreviewed        ImportBatchStatus = "PREVIEWED"
+	ImportBatchStatusValidationFailed ImportBatchStatus = "VALIDATION_FAILED"
+	ImportBatchStatusQueued           ImportBatchStatus = "QUEUED"
+	ImportBatchStatusProcessing       ImportBatchStatus = "PROCESSING"
+	ImportBatchStatusCompleted        ImportBatchStatus = "COMPLETED"
+	ImportBatchStatusFailed           ImportBatchStatus = "FAILED"
+)
+
+// String returns the import batch status as a string.
+func (status ImportBatchStatus) String() string {
+	return string(status)
+}
+
+// ImportSource represents where an import file originated.
+type ImportSource string
+
+// Set of valid admissions import sources.
+const (
+	ImportSourceManualUpload ImportSource = "MANUAL_UPLOAD"
+	ImportSourceSISExport    ImportSource = "SIS_EXPORT"
+)
+
+// String returns the import source as a string.
+func (source ImportSource) String() string {
+	return string(source)
+}
+
+// ImportFileType represents the supported import file formats.
+type ImportFileType string
+
+// Set of valid admissions import file types.
+const (
+	ImportFileTypeCSV  ImportFileType = "CSV"
+	ImportFileTypeXLSX ImportFileType = "XLSX"
+)
+
+// String returns the import file type as a string.
+func (fileType ImportFileType) String() string {
+	return string(fileType)
+}
+
+// ImportTarget represents the admissions aggregate receiving imported rows.
+type ImportTarget string
+
+// Set of supported import targets.
+const (
+	ImportTargetConstituents ImportTarget = "CONSTITUENTS"
+	ImportTargetApplications ImportTarget = "APPLICATIONS"
+)
+
+// String returns the import target as a string.
+func (target ImportTarget) String() string {
+	return string(target)
+}
+
 // SyncJobStatus represents the operational state of a SIS batch reconciliation run.
 type SyncJobStatus string
 
@@ -534,6 +775,41 @@ const (
 // String returns the sync job status as a string.
 func (status SyncJobStatus) String() string {
 	return string(status)
+}
+
+// IntegrationAdapter identifies the external Kenya integration provider for sync tracking.
+// It intentionally lives in the root admissions domain to avoid importing adapters/* back
+// into the package that adapter implementations already depend on.
+type IntegrationAdapter string
+
+// Set of supported Kenya integration adapters.
+const (
+	IntegrationAdapterKUCCPS        IntegrationAdapter = "kuccps"
+	IntegrationAdapterKNEC          IntegrationAdapter = "knec"
+	IntegrationAdapterIPRS          IntegrationAdapter = "iprs"
+	IntegrationAdapterMPesaDaraja   IntegrationAdapter = "mpesa_daraja"
+	IntegrationAdapterCelcomAfrica  IntegrationAdapter = "celcom_africa"
+	IntegrationAdapterWhatsAppCloud IntegrationAdapter = "whatsapp_cloud"
+)
+
+// String returns the integration adapter as a string.
+func (adapter IntegrationAdapter) String() string {
+	return string(adapter)
+}
+
+// Valid reports whether the adapter is one of the supported Kenya providers.
+func (adapter IntegrationAdapter) Valid() bool {
+	switch adapter {
+	case IntegrationAdapterKUCCPS,
+		IntegrationAdapterKNEC,
+		IntegrationAdapterIPRS,
+		IntegrationAdapterMPesaDaraja,
+		IntegrationAdapterCelcomAfrica,
+		IntegrationAdapterWhatsAppCloud:
+		return true
+	default:
+		return false
+	}
 }
 
 // SyncEventStatus represents the queue state for a real-time SIS sync event.
@@ -580,6 +856,17 @@ const (
 	SyncEventTypeApplicationDecision    SyncEventType = "APPLICATION_DECISION"
 	SyncEventTypeDocumentStatus         SyncEventType = "DOCUMENT_STATUS"
 	SyncEventTypeEnrollmentIntent       SyncEventType = "ENROLLMENT_INTENT"
+	SyncEventTypeKUCCPSPlacementPull    SyncEventType = "KUCCPS_PLACEMENT_PULL"
+	SyncEventTypeKUCCPSPlacementConfirm SyncEventType = "KUCCPS_PLACEMENT_CONFIRM"
+	SyncEventTypeKNECResultVerification SyncEventType = "KNEC_RESULT_VERIFICATION"
+	SyncEventTypeIPRSIdentityVerify     SyncEventType = "IPRS_IDENTITY_VERIFICATION"
+	SyncEventTypeMPesaSTKPush           SyncEventType = "MPESA_STK_PUSH"
+	SyncEventTypeMPesaC2BCallback       SyncEventType = "MPESA_C2B_CALLBACK"
+	SyncEventTypeMPesaTransactionQuery  SyncEventType = "MPESA_TRANSACTION_QUERY"
+	SyncEventTypeSMSOutbound            SyncEventType = "SMS_OUTBOUND"
+	SyncEventTypeSMSDeliveryReport      SyncEventType = "SMS_DELIVERY_REPORT"
+	SyncEventTypeWhatsAppMessageSend    SyncEventType = "WHATSAPP_MESSAGE_SEND"
+	SyncEventTypeWhatsAppWebhookInbound SyncEventType = "WHATSAPP_WEBHOOK_INBOUND"
 )
 
 // String returns the sync event type as a string.
@@ -648,80 +935,180 @@ type NewDocumentVerification struct {
 	ReviewerNotes *string
 }
 
+// ImportBatch records one import preview or commit run.
+type ImportBatch struct {
+	ID                uuid.UUID
+	Source            ImportSource
+	FileType          ImportFileType
+	Target            ImportTarget
+	Status            ImportBatchStatus
+	FileName          string
+	StorageKey        *string
+	UploadedByID      uuid.UUID
+	TotalRows         int
+	ValidRows         int
+	InvalidRows       int
+	DuplicateRows     int
+	FieldMapping      map[string]string
+	InvalidReportKey  *string
+	ValidationSummary *string
+	CommittedAt       *time.Time
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
+// NewImportBatch is what we require to record an admissions import preview or commit.
+type NewImportBatch struct {
+	Source            ImportSource
+	FileType          ImportFileType
+	Target            ImportTarget
+	Status            ImportBatchStatus
+	FileName          string
+	StorageKey        *string
+	UploadedByID      uuid.UUID
+	TotalRows         int
+	ValidRows         int
+	InvalidRows       int
+	DuplicateRows     int
+	FieldMapping      map[string]string
+	InvalidReportKey  *string
+	ValidationSummary *string
+}
+
+// ImportInvalidRow records one invalid row discovered during preview or commit validation.
+type ImportInvalidRow struct {
+	ID          uuid.UUID
+	BatchID     uuid.UUID
+	RowNumber   int
+	FieldName   *string
+	RawData     map[string]string
+	ErrorCode   string
+	ErrorDetail string
+	DateCreated time.Time
+}
+
+// NewImportInvalidRow is what we require to attach an invalid row to an import batch.
+type NewImportInvalidRow struct {
+	BatchID     uuid.UUID
+	RowNumber   int
+	FieldName   *string
+	RawData     map[string]string
+	ErrorCode   string
+	ErrorDetail string
+}
+
 // SyncJob tracks a SIS batch reconciliation run and its operational result.
 type SyncJob struct {
-	ID             uuid.UUID
-	Name           string
-	Status         SyncJobStatus
-	Direction      SyncDirection
-	StartedAt      *time.Time
-	CompletedAt    *time.Time
-	RecordsPulled  int
-	RecordsPushed  int
-	EventsRequeued int
-	FailureReason  *string
-	Retryable      bool
-	CreatedByID    *uuid.UUID
-	DateCreated    time.Time
-	DateUpdated    time.Time
+	ID                uuid.UUID
+	Name              string
+	Adapter           IntegrationAdapter
+	Operation         string
+	Status            SyncJobStatus
+	Direction         SyncDirection
+	StartedAt         *time.Time
+	CompletedAt       *time.Time
+	RecordsPulled     int
+	RecordsPushed     int
+	EventsRequeued    int
+	AttemptCount      int
+	MaxAttempts       int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	Retryable         bool
+	CreatedByID       *uuid.UUID
+	DateCreated       time.Time
+	DateUpdated       time.Time
 }
 
 // NewSyncJob is what the sync runner requires when starting or scheduling a batch reconciliation run.
 type NewSyncJob struct {
 	Name        string
+	Adapter     IntegrationAdapter
+	Operation   string
 	Direction   SyncDirection
 	Status      SyncJobStatus
 	StartedAt   *time.Time
+	MaxAttempts int
 	CreatedByID *uuid.UUID
 }
 
 // UpdateSyncJob is what the sync runner may change as a batch reconciliation run progresses.
 type UpdateSyncJob struct {
-	Status         SyncJobStatus
-	CompletedAt    *time.Time
-	RecordsPulled  int
-	RecordsPushed  int
-	EventsRequeued int
-	FailureReason  *string
-	Retryable      bool
+	Status            SyncJobStatus
+	CompletedAt       *time.Time
+	RecordsPulled     int
+	RecordsPushed     int
+	EventsRequeued    int
+	AttemptCount      int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	Retryable         bool
 }
 
 // SyncEvent tracks a selected real-time SIS event, including retries and failure visibility.
 type SyncEvent struct {
-	ID            uuid.UUID
-	JobID         *uuid.UUID
-	EventType     SyncEventType
-	Status        SyncEventStatus
-	Direction     SyncDirection
-	ResourceType  string
-	ResourceID    uuid.UUID
-	PayloadHash   string
-	Attempts      int
-	NextRetryAt   *time.Time
-	FailureReason *string
-	AuditMessage  string
-	DateCreated   time.Time
-	DateUpdated   time.Time
+	ID                uuid.UUID
+	JobID             *uuid.UUID
+	Adapter           IntegrationAdapter
+	Operation         string
+	EventType         SyncEventType
+	Status            SyncEventStatus
+	Direction         SyncDirection
+	ResourceType      string
+	ResourceID        uuid.UUID
+	ExternalRef       *string
+	ExternalReceiptID *string
+	PayloadHash       string
+	Attempts          int
+	MaxAttempts       int
+	NextRetryAt       *time.Time
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	AuditMessage      string
+	DateCreated       time.Time
+	DateUpdated       time.Time
 }
 
 // NewSyncEvent is what workflow hooks provide when enqueueing a selected real-time SIS event.
 type NewSyncEvent struct {
-	JobID        *uuid.UUID
-	EventType    SyncEventType
-	Direction    SyncDirection
-	ResourceType string
-	ResourceID   uuid.UUID
-	PayloadHash  string
-	AuditMessage string
+	JobID             *uuid.UUID
+	Adapter           IntegrationAdapter
+	Operation         string
+	EventType         SyncEventType
+	Direction         SyncDirection
+	ResourceType      string
+	ResourceID        uuid.UUID
+	ExternalRef       *string
+	ExternalReceiptID *string
+	PayloadHash       string
+	MaxAttempts       int
+	AuditMessage      string
 }
 
 // UpdateSyncEvent is what the queue runner may change as an event is processed or retried.
 type UpdateSyncEvent struct {
-	Status        SyncEventStatus
-	Attempts      int
-	NextRetryAt   *time.Time
-	FailureReason *string
-	AuditMessage  string
+	Status            SyncEventStatus
+	Attempts          int
+	NextRetryAt       *time.Time
+	ExternalRef       *string
+	ExternalReceiptID *string
+	ErrorCode         *string
+	ErrorDetail       *string
+	LastErrorAt       *time.Time
+	FailureReason     *string
+	AuditMessage      string
 }
 
 // Decision represents the outcome of an application review.
@@ -825,10 +1212,14 @@ func AggregateNames() []string {
 		"constituent",
 		"inquiry",
 		"application",
+		"customFieldDefinition",
+		"customFieldValue",
 		"leadScoreRule",
 		"leadScore",
 		"checklist",
 		"document",
+		"importBatch",
+		"importInvalidRow",
 		"decision",
 		"syncJob",
 		"syncEvent",
@@ -906,8 +1297,12 @@ type ConstituentQueryFilter struct {
 	ID              *uuid.UUID
 	PrimaryEmail    *mail.Address
 	ExternalSISID   *string
+	NationalID      *string
+	UPI             *string
+	KCSEIndexNumber *string
 	LifecycleStage  *LifecycleStage
 	DuplicateStatus *DuplicateStatus
+	CustomFields    map[string]string
 }
 
 // DuplicateReviewQueryFilter holds the available fields a duplicate review query can be filtered on.
@@ -930,6 +1325,24 @@ type ApplicationQueryFilter struct {
 	ApplicationType *ApplicationType
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
+	CustomFields    map[string]string
+}
+
+// CustomFieldDefinitionQueryFilter holds fields a custom field definition query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type CustomFieldDefinitionQueryFilter struct {
+	ID     *uuid.UUID
+	Owner  *CustomFieldOwner
+	Active *bool
+}
+
+// CustomFieldValueQueryFilter holds fields a custom field value query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type CustomFieldValueQueryFilter struct {
+	ID           *uuid.UUID
+	DefinitionID *uuid.UUID
+	Owner        *CustomFieldOwner
+	OwnerID      *uuid.UUID
 }
 
 // ApplicationFormTemplateQueryFilter holds fields an application form template query can be filtered on.
@@ -973,13 +1386,33 @@ type DocumentQueryFilter struct {
 	ReviewerID      *uuid.UUID
 }
 
+// ImportBatchQueryFilter holds fields an import batch query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ImportBatchQueryFilter struct {
+	ID           *uuid.UUID
+	Source       *ImportSource
+	FileType     *ImportFileType
+	Target       *ImportTarget
+	Status       *ImportBatchStatus
+	UploadedByID *uuid.UUID
+}
+
+// ImportInvalidRowQueryFilter holds fields an import invalid row query can be filtered on.
+// We are using pointer semantics because the With API mutates the value.
+type ImportInvalidRowQueryFilter struct {
+	ID      *uuid.UUID
+	BatchID *uuid.UUID
+}
+
 // SyncJobQueryFilter holds fields a SIS sync job query can be filtered on.
 // We are using pointer semantics because the With API mutates the value.
 type SyncJobQueryFilter struct {
-	ID        *uuid.UUID
-	Status    *SyncJobStatus
-	Direction *SyncDirection
-	Retryable *bool
+	ID              *uuid.UUID
+	Adapter         *IntegrationAdapter
+	Status          *SyncJobStatus
+	Direction       *SyncDirection
+	Retryable       *bool
+	NextRetryBefore *time.Time
 }
 
 // SyncEventQueryFilter holds fields a SIS sync event query can be filtered on.
@@ -987,6 +1420,7 @@ type SyncJobQueryFilter struct {
 type SyncEventQueryFilter struct {
 	ID           *uuid.UUID
 	JobID        *uuid.UUID
+	Adapter      *IntegrationAdapter
 	EventType    *SyncEventType
 	Status       *SyncEventStatus
 	Direction    *SyncDirection

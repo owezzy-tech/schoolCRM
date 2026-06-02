@@ -6,6 +6,8 @@ This PRD is derived from `docs/19-002_customer_relationship_management_crm_syste
 
 Implementation wireframes are maintained in [`docs/admissions-crm-wireframes.md`](admissions-crm-wireframes.md) with rendered screen diagrams under [`docs/diagrams/admissions-crm-screens-png/`](diagrams/admissions-crm-screens-png/). Use those PNG diagrams as the source of truth for frontend admissions screens.
 
+Kenya deployments are governed by the localization overlay in [`docs/kenya-localization-prd.md`](kenya-localization-prd.md). That overlay supersedes the US-style PeopleSoft, application-type, address, payment, and communication-channel assumptions in this base PRD for Kenyan institutions.
+
 ## Problem Statement
 
 SchoolCRM needs to pivot its first CRM product slice from generic school operations to an admissions and enrollment CRM. The RFP is centered on prospective students, applicants, recruitment, admissions operations, events, communications, reporting, and PeopleSoft SIS integration. A generic school-management CRM would miss the most important domain concepts and would make later admissions workflows harder to model.

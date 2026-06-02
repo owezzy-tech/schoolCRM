@@ -124,6 +124,128 @@ func TestCreateConstituentRequiresIdentityFields(t *testing.T) {
 	}
 }
 
+func TestCreateConstituentDefaultsKenyaNotificationPreferences(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{constituents: map[uuid.UUID]Constituent{}}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	email := mail.Address{Address: "applicant@example.com"}
+
+	created, err := bus.CreateConstituent(context.Background(), NewConstituent{
+		FirstName:    "Ada",
+		LastName:     "Applicant",
+		DateOfBirth:  time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+		PrimaryEmail: email,
+		PrimaryPhone: "+254712345678",
+	})
+	if err != nil {
+		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+
+	want := KenyaDefaultNotificationPreferences()
+	assertNotificationPreferences(t, created.NotificationPreferences, want)
+	assertNotificationPreferences(t, store.constituents[created.ID].NotificationPreferences, want)
+}
+
+func TestUpdateConstituentNotificationOptOut(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	cst := Constituent{
+		ID:                      uuid.New(),
+		LifecycleStage:          LifecycleStageProspect,
+		DuplicateStatus:         DuplicateStatusActive,
+		NotificationPreferences: KenyaDefaultNotificationPreferences(),
+	}
+
+	preferences := NotificationPreferences{
+		SMSOptIn:      false,
+		WhatsAppOptIn: false,
+		EmailOptIn:    true,
+		Priority: []NotificationChannel{
+			NotificationChannelSMS,
+			NotificationChannelWhatsApp,
+			NotificationChannelEmail,
+		},
+	}
+	updated, err := bus.UpdateConstituent(context.Background(), cst, UpdateConstituent{NotificationPreferences: &preferences})
+	if err != nil {
+		t.Fatalf("UpdateConstituent returned error: %v", err)
+	}
+
+	assertNotificationPreferences(t, updated.NotificationPreferences, preferences)
+}
+
+func TestCreateConstituentValidatesNotificationPriority(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	email := mail.Address{Address: "applicant@example.com"}
+
+	tests := []struct {
+		name        string
+		preferences NotificationPreferences
+		want        error
+	}{
+		{
+			name: "duplicate channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannelSMS,
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrNotificationPriorityDuplicate,
+		},
+		{
+			name: "missing channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrNotificationPriorityIncomplete,
+		},
+		{
+			name: "unknown channel",
+			preferences: NotificationPreferences{
+				SMSOptIn:   true,
+				EmailOptIn: true,
+				Priority: []NotificationChannel{
+					NotificationChannelSMS,
+					NotificationChannel("PUSH"),
+					NotificationChannelEmail,
+				},
+			},
+			want: ErrInvalidNotificationChannel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateConstituent(context.Background(), NewConstituent{
+				FirstName:               "Ada",
+				LastName:                "Applicant",
+				DateOfBirth:             time.Date(2007, time.January, 1, 0, 0, 0, 0, time.UTC),
+				PrimaryEmail:            email,
+				PrimaryPhone:            "+254712345678",
+				NotificationPreferences: &tt.preferences,
+			})
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestCreateStaffProfileRequiresContextRoles(t *testing.T) {
 	t.Parallel()
 
@@ -250,6 +372,345 @@ func TestCreateApplicantProfileLinksIdentityToConstituent(t *testing.T) {
 	}
 }
 
+func TestCreateCustomFieldDefinitionValidatesRegistryFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nd   NewCustomFieldDefinition
+		want error
+	}{
+		{
+			name: "owner",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwner("INQUIRY"),
+				FieldKey:     "scholarship_level",
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldOwnerInvalid,
+		},
+		{
+			name: "key required",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerConstituent,
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldKeyRequired,
+		},
+		{
+			name: "label required",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerConstituent,
+				FieldKey:     "scholarship_level",
+				DataType:     CustomFieldDataTypeText,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldLabelRequired,
+		},
+		{
+			name: "data type",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "portfolio_score",
+				Label:        "Portfolio score",
+				DataType:     CustomFieldDataType("RANGE"),
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldDataTypeInvalid,
+		},
+		{
+			name: "select options",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "scholarship_level",
+				Label:        "Scholarship level",
+				DataType:     CustomFieldDataTypeSelect,
+				DisplayOrder: 1,
+			},
+			want: ErrCustomFieldOptionsRequired,
+		},
+		{
+			name: "display order",
+			nd: NewCustomFieldDefinition{
+				Owner:        CustomFieldOwnerApplication,
+				FieldKey:     "portfolio_score",
+				Label:        "Portfolio score",
+				DataType:     CustomFieldDataTypeNumber,
+				DisplayOrder: -1,
+			},
+			want: ErrCustomFieldOrderInvalid,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateCustomFieldDefinition(context.Background(), tt.nd)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateCustomFieldDefinitionStoresNormalizedSeams(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	description := " Used for imports and reports "
+	validation := " max:50 "
+
+	definition, err := bus.CreateCustomFieldDefinition(context.Background(), NewCustomFieldDefinition{
+		Owner:        CustomFieldOwnerConstituent,
+		FieldKey:     " scholarship_level ",
+		Label:        " Scholarship level ",
+		Description:  &description,
+		DataType:     CustomFieldDataTypeSelect,
+		Options:      []string{" Full ", "Partial", "Full", ""},
+		Validation:   &validation,
+		Searchable:   true,
+		Reportable:   true,
+		Importable:   true,
+		Exportable:   true,
+		DisplayOrder: 4,
+		Active:       true,
+	})
+	if err != nil {
+		t.Fatalf("CreateCustomFieldDefinition returned error: %v", err)
+	}
+
+	if definition.Owner != CustomFieldOwnerConstituent {
+		t.Fatalf("Owner = %s, want %s", definition.Owner, CustomFieldOwnerConstituent)
+	}
+	if definition.FieldKey != "scholarship_level" {
+		t.Fatalf("FieldKey = %q, want scholarship_level", definition.FieldKey)
+	}
+	if definition.Label != "Scholarship level" {
+		t.Fatalf("Label = %q, want Scholarship level", definition.Label)
+	}
+	if len(definition.Options) != 2 {
+		t.Fatalf("Options = %v, want 2 unique options", definition.Options)
+	}
+	if !definition.Searchable || !definition.Reportable || !definition.Importable || !definition.Exportable {
+		t.Fatalf("seams not enabled: %+v", definition)
+	}
+	if len(store.customFieldDefinitions) != 1 {
+		t.Fatalf("stored definitions = %d, want 1", len(store.customFieldDefinitions))
+	}
+}
+
+func TestSetCustomFieldValueRequiresDefinitionOwnerAndRecord(t *testing.T) {
+	t.Parallel()
+
+	definitionID := uuid.New()
+	constituentID := uuid.New()
+	store := &stubStore{
+		customFieldDefinitions: []CustomFieldDefinition{
+			{
+				ID:       definitionID,
+				Owner:    CustomFieldOwnerConstituent,
+				FieldKey: "scholarship_level",
+				Label:    "Scholarship level",
+				DataType: CustomFieldDataTypeText,
+				Active:   true,
+			},
+		},
+		constituents: map[uuid.UUID]Constituent{
+			constituentID: {ID: constituentID, LifecycleStage: LifecycleStageApplicant},
+		},
+	}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	value, err := bus.SetCustomFieldValue(context.Background(), NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        CustomFieldOwnerConstituent,
+		OwnerID:      constituentID,
+		Value:        " Full scholarship ",
+	})
+	if err != nil {
+		t.Fatalf("SetCustomFieldValue returned error: %v", err)
+	}
+	if value.Value != "Full scholarship" {
+		t.Fatalf("Value = %q, want Full scholarship", value.Value)
+	}
+	if len(store.customFieldValues) != 1 {
+		t.Fatalf("stored values = %d, want 1", len(store.customFieldValues))
+	}
+
+	_, err = bus.SetCustomFieldValue(context.Background(), NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        CustomFieldOwnerApplication,
+		OwnerID:      constituentID,
+		Value:        "Full scholarship",
+	})
+	if !errors.Is(err, ErrCustomFieldOwnerInvalid) {
+		t.Fatalf("err = %v, want %v", err, ErrCustomFieldOwnerInvalid)
+	}
+}
+
+func TestCreateImportBatchValidatesSupportedFileTypesAndMapping(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+
+	tests := []struct {
+		name string
+		nb   NewImportBatch
+		want error
+	}{
+		{
+			name: "file type",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileType("PDF"),
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.pdf",
+				UploadedByID: uuid.New(),
+				FieldMapping: map[string]string{"First Name": "firstName"},
+			},
+			want: ErrInvalidImportFileType,
+		},
+		{
+			name: "uploader",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeCSV,
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.csv",
+				FieldMapping: map[string]string{"First Name": "firstName"},
+			},
+			want: ErrImportUploaderRequired,
+		},
+		{
+			name: "rows",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeXLSX,
+				Target:       ImportTargetApplications,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "applications.xlsx",
+				UploadedByID: uuid.New(),
+				TotalRows:    1,
+				ValidRows:    1,
+				InvalidRows:  1,
+				FieldMapping: map[string]string{"Program": "programID"},
+			},
+			want: ErrImportRowsInvalid,
+		},
+		{
+			name: "mapping",
+			nb: NewImportBatch{
+				Source:       ImportSourceManualUpload,
+				FileType:     ImportFileTypeCSV,
+				Target:       ImportTargetConstituents,
+				Status:       ImportBatchStatusPreviewed,
+				FileName:     "constituents.csv",
+				UploadedByID: uuid.New(),
+				TotalRows:    1,
+			},
+			want: ErrImportFieldMappingRequired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateImportBatch(context.Background(), tt.nb)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateImportBatchStoresAuditReadyPreview(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	uploaderID := uuid.New()
+	storageKey := "imports/constituents-2026.csv"
+	reportKey := "imports/constituents-2026-invalid.csv"
+	summary := "2 invalid rows require correction"
+
+	batch, err := bus.CreateImportBatch(context.Background(), NewImportBatch{
+		Source:            ImportSourceManualUpload,
+		FileType:          ImportFileTypeCSV,
+		Target:            ImportTargetConstituents,
+		Status:            ImportBatchStatusValidationFailed,
+		FileName:          " constituents-2026.csv ",
+		StorageKey:        &storageKey,
+		UploadedByID:      uploaderID,
+		TotalRows:         10,
+		ValidRows:         8,
+		InvalidRows:       2,
+		DuplicateRows:     1,
+		FieldMapping:      map[string]string{" First Name ": " firstName ", "": "ignored"},
+		InvalidReportKey:  &reportKey,
+		ValidationSummary: &summary,
+	})
+	if err != nil {
+		t.Fatalf("CreateImportBatch returned error: %v", err)
+	}
+
+	if batch.FileType != ImportFileTypeCSV {
+		t.Fatalf("FileType = %s, want %s", batch.FileType, ImportFileTypeCSV)
+	}
+	if batch.FileName != "constituents-2026.csv" {
+		t.Fatalf("FileName = %q, want constituents-2026.csv", batch.FileName)
+	}
+	if batch.FieldMapping["First Name"] != "firstName" {
+		t.Fatalf("FieldMapping = %v, want normalized First Name mapping", batch.FieldMapping)
+	}
+	if len(store.importBatches) != 1 {
+		t.Fatalf("stored import batches = %d, want 1", len(store.importBatches))
+	}
+}
+
+func TestCreateImportInvalidRowsStoresCorrectionReportRows(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	batchID := uuid.New()
+	fieldName := "primaryEmail"
+
+	rows, err := bus.CreateImportInvalidRows(context.Background(), []NewImportInvalidRow{
+		{
+			BatchID:     batchID,
+			RowNumber:   3,
+			FieldName:   &fieldName,
+			RawData:     map[string]string{" Email ": " not-an-email "},
+			ErrorCode:   "INVALID_EMAIL",
+			ErrorDetail: "Primary email must be valid",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateImportInvalidRows returned error: %v", err)
+	}
+
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d, want 1", len(rows))
+	}
+	if rows[0].RawData["Email"] != "not-an-email" {
+		t.Fatalf("RawData = %v, want normalized email data", rows[0].RawData)
+	}
+	if len(store.importInvalidRows) != 1 {
+		t.Fatalf("stored invalid rows = %d, want 1", len(store.importInvalidRows))
+	}
+}
+
 func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 	t.Parallel()
 
@@ -272,6 +733,8 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 			name: "valid status",
 			nj: NewSyncJob{
 				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Operation: "BATCH_PLACEMENT_PULL",
 				Status:    SyncJobStatus("UNKNOWN"),
 				Direction: SyncDirectionInbound,
 			},
@@ -281,10 +744,44 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 			name: "valid direction",
 			nj: NewSyncJob{
 				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Operation: "BATCH_PLACEMENT_PULL",
 				Status:    SyncJobStatusQueued,
 				Direction: SyncDirection("UNKNOWN"),
 			},
 			want: ErrInvalidSyncDirection,
+		},
+		{
+			name: "adapter required",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Operation: "BATCH_PLACEMENT_PULL",
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrInvalidIntegrationAdapter,
+		},
+		{
+			name: "operation required",
+			nj: NewSyncJob{
+				Name:      "Nightly SIS reconciliation",
+				Adapter:   IntegrationAdapterKUCCPS,
+				Status:    SyncJobStatusQueued,
+				Direction: SyncDirectionInbound,
+			},
+			want: ErrSyncJobOperationRequired,
+		},
+		{
+			name: "max attempts invalid",
+			nj: NewSyncJob{
+				Name:        "Nightly SIS reconciliation",
+				Adapter:     IntegrationAdapterKUCCPS,
+				Operation:   "BATCH_PLACEMENT_PULL",
+				Status:      SyncJobStatusQueued,
+				Direction:   SyncDirectionInbound,
+				MaxAttempts: -1,
+			},
+			want: ErrInvalidMaxAttempts,
 		},
 	}
 
@@ -300,6 +797,144 @@ func TestCreateSyncJobValidatesFrameworkFields(t *testing.T) {
 	}
 }
 
+func TestCreateSyncJobDefaultsAdapterRetryMetadata(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	job, err := bus.CreateSyncJob(context.Background(), NewSyncJob{
+		Name:      " KUCCPS nightly placement pull ",
+		Adapter:   IntegrationAdapterKUCCPS,
+		Operation: " BATCH_PLACEMENT_PULL ",
+		Status:    SyncJobStatusQueued,
+		Direction: SyncDirectionInbound,
+	})
+	if err != nil {
+		t.Fatalf("CreateSyncJob returned error: %v", err)
+	}
+
+	if job.Name != "KUCCPS nightly placement pull" {
+		t.Fatalf("Name = %q, want trimmed name", job.Name)
+	}
+	if job.Operation != "BATCH_PLACEMENT_PULL" {
+		t.Fatalf("Operation = %q, want trimmed operation", job.Operation)
+	}
+	if job.Adapter != IntegrationAdapterKUCCPS {
+		t.Fatalf("Adapter = %s, want %s", job.Adapter, IntegrationAdapterKUCCPS)
+	}
+	if job.MaxAttempts != 3 {
+		t.Fatalf("MaxAttempts = %d, want 3", job.MaxAttempts)
+	}
+	if len(store.syncJobs) != 1 {
+		t.Fatalf("stored sync jobs = %d, want 1", len(store.syncJobs))
+	}
+}
+
+func TestUpdateSyncJobRetryStateTransitions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		initial    SyncJobStatus
+		update     UpdateSyncJob
+		wantStatus SyncJobStatus
+		wantErr    error
+	}{
+		{
+			name:       "queued to running",
+			initial:    SyncJobStatusQueued,
+			update:     UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 1},
+			wantStatus: SyncJobStatusRunning,
+		},
+		{
+			name:       "running to succeeded",
+			initial:    SyncJobStatusRunning,
+			update:     UpdateSyncJob{Status: SyncJobStatusSucceeded, AttemptCount: 1},
+			wantStatus: SyncJobStatusSucceeded,
+		},
+		{
+			name:       "running to retry ready",
+			initial:    SyncJobStatusRunning,
+			update:     UpdateSyncJob{Status: SyncJobStatusRetryReady, AttemptCount: 1, Retryable: true},
+			wantStatus: SyncJobStatusRetryReady,
+		},
+		{
+			name:       "retry ready to running",
+			initial:    SyncJobStatusRetryReady,
+			update:     UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 2},
+			wantStatus: SyncJobStatusRunning,
+		},
+		{
+			name:    "succeeded cannot rerun",
+			initial: SyncJobStatusSucceeded,
+			update:  UpdateSyncJob{Status: SyncJobStatusRunning, AttemptCount: 1},
+			wantErr: ErrInvalidSyncJobTransition,
+		},
+		{
+			name:    "attempts cannot exceed max",
+			initial: SyncJobStatusRunning,
+			update:  UpdateSyncJob{Status: SyncJobStatusFailed, AttemptCount: 4},
+			wantErr: ErrMaxAttemptsExceeded,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := &stubStore{}
+			bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+			job := SyncJob{
+				ID:          uuid.New(),
+				Name:        "KNEC result verification",
+				Adapter:     IntegrationAdapterKNEC,
+				Operation:   "RESULT_VERIFICATION",
+				Status:      tt.initial,
+				Direction:   SyncDirectionInbound,
+				MaxAttempts: 3,
+			}
+
+			updated, err := bus.UpdateSyncJob(context.Background(), job, tt.update)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+			if tt.wantErr != nil {
+				return
+			}
+			if updated.Status != tt.wantStatus {
+				t.Fatalf("Status = %s, want %s", updated.Status, tt.wantStatus)
+			}
+			if len(store.syncJobs) != 1 {
+				t.Fatalf("stored sync jobs = %d, want 1", len(store.syncJobs))
+			}
+		})
+	}
+}
+
+func TestQuerySyncJobsFiltersByAdapterIsolation(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	kuccps := SyncJob{ID: uuid.New(), Name: "KUCCPS", Adapter: IntegrationAdapterKUCCPS, Operation: "PLACEMENT_PULL", Status: SyncJobStatusRunning, Direction: SyncDirectionInbound, MaxAttempts: 3}
+	knec := SyncJob{ID: uuid.New(), Name: "KNEC", Adapter: IntegrationAdapterKNEC, Operation: "RESULT_VERIFICATION", Status: SyncJobStatusFailed, Direction: SyncDirectionInbound, MaxAttempts: 3}
+	store.syncJobs = []SyncJob{kuccps, knec}
+	adapter := IntegrationAdapterKNEC
+	status := SyncJobStatusFailed
+
+	jobs, err := bus.QuerySyncJobs(context.Background(), SyncJobQueryFilter{Adapter: &adapter, Status: &status}, DefaultSyncJobOrderBy, page.MustParse("1", "10"))
+	if err != nil {
+		t.Fatalf("QuerySyncJobs returned error: %v", err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("jobs = %d, want 1", len(jobs))
+	}
+	if jobs[0].ID != knec.ID {
+		t.Fatalf("job ID = %s, want KNEC failed job %s", jobs[0].ID, knec.ID)
+	}
+}
+
 func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 	t.Parallel()
 
@@ -308,6 +943,8 @@ func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 	applicationID := uuid.New()
 
 	event, err := bus.EnqueueSyncEvent(context.Background(), NewSyncEvent{
+		Adapter:      IntegrationAdapterKUCCPS,
+		Operation:    "APPLICATION_SUBMISSION",
 		EventType:    SyncEventTypeApplicationSubmission,
 		Direction:    SyncDirectionOutbound,
 		ResourceType: "application",
@@ -325,6 +962,12 @@ func TestEnqueueSyncEventStoresApprovedRealtimeEvent(t *testing.T) {
 
 	if event.EventType != SyncEventTypeApplicationSubmission {
 		t.Fatalf("EventType = %s, want %s", event.EventType, SyncEventTypeApplicationSubmission)
+	}
+	if event.Adapter != IntegrationAdapterKUCCPS {
+		t.Fatalf("Adapter = %s, want %s", event.Adapter, IntegrationAdapterKUCCPS)
+	}
+	if event.MaxAttempts != 3 {
+		t.Fatalf("MaxAttempts = %d, want 3", event.MaxAttempts)
 	}
 
 	if len(store.syncEvents) != 1 {
@@ -345,6 +988,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "event type",
 			ne: NewSyncEvent{
+				Adapter:      IntegrationAdapterKUCCPS,
+				Operation:    "APPLICATION_SUBMISSION",
 				EventType:    SyncEventType("CUSTOM_FIELD_SYNC"),
 				Direction:    SyncDirectionOutbound,
 				ResourceType: "application",
@@ -356,6 +1001,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "resource",
 			ne: NewSyncEvent{
+				Adapter:     IntegrationAdapterKUCCPS,
+				Operation:   "APPLICATION_DECISION",
 				EventType:   SyncEventTypeApplicationDecision,
 				Direction:   SyncDirectionOutbound,
 				ResourceID:  uuid.New(),
@@ -366,6 +1013,8 @@ func TestEnqueueSyncEventValidatesApprovedFieldSet(t *testing.T) {
 		{
 			name: "payload hash",
 			ne: NewSyncEvent{
+				Adapter:      IntegrationAdapterKUCCPS,
+				Operation:    "DOCUMENT_STATUS",
 				EventType:    SyncEventTypeDocumentStatus,
 				Direction:    SyncDirectionOutbound,
 				ResourceType: "document",
@@ -582,7 +1231,7 @@ func TestCreateApplicationFormTemplateCreatesVersionedConfig(t *testing.T) {
 	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Name:            " Freshman v1 ",
 		Description:     &description,
 		RequiredFields: []ApplicationFormField{
@@ -626,7 +1275,7 @@ func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
 	template, err := bus.CreateApplicationFormTemplate(context.Background(), NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 		Name:            "Transfer v1",
 		RequiredFields: []ApplicationFormField{
 			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
@@ -641,7 +1290,7 @@ func TestUpdateApplicationFormTemplateIncrementsVersion(t *testing.T) {
 	updated, err := bus.UpdateApplicationFormTemplate(context.Background(), template, NewApplicationFormTemplate{
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 		Name:            "Transfer v2",
 		RequiredFields: []ApplicationFormField{
 			{FieldName: "prior_college", FieldType: "text", Required: true, DisplayOrder: 1},
@@ -681,7 +1330,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				RequiredFields: []ApplicationFormField{
 					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
 				},
@@ -693,7 +1342,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				Name:            "Freshman",
 			},
 			want: ErrFormTemplateFieldsRequired,
@@ -703,7 +1352,7 @@ func TestCreateApplicationFormTemplateValidatesConfig(t *testing.T) {
 			nt: NewApplicationFormTemplate{
 				ProgramID:       programID,
 				AcademicTermID:  termID,
-				ApplicationType: ApplicationTypeFreshman,
+				ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 				Name:            "Freshman",
 				RequiredFields: []ApplicationFormField{
 					{FieldName: "personal_statement", FieldType: "textarea", Required: true, DisplayOrder: 1},
@@ -810,7 +1459,7 @@ func TestRecalculateLeadScoreExplainsMatchedRulesAndBand(t *testing.T) {
 			ConstituentID:   constituentID,
 			ProgramID:       programID,
 			AcademicTermID:  termID,
-			ApplicationType: ApplicationTypeTransfer,
+			ApplicationType: ApplicationTypeDiploma,
 			Status:          ApplicationStatusSubmitted,
 		}},
 	}
@@ -956,6 +1605,28 @@ func TestCreateConstituentIgnoresMissingExactDuplicate(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("CreateConstituent returned error: %v", err)
+	}
+}
+
+func assertNotificationPreferences(t *testing.T, got NotificationPreferences, want NotificationPreferences) {
+	t.Helper()
+
+	if got.SMSOptIn != want.SMSOptIn {
+		t.Fatalf("SMSOptIn = %t, want %t", got.SMSOptIn, want.SMSOptIn)
+	}
+	if got.WhatsAppOptIn != want.WhatsAppOptIn {
+		t.Fatalf("WhatsAppOptIn = %t, want %t", got.WhatsAppOptIn, want.WhatsAppOptIn)
+	}
+	if got.EmailOptIn != want.EmailOptIn {
+		t.Fatalf("EmailOptIn = %t, want %t", got.EmailOptIn, want.EmailOptIn)
+	}
+	if len(got.Priority) != len(want.Priority) {
+		t.Fatalf("Priority length = %d, want %d", len(got.Priority), len(want.Priority))
+	}
+	for i, channel := range want.Priority {
+		if got.Priority[i] != channel {
+			t.Fatalf("Priority[%d] = %s, want %s", i, got.Priority[i], channel)
+		}
 	}
 }
 
@@ -1117,7 +1788,7 @@ func TestCreateApplicationPreventsDuplicateActiveApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Status:          ApplicationStatusDraft,
 	})
 	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
@@ -1126,7 +1797,7 @@ func TestCreateApplicationPreventsDuplicateActiveApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 	})
 
 	if !errors.Is(err, ErrDuplicateApplication) {
@@ -1146,7 +1817,7 @@ func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeFreshman,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
 		Status:          ApplicationStatusWithdrawn,
 	})
 	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
@@ -1155,7 +1826,7 @@ func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
 		ConstituentID:   constituentID,
 		ProgramID:       programID,
 		AcademicTermID:  termID,
-		ApplicationType: ApplicationTypeTransfer,
+		ApplicationType: ApplicationTypeDiploma,
 	})
 	if err != nil {
 		t.Fatalf("CreateApplication returned error: %v", err)
@@ -1459,6 +2130,8 @@ type stubStore struct {
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	applicationTemplates   []ApplicationFormTemplate
+	customFieldDefinitions []CustomFieldDefinition
+	customFieldValues      []CustomFieldValue
 	constituents           map[uuid.UUID]Constituent
 	constituentByEmail     map[string]Constituent
 	duplicateReviews       []DuplicateReview
@@ -1468,6 +2141,8 @@ type stubStore struct {
 	applicationTransitions []ApplicationTransition
 	checklistItems         []ChecklistItem
 	documents              []Document
+	importBatches          []ImportBatch
+	importInvalidRows      []ImportInvalidRow
 	syncJobs               []SyncJob
 	syncEvents             []SyncEvent
 }
@@ -1737,6 +2412,18 @@ func (s *stubStore) QueryConstituentByExternalSISID(context.Context, string) (Co
 	return Constituent{}, ErrConstituentNotFound
 }
 
+func (s *stubStore) QueryConstituentByNationalID(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
+func (s *stubStore) QueryConstituentByUPI(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
+func (s *stubStore) QueryConstituentByKCSEIndexNumber(context.Context, string) (Constituent, error) {
+	return Constituent{}, ErrConstituentNotFound
+}
+
 func (s *stubStore) UpsertProgram(context.Context, Program) error {
 	return nil
 }
@@ -1885,6 +2572,106 @@ func (s *stubStore) QueryApplicationFormTemplateByID(_ context.Context, template
 	return ApplicationFormTemplate{}, ErrFormTemplateNotFound
 }
 
+func (s *stubStore) CreateCustomFieldDefinition(_ context.Context, definition CustomFieldDefinition) error {
+	s.customFieldDefinitions = append(s.customFieldDefinitions, definition)
+	return nil
+}
+
+func (s *stubStore) UpdateCustomFieldDefinition(_ context.Context, definition CustomFieldDefinition) error {
+	for i, existing := range s.customFieldDefinitions {
+		if existing.ID == definition.ID {
+			s.customFieldDefinitions[i] = definition
+			return nil
+		}
+	}
+	s.customFieldDefinitions = append(s.customFieldDefinitions, definition)
+	return nil
+}
+
+func (s *stubStore) QueryCustomFieldDefinitions(_ context.Context, filter CustomFieldDefinitionQueryFilter, _ order.By, _ page.Page) ([]CustomFieldDefinition, error) {
+	var definitions []CustomFieldDefinition
+	for _, definition := range s.customFieldDefinitions {
+		if filter.ID != nil && definition.ID != *filter.ID {
+			continue
+		}
+		if filter.Owner != nil && definition.Owner != *filter.Owner {
+			continue
+		}
+		if filter.Active != nil && definition.Active != *filter.Active {
+			continue
+		}
+		definitions = append(definitions, definition)
+	}
+	return definitions, nil
+}
+
+func (s *stubStore) CountCustomFieldDefinitions(_ context.Context, filter CustomFieldDefinitionQueryFilter) (int, error) {
+	definitions, err := s.QueryCustomFieldDefinitions(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+	return len(definitions), nil
+}
+
+func (s *stubStore) QueryCustomFieldDefinitionByID(_ context.Context, definitionID uuid.UUID) (CustomFieldDefinition, error) {
+	for _, definition := range s.customFieldDefinitions {
+		if definition.ID == definitionID {
+			return definition, nil
+		}
+	}
+	return CustomFieldDefinition{}, ErrCustomFieldDefinitionNotFound
+}
+
+func (s *stubStore) SetCustomFieldValue(_ context.Context, value CustomFieldValue) error {
+	for i, existing := range s.customFieldValues {
+		if existing.DefinitionID == value.DefinitionID && existing.Owner == value.Owner && existing.OwnerID == value.OwnerID {
+			value.ID = existing.ID
+			value.DateCreated = existing.DateCreated
+			s.customFieldValues[i] = value
+			return nil
+		}
+	}
+	s.customFieldValues = append(s.customFieldValues, value)
+	return nil
+}
+
+func (s *stubStore) QueryCustomFieldValues(_ context.Context, filter CustomFieldValueQueryFilter, _ order.By, _ page.Page) ([]CustomFieldValue, error) {
+	var values []CustomFieldValue
+	for _, value := range s.customFieldValues {
+		if filter.ID != nil && value.ID != *filter.ID {
+			continue
+		}
+		if filter.DefinitionID != nil && value.DefinitionID != *filter.DefinitionID {
+			continue
+		}
+		if filter.Owner != nil && value.Owner != *filter.Owner {
+			continue
+		}
+		if filter.OwnerID != nil && value.OwnerID != *filter.OwnerID {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values, nil
+}
+
+func (s *stubStore) CountCustomFieldValues(_ context.Context, filter CustomFieldValueQueryFilter) (int, error) {
+	values, err := s.QueryCustomFieldValues(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+	return len(values), nil
+}
+
+func (s *stubStore) QueryCustomFieldValueByID(_ context.Context, valueID uuid.UUID) (CustomFieldValue, error) {
+	for _, value := range s.customFieldValues {
+		if value.ID == valueID {
+			return value, nil
+		}
+	}
+	return CustomFieldValue{}, ErrCustomFieldValueNotFound
+}
+
 func (s *stubStore) CreateApplicationTransition(_ context.Context, transition ApplicationTransition) error {
 	s.applicationTransitions = append(s.applicationTransitions, transition)
 	return nil
@@ -1964,6 +2751,61 @@ func (s *stubStore) QueryDocumentByID(_ context.Context, documentID uuid.UUID) (
 	return Document{}, ErrDocumentNotFound
 }
 
+func (s *stubStore) CreateImportBatch(_ context.Context, batch ImportBatch) error {
+	s.importBatches = append(s.importBatches, batch)
+	return nil
+}
+
+func (s *stubStore) UpdateImportBatch(_ context.Context, batch ImportBatch) error {
+	for i, existing := range s.importBatches {
+		if existing.ID == batch.ID {
+			s.importBatches[i] = batch
+			return nil
+		}
+	}
+	s.importBatches = append(s.importBatches, batch)
+	return nil
+}
+
+func (s *stubStore) QueryImportBatches(context.Context, ImportBatchQueryFilter, order.By, page.Page) ([]ImportBatch, error) {
+	return s.importBatches, nil
+}
+
+func (s *stubStore) CountImportBatches(context.Context, ImportBatchQueryFilter) (int, error) {
+	return len(s.importBatches), nil
+}
+
+func (s *stubStore) QueryImportBatchByID(_ context.Context, batchID uuid.UUID) (ImportBatch, error) {
+	for _, batch := range s.importBatches {
+		if batch.ID == batchID {
+			return batch, nil
+		}
+	}
+	return ImportBatch{}, ErrImportBatchNotFound
+}
+
+func (s *stubStore) CreateImportInvalidRows(_ context.Context, rows []ImportInvalidRow) error {
+	s.importInvalidRows = append(s.importInvalidRows, rows...)
+	return nil
+}
+
+func (s *stubStore) QueryImportInvalidRows(context.Context, ImportInvalidRowQueryFilter, order.By, page.Page) ([]ImportInvalidRow, error) {
+	return s.importInvalidRows, nil
+}
+
+func (s *stubStore) CountImportInvalidRows(context.Context, ImportInvalidRowQueryFilter) (int, error) {
+	return len(s.importInvalidRows), nil
+}
+
+func (s *stubStore) QueryImportInvalidRowByID(_ context.Context, rowID uuid.UUID) (ImportInvalidRow, error) {
+	for _, row := range s.importInvalidRows {
+		if row.ID == rowID {
+			return row, nil
+		}
+	}
+	return ImportInvalidRow{}, ErrImportInvalidRowNotFound
+}
+
 func (s *stubStore) CreateSyncJob(_ context.Context, job SyncJob) error {
 	s.syncJobs = append(s.syncJobs, job)
 	return nil
@@ -1980,8 +2822,25 @@ func (s *stubStore) UpdateSyncJob(_ context.Context, job SyncJob) error {
 	return nil
 }
 
-func (s *stubStore) QuerySyncJobs(context.Context, SyncJobQueryFilter, order.By, page.Page) ([]SyncJob, error) {
-	return s.syncJobs, nil
+func (s *stubStore) QuerySyncJobs(_ context.Context, filter SyncJobQueryFilter, _ order.By, _ page.Page) ([]SyncJob, error) {
+	jobs := make([]SyncJob, 0, len(s.syncJobs))
+	for _, job := range s.syncJobs {
+		if filter.Adapter != nil && job.Adapter != *filter.Adapter {
+			continue
+		}
+		if filter.Status != nil && job.Status != *filter.Status {
+			continue
+		}
+		if filter.Direction != nil && job.Direction != *filter.Direction {
+			continue
+		}
+		if filter.Retryable != nil && job.Retryable != *filter.Retryable {
+			continue
+		}
+		jobs = append(jobs, job)
+	}
+
+	return jobs, nil
 }
 
 func (s *stubStore) CountSyncJobs(context.Context, SyncJobQueryFilter) (int, error) {
@@ -2013,8 +2872,19 @@ func (s *stubStore) UpdateSyncEvent(_ context.Context, event SyncEvent) error {
 	return nil
 }
 
-func (s *stubStore) QuerySyncEvents(context.Context, SyncEventQueryFilter, order.By, page.Page) ([]SyncEvent, error) {
-	return s.syncEvents, nil
+func (s *stubStore) QuerySyncEvents(_ context.Context, filter SyncEventQueryFilter, _ order.By, _ page.Page) ([]SyncEvent, error) {
+	events := make([]SyncEvent, 0, len(s.syncEvents))
+	for _, event := range s.syncEvents {
+		if filter.Adapter != nil && event.Adapter != *filter.Adapter {
+			continue
+		}
+		if filter.Status != nil && event.Status != *filter.Status {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
 
 func (s *stubStore) CountSyncEvents(context.Context, SyncEventQueryFilter) (int, error) {

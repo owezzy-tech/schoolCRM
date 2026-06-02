@@ -1,4 +1,4 @@
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,7 +18,18 @@ import {
     ApplicationFormTemplateRequest,
     ApplicationType,
     AssignmentCandidate,
+    CUSTOM_FIELD_DATA_TYPES,
+    CUSTOM_FIELD_OWNERS,
+    CustomFieldDataType,
+    CustomFieldDefinition,
+    CustomFieldDefinitionRequest,
+    CustomFieldOwner,
     EVENT_ATTENDANCE_STATUSES,
+    IMPORT_BATCH_STATUSES,
+    IMPORT_FILE_TYPES,
+    IMPORT_SOURCES,
+    IMPORT_TARGETS,
+    ImportBatch,
     LEAD_ASSIGNMENT_CRITERION_FIELDS,
     LEAD_ASSIGNMENT_CRITERION_OPERATORS,
     LEAD_SCORE_CRITERION_FIELDS,
@@ -59,6 +70,24 @@ interface ApplicationFormTemplateForm {
     active: boolean;
 }
 
+interface CustomFieldDefinitionForm {
+    id: string;
+    owner: CustomFieldOwner;
+    fieldKey: string;
+    label: string;
+    description: string;
+    dataType: CustomFieldDataType;
+    required: boolean;
+    optionsText: string;
+    validation: string;
+    searchable: boolean;
+    reportable: boolean;
+    importable: boolean;
+    exportable: boolean;
+    displayOrder: number;
+    active: boolean;
+}
+
 interface AssignmentRuleForm {
     id: string;
     name: string;
@@ -69,6 +98,14 @@ interface AssignmentRuleForm {
     assignee: string;
     priority: number;
     active: boolean;
+}
+
+interface ImportTemplateColumn {
+    key: string;
+    label: string;
+    required: boolean;
+    owner: 'Core' | 'Custom Field';
+    example: string;
 }
 
 const emptyForm: LeadScoreRuleForm = {
@@ -85,18 +122,25 @@ const emptyForm: LeadScoreRuleForm = {
 
 const defaultRequiredFields: ApplicationFormField[] = [
     {
-        fieldName: 'personal_statement',
-        fieldType: 'textarea',
+        fieldName: 'kcse_index_number',
+        fieldType: 'text',
         required: true,
         displayOrder: 1,
+        validation: 'kenya-kcse-index',
+    },
+    {
+        fieldName: 'programme_id',
+        fieldType: 'select',
+        required: true,
+        displayOrder: 2,
     },
 ];
 
 const defaultChecklistItems: ApplicationChecklistTemplateItem[] = [
     {
-        itemKey: 'transcript',
-        documentName: 'Transcript',
-        description: 'Official transcript for this application type.',
+        itemKey: 'kcse_result_slip',
+        documentName: 'KCSE result slip',
+        description: 'Official KCSE result slip or KNEC verification evidence.',
         required: true,
         displayOrder: 1,
     },
@@ -106,7 +150,7 @@ const emptyTemplateForm: ApplicationFormTemplateForm = {
     id: '',
     programID: '',
     academicTermID: '',
-    applicationType: 'FRESHMAN',
+    applicationType: 'KUCCPS_PLACEMENT',
     name: '',
     description: '',
     requiredFieldsText: JSON.stringify(defaultRequiredFields, null, 2),
@@ -114,6 +158,118 @@ const emptyTemplateForm: ApplicationFormTemplateForm = {
     priority: 100,
     active: true,
 };
+
+const emptyCustomFieldForm: CustomFieldDefinitionForm = {
+    id: '',
+    owner: 'CONSTITUENT',
+    fieldKey: '',
+    label: '',
+    description: '',
+    dataType: 'TEXT',
+    required: false,
+    optionsText: '',
+    validation: '',
+    searchable: true,
+    reportable: true,
+    importable: true,
+    exportable: true,
+    displayOrder: 100,
+    active: true,
+};
+
+const CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [
+    {
+        id: 'field-kuccps-placement-id',
+        owner: 'APPLICATION',
+        fieldKey: 'kuccps_placement_id',
+        label: 'KUCCPS placement ID',
+        description:
+            'KUCCPS placement reference captured before admissions review.',
+        dataType: 'TEXT',
+        required: false,
+        options: [],
+        validation: 'max:40',
+        searchable: true,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 5,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-kcse-mean-grade',
+        owner: 'CONSTITUENT',
+        fieldKey: 'kcse_mean_grade',
+        label: 'KCSE mean grade',
+        description:
+            'Normalized KCSE mean grade for application eligibility reporting.',
+        dataType: 'SELECT',
+        required: false,
+        options: [
+            'A',
+            'A-',
+            'B+',
+            'B',
+            'B-',
+            'C+',
+            'C',
+            'C-',
+            'D+',
+            'D',
+            'D-',
+            'E',
+        ],
+        searchable: true,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 10,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-kuccps-cluster-points',
+        owner: 'APPLICATION',
+        fieldKey: 'kuccps_cluster_points',
+        label: 'KUCCPS cluster points',
+        description:
+            'Public cluster-point approximation used until private KNEC PI data is available.',
+        dataType: 'NUMBER',
+        required: false,
+        options: [],
+        validation: 'min:0|max:48',
+        searchable: true,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 20,
+        active: true,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+    {
+        id: 'field-alumni-connection',
+        owner: 'CONSTITUENT',
+        fieldKey: 'alumni_connection',
+        label: 'Alumni connection',
+        description:
+            'Optional context for family or mentor relationship reporting.',
+        dataType: 'BOOLEAN',
+        required: false,
+        options: [],
+        searchable: false,
+        reportable: true,
+        importable: true,
+        exportable: true,
+        displayOrder: 30,
+        active: false,
+        dateCreated: '2026-06-01T08:00:00Z',
+        dateUpdated: '2026-06-01T08:00:00Z',
+    },
+];
 
 const emptyAssignmentForm: AssignmentRuleForm = {
     id: '',
@@ -135,14 +291,14 @@ const TERRITORIES = [
 ] as const;
 
 const PROGRAMS = [
-    'Computer Science',
-    'Business Analytics',
-    'B.Sc. CS',
-    'M.B.A.',
-    'B.A. Econ',
+    'B.Sc. Computer Science',
+    'Bachelor of Commerce',
+    'Diploma in ICT',
+    'M.A. Education',
+    'Certificate in Data Support',
 ] as const;
 
-const TERMS = ['Fall 2026', 'Spring 2027', 'Spring 2026'] as const;
+const TERMS = ['September 2026', 'January 2027', 'May 2027'] as const;
 
 const LEAD_SOURCES = [
     'Web form',
@@ -236,7 +392,7 @@ const ASSIGNMENT_RULES: LeadAssignmentRule[] = [
             {
                 field: 'application_type',
                 operator: 'IN',
-                values: ['FRESHMAN', 'TRANSFER'],
+                values: ['KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD'],
             },
         ],
         assignee: 'Avery',
@@ -304,10 +460,115 @@ const ASSIGNMENT_CANDIDATES: AssignmentCandidate[] = [
     },
 ];
 
+const IMPORT_BATCHES: ImportBatch[] = [
+    {
+        id: 'import-2026-0601-constituents',
+        source: 'MANUAL_UPLOAD',
+        fileType: 'CSV',
+        target: 'CONSTITUENTS',
+        status: 'VALIDATION_FAILED',
+        fileName: 'fall-2026-open-house-leads.csv',
+        storageKey: 'admissions/imports/fall-2026-open-house-leads.csv',
+        uploadedByID: 'user-maya-schultz',
+        totalRows: 420,
+        validRows: 392,
+        invalidRows: 18,
+        duplicateRows: 10,
+        fieldMapping: {
+            first_name: 'First Name',
+            last_name: 'Last Name',
+            primary_email: 'Email',
+            scholarship_level: 'Scholarship Level',
+        },
+        invalidReportKey:
+            'admissions/imports/reports/fall-2026-open-house-leads-invalid.csv',
+        validationSummary:
+            '18 rows need correction: missing email, invalid phone, or unknown program code.',
+        dateCreated: '2026-06-01T10:30:00Z',
+        dateUpdated: '2026-06-01T10:34:00Z',
+    },
+    {
+        id: 'import-2026-0531-applications',
+        source: 'SIS_EXPORT',
+        fileType: 'XLSX',
+        target: 'APPLICATIONS',
+        status: 'COMPLETED',
+        fileName: 'spring-2027-applications.xlsx',
+        uploadedByID: 'user-priya-reviewer',
+        totalRows: 128,
+        validRows: 124,
+        invalidRows: 0,
+        duplicateRows: 4,
+        fieldMapping: {
+            constituent_id: 'Student ID',
+            program_id: 'Program Code',
+            academic_term_id: 'Term Code',
+        },
+        committedAt: '2026-05-31T16:45:00Z',
+        validationSummary:
+            '124 applications committed. 4 duplicate active applications skipped.',
+        dateCreated: '2026-05-31T16:35:00Z',
+        dateUpdated: '2026-05-31T16:45:00Z',
+    },
+];
+
+const IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
+    {
+        key: 'first_name',
+        label: 'First name',
+        required: true,
+        owner: 'Core',
+        example: 'Aisha',
+    },
+    {
+        key: 'last_name',
+        label: 'Last name',
+        required: true,
+        owner: 'Core',
+        example: 'Bello',
+    },
+    {
+        key: 'primary_email',
+        label: 'Primary email',
+        required: true,
+        owner: 'Core',
+        example: 'aisha@example.edu',
+    },
+    {
+        key: 'program_id',
+        label: 'Programme ID',
+        required: true,
+        owner: 'Core',
+        example: 'BSC-CS',
+    },
+    {
+        key: 'kcse_index_number',
+        label: 'KCSE index number',
+        required: true,
+        owner: 'Core',
+        example: '204003024',
+    },
+    {
+        key: 'kuccps_placement_id',
+        label: 'KUCCPS placement ID',
+        required: false,
+        owner: 'Custom Field',
+        example: 'KUCCPS-2026-003024',
+    },
+    {
+        key: 'kcse_mean_grade',
+        label: 'KCSE mean grade',
+        required: false,
+        owner: 'Custom Field',
+        example: 'A-',
+    },
+];
+
 @Component({
     selector: 'app-admissions-settings',
     imports: [
         AsyncPipe,
+        JsonPipe,
         FormsModule,
         MatButtonModule,
         MatChipsModule,
@@ -330,23 +591,100 @@ export class AdmissionsSettingsComponent {
     readonly lifecycleStages = LIFECYCLE_STAGES;
     readonly applicationTypes = APPLICATION_TYPES;
     readonly applicationStatuses = APPLICATION_STATUSES;
+    readonly customFieldOwners = CUSTOM_FIELD_OWNERS;
+    readonly customFieldDataTypes = CUSTOM_FIELD_DATA_TYPES;
+    readonly customFieldDefinitions = CUSTOM_FIELD_DEFINITIONS;
+    readonly importBatchStatuses = IMPORT_BATCH_STATUSES;
+    readonly importSources = IMPORT_SOURCES;
+    readonly importFileTypes = IMPORT_FILE_TYPES;
+    readonly importTargets = IMPORT_TARGETS;
+    readonly importBatches = IMPORT_BATCHES;
+    readonly importTemplateColumns = IMPORT_TEMPLATE_COLUMNS;
     readonly eventAttendanceStatuses = EVENT_ATTENDANCE_STATUSES;
     readonly assignmentRules = ASSIGNMENT_RULES;
     readonly assignmentCandidates = ASSIGNMENT_CANDIDATES;
     readonly assignees = ASSIGNEES;
     readonly rules$ = this.admissionsService.rules$;
     readonly templates$ = this.admissionsService.templates$;
+    readonly customFieldDefinitions$ =
+        this.admissionsService.customFieldDefinitions$;
 
     errorMessage = '';
     saving = false;
     form: LeadScoreRuleForm = { ...emptyForm };
     templateSaving = false;
     templateForm: ApplicationFormTemplateForm = { ...emptyTemplateForm };
+    customFieldForm: CustomFieldDefinitionForm = { ...emptyCustomFieldForm };
     assignmentForm: AssignmentRuleForm = { ...emptyAssignmentForm };
 
     constructor() {
         this.loadRules();
         this.loadTemplates();
+    }
+
+    editCustomField(definition: CustomFieldDefinition): void {
+        this.customFieldForm = {
+            id: definition.id,
+            owner: definition.owner,
+            fieldKey: definition.fieldKey,
+            label: definition.label,
+            description: definition.description ?? '',
+            dataType: definition.dataType,
+            required: definition.required,
+            optionsText: definition.options.join(', '),
+            validation: definition.validation ?? '',
+            searchable: definition.searchable,
+            reportable: definition.reportable,
+            importable: definition.importable,
+            exportable: definition.exportable,
+            displayOrder: definition.displayOrder,
+            active: definition.active,
+        };
+    }
+
+    resetCustomFieldForm(): void {
+        this.customFieldForm = { ...emptyCustomFieldForm };
+    }
+
+    customFieldSummary(definition: CustomFieldDefinition): string {
+        const flags = [
+            definition.searchable ? 'Search' : '',
+            definition.reportable ? 'Report' : '',
+            definition.importable ? 'Import' : '',
+            definition.exportable ? 'Export' : '',
+        ].filter(Boolean);
+
+        return `${definition.dataType} · ${definition.required ? 'Required' : 'Optional'} · ${flags.join(' / ')}`;
+    }
+
+    customFieldOptionsLabel(definition: CustomFieldDefinition): string {
+        return definition.options.length > 0
+            ? definition.options.join(', ')
+            : 'No fixed options';
+    }
+
+    toCustomFieldRequest(
+        form: CustomFieldDefinitionForm
+    ): CustomFieldDefinitionRequest {
+        return {
+            owner: form.owner,
+            fieldKey: form.fieldKey.trim(),
+            label: form.label.trim(),
+            description: form.description.trim() || null,
+            dataType: form.dataType,
+            required: form.required,
+            options: form.optionsText
+                .split(',')
+                .map((value) => value.trim())
+                .filter((value) => value.length > 0),
+            validation: form.validation.trim() || null,
+            searchable: form.searchable,
+            reportable: form.reportable,
+            importable: form.importable,
+            exportable: form.exportable,
+            displayOrder: Number(form.displayOrder),
+            active: form.active,
+        };
     }
 
     loadRules(): void {
@@ -571,6 +909,28 @@ export class AdmissionsSettingsComponent {
             case 'alpha_range':
                 return ['A, M', 'N, Z'];
         }
+    }
+
+    importBatchProgress(batch: ImportBatch): number {
+        if (batch.totalRows === 0) {
+            return 0;
+        }
+
+        return Math.round((batch.validRows / batch.totalRows) * 100);
+    }
+
+    importBatchStatusLabel(batch: ImportBatch): string {
+        return batch.status.replaceAll('_', ' ');
+    }
+
+    importBatchSummary(batch: ImportBatch): string {
+        return `${batch.validRows} valid · ${batch.invalidRows} invalid · ${batch.duplicateRows} duplicates`;
+    }
+
+    importMappingSummary(batch: ImportBatch): string {
+        return Object.entries(batch.fieldMapping)
+            .map(([field, column]) => `${column} → ${field}`)
+            .join(' · ');
     }
 
     private toRequest(form: LeadScoreRuleForm): LeadScoreRuleRequest {

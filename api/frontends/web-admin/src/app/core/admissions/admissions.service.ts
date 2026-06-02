@@ -11,6 +11,17 @@ import {
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
+    CustomFieldDefinition,
+    CustomFieldDefinitionQuery,
+    CustomFieldDefinitionRequest,
+    CustomFieldValue,
+    CustomFieldValueRequest,
+    ImportBatch,
+    ImportBatchQuery,
+    ImportBatchRequest,
+    ImportInvalidRow,
+    ImportInvalidRowQuery,
+    ImportInvalidRowsRequest,
     Inquiry,
     InquiryRequest,
     LeadScore,
@@ -46,12 +57,25 @@ export class AdmissionsService {
     private readonly documentsSubject = new ReplaySubject<
         PaginatedResult<AdmissionsDocument>
     >(1);
+    private readonly customFieldDefinitionsSubject = new ReplaySubject<
+        PaginatedResult<CustomFieldDefinition>
+    >(1);
+    private readonly importBatchesSubject = new ReplaySubject<
+        PaginatedResult<ImportBatch>
+    >(1);
+    private readonly importInvalidRowsSubject = new ReplaySubject<
+        PaginatedResult<ImportInvalidRow>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
+    readonly customFieldDefinitions$ =
+        this.customFieldDefinitionsSubject.asObservable();
+    readonly importBatches$ = this.importBatchesSubject.asObservable();
+    readonly importInvalidRows$ = this.importInvalidRowsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -140,6 +164,50 @@ export class AdmissionsService {
             .pipe(map(unwrapJsonApiResource));
     }
 
+    queryCustomFieldDefinitions(
+        query: CustomFieldDefinitionQuery = {}
+    ): Observable<PaginatedResult<CustomFieldDefinition>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<CustomFieldDefinition>
+            >('/v1/admissions/custom-field-definitions', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.customFieldDefinitionsSubject.next(result))
+            );
+    }
+
+    createCustomFieldDefinition(
+        request: CustomFieldDefinitionRequest
+    ): Observable<CustomFieldDefinition> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<CustomFieldDefinition>
+            >('/v1/admissions/custom-field-definitions', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateCustomFieldDefinition(
+        definitionID: string,
+        request: CustomFieldDefinitionRequest
+    ): Observable<CustomFieldDefinition> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<CustomFieldDefinition>
+            >(`/v1/admissions/custom-field-definitions/${definitionID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    setCustomFieldValue(
+        request: CustomFieldValueRequest
+    ): Observable<CustomFieldValue> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<CustomFieldValue>
+            >('/v1/admissions/custom-field-values', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
     queryChecklistItems(
         applicationID: string,
         query: ChecklistItemQuery = {}
@@ -221,13 +289,72 @@ export class AdmissionsService {
             .pipe(map(unwrapJsonApiResource));
     }
 
+    queryImportBatches(
+        query: ImportBatchQuery = {}
+    ): Observable<PaginatedResult<ImportBatch>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ImportBatch>
+            >('/v1/admissions/import-batches', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.importBatchesSubject.next(result))
+            );
+    }
+
+    createImportBatch(request: ImportBatchRequest): Observable<ImportBatch> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<ImportBatch>
+            >('/v1/admissions/import-batches', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryImportInvalidRows(
+        importBatchID: string,
+        query: ImportInvalidRowQuery = {}
+    ): Observable<PaginatedResult<ImportInvalidRow>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ImportInvalidRow>
+            >(`/v1/admissions/import-batches/${importBatchID}/invalid-rows`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.importInvalidRowsSubject.next(result))
+            );
+    }
+
+    createImportInvalidRows(
+        importBatchID: string,
+        request: ImportInvalidRowsRequest
+    ): Observable<PaginatedResult<ImportInvalidRow>> {
+        return this.httpClient
+            .post<
+                JsonApiCollectionDocument<ImportInvalidRow>
+            >(`/v1/admissions/import-batches/${importBatchID}/invalid-rows`, request)
+            .pipe(map(unwrapJsonApiCollection));
+    }
+
+    downloadImportInvalidRows(
+        importBatchID: string
+    ): Observable<PaginatedResult<ImportInvalidRow>> {
+        return this.httpClient
+            .post<
+                JsonApiCollectionDocument<ImportInvalidRow>
+            >(`/v1/admissions/import-batches/${importBatchID}/invalid-rows/download`, {})
+            .pipe(map(unwrapJsonApiCollection));
+    }
+
     private queryParams(
         query:
             | LeadScoreQuery
             | LeadScoreRuleQuery
             | ApplicationFormTemplateQuery
+            | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery
+            | ImportBatchQuery
+            | ImportInvalidRowQuery
     ): HttpParams {
         let params = new HttpParams();
 

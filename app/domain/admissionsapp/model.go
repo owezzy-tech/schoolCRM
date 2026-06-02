@@ -360,22 +360,40 @@ func toAppHealth(health admissionsbus.Health) Health {
 
 // Constituent represents durable admissions identity data.
 type Constituent struct {
-	ID              string  `json:"id"`
-	FirstName       string  `json:"firstName"`
-	LastName        string  `json:"lastName"`
-	PreferredName   *string `json:"preferredName,omitempty"`
-	MiddleName      *string `json:"middleName,omitempty"`
-	Suffix          *string `json:"suffix,omitempty"`
-	DateOfBirth     string  `json:"dateOfBirth"`
-	PrimaryEmail    string  `json:"primaryEmail"`
-	PrimaryPhone    string  `json:"primaryPhone"`
-	ExternalSISID   *string `json:"externalSISID,omitempty"`
-	LifecycleStage  string  `json:"lifecycleStage"`
-	DuplicateStatus string  `json:"duplicateStatus"`
-	DuplicateOfID   *string `json:"duplicateOfID,omitempty"`
-	SISSyncedAt     *string `json:"sisSyncedAt,omitempty"`
-	DateCreated     string  `json:"dateCreated"`
-	DateUpdated     string  `json:"dateUpdated"`
+	ID                          string                  `json:"id"`
+	FirstName                   string                  `json:"firstName"`
+	LastName                    string                  `json:"lastName"`
+	PreferredName               *string                 `json:"preferredName,omitempty"`
+	MiddleName                  *string                 `json:"middleName,omitempty"`
+	Suffix                      *string                 `json:"suffix,omitempty"`
+	DateOfBirth                 string                  `json:"dateOfBirth"`
+	PrimaryEmail                string                  `json:"primaryEmail"`
+	PrimaryPhone                string                  `json:"primaryPhone"`
+	ExternalSISID               *string                 `json:"externalSISID,omitempty"`
+	NationalID                  *string                 `json:"nationalID,omitempty"`
+	NationalIDVerifiedAt        *string                 `json:"nationalIDVerifiedAt,omitempty"`
+	NationalIDVerifiedByAdapter *string                 `json:"nationalIDVerifiedByAdapter,omitempty"`
+	UPI                         *string                 `json:"upi,omitempty"`
+	UPIVerifiedAt               *string                 `json:"upiVerifiedAt,omitempty"`
+	UPIVerifiedByAdapter        *string                 `json:"upiVerifiedByAdapter,omitempty"`
+	KCSEIndexNumber             *string                 `json:"kcseIndexNumber,omitempty"`
+	KCSEIndexVerifiedAt         *string                 `json:"kcseIndexVerifiedAt,omitempty"`
+	KCSEIndexVerifiedByAdapter  *string                 `json:"kcseIndexVerifiedByAdapter,omitempty"`
+	LifecycleStage              string                  `json:"lifecycleStage"`
+	DuplicateStatus             string                  `json:"duplicateStatus"`
+	DuplicateOfID               *string                 `json:"duplicateOfID,omitempty"`
+	NotificationPreferences     NotificationPreferences `json:"notificationPreferences"`
+	SISSyncedAt                 *string                 `json:"sisSyncedAt,omitempty"`
+	DateCreated                 string                  `json:"dateCreated"`
+	DateUpdated                 string                  `json:"dateUpdated"`
+}
+
+// NotificationPreferences represents constituent notification opt-ins and priority order.
+type NotificationPreferences struct {
+	SMSOptIn      bool     `json:"smsOptIn"`
+	WhatsAppOptIn bool     `json:"whatsAppOptIn"`
+	EmailOptIn    bool     `json:"emailOptIn"`
+	Priority      []string `json:"priority"`
 }
 
 // Encode implements the encoder interface.
@@ -386,23 +404,56 @@ func (app Constituent) Encode() ([]byte, string, error) {
 
 func toAppConstituent(cst admissionsbus.Constituent) Constituent {
 	return Constituent{
-		ID:              cst.ID.String(),
-		FirstName:       cst.FirstName,
-		LastName:        cst.LastName,
-		PreferredName:   cst.PreferredName,
-		MiddleName:      cst.MiddleName,
-		Suffix:          cst.Suffix,
-		DateOfBirth:     cst.DateOfBirth.Format(time.RFC3339),
-		PrimaryEmail:    cst.PrimaryEmail.String(),
-		PrimaryPhone:    cst.PrimaryPhone,
-		ExternalSISID:   cst.ExternalSISID,
-		LifecycleStage:  cst.LifecycleStage.String(),
-		DuplicateStatus: cst.DuplicateStatus.String(),
-		DuplicateOfID:   uuidStringPtr(cst.DuplicateOfID),
-		SISSyncedAt:     formatTimePtr(cst.SISSyncedAt),
-		DateCreated:     cst.DateCreated.Format(time.RFC3339),
-		DateUpdated:     cst.DateUpdated.Format(time.RFC3339),
+		ID:                          cst.ID.String(),
+		FirstName:                   cst.FirstName,
+		LastName:                    cst.LastName,
+		PreferredName:               cst.PreferredName,
+		MiddleName:                  cst.MiddleName,
+		Suffix:                      cst.Suffix,
+		DateOfBirth:                 cst.DateOfBirth.Format(time.RFC3339),
+		PrimaryEmail:                cst.PrimaryEmail.String(),
+		PrimaryPhone:                cst.PrimaryPhone,
+		ExternalSISID:               cst.ExternalSISID,
+		NationalID:                  cst.NationalID,
+		NationalIDVerifiedAt:        formatTimePtr(cst.NationalIDVerifiedAt),
+		NationalIDVerifiedByAdapter: cst.NationalIDVerifiedByAdapter,
+		UPI:                         cst.UPI,
+		UPIVerifiedAt:               formatTimePtr(cst.UPIVerifiedAt),
+		UPIVerifiedByAdapter:        cst.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             cst.KCSEIndexNumber,
+		KCSEIndexVerifiedAt:         formatTimePtr(cst.KCSEIndexVerifiedAt),
+		KCSEIndexVerifiedByAdapter:  cst.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              cst.LifecycleStage.String(),
+		DuplicateStatus:             cst.DuplicateStatus.String(),
+		DuplicateOfID:               uuidStringPtr(cst.DuplicateOfID),
+		NotificationPreferences:     toAppNotificationPreferences(cst.NotificationPreferences),
+		SISSyncedAt:                 formatTimePtr(cst.SISSyncedAt),
+		DateCreated:                 cst.DateCreated.Format(time.RFC3339),
+		DateUpdated:                 cst.DateUpdated.Format(time.RFC3339),
 	}
+}
+
+func toAppNotificationPreferences(preferences admissionsbus.NotificationPreferences) NotificationPreferences {
+	return NotificationPreferences{
+		SMSOptIn:      preferences.SMSOptIn,
+		WhatsAppOptIn: preferences.WhatsAppOptIn,
+		EmailOptIn:    preferences.EmailOptIn,
+		Priority:      admissionsbus.NotificationChannelsToStrings(preferences.Priority),
+	}
+}
+
+func toBusNotificationPreferences(app NotificationPreferences) (admissionsbus.NotificationPreferences, error) {
+	channels, err := admissionsbus.ParseNotificationChannels(app.Priority)
+	if err != nil {
+		return admissionsbus.NotificationPreferences{}, err
+	}
+
+	return admissionsbus.NormalizeNotificationPreferences(admissionsbus.NotificationPreferences{
+		SMSOptIn:      app.SMSOptIn,
+		WhatsAppOptIn: app.WhatsAppOptIn,
+		EmailOptIn:    app.EmailOptIn,
+		Priority:      channels,
+	})
 }
 
 func toAppConstituents(constituents []admissionsbus.Constituent) []Constituent {
@@ -416,16 +467,26 @@ func toAppConstituents(constituents []admissionsbus.Constituent) []Constituent {
 
 // NewConstituent defines the data needed to add a new constituent.
 type NewConstituent struct {
-	FirstName      string  `json:"firstName"`
-	LastName       string  `json:"lastName"`
-	PreferredName  *string `json:"preferredName"`
-	MiddleName     *string `json:"middleName"`
-	Suffix         *string `json:"suffix"`
-	DateOfBirth    string  `json:"dateOfBirth"`
-	PrimaryEmail   string  `json:"primaryEmail"`
-	PrimaryPhone   string  `json:"primaryPhone"`
-	ExternalSISID  *string `json:"externalSISID"`
-	LifecycleStage string  `json:"lifecycleStage"`
+	FirstName                   string                   `json:"firstName"`
+	LastName                    string                   `json:"lastName"`
+	PreferredName               *string                  `json:"preferredName"`
+	MiddleName                  *string                  `json:"middleName"`
+	Suffix                      *string                  `json:"suffix"`
+	DateOfBirth                 string                   `json:"dateOfBirth"`
+	PrimaryEmail                string                   `json:"primaryEmail"`
+	PrimaryPhone                string                   `json:"primaryPhone"`
+	ExternalSISID               *string                  `json:"externalSISID"`
+	NationalID                  *string                  `json:"nationalID"`
+	NationalIDVerifiedAt        *string                  `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string                  `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string                  `json:"upi"`
+	UPIVerifiedAt               *string                  `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string                  `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string                  `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string                  `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string                  `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              string                   `json:"lifecycleStage"`
+	NotificationPreferences     *NotificationPreferences `json:"notificationPreferences"`
 }
 
 // Decode implements the decoder interface.
@@ -448,22 +509,76 @@ func toBusNewConstituent(_ context.Context, app NewConstituent) (admissionsbus.N
 
 	stage := admissionsbus.LifecycleStage(app.LifecycleStage)
 
+	nationalID, err := parseKenyaNationalIDPtr(app.NationalID)
+	if err != nil {
+		fieldErrors.Add("nationalID", err)
+	}
+
+	upi, err := parseKenyaUPIPtr(app.UPI)
+	if err != nil {
+		fieldErrors.Add("upi", err)
+	}
+
+	kcseIndexNumber, err := parseKenyaKCSEIndexNumberPtr(app.KCSEIndexNumber)
+	if err != nil {
+		fieldErrors.Add("kcseIndexNumber", err)
+	}
+
+	nationalIDVerifiedAt, err := parseTimePtr(app.NationalIDVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("nationalIDVerifiedAt", err)
+	}
+
+	upiVerifiedAt, err := parseTimePtr(app.UPIVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("upiVerifiedAt", err)
+	}
+
+	kcseIndexVerifiedAt, err := parseTimePtr(app.KCSEIndexVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("kcseIndexVerifiedAt", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	var notificationPreferences *admissionsbus.NotificationPreferences
+	if app.NotificationPreferences != nil {
+		preferences, err := toBusNotificationPreferences(*app.NotificationPreferences)
+		if err != nil {
+			fieldErrors.Add("notificationPreferences", err)
+		} else {
+			notificationPreferences = &preferences
+		}
+	}
+
 	if len(fieldErrors) > 0 {
 		return admissionsbus.NewConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
 
 	return admissionsbus.NewConstituent{
-		FirstName:       app.FirstName,
-		LastName:        app.LastName,
-		PreferredName:   app.PreferredName,
-		MiddleName:      app.MiddleName,
-		Suffix:          app.Suffix,
-		DateOfBirth:     dob,
-		PrimaryEmail:    *email,
-		PrimaryPhone:    app.PrimaryPhone,
-		ExternalSISID:   app.ExternalSISID,
-		LifecycleStage:  stage,
-		DuplicateStatus: admissionsbus.DuplicateStatusActive,
+		FirstName:                   app.FirstName,
+		LastName:                    app.LastName,
+		PreferredName:               app.PreferredName,
+		MiddleName:                  app.MiddleName,
+		Suffix:                      app.Suffix,
+		DateOfBirth:                 dob,
+		PrimaryEmail:                *email,
+		PrimaryPhone:                app.PrimaryPhone,
+		ExternalSISID:               app.ExternalSISID,
+		NationalID:                  nationalID,
+		NationalIDVerifiedAt:        nationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: app.NationalIDVerifiedByAdapter,
+		UPI:                         upi,
+		UPIVerifiedAt:               upiVerifiedAt,
+		UPIVerifiedByAdapter:        app.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             kcseIndexNumber,
+		KCSEIndexVerifiedAt:         kcseIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              stage,
+		DuplicateStatus:             admissionsbus.DuplicateStatusActive,
+		NotificationPreferences:     notificationPreferences,
 	}, nil
 }
 
@@ -591,12 +706,22 @@ func toBusNewInquiry(app NewInquiry) (admissionsbus.NewInquiry, error) {
 
 // UpdateConstituent defines the data needed to update a constituent.
 type UpdateConstituent struct {
-	PreferredName  *string `json:"preferredName"`
-	MiddleName     *string `json:"middleName"`
-	Suffix         *string `json:"suffix"`
-	PrimaryEmail   *string `json:"primaryEmail"`
-	PrimaryPhone   *string `json:"primaryPhone"`
-	LifecycleStage *string `json:"lifecycleStage"`
+	PreferredName               *string                  `json:"preferredName"`
+	MiddleName                  *string                  `json:"middleName"`
+	Suffix                      *string                  `json:"suffix"`
+	PrimaryEmail                *string                  `json:"primaryEmail"`
+	PrimaryPhone                *string                  `json:"primaryPhone"`
+	NationalID                  *string                  `json:"nationalID"`
+	NationalIDVerifiedAt        *string                  `json:"nationalIDVerifiedAt"`
+	NationalIDVerifiedByAdapter *string                  `json:"nationalIDVerifiedByAdapter"`
+	UPI                         *string                  `json:"upi"`
+	UPIVerifiedAt               *string                  `json:"upiVerifiedAt"`
+	UPIVerifiedByAdapter        *string                  `json:"upiVerifiedByAdapter"`
+	KCSEIndexNumber             *string                  `json:"kcseIndexNumber"`
+	KCSEIndexVerifiedAt         *string                  `json:"kcseIndexVerifiedAt"`
+	KCSEIndexVerifiedByAdapter  *string                  `json:"kcseIndexVerifiedByAdapter"`
+	LifecycleStage              *string                  `json:"lifecycleStage"`
+	NotificationPreferences     *NotificationPreferences `json:"notificationPreferences"`
 }
 
 // Decode implements the decoder interface.
@@ -623,17 +748,67 @@ func toBusUpdateConstituent(app UpdateConstituent) (admissionsbus.UpdateConstitu
 		stage = &parsed
 	}
 
+	nationalID, err := parseKenyaNationalIDPtr(app.NationalID)
+	if err != nil {
+		fieldErrors.Add("nationalID", err)
+	}
+
+	upi, err := parseKenyaUPIPtr(app.UPI)
+	if err != nil {
+		fieldErrors.Add("upi", err)
+	}
+
+	kcseIndexNumber, err := parseKenyaKCSEIndexNumberPtr(app.KCSEIndexNumber)
+	if err != nil {
+		fieldErrors.Add("kcseIndexNumber", err)
+	}
+
+	nationalIDVerifiedAt, err := parseTimePtr(app.NationalIDVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("nationalIDVerifiedAt", err)
+	}
+
+	upiVerifiedAt, err := parseTimePtr(app.UPIVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("upiVerifiedAt", err)
+	}
+
+	kcseIndexVerifiedAt, err := parseTimePtr(app.KCSEIndexVerifiedAt)
+	if err != nil {
+		fieldErrors.Add("kcseIndexVerifiedAt", err)
+	}
+
+	var notificationPreferences *admissionsbus.NotificationPreferences
+	if app.NotificationPreferences != nil {
+		preferences, err := toBusNotificationPreferences(*app.NotificationPreferences)
+		if err != nil {
+			fieldErrors.Add("notificationPreferences", err)
+		} else {
+			notificationPreferences = &preferences
+		}
+	}
+
 	if len(fieldErrors) > 0 {
 		return admissionsbus.UpdateConstituent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
 	}
 
 	return admissionsbus.UpdateConstituent{
-		PreferredName:  app.PreferredName,
-		MiddleName:     app.MiddleName,
-		Suffix:         app.Suffix,
-		PrimaryEmail:   email,
-		PrimaryPhone:   app.PrimaryPhone,
-		LifecycleStage: stage,
+		PreferredName:               app.PreferredName,
+		MiddleName:                  app.MiddleName,
+		Suffix:                      app.Suffix,
+		PrimaryEmail:                email,
+		PrimaryPhone:                app.PrimaryPhone,
+		NationalID:                  nationalID,
+		NationalIDVerifiedAt:        nationalIDVerifiedAt,
+		NationalIDVerifiedByAdapter: app.NationalIDVerifiedByAdapter,
+		UPI:                         upi,
+		UPIVerifiedAt:               upiVerifiedAt,
+		UPIVerifiedByAdapter:        app.UPIVerifiedByAdapter,
+		KCSEIndexNumber:             kcseIndexNumber,
+		KCSEIndexVerifiedAt:         kcseIndexVerifiedAt,
+		KCSEIndexVerifiedByAdapter:  app.KCSEIndexVerifiedByAdapter,
+		LifecycleStage:              stage,
+		NotificationPreferences:     notificationPreferences,
 	}, nil
 }
 
@@ -840,16 +1015,47 @@ func toBusResolveDuplicateReview(app ResolveDuplicateReview, actorID uuid.UUID) 
 
 // Application represents a constituent's application for a program and academic term.
 type Application struct {
-	ID                 string  `json:"id"`
-	ConstituentID      string  `json:"constituentID"`
-	ProgramID          string  `json:"programID"`
-	AcademicTermID     string  `json:"academicTermID"`
-	ApplicationType    string  `json:"applicationType"`
-	Status             string  `json:"status"`
-	AssignedReviewerID *string `json:"assignedReviewerID,omitempty"`
-	SubmittedAt        *string `json:"submittedAt,omitempty"`
-	DateCreated        string  `json:"dateCreated"`
-	DateUpdated        string  `json:"dateUpdated"`
+	ID                 string                 `json:"id"`
+	ConstituentID      string                 `json:"constituentID"`
+	ProgramID          string                 `json:"programID"`
+	AcademicTermID     string                 `json:"academicTermID"`
+	ApplicationType    string                 `json:"applicationType"`
+	Status             string                 `json:"status"`
+	KUCCPSPlacement    *KUCCPSPlacement       `json:"kuccpsPlacement,omitempty"`
+	KCSEResult         *ApplicationKCSEResult `json:"kcseResult,omitempty"`
+	AssignedReviewerID *string                `json:"assignedReviewerID,omitempty"`
+	SubmittedAt        *string                `json:"submittedAt,omitempty"`
+	DateCreated        string                 `json:"dateCreated"`
+	DateUpdated        string                 `json:"dateUpdated"`
+}
+
+// KUCCPSPlacement captures a normalized KUCCPS placement snapshot on an application.
+type KUCCPSPlacement struct {
+	PlacementID        string   `json:"placementID"`
+	AdmissionNumber    *string  `json:"admissionNumber,omitempty"`
+	InstitutionCode    string   `json:"institutionCode"`
+	ProgrammeCode      string   `json:"programmeCode"`
+	ProgrammeName      string   `json:"programmeName"`
+	PlacementYear      int      `json:"placementYear"`
+	ClusterCode        *string  `json:"clusterCode,omitempty"`
+	ClusterPoints      *float64 `json:"clusterPoints,omitempty"`
+	WeightedPointsNote *string  `json:"weightedPointsNote,omitempty"`
+}
+
+// ApplicationKCSESubject stores one KCSE subject grade snapshot on an application.
+type ApplicationKCSESubject struct {
+	SubjectCode string `json:"subjectCode"`
+	Grade       string `json:"grade"`
+	Points      int    `json:"points"`
+}
+
+// ApplicationKCSEResult stores the KCSE result snapshot submitted with an application.
+type ApplicationKCSEResult struct {
+	IndexNumber string                   `json:"indexNumber"`
+	ExamYear    int                      `json:"examYear"`
+	Subjects    []ApplicationKCSESubject `json:"subjects"`
+	MeanGrade   string                   `json:"meanGrade"`
+	MeanPoints  int                      `json:"meanPoints"`
 }
 
 // ApplicationFormField represents a configurable, non-core application form field.
@@ -885,6 +1091,182 @@ type ApplicationFormTemplate struct {
 	Priority        int                                `json:"priority"`
 	DateCreated     string                             `json:"dateCreated"`
 	DateUpdated     string                             `json:"dateUpdated"`
+}
+
+// CustomFieldDefinition represents a configurable admissions field owned by a constituent or application.
+type CustomFieldDefinition struct {
+	ID           string   `json:"id"`
+	Owner        string   `json:"owner"`
+	FieldKey     string   `json:"fieldKey"`
+	Label        string   `json:"label"`
+	Description  *string  `json:"description,omitempty"`
+	DataType     string   `json:"dataType"`
+	Required     bool     `json:"required"`
+	Options      []string `json:"options"`
+	Validation   *string  `json:"validation,omitempty"`
+	Searchable   bool     `json:"searchable"`
+	Reportable   bool     `json:"reportable"`
+	Importable   bool     `json:"importable"`
+	Exportable   bool     `json:"exportable"`
+	DisplayOrder int      `json:"displayOrder"`
+	Active       bool     `json:"active"`
+	DateCreated  string   `json:"dateCreated"`
+	DateUpdated  string   `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app CustomFieldDefinition) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCustomFieldDefinition(definition admissionsbus.CustomFieldDefinition) CustomFieldDefinition {
+	return CustomFieldDefinition{
+		ID:           definition.ID.String(),
+		Owner:        definition.Owner.String(),
+		FieldKey:     definition.FieldKey,
+		Label:        definition.Label,
+		Description:  definition.Description,
+		DataType:     definition.DataType.String(),
+		Required:     definition.Required,
+		Options:      definition.Options,
+		Validation:   definition.Validation,
+		Searchable:   definition.Searchable,
+		Reportable:   definition.Reportable,
+		Importable:   definition.Importable,
+		Exportable:   definition.Exportable,
+		DisplayOrder: definition.DisplayOrder,
+		Active:       definition.Active,
+		DateCreated:  definition.DateCreated.Format(time.RFC3339),
+		DateUpdated:  definition.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCustomFieldDefinitions(definitions []admissionsbus.CustomFieldDefinition) []CustomFieldDefinition {
+	app := make([]CustomFieldDefinition, len(definitions))
+	for i, definition := range definitions {
+		app[i] = toAppCustomFieldDefinition(definition)
+	}
+
+	return app
+}
+
+// NewCustomFieldDefinition defines the data needed to create or update an admissions custom field definition.
+type NewCustomFieldDefinition struct {
+	Owner        string   `json:"owner"`
+	FieldKey     string   `json:"fieldKey"`
+	Label        string   `json:"label"`
+	Description  *string  `json:"description"`
+	DataType     string   `json:"dataType"`
+	Required     bool     `json:"required"`
+	Options      []string `json:"options"`
+	Validation   *string  `json:"validation"`
+	Searchable   bool     `json:"searchable"`
+	Reportable   bool     `json:"reportable"`
+	Importable   bool     `json:"importable"`
+	Exportable   bool     `json:"exportable"`
+	DisplayOrder int      `json:"displayOrder"`
+	Active       bool     `json:"active"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewCustomFieldDefinition) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewCustomFieldDefinition(app NewCustomFieldDefinition) admissionsbus.NewCustomFieldDefinition {
+	return admissionsbus.NewCustomFieldDefinition{
+		Owner:        admissionsbus.CustomFieldOwner(app.Owner),
+		FieldKey:     app.FieldKey,
+		Label:        app.Label,
+		Description:  app.Description,
+		DataType:     admissionsbus.CustomFieldDataType(app.DataType),
+		Required:     app.Required,
+		Options:      app.Options,
+		Validation:   app.Validation,
+		Searchable:   app.Searchable,
+		Reportable:   app.Reportable,
+		Importable:   app.Importable,
+		Exportable:   app.Exportable,
+		DisplayOrder: app.DisplayOrder,
+		Active:       app.Active,
+	}
+}
+
+func toBusNewCustomFieldValue(app NewCustomFieldValue) (admissionsbus.NewCustomFieldValue, error) {
+	var fieldErrors errs.FieldErrors
+
+	definitionID, err := uuid.Parse(app.DefinitionID)
+	if err != nil {
+		fieldErrors.Add("definitionID", err)
+	}
+
+	ownerID, err := uuid.Parse(app.OwnerID)
+	if err != nil {
+		fieldErrors.Add("ownerID", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewCustomFieldValue{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewCustomFieldValue{
+		DefinitionID: definitionID,
+		Owner:        admissionsbus.CustomFieldOwner(app.Owner),
+		OwnerID:      ownerID,
+		Value:        app.Value,
+	}, nil
+}
+
+// CustomFieldValue represents one custom field value for a constituent or application.
+type CustomFieldValue struct {
+	ID           string `json:"id"`
+	DefinitionID string `json:"definitionID"`
+	Owner        string `json:"owner"`
+	OwnerID      string `json:"ownerID"`
+	Value        string `json:"value"`
+	DateCreated  string `json:"dateCreated"`
+	DateUpdated  string `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app CustomFieldValue) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCustomFieldValue(value admissionsbus.CustomFieldValue) CustomFieldValue {
+	return CustomFieldValue{
+		ID:           value.ID.String(),
+		DefinitionID: value.DefinitionID.String(),
+		Owner:        value.Owner.String(),
+		OwnerID:      value.OwnerID.String(),
+		Value:        value.Value,
+		DateCreated:  value.DateCreated.Format(time.RFC3339),
+		DateUpdated:  value.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCustomFieldValues(values []admissionsbus.CustomFieldValue) []CustomFieldValue {
+	app := make([]CustomFieldValue, len(values))
+	for i, value := range values {
+		app[i] = toAppCustomFieldValue(value)
+	}
+
+	return app
+}
+
+// NewCustomFieldValue defines the data needed to set one custom field value.
+type NewCustomFieldValue struct {
+	DefinitionID string `json:"definitionID"`
+	Owner        string `json:"owner"`
+	OwnerID      string `json:"ownerID"`
+	Value        string `json:"value"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewCustomFieldValue) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
 }
 
 // Encode implements the encoder interface.
@@ -1098,6 +1480,182 @@ func toAppDocuments(documents []admissionsbus.Document) []Document {
 	return app
 }
 
+// ImportBatch represents an admissions CSV or Excel import batch.
+type ImportBatch struct {
+	ID                string            `json:"id"`
+	Source            string            `json:"source"`
+	FileType          string            `json:"fileType"`
+	Target            string            `json:"target"`
+	Status            string            `json:"status"`
+	FileName          string            `json:"fileName"`
+	StorageKey        *string           `json:"storageKey,omitempty"`
+	UploadedByID      string            `json:"uploadedByID"`
+	TotalRows         int               `json:"totalRows"`
+	ValidRows         int               `json:"validRows"`
+	InvalidRows       int               `json:"invalidRows"`
+	DuplicateRows     int               `json:"duplicateRows"`
+	FieldMapping      map[string]string `json:"fieldMapping"`
+	InvalidReportKey  *string           `json:"invalidReportKey,omitempty"`
+	ValidationSummary *string           `json:"validationSummary,omitempty"`
+	CommittedAt       *string           `json:"committedAt,omitempty"`
+	DateCreated       string            `json:"dateCreated"`
+	DateUpdated       string            `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app ImportBatch) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppImportBatch(batch admissionsbus.ImportBatch) ImportBatch {
+	return ImportBatch{
+		ID:                batch.ID.String(),
+		Source:            batch.Source.String(),
+		FileType:          batch.FileType.String(),
+		Target:            batch.Target.String(),
+		Status:            batch.Status.String(),
+		FileName:          batch.FileName,
+		StorageKey:        batch.StorageKey,
+		UploadedByID:      batch.UploadedByID.String(),
+		TotalRows:         batch.TotalRows,
+		ValidRows:         batch.ValidRows,
+		InvalidRows:       batch.InvalidRows,
+		DuplicateRows:     batch.DuplicateRows,
+		FieldMapping:      batch.FieldMapping,
+		InvalidReportKey:  batch.InvalidReportKey,
+		ValidationSummary: batch.ValidationSummary,
+		CommittedAt:       formatTimePtr(batch.CommittedAt),
+		DateCreated:       batch.DateCreated.Format(time.RFC3339),
+		DateUpdated:       batch.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppImportBatches(batches []admissionsbus.ImportBatch) []ImportBatch {
+	app := make([]ImportBatch, len(batches))
+	for i, batch := range batches {
+		app[i] = toAppImportBatch(batch)
+	}
+
+	return app
+}
+
+// ImportInvalidRow represents one invalid import row available for correction download.
+type ImportInvalidRow struct {
+	ID          string            `json:"id"`
+	BatchID     string            `json:"batchID"`
+	RowNumber   int               `json:"rowNumber"`
+	FieldName   *string           `json:"fieldName,omitempty"`
+	RawData     map[string]string `json:"rawData"`
+	ErrorCode   string            `json:"errorCode"`
+	ErrorDetail string            `json:"errorDetail"`
+	DateCreated string            `json:"dateCreated"`
+}
+
+// Encode implements the encoder interface.
+func (app ImportInvalidRow) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppImportInvalidRow(row admissionsbus.ImportInvalidRow) ImportInvalidRow {
+	return ImportInvalidRow{
+		ID:          row.ID.String(),
+		BatchID:     row.BatchID.String(),
+		RowNumber:   row.RowNumber,
+		FieldName:   row.FieldName,
+		RawData:     row.RawData,
+		ErrorCode:   row.ErrorCode,
+		ErrorDetail: row.ErrorDetail,
+		DateCreated: row.DateCreated.Format(time.RFC3339),
+	}
+}
+
+func toAppImportInvalidRows(rows []admissionsbus.ImportInvalidRow) []ImportInvalidRow {
+	app := make([]ImportInvalidRow, len(rows))
+	for i, row := range rows {
+		app[i] = toAppImportInvalidRow(row)
+	}
+
+	return app
+}
+
+// NewImportBatch defines the data needed to record an import preview or commit.
+type NewImportBatch struct {
+	Source            string            `json:"source"`
+	FileType          string            `json:"fileType"`
+	Target            string            `json:"target"`
+	Status            string            `json:"status"`
+	FileName          string            `json:"fileName"`
+	StorageKey        *string           `json:"storageKey"`
+	TotalRows         int               `json:"totalRows"`
+	ValidRows         int               `json:"validRows"`
+	InvalidRows       int               `json:"invalidRows"`
+	DuplicateRows     int               `json:"duplicateRows"`
+	FieldMapping      map[string]string `json:"fieldMapping"`
+	InvalidReportKey  *string           `json:"invalidReportKey"`
+	ValidationSummary *string           `json:"validationSummary"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewImportBatch) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewImportBatch(app NewImportBatch, uploadedByID uuid.UUID) admissionsbus.NewImportBatch {
+	return admissionsbus.NewImportBatch{
+		Source:            admissionsbus.ImportSource(app.Source),
+		FileType:          admissionsbus.ImportFileType(app.FileType),
+		Target:            admissionsbus.ImportTarget(app.Target),
+		Status:            admissionsbus.ImportBatchStatus(app.Status),
+		FileName:          app.FileName,
+		StorageKey:        app.StorageKey,
+		UploadedByID:      uploadedByID,
+		TotalRows:         app.TotalRows,
+		ValidRows:         app.ValidRows,
+		InvalidRows:       app.InvalidRows,
+		DuplicateRows:     app.DuplicateRows,
+		FieldMapping:      app.FieldMapping,
+		InvalidReportKey:  app.InvalidReportKey,
+		ValidationSummary: app.ValidationSummary,
+	}
+}
+
+// NewImportInvalidRow defines invalid row details attached to an import batch.
+type NewImportInvalidRow struct {
+	RowNumber   int               `json:"rowNumber"`
+	FieldName   *string           `json:"fieldName"`
+	RawData     map[string]string `json:"rawData"`
+	ErrorCode   string            `json:"errorCode"`
+	ErrorDetail string            `json:"errorDetail"`
+}
+
+// NewImportInvalidRows defines the rows attached to an import batch.
+type NewImportInvalidRows struct {
+	Rows []NewImportInvalidRow `json:"rows"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewImportInvalidRows) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toBusNewImportInvalidRows(app NewImportInvalidRows, batchID uuid.UUID) []admissionsbus.NewImportInvalidRow {
+	rows := make([]admissionsbus.NewImportInvalidRow, len(app.Rows))
+	for i, row := range app.Rows {
+		rows[i] = admissionsbus.NewImportInvalidRow{
+			BatchID:     batchID,
+			RowNumber:   row.RowNumber,
+			FieldName:   row.FieldName,
+			RawData:     row.RawData,
+			ErrorCode:   row.ErrorCode,
+			ErrorDetail: row.ErrorDetail,
+		}
+	}
+
+	return rows
+}
+
 // Encode implements the encoder interface.
 func (app Application) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(app)
@@ -1112,6 +1670,8 @@ func toAppApplication(application admissionsbus.Application) Application {
 		AcademicTermID:     application.AcademicTermID.String(),
 		ApplicationType:    application.ApplicationType.String(),
 		Status:             application.Status.String(),
+		KUCCPSPlacement:    toAppKUCCPSPlacement(application.KUCCPSPlacement),
+		KCSEResult:         toAppApplicationKCSEResult(application.KCSEResult),
 		AssignedReviewerID: uuidStringPtr(application.AssignedReviewerID),
 		SubmittedAt:        formatTimePtr(application.SubmittedAt),
 		DateCreated:        application.DateCreated.Format(time.RFC3339),
@@ -1130,11 +1690,13 @@ func toAppApplications(applications []admissionsbus.Application) []Application {
 
 // NewApplication defines the data needed to create a draft application.
 type NewApplication struct {
-	ConstituentID      string  `json:"constituentID"`
-	ProgramID          string  `json:"programID"`
-	AcademicTermID     string  `json:"academicTermID"`
-	ApplicationType    string  `json:"applicationType"`
-	AssignedReviewerID *string `json:"assignedReviewerID"`
+	ConstituentID      string                 `json:"constituentID"`
+	ProgramID          string                 `json:"programID"`
+	AcademicTermID     string                 `json:"academicTermID"`
+	ApplicationType    string                 `json:"applicationType"`
+	KUCCPSPlacement    *KUCCPSPlacement       `json:"kuccpsPlacement"`
+	KCSEResult         *ApplicationKCSEResult `json:"kcseResult"`
+	AssignedReviewerID *string                `json:"assignedReviewerID"`
 }
 
 // NewApplicationFormTemplate defines the data needed to create or update a form template.
@@ -1346,8 +1908,100 @@ func toBusNewApplication(app NewApplication) (admissionsbus.NewApplication, erro
 		ProgramID:          programID,
 		AcademicTermID:     academicTermID,
 		ApplicationType:    admissionsbus.ApplicationType(app.ApplicationType),
+		KUCCPSPlacement:    toBusKUCCPSPlacement(app.KUCCPSPlacement),
+		KCSEResult:         toBusApplicationKCSEResult(app.KCSEResult),
 		AssignedReviewerID: assignedReviewerID,
 	}, nil
+}
+
+func toAppKUCCPSPlacement(placement *admissionsbus.KUCCPSPlacement) *KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	return &KUCCPSPlacement{
+		PlacementID:        placement.PlacementID,
+		AdmissionNumber:    placement.AdmissionNumber,
+		InstitutionCode:    placement.InstitutionCode,
+		ProgrammeCode:      placement.ProgrammeCode,
+		ProgrammeName:      placement.ProgrammeName,
+		PlacementYear:      placement.PlacementYear,
+		ClusterCode:        placement.ClusterCode,
+		ClusterPoints:      placement.ClusterPoints,
+		WeightedPointsNote: placement.WeightedPointsNote,
+	}
+}
+
+func toBusKUCCPSPlacement(placement *KUCCPSPlacement) *admissionsbus.KUCCPSPlacement {
+	if placement == nil {
+		return nil
+	}
+
+	return &admissionsbus.KUCCPSPlacement{
+		PlacementID:        placement.PlacementID,
+		AdmissionNumber:    placement.AdmissionNumber,
+		InstitutionCode:    placement.InstitutionCode,
+		ProgrammeCode:      placement.ProgrammeCode,
+		ProgrammeName:      placement.ProgrammeName,
+		PlacementYear:      placement.PlacementYear,
+		ClusterCode:        placement.ClusterCode,
+		ClusterPoints:      placement.ClusterPoints,
+		WeightedPointsNote: placement.WeightedPointsNote,
+	}
+}
+
+func toAppApplicationKCSEResult(result *admissionsbus.ApplicationKCSEResult) *ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	return &ApplicationKCSEResult{
+		IndexNumber: result.IndexNumber,
+		ExamYear:    result.ExamYear,
+		Subjects:    toAppApplicationKCSESubjects(result.Subjects),
+		MeanGrade:   result.MeanGrade,
+		MeanPoints:  result.MeanPoints,
+	}
+}
+
+func toBusApplicationKCSEResult(result *ApplicationKCSEResult) *admissionsbus.ApplicationKCSEResult {
+	if result == nil {
+		return nil
+	}
+
+	return &admissionsbus.ApplicationKCSEResult{
+		IndexNumber: result.IndexNumber,
+		ExamYear:    result.ExamYear,
+		Subjects:    toBusApplicationKCSESubjects(result.Subjects),
+		MeanGrade:   result.MeanGrade,
+		MeanPoints:  result.MeanPoints,
+	}
+}
+
+func toAppApplicationKCSESubjects(subjects []admissionsbus.ApplicationKCSESubject) []ApplicationKCSESubject {
+	app := make([]ApplicationKCSESubject, len(subjects))
+	for i, subject := range subjects {
+		app[i] = ApplicationKCSESubject{
+			SubjectCode: subject.SubjectCode,
+			Grade:       subject.Grade,
+			Points:      subject.Points,
+		}
+	}
+
+	return app
+}
+
+func toBusApplicationKCSESubjects(subjects []ApplicationKCSESubject) []admissionsbus.ApplicationKCSESubject {
+	bus := make([]admissionsbus.ApplicationKCSESubject, len(subjects))
+	for i, subject := range subjects {
+		bus[i] = admissionsbus.ApplicationKCSESubject{
+			SubjectCode: subject.SubjectCode,
+			Grade:       subject.Grade,
+			Points:      subject.Points,
+		}
+	}
+
+	return bus
 }
 
 // NewApplicationTransition defines the data needed to change an application status.
@@ -1590,6 +2244,48 @@ func parseTimePtr(value *string) (*time.Time, error) {
 	}
 
 	return &parsed, nil
+}
+
+func parseKenyaNationalIDPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	id, err := admissionsbus.ParseKenyaNationalID(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := id.String()
+	return &normalized, nil
+}
+
+func parseKenyaUPIPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	upi, err := admissionsbus.ParseKenyaUPI(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := upi.String()
+	return &normalized, nil
+}
+
+func parseKenyaKCSEIndexNumberPtr(value *string) (*string, error) {
+	if value == nil || *value == "" {
+		return nil, nil
+	}
+
+	indexNumber, err := admissionsbus.ParseKenyaKCSEIndexNumber(*value)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := indexNumber.String()
+	return &normalized, nil
 }
 
 func parseUUIDPtr(value *string) (*uuid.UUID, error) {
