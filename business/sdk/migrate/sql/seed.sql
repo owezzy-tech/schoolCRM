@@ -391,3 +391,57 @@ INSERT INTO sub_counties (code, county_code, name, date_created, date_updated) V
 	('320', '47', 'Mathare', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
 	('321', '47', 'Njiru', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
 ON CONFLICT DO NOTHING;
+
+-- Kenya ward seed slice adapted from HDX COD-AB/IEBC ward references. Full national ward import remains source-versioned operational data.
+INSERT INTO wards (code, county_code, sub_county_code, name, date_created, date_updated) VALUES
+	('W001', '1', '1', 'Port Reitz', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W002', '1', '1', 'Kipevu', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W003', '1', '1', 'Airport', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W004', '1', '2', 'Jomvu Kuu', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W005', '1', '2', 'Miritini', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W006', '47', '312', 'Parklands/Highridge', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W007', '47', '312', 'Kangemi', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W008', '47', '312', 'Mountain View', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W009', '47', '319', 'Nairobi Central', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('W010', '47', '319', 'Ngara', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+-- Kenya university seed slice aligned with Commission for University Education institution categories.
+INSERT INTO universities (code, name, institution_type, date_created, date_updated) VALUES
+	('UON', 'University of Nairobi', 'PUBLIC_UNIVERSITY', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KU', 'Kenyatta University', 'PUBLIC_UNIVERSITY', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('JKUAT', 'Jomo Kenyatta University of Agriculture and Technology', 'PUBLIC_UNIVERSITY', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('MKU', 'Mount Kenya University', 'PRIVATE_UNIVERSITY', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('TUK', 'Technical University of Kenya', 'PUBLIC_UNIVERSITY', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+-- KUCCPS programme cluster seed slice for admissions lookup and routing tests.
+INSERT INTO programme_clusters (code, name, description, date_created, date_updated) VALUES
+	('CL01', 'Medicine and Health Sciences', 'Programmes whose placement cluster emphasizes biology, chemistry, mathematics or physics.', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('CL02', 'Engineering and Technology', 'Programmes whose placement cluster emphasizes mathematics, physics and technical sciences.', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('CL03', 'Education and Humanities', 'Programmes whose placement cluster emphasizes languages, humanities and teaching subjects.', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('CL04', 'Business and Social Sciences', 'Programmes whose placement cluster emphasizes business, economics and social sciences.', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+-- Kenya National Qualifications Framework levels 1-10.
+INSERT INTO knqf_levels (code, level, name, descriptor, qualification, date_created, date_updated) VALUES
+	('KNQF-1', 1, 'KNQF Level 1', 'Basic introductory knowledge and skills.', 'National Vocational Certificate I', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-2', 2, 'KNQF Level 2', 'Basic operational knowledge and skills.', 'National Vocational Certificate II', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-3', 3, 'KNQF Level 3', 'Intermediate operational knowledge and skills.', 'Artisan Certificate', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-4', 4, 'KNQF Level 4', 'Technical knowledge and supervised practice.', 'Craft Certificate', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-5', 5, 'KNQF Level 5', 'Specialized technical knowledge and practice.', 'Diploma', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-6', 6, 'KNQF Level 6', 'Advanced technical or professional knowledge.', 'Higher Diploma', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-7', 7, 'KNQF Level 7', 'Broad professional knowledge and analytical skills.', 'Bachelor Degree', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-8', 8, 'KNQF Level 8', 'Advanced professional and research knowledge.', 'Postgraduate Diploma', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-9', 9, 'KNQF Level 9', 'Specialized research and professional leadership.', 'Masters Degree', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KNQF-10', 10, 'KNQF Level 10', 'Original research and highest-level expertise.', 'Doctoral Degree', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+-- Kenya programme seed slice aligned with KUCCPS/CUE-backed public catalog patterns.
+INSERT INTO programmes (code, university_code, cluster_code, knqf_level_code, name, award_type, date_created, date_updated) VALUES
+	('UON-BMED', 'UON', 'CL01', 'KNQF-7', 'Bachelor of Medicine and Bachelor of Surgery', 'BACHELOR', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('UON-BCOM', 'UON', 'CL04', 'KNQF-7', 'Bachelor of Commerce', 'BACHELOR', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('JKUAT-BENG-CIVIL', 'JKUAT', 'CL02', 'KNQF-7', 'Bachelor of Science in Civil Engineering', 'BACHELOR', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('KU-BED-ARTS', 'KU', 'CL03', 'KNQF-7', 'Bachelor of Education Arts', 'BACHELOR', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('TUK-DIP-ICT', 'TUK', 'CL02', 'KNQF-5', 'Diploma in Information Communication Technology', 'DIPLOMA', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;

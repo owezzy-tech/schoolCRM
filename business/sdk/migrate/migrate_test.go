@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -67,6 +68,73 @@ func TestKenyaIdentityMigrationAddsIndependentUniqueIndexes(t *testing.T) {
 	}
 }
 
+func TestKenyaReferenceCatalogCompletionMigrationCreatesReadOnlyTables(t *testing.T) {
+	t.Parallel()
+
+	migration := migrationBlock(t, "-- Version: 1.27")
+
+	checks := []string{
+		"CREATE TABLE wards",
+		"CREATE TABLE universities",
+		"CREATE TABLE programme_clusters",
+		"CREATE TABLE knqf_levels",
+		"CREATE TABLE programmes",
+		"FOREIGN KEY (sub_county_code) REFERENCES sub_counties(code)",
+		"FOREIGN KEY (university_code) REFERENCES universities(code)",
+		"FOREIGN KEY (cluster_code) REFERENCES programme_clusters(code)",
+		"FOREIGN KEY (knqf_level_code) REFERENCES knqf_levels(code)",
+		"CONSTRAINT knqf_levels_level_range CHECK (level BETWEEN 1 AND 10)",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(migration, check) {
+			t.Fatalf("reference catalog migration missing %q", check)
+		}
+	}
+}
+
+func TestKenyaReferenceCatalogSeedCoversCanonicalLookups(t *testing.T) {
+	t.Parallel()
+
+	checks := []string{
+		"INSERT INTO wards",
+		"INSERT INTO universities",
+		"INSERT INTO programme_clusters",
+		"INSERT INTO knqf_levels",
+		"INSERT INTO programmes",
+		"('KNQF-1', 1, 'KNQF Level 1'",
+		"('KNQF-10', 10, 'KNQF Level 10'",
+		"('CL02', 'Engineering and Technology'",
+		"('JKUAT-BENG-CIVIL', 'JKUAT', 'CL02', 'KNQF-7'",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(seedDoc, check) {
+			t.Fatalf("reference catalog seed missing %q", check)
+		}
+	}
+}
+
+func TestKenyaReferenceCatalogSeedCoversCanonicalCounts(t *testing.T) {
+	t.Parallel()
+
+	checks := map[string]int{
+		"counties":           47,
+		"sub_counties":       321,
+		"wards":              10,
+		"universities":       5,
+		"programme_clusters": 4,
+		"knqf_levels":        10,
+		"programmes":         5,
+	}
+
+	for table, want := range checks {
+		if got := seedInsertRowCount(seedDoc, table); got != want {
+			t.Fatalf("expected %d %s seed rows, got %d", want, table, got)
+		}
+	}
+}
+
 func migrationBlock(t *testing.T, marker string) string {
 	t.Helper()
 
@@ -82,4 +150,21 @@ func migrationBlock(t *testing.T, marker string) string {
 	}
 
 	return migrateDoc[start : start+len(marker)+next]
+}
+
+func seedInsertRowCount(seed string, table string) int {
+	marker := fmt.Sprintf("INSERT INTO %s", table)
+	start := strings.Index(seed, marker)
+	if start == -1 {
+		return 0
+	}
+
+	remaining := seed[start+len(marker):]
+	end := strings.Index(remaining, "ON CONFLICT DO NOTHING;")
+	if end == -1 {
+		return 0
+	}
+
+	block := remaining[:end]
+	return strings.Count(block, "\t('")
 }
