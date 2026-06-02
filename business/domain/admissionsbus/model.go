@@ -86,6 +86,29 @@ func (status DuplicateStatus) String() string {
 	return string(status)
 }
 
+// NotificationChannel identifies a constituent communication channel.
+type NotificationChannel string
+
+// Set of supported constituent notification channels.
+const (
+	NotificationChannelSMS      NotificationChannel = "SMS"
+	NotificationChannelWhatsApp NotificationChannel = "WHATSAPP"
+	NotificationChannelEmail    NotificationChannel = "EMAIL"
+)
+
+// String returns the notification channel as a string.
+func (channel NotificationChannel) String() string {
+	return string(channel)
+}
+
+// NotificationPreferences captures constituent channel consent and priority.
+type NotificationPreferences struct {
+	SMSOptIn      bool
+	WhatsAppOptIn bool
+	EmailOptIn    bool
+	Priority      []NotificationChannel
+}
+
 // DuplicateReviewStatus represents staff workflow state for a potential duplicate.
 type DuplicateReviewStatus string
 
@@ -157,6 +180,7 @@ type Constituent struct {
 	LifecycleStage              LifecycleStage
 	DuplicateStatus             DuplicateStatus
 	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     NotificationPreferences
 	SISSyncedAt                 *time.Time
 	DateCreated                 time.Time
 	DateUpdated                 time.Time
@@ -185,6 +209,7 @@ type NewConstituent struct {
 	LifecycleStage              LifecycleStage
 	DuplicateStatus             DuplicateStatus
 	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     *NotificationPreferences
 	SISSyncedAt                 *time.Time
 }
 
@@ -207,6 +232,7 @@ type UpdateConstituent struct {
 	LifecycleStage              *LifecycleStage
 	DuplicateStatus             *DuplicateStatus
 	DuplicateOfID               *uuid.UUID
+	NotificationPreferences     *NotificationPreferences
 	SISSyncedAt                 *time.Time
 }
 

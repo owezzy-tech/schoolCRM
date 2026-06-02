@@ -35,9 +35,10 @@ export class CommunicationsComponent {
 
     readonly tabs: CommunicationTab[] = [
         { label: 'All Messages', channel: 'ALL' },
-        { label: 'Email', channel: 'EMAIL' },
         { label: 'SMS', channel: 'SMS' },
-        { label: 'Phone Calls', channel: 'PHONE_CALL' },
+        { label: 'WhatsApp', channel: 'WHATSAPP' },
+        { label: 'Email', channel: 'EMAIL' },
+        { label: 'Phone calls', channel: 'PHONE_CALL' },
         { label: 'Notifications', channel: 'NOTIFICATION' },
     ];
 
@@ -149,8 +150,9 @@ export class CommunicationsComponent {
 
     channelLabel(channel: CommunicationChannel): string {
         const labels: Record<CommunicationChannel, string> = {
-            EMAIL: 'Email',
             SMS: 'SMS',
+            WHATSAPP: 'WhatsApp',
+            EMAIL: 'Email',
             PHONE_CALL: 'Phone call',
             NOTIFICATION: 'Notification',
         };
@@ -160,8 +162,9 @@ export class CommunicationsComponent {
 
     channelIcon(channel: CommunicationChannel): string {
         const icons: Record<CommunicationChannel, string> = {
-            EMAIL: 'heroicons_outline:envelope',
             SMS: 'heroicons_outline:chat-bubble-left',
+            WHATSAPP: 'heroicons_outline:device-phone-mobile',
+            EMAIL: 'heroicons_outline:envelope',
             PHONE_CALL: 'heroicons_outline:phone',
             NOTIFICATION: 'heroicons_outline:bell-alert',
         };

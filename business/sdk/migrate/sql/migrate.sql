@@ -819,3 +819,23 @@ CREATE INDEX idx_admissions_sync_jobs_external_ref ON admissions_sync_jobs (adap
 CREATE INDEX idx_admissions_sync_events_adapter ON admissions_sync_events (adapter);
 CREATE INDEX idx_admissions_sync_events_adapter_status ON admissions_sync_events (adapter, status);
 CREATE INDEX idx_admissions_sync_events_external_ref ON admissions_sync_events (adapter, external_ref) WHERE external_ref IS NOT NULL;
+
+-- Version: 1.26
+-- Description: Localize constituent notification preferences for Kenya
+ALTER TABLE admissions_constituents
+    ADD COLUMN sms_opt_in BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN whatsapp_opt_in BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN email_opt_in BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN notification_priority TEXT[] NOT NULL DEFAULT ARRAY['SMS', 'WHATSAPP', 'EMAIL']::TEXT[],
+    ADD CONSTRAINT admissions_constituents_notification_priority_required CHECK (array_length(notification_priority, 1) IS NOT NULL),
+    ADD CONSTRAINT admissions_constituents_notification_priority_length CHECK (cardinality(notification_priority) = 3),
+    ADD CONSTRAINT admissions_constituents_notification_priority_channels CHECK (notification_priority <@ ARRAY['SMS', 'WHATSAPP', 'EMAIL']::TEXT[]),
+    ADD CONSTRAINT admissions_constituents_notification_priority_unique CHECK (
+        array_position(notification_priority, 'SMS') IS NOT NULL
+        AND array_position(notification_priority, 'WHATSAPP') IS NOT NULL
+        AND array_position(notification_priority, 'EMAIL') IS NOT NULL
+        AND
+        array_position(notification_priority, 'SMS') <> array_position(notification_priority, 'WHATSAPP')
+        AND array_position(notification_priority, 'SMS') <> array_position(notification_priority, 'EMAIL')
+        AND array_position(notification_priority, 'WHATSAPP') <> array_position(notification_priority, 'EMAIL')
+    );

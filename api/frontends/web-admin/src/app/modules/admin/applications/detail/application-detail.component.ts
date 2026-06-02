@@ -8,6 +8,8 @@ import {
     ApplicationFeeStatus,
     ApplicationKCSEResult,
     KUCCPSPlacement,
+    NotificationChannel,
+    NotificationPreferences,
 } from 'app/core/admissions/admissions.types';
 import { ApplicationDocumentsComponent } from '../components/documents/application-documents.component';
 
@@ -27,6 +29,15 @@ interface Note {
 interface Insight {
     title: string;
     description: string;
+}
+
+interface ContactPreferenceRow {
+    channel: NotificationChannel;
+    label: string;
+    destination: string;
+    optIn: boolean;
+    provider: string;
+    consentNote: string;
 }
 
 @Component({
@@ -117,6 +128,40 @@ export class ApplicationDetailComponent {
         {
             label: 'Essay excerpt',
             value: '"My interest in software engineering began through a county robotics club..."',
+        },
+    ];
+
+    readonly notificationPreferences: NotificationPreferences = {
+        smsOptIn: true,
+        whatsAppOptIn: false,
+        emailOptIn: true,
+        priority: ['SMS', 'WHATSAPP', 'EMAIL'],
+    };
+
+    readonly contactPreferenceRows: ContactPreferenceRow[] = [
+        {
+            channel: 'SMS',
+            label: 'SMS',
+            destination: '+254 712 345 678',
+            optIn: this.notificationPreferences.smsOptIn,
+            provider: 'Celcom Africa SMS',
+            consentNote: 'Default urgent-alert channel for Kenya applicants.',
+        },
+        {
+            channel: 'WHATSAPP',
+            label: 'WhatsApp',
+            destination: '+254 712 345 678',
+            optIn: this.notificationPreferences.whatsAppOptIn,
+            provider: 'WhatsApp Cloud',
+            consentNote: 'Off until the applicant explicitly opts in.',
+        },
+        {
+            channel: 'EMAIL',
+            label: 'Email',
+            destination: 'achieng.otieno@example.ac.ke',
+            optIn: this.notificationPreferences.emailOptIn,
+            provider: 'SchoolCRM mailer',
+            consentNote: 'Kept on for long-form admissions notices.',
         },
     ];
 
@@ -214,5 +259,15 @@ export class ApplicationDetailComponent {
             style: 'currency',
             currency: fee.currency,
         }).format(fee.amountCents / 100);
+    }
+
+    preferenceIcon(channel: NotificationChannel): string {
+        const icons: Record<NotificationChannel, string> = {
+            SMS: 'heroicons_outline:chat-bubble-left',
+            WHATSAPP: 'heroicons_outline:device-phone-mobile',
+            EMAIL: 'heroicons_outline:envelope',
+        };
+
+        return icons[channel];
     }
 }
