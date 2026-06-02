@@ -4,6 +4,7 @@ package admissionsdb
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -2164,54 +2165,264 @@ func (s *Store) QueryDocumentByID(ctx context.Context, documentID uuid.UUID) (ad
 	return document, nil
 }
 
-// CreateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) CreateSyncJob(context.Context, admissionsbus.SyncJob) error {
+// CreateSyncJob persists a new SIS sync job to the database.
+func (s *Store) CreateSyncJob(ctx context.Context, job admissionsbus.SyncJob) error {
+	const q = `
+	INSERT INTO admissions_sync_jobs
+		(sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated)
+	VALUES
+		(:sync_job_id, :name, :adapter, :operation, :status, :direction, :started_at, :completed_at, :records_pulled, :records_pushed, :events_requeued, :attempt_count, :max_attempts, :next_retry_at, :external_ref, :external_receipt_id, :error_code, :error_detail, :last_error_at, :failure_reason, :retryable, :created_by_id, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncJob(job)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// UpdateSyncJob is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) UpdateSyncJob(context.Context, admissionsbus.SyncJob) error {
+// UpdateSyncJob replaces mutable sync job fields.
+func (s *Store) UpdateSyncJob(ctx context.Context, job admissionsbus.SyncJob) error {
+	const q = `
+	UPDATE
+		admissions_sync_jobs
+	SET
+		name = :name,
+		adapter = :adapter,
+		operation = :operation,
+		status = :status,
+		direction = :direction,
+		started_at = :started_at,
+		completed_at = :completed_at,
+		records_pulled = :records_pulled,
+		records_pushed = :records_pushed,
+		events_requeued = :events_requeued,
+		attempt_count = :attempt_count,
+		max_attempts = :max_attempts,
+		next_retry_at = :next_retry_at,
+		external_ref = :external_ref,
+		external_receipt_id = :external_receipt_id,
+		error_code = :error_code,
+		error_detail = :error_detail,
+		last_error_at = :last_error_at,
+		failure_reason = :failure_reason,
+		retryable = :retryable,
+		created_by_id = :created_by_id,
+		date_updated = :date_updated
+	WHERE
+		sync_job_id = :sync_job_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncJob(job)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// QuerySyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncJobs(context.Context, admissionsbus.SyncJobQueryFilter, order.By, page.Page) ([]admissionsbus.SyncJob, error) {
-	return []admissionsbus.SyncJob{}, nil
+// QuerySyncJobs retrieves sync jobs matching the provided filter with pagination and ordering.
+func (s *Store) QuerySyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncJob, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated
+	FROM
+		admissions_sync_jobs`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncJobFilter(filter, data, buf)
+
+	orderByClause, err := syncJobOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbJobs []syncJobDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbJobs); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return tobusSyncJobs(dbJobs), nil
 }
 
-// CountSyncJobs is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) CountSyncJobs(context.Context, admissionsbus.SyncJobQueryFilter) (int, error) {
-	return 0, nil
+// CountSyncJobs returns the total number of sync jobs matching the provided filter.
+func (s *Store) CountSyncJobs(ctx context.Context, filter admissionsbus.SyncJobQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_sync_jobs`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncJobFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
 }
 
-// QuerySyncJobByID is a persistence seam for SIS sync jobs. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncJobByID(context.Context, uuid.UUID) (admissionsbus.SyncJob, error) {
-	return admissionsbus.SyncJob{}, admissionsbus.ErrSyncJobNotFound
+// QuerySyncJobByID retrieves a single sync job by its ID.
+func (s *Store) QuerySyncJobByID(ctx context.Context, jobID uuid.UUID) (admissionsbus.SyncJob, error) {
+	const q = `
+	SELECT
+		sync_job_id, name, adapter, operation, status, direction, started_at, completed_at, records_pulled, records_pushed, events_requeued, attempt_count, max_attempts, next_retry_at, external_ref, external_receipt_id, error_code, error_detail, last_error_at, failure_reason, retryable, created_by_id, date_created, date_updated
+	FROM
+		admissions_sync_jobs
+	WHERE
+		sync_job_id = :sync_job_id`
+
+	data := map[string]any{"sync_job_id": jobID}
+
+	var dbJob syncJobDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbJob); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.SyncJob{}, fmt.Errorf("db: %w", admissionsbus.ErrSyncJobNotFound)
+		}
+		return admissionsbus.SyncJob{}, fmt.Errorf("db: %w", err)
+	}
+
+	return tobusSyncJob(dbJob), nil
 }
 
-// CreateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) CreateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+// CreateSyncEvent persists a new SIS sync event to the database.
+func (s *Store) CreateSyncEvent(ctx context.Context, event admissionsbus.SyncEvent) error {
+	const q = `
+	INSERT INTO admissions_sync_events
+		(sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated)
+	VALUES
+		(:sync_event_id, :sync_job_id, :adapter, :operation, :event_type, :status, :direction, :resource_type, :resource_id, :external_ref, :external_receipt_id, :payload_hash, :attempts, :max_attempts, :next_retry_at, :error_code, :error_detail, :last_error_at, :failure_reason, :audit_message, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// UpdateSyncEvent is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) UpdateSyncEvent(context.Context, admissionsbus.SyncEvent) error {
+// UpdateSyncEvent replaces mutable sync event fields.
+func (s *Store) UpdateSyncEvent(ctx context.Context, event admissionsbus.SyncEvent) error {
+	const q = `
+	UPDATE
+		admissions_sync_events
+	SET
+		sync_job_id = :sync_job_id,
+		adapter = :adapter,
+		operation = :operation,
+		event_type = :event_type,
+		status = :status,
+		direction = :direction,
+		resource_type = :resource_type,
+		resource_id = :resource_id,
+		external_ref = :external_ref,
+		external_receipt_id = :external_receipt_id,
+		payload_hash = :payload_hash,
+		attempts = :attempts,
+		max_attempts = :max_attempts,
+		next_retry_at = :next_retry_at,
+		error_code = :error_code,
+		error_detail = :error_detail,
+		last_error_at = :last_error_at,
+		failure_reason = :failure_reason,
+		audit_message = :audit_message,
+		date_updated = :date_updated
+	WHERE
+		sync_event_id = :sync_event_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBSyncEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
 	return nil
 }
 
-// QuerySyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncEvents(context.Context, admissionsbus.SyncEventQueryFilter, order.By, page.Page) ([]admissionsbus.SyncEvent, error) {
-	return []admissionsbus.SyncEvent{}, nil
+// QuerySyncEvents retrieves sync events matching the provided filter with pagination and ordering.
+func (s *Store) QuerySyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.SyncEvent, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated
+	FROM
+		admissions_sync_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncEventFilter(filter, data, buf)
+
+	orderByClause, err := syncEventOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbEvents []syncEventDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbEvents); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return tobusSyncEvents(dbEvents), nil
 }
 
-// CountSyncEvents is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) CountSyncEvents(context.Context, admissionsbus.SyncEventQueryFilter) (int, error) {
-	return 0, nil
+// CountSyncEvents returns the total number of sync events matching the provided filter.
+func (s *Store) CountSyncEvents(ctx context.Context, filter admissionsbus.SyncEventQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_sync_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applySyncEventFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
 }
 
-// QuerySyncEventByID is a persistence seam for SIS sync events. Durable storage is added with the SIS API integration slice.
-func (s *Store) QuerySyncEventByID(context.Context, uuid.UUID) (admissionsbus.SyncEvent, error) {
-	return admissionsbus.SyncEvent{}, admissionsbus.ErrSyncEventNotFound
+// QuerySyncEventByID retrieves a single sync event by its ID.
+func (s *Store) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.SyncEvent, error) {
+	const q = `
+	SELECT
+		sync_event_id, sync_job_id, adapter, operation, event_type, status, direction, resource_type, resource_id, external_ref, external_receipt_id, payload_hash, attempts, max_attempts, next_retry_at, error_code, error_detail, last_error_at, failure_reason, audit_message, date_created, date_updated
+	FROM
+		admissions_sync_events
+	WHERE
+		sync_event_id = :sync_event_id`
+
+	data := map[string]any{"sync_event_id": eventID}
+
+	var dbEvent syncEventDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbEvent); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.SyncEvent{}, fmt.Errorf("db: %w", admissionsbus.ErrSyncEventNotFound)
+		}
+		return admissionsbus.SyncEvent{}, fmt.Errorf("db: %w", err)
+	}
+
+	return tobusSyncEvent(dbEvent), nil
 }
 
 func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (admissionsbus.Document, error) {

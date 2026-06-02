@@ -87,6 +87,47 @@
             </section>
         </div>
 
+        <section class="bg-card mb-6 rounded-2xl p-5 shadow">
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold">Kenya adapter health</h2>
+                    <p class="text-secondary text-sm">
+                        Each provider keeps independent job and retry
+                        visibility.
+                    </p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                @for (health of adapterHealth(); track health.adapter) {
+                    <div
+                        class="rounded-2xl border p-4 ring-1"
+                        [class.border-red-200]="health.failed > 0"
+                        [class.bg-red-50]="health.failed > 0"
+                        [class.ring-red-200]="health.failed > 0"
+                        [class.border-green-200]="health.failed === 0"
+                        [class.bg-green-50]="health.failed === 0"
+                        [class.ring-green-200]="health.failed === 0"
+                        role="status"
+                        [attr.aria-label]="
+                            formatLabel(health.adapter) +
+                            ': ' +
+                            health.failed +
+                            ' failed of ' +
+                            health.total
+                        "
+                    >
+                        <div class="text-sm font-bold">
+                            {{ formatLabel(health.adapter) }}
+                        </div>
+                        <div class="mt-1 text-xs text-slate-600">
+                            {{ health.failed }} failed ·
+                            {{ health.total }} events
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <section class="xl:col-span-2">
                 <div
@@ -124,7 +165,9 @@
                                 <div>
                                     <h3 class="font-bold">{{ job.name }}</h3>
                                     <p class="text-secondary mt-1 text-sm">
-                                        {{ job.owner }} · {{ job.direction }}
+                                        {{ formatLabel(job.adapter) }} ·
+                                        {{ formatLabel(job.operation) }} ·
+                                        {{ job.owner }}
                                     </p>
                                 </div>
                                 <span
@@ -160,13 +203,41 @@
                                     class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                                 >
                                     <div class="text-secondary text-xs">
-                                        Requeued
+                                        Attempts
                                     </div>
                                     <div class="font-bold">
-                                        {{ job.eventsRequeued }}
+                                        {{ job.attempts }} /
+                                        {{ job.maxAttempts }}
                                     </div>
                                 </div>
                             </div>
+
+                            @if (job.nextRetryAt) {
+                                <div
+                                    class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+                                >
+                                    Next retry: {{ job.nextRetryAt }}
+                                </div>
+                            }
+
+                            @if (job.errorCode) {
+                                <div
+                                    class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                                    role="alert"
+                                >
+                                    <span class="font-mono font-bold">{{
+                                        job.errorCode
+                                    }}</span>
+                                    @if (job.errorDetail) {
+                                        — {{ job.errorDetail }}
+                                    }
+                                    @if (job.lastErrorAt) {
+                                        <span class="ml-2 text-xs text-red-500">
+                                            at {{ job.lastErrorAt }}
+                                        </span>
+                                    }
+                                </div>
+                            }
 
                             @if (job.failureReason) {
                                 <div
@@ -191,20 +262,42 @@
                             hash, attempts, and audit message.
                         </p>
                     </div>
-                    <mat-form-field appearance="outline" class="w-full sm:w-52">
-                        <mat-label>Event status</mat-label>
-                        <mat-select
-                            [ngModel]="selectedEventStatus()"
-                            (ngModelChange)="setEventStatus($event)"
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <mat-form-field
+                            appearance="outline"
+                            class="w-full sm:w-52"
                         >
-                            <mat-option value="">All events</mat-option>
-                            @for (status of eventStatuses; track status) {
-                                <mat-option [value]="status">{{
-                                    formatLabel(status)
-                                }}</mat-option>
-                            }
-                        </mat-select>
-                    </mat-form-field>
+                            <mat-label>Adapter</mat-label>
+                            <mat-select
+                                [ngModel]="selectedAdapter()"
+                                (ngModelChange)="setAdapter($event)"
+                            >
+                                <mat-option value="">All adapters</mat-option>
+                                @for (adapter of adapters; track adapter) {
+                                    <mat-option [value]="adapter">{{
+                                        formatLabel(adapter)
+                                    }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                        <mat-form-field
+                            appearance="outline"
+                            class="w-full sm:w-52"
+                        >
+                            <mat-label>Event status</mat-label>
+                            <mat-select
+                                [ngModel]="selectedEventStatus()"
+                                (ngModelChange)="setEventStatus($event)"
+                            >
+                                <mat-option value="">All events</mat-option>
+                                @for (status of eventStatuses; track status) {
+                                    <mat-option [value]="status">{{
+                                        formatLabel(status)
+                                    }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
                 </div>
 
                 <div class="bg-card overflow-hidden rounded-2xl shadow">
@@ -229,6 +322,9 @@
                                         <mat-chip>{{
                                             event.direction
                                         }}</mat-chip>
+                                        <mat-chip>{{
+                                            formatLabel(event.adapter)
+                                        }}</mat-chip>
                                     </div>
                                     <p class="text-secondary mt-2 text-sm">
                                         {{ event.auditMessage }}
@@ -241,7 +337,10 @@
                                         {{ event.resourceType }} ·
                                         {{ event.resourceID }}
                                     </div>
-                                    <div>Attempts: {{ event.attempts }}</div>
+                                    <div>
+                                        Attempts: {{ event.attempts }} /
+                                        {{ event.maxAttempts }}
+                                    </div>
                                 </div>
                             </div>
 
@@ -252,10 +351,14 @@
                                     class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                                 >
                                     <div class="text-secondary text-xs">
-                                        Payload hash
+                                        External ref
                                     </div>
                                     <div class="truncate font-mono text-xs">
-                                        {{ event.payloadHash }}
+                                        {{
+                                            event.externalRef ||
+                                                event.externalReceiptID ||
+                                                '—'
+                                        }}
                                     </div>
                                 </div>
                                 <div
@@ -280,6 +383,25 @@
                                 </div>
                             </div>
 
+                            @if (event.errorCode) {
+                                <div
+                                    class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                                    role="alert"
+                                >
+                                    <span class="font-mono font-bold">{{
+                                        event.errorCode
+                                    }}</span>
+                                    @if (event.errorDetail) {
+                                        — {{ event.errorDetail }}
+                                    }
+                                    @if (event.lastErrorAt) {
+                                        <span class="ml-2 text-xs text-red-500">
+                                            at {{ event.lastErrorAt }}
+                                        </span>
+                                    }
+                                </div>
+                            }
+
                             @if (event.failureReason) {
                                 <div
                                     class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
@@ -296,5 +418,52 @@
                 </div>
             </section>
         </div>
+
+        <section class="bg-card mt-6 overflow-hidden rounded-2xl shadow">
+            <div class="border-b p-5">
+                <h2 class="text-xl font-bold">Per-adapter aggregates</h2>
+                <p class="text-secondary text-sm">
+                    Separate counts make provider-specific outages visible.
+                </p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <caption class="sr-only">
+                        Kenya integration job aggregates by adapter
+                    </caption>
+                    <thead class="bg-gray-50 text-xs uppercase text-slate-500">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Adapter</th>
+                            <th scope="col" class="px-5 py-3">Jobs</th>
+                            <th scope="col" class="px-5 py-3">Active</th>
+                            <th scope="col" class="px-5 py-3">Failed/retry</th>
+                            <th scope="col" class="px-5 py-3">Last update</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (
+                            aggregate of adapterAggregates();
+                            track aggregate.adapter
+                        ) {
+                            <tr class="border-t">
+                                <td class="px-5 py-4 font-semibold">
+                                    {{ formatLabel(aggregate.adapter) }}
+                                </td>
+                                <td class="px-5 py-4">{{ aggregate.jobs }}</td>
+                                <td class="px-5 py-4">
+                                    {{ aggregate.running }}
+                                </td>
+                                <td class="px-5 py-4">
+                                    {{ aggregate.failed }}
+                                </td>
+                                <td class="px-5 py-4">
+                                    {{ aggregate.lastJobAt }}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </div>

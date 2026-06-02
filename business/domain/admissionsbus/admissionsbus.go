@@ -104,6 +104,11 @@ var (
 	ErrImportInvalidRowErrorRequired = errors.New("import invalid row error required")
 	ErrSyncJobNotFound               = errors.New("sync job not found")
 	ErrSyncJobNameRequired           = errors.New("sync job name required")
+	ErrInvalidIntegrationAdapter     = errors.New("invalid integration adapter")
+	ErrSyncJobOperationRequired      = errors.New("sync job operation required")
+	ErrInvalidMaxAttempts            = errors.New("max attempts must be greater than zero")
+	ErrInvalidSyncJobTransition      = errors.New("invalid sync job status transition")
+	ErrMaxAttemptsExceeded           = errors.New("attempt count exceeds max attempts")
 	ErrInvalidSyncJobStatus          = errors.New("invalid sync job status")
 	ErrInvalidSyncEventStatus        = errors.New("invalid sync event status")
 	ErrInvalidSyncDirection          = errors.New("invalid sync direction")
@@ -2085,14 +2090,18 @@ func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, e
 	if err := validateNewSyncJob(nj); err != nil {
 		return SyncJob{}, err
 	}
+	maxAttempts := defaultMaxAttempts(nj.MaxAttempts)
 
 	now := time.Now()
 	job := SyncJob{
 		ID:          uuid.New(),
 		Name:        strings.TrimSpace(nj.Name),
+		Adapter:     nj.Adapter,
+		Operation:   strings.TrimSpace(nj.Operation),
 		Status:      nj.Status,
 		Direction:   nj.Direction,
 		StartedAt:   nj.StartedAt,
+		MaxAttempts: maxAttempts,
 		CreatedByID: nj.CreatedByID,
 		DateCreated: now,
 		DateUpdated: now,
@@ -2107,7 +2116,7 @@ func (b *Business) CreateSyncJob(ctx context.Context, nj NewSyncJob) (SyncJob, e
 
 // UpdateSyncJob records the outcome and retry state for a SIS batch reconciliation run.
 func (b *Business) UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSyncJob) (SyncJob, error) {
-	if err := validateSyncJobStatus(uj.Status); err != nil {
+	if err := validateSyncJobUpdate(job, uj); err != nil {
 		return SyncJob{}, err
 	}
 
@@ -2116,6 +2125,13 @@ func (b *Business) UpdateSyncJob(ctx context.Context, job SyncJob, uj UpdateSync
 	job.RecordsPulled = uj.RecordsPulled
 	job.RecordsPushed = uj.RecordsPushed
 	job.EventsRequeued = uj.EventsRequeued
+	job.AttemptCount = uj.AttemptCount
+	job.NextRetryAt = uj.NextRetryAt
+	job.ExternalRef = trimStringPtr(uj.ExternalRef)
+	job.ExternalReceiptID = trimStringPtr(uj.ExternalReceiptID)
+	job.ErrorCode = trimStringPtr(uj.ErrorCode)
+	job.ErrorDetail = trimStringPtr(uj.ErrorDetail)
+	job.LastErrorAt = uj.LastErrorAt
 	job.FailureReason = trimStringPtr(uj.FailureReason)
 	job.Retryable = uj.Retryable
 	job.DateUpdated = time.Now()
@@ -2157,20 +2173,26 @@ func (b *Business) EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncE
 	if err := validateNewSyncEvent(ne); err != nil {
 		return SyncEvent{}, err
 	}
+	maxAttempts := defaultMaxAttempts(ne.MaxAttempts)
 
 	now := time.Now()
 	event := SyncEvent{
-		ID:           uuid.New(),
-		JobID:        ne.JobID,
-		EventType:    ne.EventType,
-		Status:       SyncEventStatusQueued,
-		Direction:    ne.Direction,
-		ResourceType: strings.TrimSpace(ne.ResourceType),
-		ResourceID:   ne.ResourceID,
-		PayloadHash:  strings.TrimSpace(ne.PayloadHash),
-		AuditMessage: strings.TrimSpace(ne.AuditMessage),
-		DateCreated:  now,
-		DateUpdated:  now,
+		ID:                uuid.New(),
+		JobID:             ne.JobID,
+		Adapter:           ne.Adapter,
+		Operation:         strings.TrimSpace(ne.Operation),
+		EventType:         ne.EventType,
+		Status:            SyncEventStatusQueued,
+		Direction:         ne.Direction,
+		ResourceType:      strings.TrimSpace(ne.ResourceType),
+		ResourceID:        ne.ResourceID,
+		ExternalRef:       trimStringPtr(ne.ExternalRef),
+		ExternalReceiptID: trimStringPtr(ne.ExternalReceiptID),
+		PayloadHash:       strings.TrimSpace(ne.PayloadHash),
+		MaxAttempts:       maxAttempts,
+		AuditMessage:      strings.TrimSpace(ne.AuditMessage),
+		DateCreated:       now,
+		DateUpdated:       now,
 	}
 
 	if err := b.storer.CreateSyncEvent(ctx, event); err != nil {
@@ -2182,13 +2204,18 @@ func (b *Business) EnqueueSyncEvent(ctx context.Context, ne NewSyncEvent) (SyncE
 
 // UpdateSyncEvent records queue processing status, retry scheduling, and failure visibility.
 func (b *Business) UpdateSyncEvent(ctx context.Context, event SyncEvent, ue UpdateSyncEvent) (SyncEvent, error) {
-	if err := validateSyncEventStatus(ue.Status); err != nil {
+	if err := validateSyncEventUpdate(event, ue); err != nil {
 		return SyncEvent{}, err
 	}
 
 	event.Status = ue.Status
 	event.Attempts = ue.Attempts
 	event.NextRetryAt = ue.NextRetryAt
+	event.ExternalRef = trimStringPtr(ue.ExternalRef)
+	event.ExternalReceiptID = trimStringPtr(ue.ExternalReceiptID)
+	event.ErrorCode = trimStringPtr(ue.ErrorCode)
+	event.ErrorDetail = trimStringPtr(ue.ErrorDetail)
+	event.LastErrorAt = ue.LastErrorAt
 	event.FailureReason = trimStringPtr(ue.FailureReason)
 	event.AuditMessage = strings.TrimSpace(ue.AuditMessage)
 	event.DateUpdated = time.Now()
@@ -2499,6 +2526,15 @@ func validateNewSyncJob(nj NewSyncJob) error {
 	if strings.TrimSpace(nj.Name) == "" {
 		return ErrSyncJobNameRequired
 	}
+	if !nj.Adapter.Valid() {
+		return ErrInvalidIntegrationAdapter
+	}
+	if strings.TrimSpace(nj.Operation) == "" {
+		return ErrSyncJobOperationRequired
+	}
+	if nj.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
+	}
 
 	if err := validateSyncDirection(nj.Direction); err != nil {
 		return err
@@ -2508,6 +2544,16 @@ func validateNewSyncJob(nj NewSyncJob) error {
 }
 
 func validateNewSyncEvent(ne NewSyncEvent) error {
+	if !ne.Adapter.Valid() {
+		return ErrInvalidIntegrationAdapter
+	}
+	if strings.TrimSpace(ne.Operation) == "" {
+		return ErrSyncJobOperationRequired
+	}
+	if ne.MaxAttempts < 0 {
+		return ErrInvalidMaxAttempts
+	}
+
 	if err := validateSyncEventType(ne.EventType); err != nil {
 		return err
 	}
@@ -2525,6 +2571,60 @@ func validateNewSyncEvent(ne NewSyncEvent) error {
 	}
 
 	return nil
+}
+
+func defaultMaxAttempts(maxAttempts int) int {
+	if maxAttempts == 0 {
+		return 3
+	}
+
+	return maxAttempts
+}
+
+func validateSyncJobUpdate(job SyncJob, uj UpdateSyncJob) error {
+	if err := validateSyncJobStatus(uj.Status); err != nil {
+		return err
+	}
+	if !isAllowedSyncJobTransition(job.Status, uj.Status) {
+		return ErrInvalidSyncJobTransition
+	}
+	if uj.AttemptCount < 0 || uj.AttemptCount > job.MaxAttempts {
+		return ErrMaxAttemptsExceeded
+	}
+
+	return nil
+}
+
+func validateSyncEventUpdate(event SyncEvent, ue UpdateSyncEvent) error {
+	if err := validateSyncEventStatus(ue.Status); err != nil {
+		return err
+	}
+	if ue.Attempts < 0 || ue.Attempts > event.MaxAttempts {
+		return ErrMaxAttemptsExceeded
+	}
+
+	return nil
+}
+
+func isAllowedSyncJobTransition(from SyncJobStatus, to SyncJobStatus) bool {
+	if from == to {
+		return true
+	}
+
+	switch from {
+	case SyncJobStatusQueued:
+		return to == SyncJobStatusRunning || to == SyncJobStatusFailed || to == SyncJobStatusRetryReady
+	case SyncJobStatusRunning:
+		return to == SyncJobStatusSucceeded || to == SyncJobStatusFailed || to == SyncJobStatusRetryReady
+	case SyncJobStatusFailed:
+		return to == SyncJobStatusRetryReady
+	case SyncJobStatusRetryReady:
+		return to == SyncJobStatusRunning || to == SyncJobStatusFailed
+	case SyncJobStatusSucceeded:
+		return false
+	default:
+		return false
+	}
 }
 
 func validateSyncJobStatus(status SyncJobStatus) error {
@@ -2572,7 +2672,18 @@ func validateSyncEventType(eventType SyncEventType) error {
 		SyncEventTypeApplicationSubmission,
 		SyncEventTypeApplicationDecision,
 		SyncEventTypeDocumentStatus,
-		SyncEventTypeEnrollmentIntent:
+		SyncEventTypeEnrollmentIntent,
+		SyncEventTypeKUCCPSPlacementPull,
+		SyncEventTypeKUCCPSPlacementConfirm,
+		SyncEventTypeKNECResultVerification,
+		SyncEventTypeIPRSIdentityVerify,
+		SyncEventTypeMPesaSTKPush,
+		SyncEventTypeMPesaC2BCallback,
+		SyncEventTypeMPesaTransactionQuery,
+		SyncEventTypeSMSOutbound,
+		SyncEventTypeSMSDeliveryReport,
+		SyncEventTypeWhatsAppMessageSend,
+		SyncEventTypeWhatsAppWebhookInbound:
 		return nil
 	default:
 		return ErrInvalidSyncEventType

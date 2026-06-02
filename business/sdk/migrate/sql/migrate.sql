@@ -689,3 +689,133 @@ ALTER TABLE admissions_applications
 ALTER TABLE admissions_application_form_templates
     DROP CONSTRAINT admissions_form_templates_type,
     ADD CONSTRAINT admissions_form_templates_type CHECK (application_type IN ('KUCCPS_PLACEMENT', 'SELF_SPONSORED_UNDERGRAD', 'DIPLOMA', 'MASTERS', 'PHD', 'TVET', 'BRIDGING', 'CERTIFICATE'));
+
+-- Version: 1.23
+-- Description: Create admissions sync jobs table
+CREATE TABLE admissions_sync_jobs (
+    sync_job_id      UUID      NOT NULL,
+    name             TEXT      NOT NULL,
+    status           TEXT      NOT NULL,
+    direction        TEXT      NOT NULL,
+    started_at       TIMESTAMP NULL,
+    completed_at     TIMESTAMP NULL,
+    records_pulled   INT       NOT NULL DEFAULT 0,
+    records_pushed   INT       NOT NULL DEFAULT 0,
+    events_requeued  INT       NOT NULL DEFAULT 0,
+    failure_reason   TEXT      NULL,
+    retryable        BOOLEAN   NOT NULL DEFAULT false,
+    created_by_id    UUID      NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (sync_job_id),
+    FOREIGN KEY (created_by_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT sync_jobs_status CHECK (status IN ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'RETRY_READY')),
+    CONSTRAINT sync_jobs_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT sync_jobs_name_not_empty CHECK (trim(name) <> '')
+);
+
+CREATE INDEX idx_admissions_sync_jobs_status ON admissions_sync_jobs (status);
+CREATE INDEX idx_admissions_sync_jobs_direction ON admissions_sync_jobs (direction);
+CREATE INDEX idx_admissions_sync_jobs_created ON admissions_sync_jobs (date_created DESC);
+
+-- Version: 1.24
+-- Description: Create admissions sync events table
+CREATE TABLE admissions_sync_events (
+    sync_event_id    UUID      NOT NULL,
+    sync_job_id      UUID      NULL,
+    event_type       TEXT      NOT NULL,
+    status           TEXT      NOT NULL,
+    direction        TEXT      NOT NULL,
+    resource_type    TEXT      NOT NULL,
+    resource_id      UUID      NOT NULL,
+    payload_hash     TEXT      NOT NULL,
+    attempts         INT       NOT NULL DEFAULT 0,
+    next_retry_at    TIMESTAMP NULL,
+    failure_reason   TEXT      NULL,
+    audit_message    TEXT      NOT NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (sync_event_id),
+    FOREIGN KEY (sync_job_id) REFERENCES admissions_sync_jobs(sync_job_id) ON DELETE SET NULL,
+    CONSTRAINT sync_events_event_type CHECK (event_type IN ('BATCH_TERMS_PULL', 'BATCH_PROGRAMS_PULL', 'BATCH_PERSON_MATCHES_PULL', 'BATCH_ENROLLMENT_PULL', 'APPLICATION_SUBMISSION', 'APPLICATION_DECISION', 'DOCUMENT_STATUS', 'ENROLLMENT_INTENT')),
+    CONSTRAINT sync_events_status CHECK (status IN ('QUEUED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'RETRY_READY')),
+    CONSTRAINT sync_events_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT sync_events_resource_type_not_empty CHECK (trim(resource_type) <> ''),
+    CONSTRAINT sync_events_payload_hash_not_empty CHECK (trim(payload_hash) <> '')
+);
+
+CREATE INDEX idx_admissions_sync_events_job_id ON admissions_sync_events (sync_job_id);
+CREATE INDEX idx_admissions_sync_events_status ON admissions_sync_events (status);
+CREATE INDEX idx_admissions_sync_events_event_type ON admissions_sync_events (event_type);
+CREATE INDEX idx_admissions_sync_events_resource ON admissions_sync_events (resource_type, resource_id);
+CREATE INDEX idx_admissions_sync_events_retry ON admissions_sync_events (next_retry_at) WHERE status = 'RETRY_READY';
+CREATE INDEX idx_admissions_sync_events_created ON admissions_sync_events (date_created DESC);
+
+-- Version: 1.25
+-- Description: Localize admissions sync tracking for Kenya external adapters
+ALTER TABLE admissions_sync_jobs
+    ADD COLUMN adapter TEXT NULL,
+    ADD COLUMN operation TEXT NULL,
+    ADD COLUMN attempt_count INT NOT NULL DEFAULT 0,
+    ADD COLUMN max_attempts INT NOT NULL DEFAULT 3,
+    ADD COLUMN next_retry_at TIMESTAMP NULL,
+    ADD COLUMN external_ref TEXT NULL,
+    ADD COLUMN external_receipt_id TEXT NULL,
+    ADD COLUMN error_code TEXT NULL,
+    ADD COLUMN error_detail TEXT NULL,
+    ADD COLUMN last_error_at TIMESTAMP NULL,
+    ADD CONSTRAINT sync_jobs_adapter CHECK (adapter IS NULL OR adapter IN ('kuccps', 'knec', 'iprs', 'mpesa_daraja', 'celcom_africa', 'whatsapp_cloud')),
+    ADD CONSTRAINT sync_jobs_operation_not_empty CHECK (operation IS NULL OR trim(operation) <> ''),
+    ADD CONSTRAINT sync_jobs_attempts CHECK (attempt_count >= 0 AND max_attempts > 0 AND attempt_count <= max_attempts);
+
+UPDATE admissions_sync_jobs
+SET
+    adapter = 'kuccps',
+    operation = name
+WHERE adapter IS NULL;
+
+ALTER TABLE admissions_sync_jobs
+    ALTER COLUMN adapter SET NOT NULL,
+    ALTER COLUMN operation SET NOT NULL;
+
+ALTER TABLE admissions_sync_events
+    ADD COLUMN adapter TEXT NULL,
+    ADD COLUMN operation TEXT NULL,
+    ADD COLUMN max_attempts INT NOT NULL DEFAULT 3,
+    ADD COLUMN external_ref TEXT NULL,
+    ADD COLUMN external_receipt_id TEXT NULL,
+    ADD COLUMN error_code TEXT NULL,
+    ADD COLUMN error_detail TEXT NULL,
+    ADD COLUMN last_error_at TIMESTAMP NULL,
+    ADD CONSTRAINT sync_events_adapter CHECK (adapter IS NULL OR adapter IN ('kuccps', 'knec', 'iprs', 'mpesa_daraja', 'celcom_africa', 'whatsapp_cloud')),
+    ADD CONSTRAINT sync_events_operation_not_empty CHECK (operation IS NULL OR trim(operation) <> ''),
+    ADD CONSTRAINT sync_events_attempts CHECK (attempts >= 0 AND max_attempts > 0 AND attempts <= max_attempts);
+
+UPDATE admissions_sync_events AS event
+SET
+    adapter = COALESCE(job.adapter, 'kuccps'),
+    operation = event.event_type
+FROM admissions_sync_jobs AS job
+WHERE event.sync_job_id = job.sync_job_id
+    AND event.adapter IS NULL;
+
+UPDATE admissions_sync_events
+SET
+    adapter = 'kuccps',
+    operation = event_type
+WHERE adapter IS NULL;
+
+ALTER TABLE admissions_sync_events
+    ALTER COLUMN adapter SET NOT NULL,
+    ALTER COLUMN operation SET NOT NULL;
+
+CREATE INDEX idx_admissions_sync_jobs_adapter ON admissions_sync_jobs (adapter);
+CREATE INDEX idx_admissions_sync_jobs_adapter_status ON admissions_sync_jobs (adapter, status);
+CREATE INDEX idx_admissions_sync_jobs_retry ON admissions_sync_jobs (adapter, status, next_retry_at) WHERE status = 'RETRY_READY';
+CREATE INDEX idx_admissions_sync_jobs_external_ref ON admissions_sync_jobs (adapter, external_ref) WHERE external_ref IS NOT NULL;
+
+CREATE INDEX idx_admissions_sync_events_adapter ON admissions_sync_events (adapter);
+CREATE INDEX idx_admissions_sync_events_adapter_status ON admissions_sync_events (adapter, status);
+CREATE INDEX idx_admissions_sync_events_external_ref ON admissions_sync_events (adapter, external_ref) WHERE external_ref IS NOT NULL;
