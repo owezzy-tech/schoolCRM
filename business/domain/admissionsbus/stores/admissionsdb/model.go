@@ -1199,6 +1199,186 @@ func toBusDocuments(dbs []documentDB) []admissionsbus.Document {
 	return bus
 }
 
+type syncJobDB struct {
+	ID                uuid.UUID  `db:"sync_job_id"`
+	Name              string     `db:"name"`
+	Adapter           string     `db:"adapter"`
+	Operation         string     `db:"operation"`
+	Status            string     `db:"status"`
+	Direction         string     `db:"direction"`
+	StartedAt         *time.Time `db:"started_at"`
+	CompletedAt       *time.Time `db:"completed_at"`
+	RecordsPulled     int        `db:"records_pulled"`
+	RecordsPushed     int        `db:"records_pushed"`
+	EventsRequeued    int        `db:"events_requeued"`
+	AttemptCount      int        `db:"attempt_count"`
+	MaxAttempts       int        `db:"max_attempts"`
+	NextRetryAt       *time.Time `db:"next_retry_at"`
+	ExternalRef       *string    `db:"external_ref"`
+	ExternalReceiptID *string    `db:"external_receipt_id"`
+	ErrorCode         *string    `db:"error_code"`
+	ErrorDetail       *string    `db:"error_detail"`
+	LastErrorAt       *time.Time `db:"last_error_at"`
+	FailureReason     *string    `db:"failure_reason"`
+	Retryable         bool       `db:"retryable"`
+	CreatedByID       *uuid.UUID `db:"created_by_id"`
+	DateCreated       time.Time  `db:"date_created"`
+	DateUpdated       time.Time  `db:"date_updated"`
+}
+
+type syncEventDB struct {
+	ID                uuid.UUID  `db:"sync_event_id"`
+	JobID             *uuid.UUID `db:"sync_job_id"`
+	Adapter           string     `db:"adapter"`
+	Operation         string     `db:"operation"`
+	EventType         string     `db:"event_type"`
+	Status            string     `db:"status"`
+	Direction         string     `db:"direction"`
+	ResourceType      string     `db:"resource_type"`
+	ResourceID        uuid.UUID  `db:"resource_id"`
+	ExternalRef       *string    `db:"external_ref"`
+	ExternalReceiptID *string    `db:"external_receipt_id"`
+	PayloadHash       string     `db:"payload_hash"`
+	Attempts          int        `db:"attempts"`
+	MaxAttempts       int        `db:"max_attempts"`
+	NextRetryAt       *time.Time `db:"next_retry_at"`
+	ErrorCode         *string    `db:"error_code"`
+	ErrorDetail       *string    `db:"error_detail"`
+	LastErrorAt       *time.Time `db:"last_error_at"`
+	FailureReason     *string    `db:"failure_reason"`
+	AuditMessage      string     `db:"audit_message"`
+	DateCreated       time.Time  `db:"date_created"`
+	DateUpdated       time.Time  `db:"date_updated"`
+}
+
+func toDBSyncJob(bus admissionsbus.SyncJob) syncJobDB {
+	return syncJobDB{
+		ID:                bus.ID,
+		Name:              bus.Name,
+		Adapter:           bus.Adapter.String(),
+		Operation:         bus.Operation,
+		Status:            bus.Status.String(),
+		Direction:         bus.Direction.String(),
+		StartedAt:         utcTimePtr(bus.StartedAt),
+		CompletedAt:       utcTimePtr(bus.CompletedAt),
+		RecordsPulled:     bus.RecordsPulled,
+		RecordsPushed:     bus.RecordsPushed,
+		EventsRequeued:    bus.EventsRequeued,
+		AttemptCount:      bus.AttemptCount,
+		MaxAttempts:       bus.MaxAttempts,
+		NextRetryAt:       utcTimePtr(bus.NextRetryAt),
+		ExternalRef:       bus.ExternalRef,
+		ExternalReceiptID: bus.ExternalReceiptID,
+		ErrorCode:         bus.ErrorCode,
+		ErrorDetail:       bus.ErrorDetail,
+		LastErrorAt:       utcTimePtr(bus.LastErrorAt),
+		FailureReason:     bus.FailureReason,
+		Retryable:         bus.Retryable,
+		CreatedByID:       bus.CreatedByID,
+		DateCreated:       bus.DateCreated.UTC(),
+		DateUpdated:       bus.DateUpdated.UTC(),
+	}
+}
+
+func tobusSyncJob(db syncJobDB) admissionsbus.SyncJob {
+	return admissionsbus.SyncJob{
+		ID:                db.ID,
+		Name:              db.Name,
+		Adapter:           admissionsbus.IntegrationAdapter(db.Adapter),
+		Operation:         db.Operation,
+		Status:            admissionsbus.SyncJobStatus(db.Status),
+		Direction:         admissionsbus.SyncDirection(db.Direction),
+		StartedAt:         localTimePtr(db.StartedAt),
+		CompletedAt:       localTimePtr(db.CompletedAt),
+		RecordsPulled:     db.RecordsPulled,
+		RecordsPushed:     db.RecordsPushed,
+		EventsRequeued:    db.EventsRequeued,
+		AttemptCount:      db.AttemptCount,
+		MaxAttempts:       db.MaxAttempts,
+		NextRetryAt:       localTimePtr(db.NextRetryAt),
+		ExternalRef:       db.ExternalRef,
+		ExternalReceiptID: db.ExternalReceiptID,
+		ErrorCode:         db.ErrorCode,
+		ErrorDetail:       db.ErrorDetail,
+		LastErrorAt:       localTimePtr(db.LastErrorAt),
+		FailureReason:     db.FailureReason,
+		Retryable:         db.Retryable,
+		CreatedByID:       db.CreatedByID,
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}
+}
+
+func tobusSyncJobs(dbs []syncJobDB) []admissionsbus.SyncJob {
+	bus := make([]admissionsbus.SyncJob, len(dbs))
+	for i, db := range dbs {
+		bus[i] = tobusSyncJob(db)
+	}
+	return bus
+}
+
+func toDBSyncEvent(bus admissionsbus.SyncEvent) syncEventDB {
+	return syncEventDB{
+		ID:                bus.ID,
+		JobID:             bus.JobID,
+		Adapter:           bus.Adapter.String(),
+		Operation:         bus.Operation,
+		EventType:         bus.EventType.String(),
+		Status:            bus.Status.String(),
+		Direction:         bus.Direction.String(),
+		ResourceType:      bus.ResourceType,
+		ResourceID:        bus.ResourceID,
+		ExternalRef:       bus.ExternalRef,
+		ExternalReceiptID: bus.ExternalReceiptID,
+		PayloadHash:       bus.PayloadHash,
+		Attempts:          bus.Attempts,
+		MaxAttempts:       bus.MaxAttempts,
+		NextRetryAt:       utcTimePtr(bus.NextRetryAt),
+		ErrorCode:         bus.ErrorCode,
+		ErrorDetail:       bus.ErrorDetail,
+		LastErrorAt:       utcTimePtr(bus.LastErrorAt),
+		FailureReason:     bus.FailureReason,
+		AuditMessage:      bus.AuditMessage,
+		DateCreated:       bus.DateCreated.UTC(),
+		DateUpdated:       bus.DateUpdated.UTC(),
+	}
+}
+
+func tobusSyncEvent(db syncEventDB) admissionsbus.SyncEvent {
+	return admissionsbus.SyncEvent{
+		ID:                db.ID,
+		JobID:             db.JobID,
+		Adapter:           admissionsbus.IntegrationAdapter(db.Adapter),
+		Operation:         db.Operation,
+		EventType:         admissionsbus.SyncEventType(db.EventType),
+		Status:            admissionsbus.SyncEventStatus(db.Status),
+		Direction:         admissionsbus.SyncDirection(db.Direction),
+		ResourceType:      db.ResourceType,
+		ResourceID:        db.ResourceID,
+		ExternalRef:       db.ExternalRef,
+		ExternalReceiptID: db.ExternalReceiptID,
+		PayloadHash:       db.PayloadHash,
+		Attempts:          db.Attempts,
+		MaxAttempts:       db.MaxAttempts,
+		NextRetryAt:       localTimePtr(db.NextRetryAt),
+		ErrorCode:         db.ErrorCode,
+		ErrorDetail:       db.ErrorDetail,
+		LastErrorAt:       localTimePtr(db.LastErrorAt),
+		FailureReason:     db.FailureReason,
+		AuditMessage:      db.AuditMessage,
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}
+}
+
+func tobusSyncEvents(dbs []syncEventDB) []admissionsbus.SyncEvent {
+	bus := make([]admissionsbus.SyncEvent, len(dbs))
+	for i, db := range dbs {
+		bus[i] = tobusSyncEvent(db)
+	}
+	return bus
+}
+
 func utcTimePtr(t *time.Time) *time.Time {
 	if t == nil {
 		return nil

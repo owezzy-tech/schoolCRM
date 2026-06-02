@@ -583,3 +583,91 @@ func (s *Store) applyImportInvalidRowFilter(filter admissionsbus.ImportInvalidRo
 		buf.WriteString(strings.Join(wc, " AND "))
 	}
 }
+
+func (s *Store) applySyncJobFilter(filter admissionsbus.SyncJobQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["sync_job_id"] = filter.ID
+		wc = append(wc, "sync_job_id = :sync_job_id")
+	}
+
+	if filter.Adapter != nil {
+		data["adapter"] = filter.Adapter.String()
+		wc = append(wc, "adapter = :adapter")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Direction != nil {
+		data["direction"] = filter.Direction.String()
+		wc = append(wc, "direction = :direction")
+	}
+
+	if filter.Retryable != nil {
+		data["retryable"] = filter.Retryable
+		wc = append(wc, "retryable = :retryable")
+	}
+
+	if filter.NextRetryBefore != nil {
+		data["next_retry_before"] = filter.NextRetryBefore.UTC()
+		wc = append(wc, "next_retry_at <= :next_retry_before")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applySyncEventFilter(filter admissionsbus.SyncEventQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["sync_event_id"] = filter.ID
+		wc = append(wc, "sync_event_id = :sync_event_id")
+	}
+
+	if filter.JobID != nil {
+		data["sync_job_id"] = filter.JobID
+		wc = append(wc, "sync_job_id = :sync_job_id")
+	}
+
+	if filter.Adapter != nil {
+		data["adapter"] = filter.Adapter.String()
+		wc = append(wc, "adapter = :adapter")
+	}
+
+	if filter.EventType != nil {
+		data["event_type"] = filter.EventType.String()
+		wc = append(wc, "event_type = :event_type")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Direction != nil {
+		data["direction"] = filter.Direction.String()
+		wc = append(wc, "direction = :direction")
+	}
+
+	if filter.ResourceType != nil {
+		data["resource_type"] = filter.ResourceType
+		wc = append(wc, "resource_type = :resource_type")
+	}
+
+	if filter.ResourceID != nil {
+		data["resource_id"] = filter.ResourceID
+		wc = append(wc, "resource_id = :resource_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}

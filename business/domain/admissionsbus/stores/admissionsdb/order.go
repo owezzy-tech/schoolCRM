@@ -144,6 +144,25 @@ var importInvalidRowOrderByFields = map[string]string{
 	admissionsbus.OrderByImportInvalidRowDateCreated: "date_created",
 }
 
+var syncJobOrderByFields = map[string]string{
+	admissionsbus.OrderBySyncJobID:          "sync_job_id",
+	admissionsbus.OrderBySyncJobStatus:      "status",
+	admissionsbus.OrderBySyncJobDirection:   "direction",
+	admissionsbus.OrderBySyncJobStartedAt:   "started_at",
+	admissionsbus.OrderBySyncJobCompletedAt: "completed_at",
+	admissionsbus.OrderBySyncJobDateCreated: "date_created",
+}
+
+var syncEventOrderByFields = map[string]string{
+	admissionsbus.OrderBySyncEventID:          "sync_event_id",
+	admissionsbus.OrderBySyncEventJob:         "sync_job_id",
+	admissionsbus.OrderBySyncEventType:        "event_type",
+	admissionsbus.OrderBySyncEventStatus:      "status",
+	admissionsbus.OrderBySyncEventDirection:   "direction",
+	admissionsbus.OrderBySyncEventResource:    "resource_type",
+	admissionsbus.OrderBySyncEventDateCreated: "date_created",
+}
+
 func programOrderByClause(orderBy order.By) (string, error) {
 	by, exists := programOrderByFields[orderBy.Field]
 	if !exists {
@@ -299,6 +318,24 @@ func importBatchOrderByClause(orderBy order.By) (string, error) {
 
 func importInvalidRowOrderByClause(orderBy order.By) (string, error) {
 	by, exists := importInvalidRowOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func syncJobOrderByClause(orderBy order.By) (string, error) {
+	by, exists := syncJobOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func syncEventOrderByClause(orderBy order.By) (string, error) {
+	by, exists := syncEventOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}
