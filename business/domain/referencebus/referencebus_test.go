@@ -2,6 +2,8 @@ package referencebus_test
 
 import (
 	"context"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -229,5 +231,22 @@ func TestQueryProgrammesByCluster(t *testing.T) {
 
 	if store.programmePage.RowsPerPage() != 100 {
 		t.Fatalf("expected maximum page size lookup, got %d", store.programmePage.RowsPerPage())
+	}
+}
+
+func TestReferenceCatalogInterfacesAreReadOnly(t *testing.T) {
+	for _, iface := range []struct {
+		name string
+		typ  reflect.Type
+	}{
+		{name: "Storer", typ: reflect.TypeOf((*referencebus.Storer)(nil)).Elem()},
+		{name: "ExtBusiness", typ: reflect.TypeOf((*referencebus.ExtBusiness)(nil)).Elem()},
+	} {
+		for i := 0; i < iface.typ.NumMethod(); i++ {
+			method := iface.typ.Method(i).Name
+			if strings.HasPrefix(method, "Create") || strings.HasPrefix(method, "Update") || strings.HasPrefix(method, "Delete") {
+				t.Fatalf("%s exposes mutable catalog method %q", iface.name, method)
+			}
+		}
 	}
 }
