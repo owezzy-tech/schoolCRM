@@ -32,17 +32,42 @@ INSERT INTO admissions_academic_terms (academic_term_id, external_sis_id, name, 
 ON CONFLICT DO NOTHING;
 
 INSERT INTO admissions_applications (application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated, kuccps_placement, kcse_result) VALUES
-	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'KUCCPS_PLACEMENT', 'SUBMITTED', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', '2026-01-02 09:00:00', '2019-03-24 00:00:00', '2019-03-24 00:00:00', '{}'::JSONB, '{}'::JSONB)
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'KUCCPS_PLACEMENT', 'IN_REVIEW', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', '2026-01-02 09:00:00', '2019-03-24 00:00:00', '2026-01-04 11:00:00', '{"placementID":"KUCCPS-2026-0001","admissionNumber":"ADM-2026-0001","institutionCode":"UON","programmeCode":"UON-BCOM","programmeName":"Bachelor of Commerce","placementYear":2026,"clusterCode":"CL04","clusterPoints":42.7,"weightedPointsNote":"QA fixture placement from KUCCPS import"}'::JSONB, '{"indexNumber":"12345678901","examYear":2024,"subjects":[{"subjectCode":"101","grade":"B+","points":10},{"subjectCode":"102","grade":"A-","points":11},{"subjectCode":"121","grade":"B","points":9}],"meanGrade":"B+","meanPoints":70}'::JSONB)
 ON CONFLICT DO NOTHING;
 
 UPDATE admissions_applications
 SET
-	kuccps_placement = COALESCE(kuccps_placement, '{}'::JSONB),
-	kcse_result = COALESCE(kcse_result, '{}'::JSONB)
+	status = 'IN_REVIEW',
+	assigned_reviewer_id = 'c41fa5d3-d61f-45f1-b054-d2c7a3704019',
+	submitted_at = COALESCE(submitted_at, '2026-01-02 09:00:00'),
+	date_updated = '2026-01-04 11:00:00',
+	kuccps_placement = COALESCE(kuccps_placement, '{"placementID":"KUCCPS-2026-0001","admissionNumber":"ADM-2026-0001","institutionCode":"UON","programmeCode":"UON-BCOM","programmeName":"Bachelor of Commerce","placementYear":2026,"clusterCode":"CL04","clusterPoints":42.7,"weightedPointsNote":"QA fixture placement from KUCCPS import"}'::JSONB),
+	kcse_result = COALESCE(kcse_result, '{"indexNumber":"12345678901","examYear":2024,"subjects":[{"subjectCode":"101","grade":"B+","points":10},{"subjectCode":"102","grade":"A-","points":11},{"subjectCode":"121","grade":"B","points":9}],"meanGrade":"B+","meanPoints":70}'::JSONB)
 WHERE application_id = 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
 
 INSERT INTO admissions_applicant_profiles (applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated) VALUES
 	('f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_application_transitions (application_transition_id, application_id, from_status, to_status, actor_id, reason, note, metadata, date_created) VALUES
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd381001', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'DRAFT', 'SUBMITTED', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Applicant submitted KUCCPS placement application', 'Portal QA seed submission by John Applicant.', '{"channel":"applicant_portal","fixture":"schoolCRM-dpj.2"}'::JSONB, '2026-01-02 09:00:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd381002', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'SUBMITTED', 'AWAITING_DOCUMENTS', '5cf37266-3473-4006-984f-9325122678b7', 'Required admissions evidence requested', 'Checklist generated for KCSE result, national ID, placement letter, and passport photo.', '{"channel":"admin_review","fixture":"schoolCRM-dpj.2"}'::JSONB, '2026-01-02 10:00:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd381003', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'AWAITING_DOCUMENTS', 'READY_FOR_REVIEW', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Applicant uploaded required evidence', 'All required documents are present for reviewer intake.', '{"channel":"applicant_portal","uploadedDocuments":3,"fixture":"schoolCRM-dpj.2"}'::JSONB, '2026-01-03 14:30:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd381004', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'READY_FOR_REVIEW', 'IN_REVIEW', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', 'Reviewer started eligibility review', 'Teacher reviewer is validating KUCCPS placement and KCSE evidence.', '{"channel":"admin_review","fixture":"schoolCRM-dpj.2"}'::JSONB, '2026-01-04 11:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_checklist_items (checklist_item_id, application_id, item_key, document_name, description, is_required, status, display_order, date_created, date_updated) VALUES
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd382001', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'kcse-result-slip', 'KCSE Result Slip', 'Certified KCSE result slip showing index number and mean grade.', true, 'ACCEPTED', 1, '2026-01-02 10:00:00', '2026-01-04 10:15:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd382002', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'national-id', 'National ID or Birth Certificate', 'Identity document used for admissions identity verification.', true, 'PENDING_REVIEW', 2, '2026-01-02 10:00:00', '2026-01-03 14:30:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd382003', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'kuccps-placement-letter', 'KUCCPS Placement Letter', 'KUCCPS placement letter for the 2026 intake.', true, 'ACCEPTED', 3, '2026-01-02 10:00:00', '2026-01-04 10:45:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd382004', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'passport-photo', 'Passport Photo', 'Recent passport-size photo for student record creation.', false, 'UPLOADED', 4, '2026-01-02 10:00:00', '2026-01-03 14:35:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_documents (document_id, application_id, checklist_item_id, file_name, content_type, size_bytes, storage_key, status, reviewer_id, reviewer_notes, uploaded_by_id, uploaded_at, reviewed_at, date_created, date_updated) VALUES
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd383001', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd382001', 'john-applicant-kcse-result-slip.pdf', 'application/pdf', 348912, 'filepond/admissions/d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44/kcse-result-slip.pdf', 'ACCEPTED', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', 'KCSE index and grades match submitted application data.', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '2026-01-03 14:05:00', '2026-01-04 10:15:00', '2026-01-03 14:05:00', '2026-01-04 10:15:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd383002', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd382002', 'john-applicant-national-id.jpg', 'image/jpeg', 812304, 'filepond/admissions/d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44/national-id.jpg', 'PENDING_REVIEW', NULL, NULL, 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '2026-01-03 14:12:00', NULL, '2026-01-03 14:12:00', '2026-01-03 14:12:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd383003', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd382003', 'john-applicant-kuccps-placement-letter.pdf', 'application/pdf', 421876, 'filepond/admissions/d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44/kuccps-placement-letter.pdf', 'ACCEPTED', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', 'Placement letter confirms Bachelor of Commerce admission for 2026 intake.', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '2026-01-03 14:20:00', '2026-01-04 10:45:00', '2026-01-03 14:20:00', '2026-01-04 10:45:00'),
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd383004', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd382004', 'john-applicant-passport-photo.png', 'image/png', 156204, 'filepond/admissions/d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44/passport-photo.png', 'UPLOADED', NULL, NULL, 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '2026-01-03 14:35:00', NULL, '2026-01-03 14:35:00', '2026-01-03 14:35:00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO admissions_lead_score_rules (lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated) VALUES
