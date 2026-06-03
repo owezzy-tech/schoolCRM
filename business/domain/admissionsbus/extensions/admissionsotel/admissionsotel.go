@@ -488,6 +488,14 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
 }
 
+// UpdateApplicationDraft applies otel to applicant-editable draft updates.
+func (ext *Extension) UpdateApplicationDraft(ctx context.Context, app admissionsbus.Application, na admissionsbus.NewApplication) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationdraft")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationDraft(ctx, app, na)
+}
+
 // CreateApplicationFormTemplate applies otel to Application form template creation.
 func (ext *Extension) CreateApplicationFormTemplate(ctx context.Context, nt admissionsbus.NewApplicationFormTemplate) (admissionsbus.ApplicationFormTemplate, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createapplicationformtemplate")
