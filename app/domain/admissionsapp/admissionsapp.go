@@ -621,6 +621,56 @@ func (a *app) queryProgramByID(ctx context.Context, r *http.Request) web.Encoder
 	return toAppProgram(program)
 }
 
+func (a *app) queryApplicantPrograms(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseProgramQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseProgramFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+	active := true
+	filter.Active = &active
+
+	orderBy, err := order.Parse(programOrderByFields, qp.OrderBy, admissionsbus.DefaultProgramOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	programs, err := a.admissionsBus.QueryPrograms(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant programs: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountPrograms(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant programs: %s", err)
+	}
+
+	return query.NewResult(toAppPrograms(programs), total, page)
+}
+
+func (a *app) queryApplicantProgramByID(ctx context.Context, r *http.Request) web.Encoder {
+	programID, err := uuid.Parse(web.Param(r, "program_id"))
+	if err != nil {
+		return errs.NewFieldErrors("program_id", err)
+	}
+
+	program, err := a.admissionsBus.QueryProgramByID(ctx, programID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant program: %s", err)
+	}
+	if !program.Active {
+		return errs.New(errs.NotFound, admissionsbus.ErrProgramNotFound)
+	}
+
+	return toAppProgram(program)
+}
+
 func (a *app) queryAcademicTerms(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseAcademicTermQueryParams(r)
 
@@ -661,6 +711,56 @@ func (a *app) queryAcademicTermByID(ctx context.Context, r *http.Request) web.En
 	term, err := a.admissionsBus.QueryAcademicTermByID(ctx, termID)
 	if err != nil {
 		return errs.Errorf(errs.Internal, "query academic term: %s", err)
+	}
+
+	return toAppAcademicTerm(term)
+}
+
+func (a *app) queryApplicantAcademicTerms(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseAcademicTermQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseAcademicTermFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+	active := true
+	filter.Active = &active
+
+	orderBy, err := order.Parse(academicTermOrderByFields, qp.OrderBy, admissionsbus.DefaultAcademicTermOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	terms, err := a.admissionsBus.QueryAcademicTerms(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant academic terms: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountAcademicTerms(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant academic terms: %s", err)
+	}
+
+	return query.NewResult(toAppAcademicTerms(terms), total, page)
+}
+
+func (a *app) queryApplicantAcademicTermByID(ctx context.Context, r *http.Request) web.Encoder {
+	termID, err := uuid.Parse(web.Param(r, "academic_term_id"))
+	if err != nil {
+		return errs.NewFieldErrors("academic_term_id", err)
+	}
+
+	term, err := a.admissionsBus.QueryAcademicTermByID(ctx, termID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant academic term: %s", err)
+	}
+	if !term.Active {
+		return errs.New(errs.NotFound, admissionsbus.ErrAcademicTermNotFound)
 	}
 
 	return toAppAcademicTerm(term)
@@ -793,6 +893,91 @@ func (a *app) createApplication(ctx context.Context, r *http.Request) web.Encode
 	return toAppApplication(application)
 }
 
+func (a *app) createApplicantApplication(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplication
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+
+	na, err := toBusNewApplication(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+	if na.ConstituentID != profile.ConstituentID {
+		return errs.New(errs.PermissionDenied, admissionsbus.ErrApplicationNotFound)
+	}
+	na.AssignedReviewerID = nil
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	application, err := a.admissionsBus.CreateApplication(ctx, na)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrDuplicateApplication) {
+			return errs.New(errs.Aborted, admissionsbus.ErrDuplicateApplication)
+		}
+		return errs.Errorf(errs.Internal, "create applicant application: %s", err)
+	}
+
+	return toAppApplication(application)
+}
+
+func (a *app) updateApplicantApplication(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplication
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+
+	application, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID)
+	if appErr != nil {
+		return appErr
+	}
+
+	na, err := toBusNewApplication(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+	if na.ConstituentID != profile.ConstituentID {
+		return errs.New(errs.PermissionDenied, admissionsbus.ErrApplicationNotFound)
+	}
+	na.AssignedReviewerID = nil
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateApplicationDraft(ctx, application, na)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrDuplicateApplication) {
+			return errs.New(errs.Aborted, admissionsbus.ErrDuplicateApplication)
+		}
+		if errors.Is(err, admissionsbus.ErrApplicationNotDraft) {
+			return errs.New(errs.FailedPrecondition, admissionsbus.ErrApplicationNotDraft)
+		}
+		return errs.Errorf(errs.Internal, "update applicant application: %s", err)
+	}
+
+	return toAppApplication(updated)
+}
+
 func (a *app) queryApplications(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseApplicationQueryParams(r)
 
@@ -833,6 +1018,62 @@ func (a *app) queryApplicationByID(ctx context.Context, r *http.Request) web.Enc
 	application, err := a.admissionsBus.QueryApplicationByID(ctx, applicationID)
 	if err != nil {
 		return errs.Errorf(errs.Internal, "query application: %s", err)
+	}
+
+	return toAppApplication(application)
+}
+
+func (a *app) queryApplicantApplications(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicationQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicationFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+	filter.ConstituentID = &profile.ConstituentID
+
+	orderBy, err := order.Parse(applicationOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicationOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	applications, err := a.admissionsBus.QueryApplications(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant applications: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplications(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant applications: %s", err)
+	}
+
+	return query.NewResult(toAppApplications(applications), total, page)
+}
+
+func (a *app) queryApplicantApplicationByID(ctx context.Context, r *http.Request) web.Encoder {
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+
+	application, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID)
+	if appErr != nil {
+		return appErr
 	}
 
 	return toAppApplication(application)
@@ -926,6 +1167,56 @@ func (a *app) queryApplicationFormTemplateByID(ctx context.Context, r *http.Requ
 	template, err := a.admissionsBus.QueryApplicationFormTemplateByID(ctx, templateID)
 	if err != nil {
 		return errs.Errorf(errs.Internal, "query application form template: %s", err)
+	}
+
+	return toAppApplicationFormTemplate(template)
+}
+
+func (a *app) queryApplicantApplicationFormTemplates(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseApplicationFormTemplateQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseApplicationFormTemplateFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+	active := true
+	filter.Active = &active
+
+	orderBy, err := order.Parse(applicationFormTemplateOrderByFields, qp.OrderBy, admissionsbus.DefaultApplicationFormTemplateOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	templates, err := a.admissionsBus.QueryApplicationFormTemplates(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant application form templates: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountApplicationFormTemplates(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant application form templates: %s", err)
+	}
+
+	return query.NewResult(toAppApplicationFormTemplates(templates), total, page)
+}
+
+func (a *app) queryApplicantApplicationFormTemplateByID(ctx context.Context, r *http.Request) web.Encoder {
+	templateID, err := uuid.Parse(web.Param(r, "form_template_id"))
+	if err != nil {
+		return errs.NewFieldErrors("form_template_id", err)
+	}
+
+	template, err := a.admissionsBus.QueryApplicationFormTemplateByID(ctx, templateID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant application form template: %s", err)
+	}
+	if !template.Active {
+		return errs.New(errs.NotFound, admissionsbus.ErrFormTemplateNotFound)
 	}
 
 	return toAppApplicationFormTemplate(template)
@@ -1033,6 +1324,34 @@ func (a *app) setCustomFieldValue(ctx context.Context, r *http.Request) web.Enco
 	return toAppCustomFieldValue(value)
 }
 
+func (a *app) setApplicantCustomFieldValue(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewCustomFieldValue
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	nv, err := toBusNewCustomFieldValue(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+
+	if appErr := a.ensureApplicantOwnsCustomFieldOwner(ctx, nv.Owner, nv.OwnerID, profile.ConstituentID); appErr != nil {
+		return appErr
+	}
+
+	value, err := a.admissionsBus.SetCustomFieldValue(ctx, nv)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "set applicant custom field value: %s", err)
+	}
+
+	return toAppCustomFieldValue(value)
+}
+
 func (a *app) queryCustomFieldValues(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseCustomFieldValueQueryParams(r)
 
@@ -1121,6 +1440,64 @@ func (a *app) transitionApplicationStatus(ctx context.Context, r *http.Request) 
 
 		if _, err := a.auditBus.Create(ctx, na); err != nil {
 			return errs.Errorf(errs.Internal, "audit application transition: %s", err)
+		}
+	}
+
+	return toAppApplication(updated)
+}
+
+func (a *app) transitionApplicantApplicationStatus(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewApplicationTransition
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+
+	application, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID)
+	if appErr != nil {
+		return appErr
+	}
+
+	nt := toBusNewApplicationTransition(app, mid.GetSubjectID(ctx))
+	if !isApplicantApplicationTransition(nt.ToStatus) {
+		return errs.New(errs.PermissionDenied, admissionsbus.ErrInvalidApplicationTransition)
+	}
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	updated, transition, err := a.admissionsBus.TransitionApplicationStatus(ctx, application, nt)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrInvalidApplicationTransition) {
+			return errs.New(errs.FailedPrecondition, admissionsbus.ErrInvalidApplicationTransition)
+		}
+		return errs.Errorf(errs.Internal, "transition applicant application: %s", err)
+	}
+
+	if a.auditBus != nil {
+		na := auditbus.NewAudit{
+			ObjID:     updated.ID,
+			ObjDomain: domain.Admissions,
+			ObjName:   name.MustParse("Application"),
+			ActorID:   nt.ActorID,
+			Action:    "applicant_application_transition",
+			Data:      toAppApplicationTransition(transition),
+			Message:   fmt.Sprintf("applicant changed application status from %s to %s", transition.FromStatus, transition.ToStatus),
+		}
+
+		if _, err := a.auditBus.Create(ctx, na); err != nil {
+			return errs.Errorf(errs.Internal, "audit applicant application transition: %s", err)
 		}
 	}
 
@@ -1245,6 +1622,51 @@ func (a *app) queryChecklistItems(ctx context.Context, r *http.Request) web.Enco
 	return query.NewResult(toAppChecklistItems(items), total, page)
 }
 
+func (a *app) queryApplicantChecklistItems(ctx context.Context, r *http.Request) web.Encoder {
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+	if _, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID); appErr != nil {
+		return appErr
+	}
+
+	qp := parseChecklistItemQueryParams(r)
+	qp.ApplicationID = applicationID.String()
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseChecklistItemFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(checklistItemOrderByFields, qp.OrderBy, admissionsbus.DefaultChecklistItemOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	items, err := a.admissionsBus.QueryChecklistItems(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant checklist items: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountChecklistItems(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant checklist items: %s", err)
+	}
+
+	return query.NewResult(toAppChecklistItems(items), total, page)
+}
+
 func (a *app) queryChecklistItemByID(ctx context.Context, r *http.Request) web.Encoder {
 	itemID, err := uuid.Parse(web.Param(r, "checklist_item_id"))
 	if err != nil {
@@ -1286,6 +1708,47 @@ func (a *app) createDocument(ctx context.Context, r *http.Request) web.Encoder {
 	}
 
 	if err := a.auditDocument(ctx, document, nd.UploadedByID, "document_upload", "admissions document uploaded"); err != nil {
+		return err
+	}
+
+	return toAppDocument(document)
+}
+
+func (a *app) createApplicantDocument(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewDocument
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+	if _, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID); appErr != nil {
+		return appErr
+	}
+
+	a, err = a.newWithTx(ctx)
+	if err != nil {
+		return errs.New(errs.Internal, err)
+	}
+
+	nd, err := toBusNewDocument(app, applicationID, mid.GetSubjectID(ctx))
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	document, err := a.admissionsBus.CreateDocument(ctx, nd)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create applicant document: %s", err)
+	}
+
+	if err := a.auditDocument(ctx, document, nd.UploadedByID, "applicant_document_upload", "applicant admissions document uploaded"); err != nil {
 		return err
 	}
 
@@ -1358,6 +1821,51 @@ func (a *app) queryDocuments(ctx context.Context, r *http.Request) web.Encoder {
 	total, err := a.admissionsBus.CountDocuments(ctx, filter)
 	if err != nil {
 		return errs.Errorf(errs.Internal, "count documents: %s", err)
+	}
+
+	return query.NewResult(toAppDocuments(documents), total, page)
+}
+
+func (a *app) queryApplicantDocuments(ctx context.Context, r *http.Request) web.Encoder {
+	applicationID, err := uuid.Parse(web.Param(r, "application_id"))
+	if err != nil {
+		return errs.NewFieldErrors("application_id", err)
+	}
+
+	profile, appErr := a.currentApplicantProfile(ctx)
+	if appErr != nil {
+		return appErr
+	}
+	if _, appErr := a.ownedApplication(ctx, applicationID, profile.ConstituentID); appErr != nil {
+		return appErr
+	}
+
+	qp := parseDocumentQueryParams(r)
+	qp.ApplicationID = applicationID.String()
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseDocumentFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(documentOrderByFields, qp.OrderBy, admissionsbus.DefaultDocumentOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	documents, err := a.admissionsBus.QueryDocuments(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query applicant documents: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountDocuments(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count applicant documents: %s", err)
 	}
 
 	return query.NewResult(toAppDocuments(documents), total, page)
@@ -1594,4 +2102,61 @@ func (a *app) auditImportBatch(ctx context.Context, batch admissionsbus.ImportBa
 	}
 
 	return nil
+}
+
+func (a *app) currentApplicantProfile(ctx context.Context) (admissionsbus.ApplicantProfile, *errs.Error) {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return admissionsbus.ApplicantProfile{}, errs.New(errs.Unauthenticated, err)
+	}
+
+	profile, err := a.admissionsBus.QueryApplicantProfileByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, admissionsbus.ErrApplicantProfileNotFound) {
+			return admissionsbus.ApplicantProfile{}, errs.New(errs.Unauthenticated, admissionsbus.ErrApplicantProfileNotFound)
+		}
+		return admissionsbus.ApplicantProfile{}, errs.Errorf(errs.Internal, "query applicant profile: %s", err)
+	}
+	if !profile.Active {
+		return admissionsbus.ApplicantProfile{}, errs.New(errs.PermissionDenied, fmt.Errorf("applicant profile is inactive"))
+	}
+
+	return profile, nil
+}
+
+func (a *app) ownedApplication(ctx context.Context, applicationID uuid.UUID, constituentID uuid.UUID) (admissionsbus.Application, *errs.Error) {
+	application, err := a.admissionsBus.QueryApplicationByID(ctx, applicationID)
+	if err != nil {
+		return admissionsbus.Application{}, errs.Errorf(errs.Internal, "query applicant application: %s", err)
+	}
+	if application.ConstituentID != constituentID {
+		return admissionsbus.Application{}, errs.New(errs.PermissionDenied, admissionsbus.ErrApplicationNotFound)
+	}
+
+	return application, nil
+}
+
+func (a *app) ensureApplicantOwnsCustomFieldOwner(ctx context.Context, owner admissionsbus.CustomFieldOwner, ownerID uuid.UUID, constituentID uuid.UUID) *errs.Error {
+	switch owner {
+	case admissionsbus.CustomFieldOwnerConstituent:
+		if ownerID != constituentID {
+			return errs.New(errs.PermissionDenied, admissionsbus.ErrApplicationNotFound)
+		}
+		return nil
+	case admissionsbus.CustomFieldOwnerApplication:
+		_, err := a.ownedApplication(ctx, ownerID, constituentID)
+		return err
+	default:
+		return errs.New(errs.InvalidArgument, fmt.Errorf("invalid custom field owner"))
+	}
+}
+
+func isApplicantApplicationTransition(status admissionsbus.ApplicationStatus) bool {
+	switch status {
+	case admissionsbus.ApplicationStatusSubmitted,
+		admissionsbus.ApplicationStatusWithdrawn:
+		return true
+	default:
+		return false
+	}
 }
