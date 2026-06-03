@@ -53,6 +53,7 @@ var (
 	ErrInvalidApplicationType         = errors.New("invalid application type")
 	ErrInvalidApplicationStatus       = errors.New("invalid application status")
 	ErrDuplicateApplication           = errors.New("active application already exists for constituent term and program")
+	ErrApplicationNotDraft            = errors.New("application must be in draft status")
 	ErrConstituentIDRequired          = errors.New("constituent id required")
 	ErrProgramIDRequired              = errors.New("program id required")
 	ErrAcademicTermIDRequired         = errors.New("academic term id required")
@@ -301,6 +302,7 @@ type ExtBusiness interface {
 	CountDuplicateReviews(ctx context.Context, filter DuplicateReviewQueryFilter) (int, error)
 	QueryDuplicateReviewByID(ctx context.Context, reviewID uuid.UUID) (DuplicateReview, error)
 	CreateApplication(ctx context.Context, na NewApplication) (Application, error)
+	UpdateApplicationDraft(ctx context.Context, app Application, na NewApplication) (Application, error)
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
@@ -1427,6 +1429,57 @@ func (b *Business) CreateApplication(ctx context.Context, na NewApplication) (Ap
 
 	if err := b.storer.CreateApplication(ctx, app); err != nil {
 		return Application{}, fmt.Errorf("create application: %w", err)
+	}
+
+	return app, nil
+}
+
+// UpdateApplicationDraft replaces applicant-editable draft data while preserving ownership and workflow state.
+func (b *Business) UpdateApplicationDraft(ctx context.Context, app Application, na NewApplication) (Application, error) {
+	if app.Status != ApplicationStatusDraft {
+		return Application{}, ErrApplicationNotDraft
+	}
+
+	if err := validateNewApplication(na); err != nil {
+		return Application{}, err
+	}
+
+	if app.ConstituentID != na.ConstituentID {
+		return Application{}, ErrApplicationNotFound
+	}
+
+	program, err := b.storer.QueryProgramByID(ctx, na.ProgramID)
+	if err != nil {
+		return Application{}, fmt.Errorf("query program: %w", err)
+	}
+	if !program.Active {
+		return Application{}, ErrInactiveProgram
+	}
+
+	term, err := b.storer.QueryAcademicTermByID(ctx, na.AcademicTermID)
+	if err != nil {
+		return Application{}, fmt.Errorf("query academic term: %w", err)
+	}
+	if !term.Active {
+		return Application{}, ErrInactiveAcademicTerm
+	}
+
+	if existing, err := b.storer.QueryActiveApplicationByTuple(ctx, na.ConstituentID, na.AcademicTermID, na.ProgramID); err == nil && existing.ID != app.ID {
+		return Application{}, ErrDuplicateApplication
+	} else if err != nil && !errors.Is(err, ErrApplicationNotFound) {
+		return Application{}, fmt.Errorf("query active application: %w", err)
+	}
+
+	app.ProgramID = na.ProgramID
+	app.AcademicTermID = na.AcademicTermID
+	app.ApplicationType = na.ApplicationType
+	app.KUCCPSPlacement = normalizeKUCCPSPlacement(na.KUCCPSPlacement)
+	app.KCSEResult = normalizeApplicationKCSEResult(na.KCSEResult)
+	app.AssignedReviewerID = na.AssignedReviewerID
+	app.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateApplication(ctx, app); err != nil {
+		return Application{}, fmt.Errorf("update application: %w", err)
 	}
 
 	return app, nil

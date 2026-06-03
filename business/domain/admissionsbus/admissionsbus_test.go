@@ -1859,6 +1859,145 @@ func TestCreateApplicationValidatesApplicationType(t *testing.T) {
 	}
 }
 
+func TestUpdateApplicationDraftReplacesApplicantEditableFields(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	application := Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+		Status:          ApplicationStatusDraft,
+	}
+	store.applications = append(store.applications, application)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	updated, err := bus.UpdateApplicationDraft(context.Background(), application, NewApplication{
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
+		KCSEResult: &ApplicationKCSEResult{
+			IndexNumber: "12345678901",
+			ExamYear:    2025,
+			MeanGrade:   "b+",
+			MeanPoints:  68,
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateApplicationDraft returned error: %v", err)
+	}
+
+	if updated.ID != application.ID || updated.Status != ApplicationStatusDraft {
+		t.Fatalf("identity/status changed: id=%s status=%s", updated.ID, updated.Status)
+	}
+	if updated.ApplicationType != ApplicationTypeSelfSponsoredUndergrad {
+		t.Fatalf("ApplicationType = %s, want %s", updated.ApplicationType, ApplicationTypeSelfSponsoredUndergrad)
+	}
+	if updated.KCSEResult == nil || updated.KCSEResult.MeanGrade != "B+" {
+		t.Fatalf("KCSEResult = %+v, want normalized B+", updated.KCSEResult)
+	}
+}
+
+func TestUpdateApplicationDraftRequiresDraftStatus(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.UpdateApplicationDraft(context.Background(), Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+		Status:          ApplicationStatusSubmitted,
+	}, NewApplication{
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+	})
+
+	if !errors.Is(err, ErrApplicationNotDraft) {
+		t.Fatalf("err = %v, want %v", err, ErrApplicationNotDraft)
+	}
+}
+
+func TestUpdateApplicationDraftRejectsConstituentChange(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.UpdateApplicationDraft(context.Background(), Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+		Status:          ApplicationStatusDraft,
+	}, NewApplication{
+		ConstituentID:   uuid.New(),
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+	})
+
+	if !errors.Is(err, ErrApplicationNotFound) {
+		t.Fatalf("err = %v, want %v", err, ErrApplicationNotFound)
+	}
+}
+
+func TestUpdateApplicationDraftPreventsDuplicateActiveApplication(t *testing.T) {
+	t.Parallel()
+
+	constituentID := uuid.New()
+	programID := uuid.New()
+	termID := uuid.New()
+	store := newApplicationStubStore(constituentID, programID, termID)
+	application := Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       uuid.New(),
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+		Status:          ApplicationStatusDraft,
+	}
+	store.programs[application.ProgramID] = Program{ID: application.ProgramID, Active: true}
+	store.applications = append(store.applications, application, Application{
+		ID:              uuid.New(),
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeSelfSponsoredUndergrad,
+		Status:          ApplicationStatusSubmitted,
+	})
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	_, err := bus.UpdateApplicationDraft(context.Background(), application, NewApplication{
+		ConstituentID:   constituentID,
+		ProgramID:       programID,
+		AcademicTermID:  termID,
+		ApplicationType: ApplicationTypeDiploma,
+	})
+
+	if !errors.Is(err, ErrDuplicateApplication) {
+		t.Fatalf("err = %v, want %v", err, ErrDuplicateApplication)
+	}
+}
+
 func TestTransitionApplicationStatusAllowsHappyPath(t *testing.T) {
 	t.Parallel()
 

@@ -763,8 +763,31 @@ func (s *Store) QueryConstituentByPrimaryEmail(ctx context.Context, email string
 
 	filter := admissionsbus.ConstituentQueryFilter{PrimaryEmail: address}
 	cst, err := s.queryConstituent(ctx, filter)
-	if err != nil {
+	if err == nil {
+		return cst, nil
+	}
+
+	if !errors.Is(err, admissionsbus.ErrConstituentNotFound) || address.Address == address.String() {
 		return admissionsbus.Constituent{}, err
+	}
+
+	const q = `
+	SELECT
+		` + constituentColumns + `
+	FROM
+		admissions_constituents
+	WHERE
+		primary_email = :primary_email`
+
+	data := map[string]any{"primary_email": address.Address}
+	var dbConstituent constituentDB
+	if fallbackErr := sqldb.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbConstituent); fallbackErr != nil {
+		return admissionsbus.Constituent{}, err
+	}
+
+	cst, fallbackErr := toBusConstituent(dbConstituent)
+	if fallbackErr != nil {
+		return admissionsbus.Constituent{}, fmt.Errorf("to bus constituent: %w", fallbackErr)
 	}
 
 	return cst, nil
