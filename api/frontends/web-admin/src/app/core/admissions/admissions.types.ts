@@ -367,6 +367,49 @@ export interface ApplicationFee {
     auditTrail: ApplicationFeeAuditEvent[];
 }
 
+export interface Program {
+    id: string;
+    externalSISID: string;
+    name: string;
+    code: string;
+    description?: string;
+    degreeLevel?: string;
+    active: boolean;
+    syncedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ProgramQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    active?: boolean;
+}
+
+export interface AcademicTerm {
+    id: string;
+    externalSISID: string;
+    name: string;
+    code: string;
+    termType?: string;
+    startDate: string;
+    endDate: string;
+    applicationStartDate?: string;
+    applicationDeadline?: string;
+    active: boolean;
+    syncedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface AcademicTermQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    active?: boolean;
+}
+
 export interface NotificationPreferences {
     smsOptIn: boolean;
     whatsAppOptIn: boolean;
@@ -580,6 +623,36 @@ export interface ApplicationRequest {
     kuccpsPlacement?: KUCCPSPlacement | null;
     kcseResult?: ApplicationKCSEResult | null;
     assignedReviewerID?: string | null;
+}
+
+export interface ApplicationQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    constituent_id?: string;
+    program_id?: string;
+    academic_term_id?: string;
+    application_type?: ApplicationType;
+    status?: ApplicationStatus;
+}
+
+export interface ApplicationTransition {
+    id: string;
+    applicationID: string;
+    fromStatus: ApplicationStatus;
+    toStatus: ApplicationStatus;
+    actorID: string;
+    reason?: string;
+    note?: string;
+    metadata?: Record<string, unknown>;
+    dateCreated: string;
+}
+
+export interface ApplicationTransitionRequest {
+    toStatus: Extract<ApplicationStatus, 'SUBMITTED' | 'WITHDRAWN'>;
+    reason?: string | null;
+    note?: string | null;
+    metadata?: Record<string, unknown> | null;
 }
 
 export interface ChecklistItem {

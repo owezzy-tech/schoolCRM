@@ -5,9 +5,15 @@ import {
     AdmissionsDocumentQuery,
     AdmissionsDocumentRequest,
     AdmissionsDocumentVerificationRequest,
+    AcademicTerm,
+    AcademicTermQuery,
+    Application,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
     ApplicationFormTemplateRequest,
+    ApplicationQuery,
+    ApplicationRequest,
+    ApplicationTransitionRequest,
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
@@ -29,6 +35,8 @@ import {
     LeadScoreRule,
     LeadScoreRuleQuery,
     LeadScoreRuleRequest,
+    Program,
+    ProgramQuery,
 } from 'app/core/admissions/admissions.types';
 import {
     JsonApiCollectionDocument,
@@ -51,6 +59,18 @@ export class AdmissionsService {
     private readonly templatesSubject = new ReplaySubject<
         PaginatedResult<ApplicationFormTemplate>
     >(1);
+    private readonly applicantApplicationsSubject = new ReplaySubject<
+        PaginatedResult<Application>
+    >(1);
+    private readonly applicantProgramsSubject = new ReplaySubject<
+        PaginatedResult<Program>
+    >(1);
+    private readonly applicantAcademicTermsSubject = new ReplaySubject<
+        PaginatedResult<AcademicTerm>
+    >(1);
+    private readonly applicantTemplatesSubject = new ReplaySubject<
+        PaginatedResult<ApplicationFormTemplate>
+    >(1);
     private readonly checklistItemsSubject = new ReplaySubject<
         PaginatedResult<ChecklistItem>
     >(1);
@@ -70,6 +90,12 @@ export class AdmissionsService {
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
+    readonly applicantApplications$ =
+        this.applicantApplicationsSubject.asObservable();
+    readonly applicantPrograms$ = this.applicantProgramsSubject.asObservable();
+    readonly applicantAcademicTerms$ =
+        this.applicantAcademicTermsSubject.asObservable();
+    readonly applicantTemplates$ = this.applicantTemplatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
     readonly customFieldDefinitions$ =
@@ -161,6 +187,98 @@ export class AdmissionsService {
             .put<
                 JsonApiDocument<ApplicationFormTemplate>
             >(`/v1/admissions/application-form-templates/${templateID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryApplicantPrograms(
+        query: ProgramQuery = {}
+    ): Observable<PaginatedResult<Program>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Program>
+            >('/v1/admissions/applicant/programs', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantProgramsSubject.next(result))
+            );
+    }
+
+    queryApplicantAcademicTerms(
+        query: AcademicTermQuery = {}
+    ): Observable<PaginatedResult<AcademicTerm>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AcademicTerm>
+            >('/v1/admissions/applicant/academic-terms', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantAcademicTermsSubject.next(result))
+            );
+    }
+
+    queryApplicantApplicationFormTemplates(
+        query: ApplicationFormTemplateQuery = {}
+    ): Observable<PaginatedResult<ApplicationFormTemplate>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ApplicationFormTemplate>
+            >('/v1/admissions/applicant/application-form-templates', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantTemplatesSubject.next(result))
+            );
+    }
+
+    queryApplicantApplications(
+        query: ApplicationQuery = {}
+    ): Observable<PaginatedResult<Application>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Application>
+            >('/v1/admissions/applicant/applications', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantApplicationsSubject.next(result))
+            );
+    }
+
+    getApplicantApplication(applicationID: string): Observable<Application> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createApplicantApplication(
+        request: ApplicationRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<Application>
+            >('/v1/admissions/applicant/applications', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateApplicantApplication(
+        applicationID: string,
+        request: ApplicationRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    transitionApplicantApplication(
+        applicationID: string,
+        request: ApplicationTransitionRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}/transitions`, request)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -349,7 +467,10 @@ export class AdmissionsService {
         query:
             | LeadScoreQuery
             | LeadScoreRuleQuery
+            | ProgramQuery
+            | AcademicTermQuery
             | ApplicationFormTemplateQuery
+            | ApplicationQuery
             | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery

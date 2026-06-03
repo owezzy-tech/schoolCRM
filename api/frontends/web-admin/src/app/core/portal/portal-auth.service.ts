@@ -17,6 +17,16 @@ export interface ApplicantPortalSession {
     email: string;
 }
 
+export interface ApplicantPortalOnboardRequest {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+    dateOfBirth: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PortalAuthService {
     private readonly httpClient = inject(HttpClient);
@@ -39,6 +49,19 @@ export class PortalAuthService {
             );
     }
 
+    onboardApplicant(
+        request: ApplicantPortalOnboardRequest
+    ): Observable<ApplicantPortalSession> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<ApplicantPortalSession>
+            >('/v1/auth/applicant-portal/onboard', request)
+            .pipe(
+                map(unwrapJsonApiResource),
+                tap((session) => this.setSession(session))
+            );
+    }
+
     hasValidSession(): boolean {
         const session = this.sessionSignal();
 
@@ -46,6 +69,19 @@ export class PortalAuthService {
             session?.accessToken &&
                 !AuthUtils.isTokenExpired(session.accessToken)
         );
+    }
+
+    accessToken(): string | null {
+        const session = this.sessionSignal();
+
+        if (
+            !session?.accessToken ||
+            AuthUtils.isTokenExpired(session.accessToken)
+        ) {
+            return null;
+        }
+
+        return session.accessToken;
     }
 
     clear(): void {
@@ -56,6 +92,15 @@ export class PortalAuthService {
         }
 
         localStorage.removeItem(this.storageKey);
+    }
+
+    updateApplicationID(applicationID: string): void {
+        const session = this.sessionSignal();
+        if (!session || session.applicationID === applicationID) {
+            return;
+        }
+
+        this.setSession({ ...session, applicationID });
     }
 
     private setSession(session: ApplicantPortalSession): void {
