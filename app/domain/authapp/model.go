@@ -59,6 +59,16 @@ type applicantPortalTokenReq struct {
 	Email string `json:"email"`
 }
 
+type applicantPortalOnboardReq struct {
+	FirstName       string `json:"firstName"`
+	LastName        string `json:"lastName"`
+	Email           string `json:"email"`
+	Phone           string `json:"phone"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
+	DateOfBirth     string `json:"dateOfBirth"`
+}
+
 // Decode implements the decoder interface.
 func (req *applicantPortalTokenReq) Decode(data []byte) error {
 	return json.Unmarshal(data, req)
@@ -67,6 +77,43 @@ func (req *applicantPortalTokenReq) Decode(data []byte) error {
 func (req applicantPortalTokenReq) Validate() error {
 	if req.Email == "" {
 		return fmt.Errorf("email is required")
+	}
+
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return fmt.Errorf("email is invalid: %w", err)
+	}
+
+	return nil
+}
+
+// Decode implements the decoder interface.
+func (req *applicantPortalOnboardReq) Decode(data []byte) error {
+	return json.Unmarshal(data, req)
+}
+
+func (req applicantPortalOnboardReq) Validate() error {
+	if req.FirstName == "" {
+		return fmt.Errorf("firstName is required")
+	}
+
+	if req.LastName == "" {
+		return fmt.Errorf("lastName is required")
+	}
+
+	if req.Phone == "" {
+		return fmt.Errorf("phone is required")
+	}
+
+	if req.Password == "" {
+		return fmt.Errorf("password is required")
+	}
+
+	if req.Password != req.ConfirmPassword {
+		return fmt.Errorf("passwords do not match")
+	}
+
+	if req.DateOfBirth == "" {
+		return fmt.Errorf("dateOfBirth is required")
 	}
 
 	if _, err := mail.ParseAddress(req.Email); err != nil {
