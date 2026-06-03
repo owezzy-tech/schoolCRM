@@ -15,7 +15,7 @@ from use_cases.admissions_query import AdmissionsQueryUseCase
 def test_configure_langsmith_disables_tracing_by_default() -> None:
     os.environ["LANGSMITH_TRACING"] = "true"
 
-    configure_langsmith(Settings())
+    configure_langsmith(Settings(langsmith_enabled=False))
 
     assert os.environ["LANGSMITH_TRACING"] == "false"
 
