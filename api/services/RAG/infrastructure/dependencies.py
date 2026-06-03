@@ -19,6 +19,7 @@ from adapters.vector_stores.in_memory_vector_store import InMemoryVectorStore
 from domain.ports.application_ownership import IApplicationOwnershipChecker
 from infrastructure.auth_client import AuthServiceClient
 from infrastructure.config import Settings
+from infrastructure.tracing import trace_container
 from use_cases.admissions_query import AdmissionsQueryUseCase
 from use_cases.delete_document import DeleteDocumentUseCase
 from use_cases.ingest_document import IngestDocumentUseCase
@@ -78,25 +79,53 @@ def build_container(settings: Settings) -> Container:
 
     application_ownership_checker = StubApplicationOwnershipChecker()
     audit_port = LoggingQueryAuditAdapter()
+    ingest_document = IngestDocumentUseCase(
+        file_store=file_store,
+        parser=parser,
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        document_repository=document_repository,
+    )
+    query_documents = QueryDocumentsUseCase(
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+    )
+    admissions_query = AdmissionsQueryUseCase(
+        graph_retriever=graph_retriever,
+        answer_provider=answer_provider,
+        audit_port=audit_port,
+    )
+
+    (
+        ingest_document,
+        query_documents,
+        admissions_query,
+        graph_retriever,
+        answer_provider,
+        embedding_provider,
+        vector_store,
+        llm_provider,
+    ) = trace_container(
+        settings=settings,
+        ingest_document=ingest_document,
+        query_documents=query_documents,
+        admissions_query=admissions_query,
+        graph_retriever=graph_retriever,
+        answer_provider=answer_provider,
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+        audit_port=audit_port,
+        file_store=file_store,
+        parser=parser,
+        document_repository=document_repository,
+    )
 
     return Container(
-        ingest_document=IngestDocumentUseCase(
-            file_store=file_store,
-            parser=parser,
-            embedding_provider=embedding_provider,
-            vector_store=vector_store,
-            document_repository=document_repository,
-        ),
-        query_documents=QueryDocumentsUseCase(
-            embedding_provider=embedding_provider,
-            vector_store=vector_store,
-            llm_provider=llm_provider,
-        ),
-        admissions_query=AdmissionsQueryUseCase(
-            graph_retriever=graph_retriever,
-            answer_provider=answer_provider,
-            audit_port=audit_port,
-        ),
+        ingest_document=ingest_document,
+        query_documents=query_documents,
+        admissions_query=admissions_query,
         application_ownership_checker=application_ownership_checker,
         delete_document=DeleteDocumentUseCase(
             vector_store=vector_store,

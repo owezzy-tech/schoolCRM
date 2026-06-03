@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115.0,<1.0.0",
   "httpx>=0.28.0,<1.0.0",
+  "langsmith>=0.1.0,<1.0.0",
   "neo4j>=5.17.0,<7.0.0",
   "pydantic-settings>=2.6.0,<3.0.0",
   "python-multipart>=0.0.12,<1.0.0",

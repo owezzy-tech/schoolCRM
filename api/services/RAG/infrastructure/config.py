@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_username: str = "neo4j"
     neo4j_password: str = "password"
+    langsmith_enabled: bool = False
+    langsmith_api_key: str | None = None
+    langsmith_project: str = "schoolcrm-rag"
+    langsmith_endpoint: str | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="RAG_",
