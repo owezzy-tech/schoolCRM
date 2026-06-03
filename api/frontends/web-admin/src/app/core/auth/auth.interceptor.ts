@@ -5,8 +5,11 @@ import {
     HttpRequest,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from 'app/core/auth/auth.service';
+import { authorizationTokenForRequest } from 'app/core/auth/auth-token-selector';
 import { AuthUtils } from 'app/core/auth/auth.utils';
+import { PortalAuthService } from 'app/core/portal/portal-auth.service';
 import { Observable, catchError, throwError } from 'rxjs';
 
 /**
@@ -20,6 +23,8 @@ export const authInterceptor = (
     next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
     const authService = inject(AuthService);
+    const portalAuthService = inject(PortalAuthService);
+    const router = inject(Router);
 
     // Clone the request object
     let newReq = req.clone();
@@ -32,15 +37,16 @@ export const authInterceptor = (
     // for the protected API routes which our response interceptor will
     // catch and delete the access token from the local storage while logging
     // the user out from the app.
-    if (
-        authService.accessToken &&
-        !AuthUtils.isTokenExpired(authService.accessToken)
-    ) {
+    const accessToken = authorizationTokenForRequest({
+        requestUrl: req.url,
+        currentRouteUrl: router.url,
+        staffToken: authService.accessToken,
+        portalToken: portalAuthService.accessToken(),
+    });
+
+    if (accessToken) {
         newReq = req.clone({
-            headers: req.headers.set(
-                'Authorization',
-                'Bearer ' + authService.accessToken
-            ),
+            headers: req.headers.set('Authorization', 'Bearer ' + accessToken),
         });
     }
 
@@ -60,7 +66,7 @@ export const authInterceptor = (
                 location.reload();
             }
 
-            return throwError(error);
+            return throwError(() => error);
         })
     );
 };
