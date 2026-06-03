@@ -11,6 +11,40 @@ INSERT INTO admissions_staff_profiles (staff_profile_id, user_id, admissions_rol
 	('aee70594-4f18-4353-8bec-9d3fef476d03', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', '{APPLICATION_REVIEWER}', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
 ON CONFLICT DO NOTHING;
 
+INSERT INTO users (user_id, name, email, roles, password_hash, department, enabled, date_created, date_updated) VALUES
+	('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'John Applicant', 'applicant@example.com', '{STUDENT}', '$2a$10$XHwZsUFDExC0fsgpm4oHn.M9uT2kHaSTd5MO9QuuBl4nJt71BfubO', NULL, true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+UPDATE users
+SET roles = '{STUDENT}'
+WHERE user_id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+
+INSERT INTO admissions_constituents (constituent_id, first_name, last_name, preferred_name, middle_name, suffix, date_of_birth, primary_email, primary_phone, external_sis_id, lifecycle_stage, duplicate_status, duplicate_of_id, sis_synced_at, date_created, date_updated, national_id, national_id_verified_at, national_id_verified_by_adapter, upi, upi_verified_at, upi_verified_by_adapter, kcse_index_number, kcse_index_verified_at, kcse_index_verified_by_adapter, sms_opt_in, whatsapp_opt_in, email_opt_in, notification_priority) VALUES
+	('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'John', 'Applicant', NULL, NULL, NULL, '2000-01-15 00:00:00', '<applicant@example.com>', '+254712345678', NULL, 'APPLICANT', 'ACTIVE', NULL, NULL, '2019-03-24 00:00:00', '2019-03-24 00:00:00', '12345678', NULL, NULL, NULL, NULL, NULL, '12345678901', NULL, NULL, true, false, true, ARRAY['SMS', 'WHATSAPP', 'EMAIL']::TEXT[])
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_programs (program_id, external_sis_id, name, code, description, degree_level, is_active, date_created, date_updated) VALUES
+	('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'KUCCPS-BCOM-2026-QA', 'Bachelor of Commerce', 'BCOM-QA', 'QA fixture commerce programme', 'BACHELOR', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_academic_terms (academic_term_id, external_sis_id, name, code, term_type, start_date, end_date, application_start_date, application_deadline, is_active, date_created, date_updated) VALUES
+	('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'INTAKE-2026-QA', '2026 Main Intake', 'INT2026-QA', 'MAIN', '2026-01-01 00:00:00', '2026-12-31 00:00:00', '2025-09-01 00:00:00', '2026-01-15 00:00:00', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_applications (application_id, constituent_id, program_id, academic_term_id, application_type, status, assigned_reviewer_id, submitted_at, date_created, date_updated, kuccps_placement, kcse_result) VALUES
+	('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'KUCCPS_PLACEMENT', 'SUBMITTED', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', '2026-01-02 09:00:00', '2019-03-24 00:00:00', '2019-03-24 00:00:00', '{}'::JSONB, '{}'::JSONB)
+ON CONFLICT DO NOTHING;
+
+UPDATE admissions_applications
+SET
+	kuccps_placement = COALESCE(kuccps_placement, '{}'::JSONB),
+	kcse_result = COALESCE(kcse_result, '{}'::JSONB)
+WHERE application_id = 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
+
+INSERT INTO admissions_applicant_profiles (applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated) VALUES
+	('f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
 INSERT INTO admissions_lead_score_rules (lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated) VALUES
 	('38c7b57f-0c95-4dd7-9a08-66df08c20f1d', 'Applicant lifecycle stage', 'Applicants are warmer than prospects.', '[{"Field":"lifecycle_stage","Operator":"EQ","Values":["APPLICANT"]}]', 30, true, 10, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
 	('62d0d3e7-58e5-4d97-865a-7a7db50c9e61', 'Submitted application', 'Submitted applications show high intent.', '[{"Field":"application_status","Operator":"IN","Values":["SUBMITTED","READY_FOR_REVIEW","IN_REVIEW"]}]', 40, true, 20, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
