@@ -20,7 +20,7 @@ import { MatInputModule } from '@angular/material/input';
         <div class="flex flex-col flex-auto py-12 px-6 sm:px-10 lg:px-16">
             <div class="mx-auto w-full max-w-6xl text-center">
                 <h1 class="text-3xl font-bold tracking-tight text-default sm:text-4xl">Ask admissions</h1>
-                <p class="mt-2 mb-8 text-lg text-secondary">Send a question and we'll get back to you within one business day.</p>
+                <p class="mt-2 mb-8 text-lg text-secondary">Send a question about KUCCPS placement, self-sponsored intake, KCSE documents, or M-Pesa fee status. We will get back to you within one business day.</p>
                 
                 <div class="mx-auto max-w-3xl rounded-2xl border bg-card p-8 shadow-sm text-left">
                     <form [formGroup]="form" class="flex flex-col gap-4">
@@ -46,13 +46,13 @@ import { MatInputModule } from '@angular/material/input';
                             </mat-form-field>
                             
                             <mat-form-field appearance="outline" class="w-full">
-                                <mat-label>Program of interest</mat-label>
-                                <input matInput formControlName="program" placeholder="e.g. Computer Science BSc">
+                                <mat-label>Programme of interest</mat-label>
+                                <input matInput formControlName="program" placeholder="e.g. Bachelor of Commerce">
                             </mat-form-field>
                             
                             <mat-form-field appearance="outline" class="w-full">
                                 <mat-label>Intake term</mat-label>
-                                <input matInput formControlName="term" placeholder="Fall 2026">
+                                <input matInput formControlName="term" placeholder="2026 Main Intake">
                             </mat-form-field>
                         </div>
                         

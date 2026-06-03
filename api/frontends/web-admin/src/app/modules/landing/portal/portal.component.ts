@@ -51,30 +51,30 @@ export class PortalComponent {
     readonly cards: readonly PortalCard[] = [
         {
             title: 'Apply online',
-            description: 'A guided application in under 30 minutes.',
+            description: 'Complete KUCCPS or self-sponsored applications online.',
             icon: 'heroicons_outline:pencil-square',
         },
         {
-            title: 'Visit campus',
-            description: 'Open days, tours, and virtual events.',
+            title: 'Track intakes',
+            description: 'Follow placement, document review, and admission status.',
             icon: 'heroicons_outline:map-pin',
         },
         {
             title: 'Ask anything',
-            description: 'Talk to admissions counselors directly.',
+            description: 'Reach the admissions office by email, phone, or WhatsApp.',
             icon: 'heroicons_outline:chat-bubble-left-right',
         },
         {
-            title: 'Scholarships',
-            description: 'Need-based and merit awards available.',
+            title: 'Pay locally',
+            description: 'Application fees are tracked in KES with M-Pesa support.',
             icon: 'heroicons_outline:academic-cap',
         },
     ];
 
     readonly deadlines: readonly Deadline[] = [
-        { date: 'Sep 15', title: 'Early decision deadline' },
-        { date: 'Jan 10', title: 'Regular decision deadline' },
-        { date: 'Mar 31', title: 'Financial aid forms due' },
+        { date: 'Sep 1', title: 'KUCCPS placement confirmation opens' },
+        { date: 'Jan 15', title: '2026 main intake application deadline' },
+        { date: 'Mar 31', title: 'KCSE and document verification closes' },
     ];
 
     requestPortalAccess(): void {

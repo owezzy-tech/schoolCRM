@@ -82,7 +82,7 @@ interface PortalDocument {
                         </h1>
                         <h2 class="text-secondary mt-1 text-lg">
                             {{ portalSession()?.applicationID ?? 'APP-3018' }}
-                            &middot; Data Science MSc &middot; Fall 2026
+                            &middot; Bachelor of Commerce &middot; 2026 Main Intake
                         </h2>
                     </div>
                     <div
@@ -119,9 +119,9 @@ interface PortalDocument {
                                 Application fee
                             </h3>
                             <p class="text-secondary mt-1 text-sm">
-                                Payment processing is not active in this
-                                preview. The portal shows the fee status
-                                returned by the admissions office.
+                                M-Pesa processing is not active in this preview.
+                                The portal shows the KES fee status returned by
+                                the admissions office.
                             </p>
                         </div>
                         <span
@@ -163,10 +163,10 @@ interface PortalDocument {
                             <div
                                 class="text-secondary text-xs font-semibold uppercase tracking-wide"
                             >
-                                Provider seam
+                                Payment channel
                             </div>
                             <div class="mt-1 text-2xl font-bold capitalize">
-                                {{ applicationFee.provider }}
+                                {{ formatPaymentProvider(applicationFee.provider) }}
                             </div>
                         </div>
                     </div>
@@ -223,8 +223,8 @@ interface PortalDocument {
                                 </h3>
                                 <p class="text-secondary mt-1 text-sm">
                                     Upload missing or rejected items. Files go
-                                    to the mock upload service and move into
-                                    pending review.
+                                     to the upload service and move into pending
+                                     review for KCSE and admissions officers.
                                 </p>
                             </div>
                             <div
@@ -370,7 +370,7 @@ interface PortalDocument {
                     </div>
                 </div>
 
-                <!-- Counselor card -->
+                <!-- Admissions officer card -->
                 <div
                     class="mt-6 flex items-center gap-4 rounded-2xl bg-primary-50 p-6 dark:bg-primary-900/20"
                 >
@@ -384,11 +384,11 @@ interface PortalDocument {
                     </div>
                     <div class="flex flex-col">
                         <h3 class="text-default font-semibold">
-                            Reach your counselor
+                            Reach your admissions officer
                         </h3>
                         <p class="text-secondary mt-0.5">
-                            Maya Schultz &middot; maya&#64;northbrook.edu
-                            &middot; Replies within 1 business day.
+                            Amina Otieno &middot; admissions&#64;schoolcrm.ac.ke
+                            &middot; Replies within 1 business day, 8am-5pm EAT.
                         </p>
                     </div>
                 </div>
@@ -406,15 +406,15 @@ export class PortalStatusComponent {
         id: 'fee-app-3018',
         applicationID: 'APP-3018',
         amountCents: 15000,
-        currency: 'USD',
+        currency: 'KES',
         status: 'PENDING',
-        provider: 'stripe',
+        provider: 'manual',
         dueAt: 'Jun 1, 2026',
         auditTrail: [
             {
                 actor: 'System',
                 action: 'Fee created',
-                reason: 'Application submitted with standard graduate fee.',
+                reason: 'Application submitted with standard intake fee.',
                 timestamp: 'May 12, 2026',
             },
         ],
@@ -437,7 +437,7 @@ export class PortalStatusComponent {
         { label: 'Submitted', date: 'May 12, 2026', done: true },
         { label: 'Documents received', date: 'May 14, 2026', done: true },
         { label: 'Under review', date: 'May 18, 2026', done: true },
-        { label: 'Interview', date: 'Scheduled for Jun 2', done: false },
+        { label: 'Interview', date: 'Scheduled for Jun 2, 10:00 EAT', done: false },
         { label: 'Decision', date: 'Expected late June', done: false },
     ];
 
@@ -445,44 +445,44 @@ export class PortalStatusComponent {
         {
             id: 'personal-statement',
             label: 'Personal statement',
-            description: 'PDF or image copy of your admissions essay.',
+            description: 'PDF or image copy of your admissions statement.',
             status: 'verified',
             required: true,
             fileName: 'personal-statement.pdf',
         },
         {
-            id: 'transcripts',
-            label: 'Transcripts',
+            id: 'kcse-result-slip',
+            label: 'KCSE result slip',
             description:
-                'Official undergraduate transcript from your institution.',
+                'Official KCSE result slip or certificate from KNEC.',
             status: 'verified',
             required: true,
-            fileName: 'northbrook-transcript.pdf',
+            fileName: 'kcse-result-slip.pdf',
         },
         {
             id: 'recommendation-1',
-            label: 'Recommendation letter 1',
+            label: 'National ID or passport',
             description:
-                'First recommender letter received and awaiting review.',
+                'Identity document received and awaiting verification.',
             status: 'received',
             required: true,
-            fileName: 'recommendation-letter-1.pdf',
+            fileName: 'national-id.pdf',
         },
         {
             id: 'recommendation-2',
-            label: 'Recommendation letter 2',
+            label: 'KUCCPS placement letter',
             description:
-                'Upload the second recommender letter when it is ready.',
+                'Upload your placement letter if applying through KUCCPS.',
             status: 'missing',
-            required: true,
+            required: false,
         },
         {
             id: 'test-scores',
-            label: 'Test scores',
-            description: 'Optional GRE/GMAT score report.',
+            label: 'M-Pesa confirmation',
+            description: 'Optional payment confirmation message or receipt.',
             status: 'verified',
             required: false,
-            fileName: 'gre-score-report.pdf',
+            fileName: 'mpesa-confirmation.pdf',
         },
     ];
 
@@ -518,10 +518,23 @@ export class PortalStatusComponent {
             return 'No fee';
         }
 
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-KE', {
             style: 'currency',
             currency: fee.currency,
         }).format(fee.amountCents / 100);
+    }
+
+    formatPaymentProvider(provider: ApplicationFee['provider']): string {
+        switch (provider) {
+            case 'manual':
+                return 'M-Pesa';
+            case 'not_required':
+                return 'Not required';
+            case 'stripe':
+                return 'Stripe';
+            case 'square':
+                return 'Square';
+        }
     }
 
     canUploadDocument(document: PortalDocument): boolean {

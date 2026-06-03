@@ -29,12 +29,13 @@ interface PortalRegistrationDraft {
             <div class="mx-auto w-full max-w-6xl">
                 <div class="flex flex-col text-center sm:text-left">
                     <h1 class="text-default text-4xl font-bold tracking-tight">
-                        Visit &amp; explore
+                        Visit, attend &amp; apply
                     </h1>
                     <p class="text-secondary mt-2 text-lg">
-                        Sign up for public events. We will match your
-                        registration to an existing record when your email or
-                        phone is recognized.
+                        Sign up for open days, KUCCPS guidance clinics, and
+                        virtual sessions. We match your registration to an
+                        existing admissions record when your email or phone is
+                        recognized.
                     </p>
                 </div>
 
@@ -47,9 +48,9 @@ interface PortalRegistrationDraft {
                                 Public registration rules
                             </p>
                             <p class="text-secondary text-sm">
-                                Applicant portal tokens prefill registration
+                                Applicant portal tokens prefill Kenya admissions
                                 context. Public visitors can still browse
-                                capacity.
+                                capacity and register interest.
                             </p>
                         </div>
                         @if (portalSession(); as session) {
@@ -193,10 +194,10 @@ interface PortalRegistrationDraft {
                                     {{ draft.event.title }}
                                 </h2>
                                 <p class="text-secondary mt-2">
-                                    Anonymous registrants provide contact
-                                    details first. The CRM attempts a
-                                    constituent match before creating a new
-                                    prospect registration.
+                                     Public registrants provide Kenyan contact
+                                     details first. The CRM attempts a
+                                     constituent match before creating a new
+                                     prospect registration.
                                 </p>
                             </div>
                             <button
@@ -250,7 +251,7 @@ interface PortalRegistrationDraft {
                             {{ draft.matchMessage }} Capacity check passed with
                             {{ remainingSpots(draft.event) }} seats remaining. A
                             confirmation email and calendar details would be
-                            sent after submit.
+                             sent by email and SMS after submit.
                         </div>
                     </div>
                 }
@@ -283,12 +284,12 @@ export class PortalEventsComponent {
 
             return {
                 event,
-                firstName: session?.applicantName.split(' ')[0] ?? 'Sofia',
+                firstName: session?.applicantName.split(' ')[0] ?? 'Achieng',
                 lastName:
                     session?.applicantName.split(' ').slice(1).join(' ') ||
-                    'Martinez',
-                email: session?.email ?? 'sofia.martinez@example.edu',
-                phone: '+1 555 0101',
+                    'Otieno',
+                email: session?.email ?? 'achieng.otieno@example.ac.ke',
+                phone: '+254 712 345 678',
                 matchMessage: session
                     ? `Matched portal token for application ${session.applicationID} before creating the event registration.`
                     : 'Matched existing constituent CON-921 from verified email before creating the event registration.',
