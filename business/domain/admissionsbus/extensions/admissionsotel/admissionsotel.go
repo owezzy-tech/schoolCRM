@@ -464,6 +464,14 @@ func (ext *Extension) CreateApplication(ctx context.Context, na admissionsbus.Ne
 	return ext.bus.CreateApplication(ctx, na)
 }
 
+// UpdateApplicationDraft applies otel to applicant draft application updates.
+func (ext *Extension) UpdateApplicationDraft(ctx context.Context, app admissionsbus.Application, na admissionsbus.NewApplication) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationdraft")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationDraft(ctx, app, na)
+}
+
 // QueryApplications applies otel to Application queries.
 func (ext *Extension) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplications")
