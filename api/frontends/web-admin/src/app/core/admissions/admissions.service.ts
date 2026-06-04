@@ -463,6 +463,25 @@ export class AdmissionsService {
             .pipe(map(unwrapJsonApiCollection));
     }
 
+    // ── Admin applications ──────────────────────────────────────────────
+    queryApplications(
+        query: ApplicationQuery = {}
+    ): Observable<PaginatedResult<Application>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Application>
+            >('/v1/admissions/applications', { params: this.queryParams(query) })
+            .pipe(map(unwrapJsonApiCollection));
+    }
+
+    getApplication(applicationID: string): Observable<Application> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applications/${applicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
     private queryParams(
         query:
             | LeadScoreQuery
