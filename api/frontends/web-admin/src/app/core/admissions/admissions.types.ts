@@ -655,6 +655,13 @@ export interface ApplicationTransitionRequest {
     metadata?: Record<string, unknown> | null;
 }
 
+export interface ApplicationTransitionQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    application_id?: string;
+}
+
 export interface ChecklistItem {
     id: string;
     applicationID: string;

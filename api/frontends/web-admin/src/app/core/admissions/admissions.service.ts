@@ -1,18 +1,20 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+    AcademicTerm,
+    AcademicTermQuery,
     AdmissionsDocument,
     AdmissionsDocumentQuery,
     AdmissionsDocumentRequest,
     AdmissionsDocumentVerificationRequest,
-    AcademicTerm,
-    AcademicTermQuery,
     Application,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
     ApplicationFormTemplateRequest,
     ApplicationQuery,
     ApplicationRequest,
+    ApplicationTransition,
+    ApplicationTransitionQuery,
     ApplicationTransitionRequest,
     ChecklistItem,
     ChecklistItemQuery,
@@ -62,6 +64,18 @@ export class AdmissionsService {
     private readonly applicantApplicationsSubject = new ReplaySubject<
         PaginatedResult<Application>
     >(1);
+    private readonly applicationsSubject = new ReplaySubject<
+        PaginatedResult<Application>
+    >(1);
+    private readonly programsSubject = new ReplaySubject<
+        PaginatedResult<Program>
+    >(1);
+    private readonly academicTermsSubject = new ReplaySubject<
+        PaginatedResult<AcademicTerm>
+    >(1);
+    private readonly applicationTransitionsSubject = new ReplaySubject<
+        PaginatedResult<ApplicationTransition>
+    >(1);
     private readonly applicantProgramsSubject = new ReplaySubject<
         PaginatedResult<Program>
     >(1);
@@ -90,12 +104,18 @@ export class AdmissionsService {
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
+    readonly applications$ = this.applicationsSubject.asObservable();
+    readonly programs$ = this.programsSubject.asObservable();
+    readonly academicTerms$ = this.academicTermsSubject.asObservable();
+    readonly applicationTransitions$ =
+        this.applicationTransitionsSubject.asObservable();
     readonly applicantApplications$ =
         this.applicantApplicationsSubject.asObservable();
     readonly applicantPrograms$ = this.applicantProgramsSubject.asObservable();
     readonly applicantAcademicTerms$ =
         this.applicantAcademicTermsSubject.asObservable();
-    readonly applicantTemplates$ = this.applicantTemplatesSubject.asObservable();
+    readonly applicantTemplates$ =
+        this.applicantTemplatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
     readonly customFieldDefinitions$ =
@@ -203,6 +223,19 @@ export class AdmissionsService {
             );
     }
 
+    queryPrograms(
+        query: ProgramQuery = {}
+    ): Observable<PaginatedResult<Program>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Program>
+            >('/v1/admissions/programs', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.programsSubject.next(result))
+            );
+    }
+
     queryApplicantAcademicTerms(
         query: AcademicTermQuery = {}
     ): Observable<PaginatedResult<AcademicTerm>> {
@@ -213,6 +246,19 @@ export class AdmissionsService {
             .pipe(
                 map(unwrapJsonApiCollection),
                 tap((result) => this.applicantAcademicTermsSubject.next(result))
+            );
+    }
+
+    queryAcademicTerms(
+        query: AcademicTermQuery = {}
+    ): Observable<PaginatedResult<AcademicTerm>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AcademicTerm>
+            >('/v1/admissions/academic-terms', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.academicTermsSubject.next(result))
             );
     }
 
@@ -239,6 +285,41 @@ export class AdmissionsService {
             .pipe(
                 map(unwrapJsonApiCollection),
                 tap((result) => this.applicantApplicationsSubject.next(result))
+            );
+    }
+
+    queryApplications(
+        query: ApplicationQuery = {}
+    ): Observable<PaginatedResult<Application>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Application>
+            >('/v1/admissions/applications', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicationsSubject.next(result))
+            );
+    }
+
+    getApplication(applicationID: string): Observable<Application> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applications/${applicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryApplicationTransitions(
+        applicationID: string,
+        query: ApplicationTransitionQuery = {}
+    ): Observable<PaginatedResult<ApplicationTransition>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ApplicationTransition>
+            >(`/v1/admissions/applications/${applicationID}/transitions`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicationTransitionsSubject.next(result))
             );
     }
 
@@ -471,6 +552,7 @@ export class AdmissionsService {
             | AcademicTermQuery
             | ApplicationFormTemplateQuery
             | ApplicationQuery
+            | ApplicationTransitionQuery
             | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery
