@@ -65,6 +65,19 @@ test.describe('Admissions staff experience', () => {
         await expect(page.getByText('Lead Scoring Rules', { exact: true })).toBeVisible();
         await expect(page.getByText('Import/Export', { exact: true })).toBeVisible();
     });
+
+    test('dashboard renders KPIs and recent applications from API', async ({ page }) => {
+        await page.goto('/dashboard');
+
+        await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
+        await expect(page.getByText('Active applications')).toBeVisible();
+        await expect(page.getByText('Submitted')).toBeVisible();
+        await expect(page.getByText('Admitted')).toBeVisible();
+        await expect(page.getByText('Enrolled')).toBeVisible();
+        await expect(page.getByText('Recent applications')).toBeVisible();
+        await expect(page.getByText('No applications yet.')).toBeVisible();
+        await expect(page.getByText('Upcoming events')).toBeVisible();
+    });
 });
 
 test.describe('Applicant portal experience', () => {
