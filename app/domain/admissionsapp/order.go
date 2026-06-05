@@ -75,6 +75,22 @@ var applicationOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
 }
 
+var eventOrderByFields = map[string]string{
+	"event_id":     admissionsbus.OrderByEventID,
+	"type":         admissionsbus.OrderByEventType,
+	"status":       admissionsbus.OrderByEventStatus,
+	"start_time":   admissionsbus.OrderByEventStartTime,
+	"date_created": admissionsbus.OrderByEventDateCreated,
+}
+
+var eventRegistrationOrderByFields = map[string]string{
+	"event_registration_id": admissionsbus.OrderByEventRegistrationID,
+	"event_id":              admissionsbus.OrderByEventRegistrationEvent,
+	"status":                admissionsbus.OrderByEventRegistrationStatus,
+	"registered_at":         admissionsbus.OrderByEventRegistrationRegisteredAt,
+	"checked_in_at":         admissionsbus.OrderByEventRegistrationCheckedInAt,
+}
+
 var applicationFormTemplateOrderByFields = map[string]string{
 	"form_template_id": admissionsbus.OrderByApplicationFormTemplateID,
 	"name":             admissionsbus.OrderByApplicationFormTemplateName,

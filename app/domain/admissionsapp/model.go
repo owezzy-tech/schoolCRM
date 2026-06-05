@@ -208,6 +208,199 @@ func toBusLeadScoreCriteria(app []LeadScoreCriterion) []admissionsbus.LeadScoreC
 	return criteria
 }
 
+// EventRegistration represents one admissions event registration for app responses.
+type EventRegistration struct {
+	ID              string  `json:"id"`
+	ConstituentID   *string `json:"constituentId,omitempty"`
+	ConstituentName string  `json:"constituentName"`
+	Email           string  `json:"email"`
+	Phone           *string `json:"phone,omitempty"`
+	Status          string  `json:"status"`
+	RegisteredAt    string  `json:"registeredAt"`
+	MatchStatus     string  `json:"matchStatus"`
+	Source          string  `json:"source"`
+	CheckedInAt     *string `json:"checkedInAt,omitempty"`
+	CheckedInByID   *string `json:"checkedInById,omitempty"`
+	FirstName       string  `json:"-"`
+	LastName        string  `json:"-"`
+}
+
+// Encode implements the encoder interface.
+func (app EventRegistration) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+// Event represents an admissions engagement event for app responses.
+type Event struct {
+	ID                      string              `json:"id"`
+	Title                   string              `json:"title"`
+	Type                    string              `json:"type"`
+	Status                  string              `json:"status"`
+	Description             string              `json:"description"`
+	Start                   string              `json:"start"`
+	End                     string              `json:"end"`
+	Location                string              `json:"location"`
+	IsVirtual               bool                `json:"isVirtual"`
+	Capacity                int                 `json:"capacity"`
+	RegisteredCount         int                 `json:"registeredCount"`
+	CheckedInCount          int                 `json:"checkedInCount"`
+	RegistrationDeadline    *string             `json:"registrationDeadline,omitempty"`
+	AutoConfirmationEnabled bool                `json:"autoConfirmationEnabled"`
+	AutoReminderEnabled     bool                `json:"autoReminderEnabled"`
+	Registrations           []EventRegistration `json:"registrations"`
+	DateCreated             string              `json:"dateCreated"`
+	DateUpdated             string              `json:"dateUpdated"`
+}
+
+// Decode implements the decoder interface.
+func (app *Event) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+// Encode implements the encoder interface.
+func (app Event) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+type NewEventRegistration struct {
+	EventID       string  `json:"eventId"`
+	ConstituentID *string `json:"constituentId"`
+	FirstName     string  `json:"firstName"`
+	LastName      string  `json:"lastName"`
+	Email         string  `json:"email"`
+	Phone         *string `json:"phone"`
+	Source        string  `json:"source"`
+	MatchStatus   string  `json:"matchStatus"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewEventRegistration) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+type NewEventCheckIn struct {
+	RegistrationID string `json:"registrationId"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewEventCheckIn) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toAppEventRegistration(registration admissionsbus.EventRegistration) EventRegistration {
+	fullName := registration.FirstName
+	if registration.LastName != "" {
+		fullName = registration.FirstName + " " + registration.LastName
+	}
+
+	checkedInByID := uuidStringPtr(registration.CheckedInByID)
+
+	return EventRegistration{
+		ID:              registration.ID.String(),
+		ConstituentID:   uuidStringPtr(registration.ConstituentID),
+		ConstituentName: fullName,
+		Email:           registration.Email,
+		Phone:           registration.Phone,
+		Status:          registration.Status.String(),
+		RegisteredAt:    registration.RegisteredAt.Format(time.RFC3339),
+		MatchStatus:     registration.MatchStatus.String(),
+		Source:          registration.Source.String(),
+		CheckedInAt:     formatTimePtr(registration.CheckedInAt),
+		CheckedInByID:   checkedInByID,
+		FirstName:       registration.FirstName,
+		LastName:        registration.LastName,
+	}
+}
+
+func toAppEventRegistrations(registrations []admissionsbus.EventRegistration) []EventRegistration {
+	app := make([]EventRegistration, len(registrations))
+	for i, registration := range registrations {
+		app[i] = toAppEventRegistration(registration)
+	}
+
+	return app
+}
+
+func toAppEvent(event admissionsbus.Event, registrations []admissionsbus.EventRegistration) Event {
+	registeredCount := len(registrations)
+	checkedInCount := 0
+	for _, registration := range registrations {
+		if registration.Status == admissionsbus.EventRegistrationStatusCheckedIn {
+			checkedInCount++
+		}
+	}
+
+	return Event{
+		ID:                      event.ID.String(),
+		Title:                   event.Title,
+		Type:                    event.Type.String(),
+		Status:                  event.Status.String(),
+		Description:             event.Description,
+		Start:                   event.StartTime.Format(time.RFC3339),
+		End:                     event.EndTime.Format(time.RFC3339),
+		Location:                event.Location,
+		IsVirtual:               event.IsVirtual,
+		Capacity:                event.Capacity,
+		RegisteredCount:         registeredCount,
+		CheckedInCount:          checkedInCount,
+		RegistrationDeadline:    formatTimePtr(event.RegistrationDeadline),
+		AutoConfirmationEnabled: event.AutoConfirmationEnabled,
+		AutoReminderEnabled:     event.AutoReminderEnabled,
+		Registrations:           toAppEventRegistrations(registrations),
+		DateCreated:             event.DateCreated.Format(time.RFC3339),
+		DateUpdated:             event.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toBusNewEventRegistration(app NewEventRegistration) (admissionsbus.NewEventRegistration, error) {
+	var fieldErrors errs.FieldErrors
+
+	eventID, err := uuid.Parse(app.EventID)
+	if err != nil {
+		fieldErrors.Add("eventId", err)
+	}
+
+	constituentID, err := parseUUIDPtr(app.ConstituentID)
+	if err != nil {
+		fieldErrors.Add("constituentId", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEventRegistration{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEventRegistration{
+		EventID:       eventID,
+		ConstituentID: constituentID,
+		FirstName:     app.FirstName,
+		LastName:      app.LastName,
+		Email:         app.Email,
+		Phone:         app.Phone,
+		Source:        admissionsbus.EventRegistrationSource(app.Source),
+		MatchStatus:   admissionsbus.EventRegistrationMatchStatus(app.MatchStatus),
+	}, nil
+}
+
+func toBusNewEventCheckIn(app NewEventCheckIn, checkedInByID uuid.UUID) (admissionsbus.NewEventCheckIn, error) {
+	var fieldErrors errs.FieldErrors
+
+	registrationID, err := uuid.Parse(app.RegistrationID)
+	if err != nil {
+		fieldErrors.Add("registrationId", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEventCheckIn{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEventCheckIn{
+		RegistrationID: registrationID,
+		CheckedInByID:  checkedInByID,
+	}, nil
+}
+
 // LeadScoreRule represents an explainable rule contributing points to a lead score.
 type LeadScoreRule struct {
 	ID          string               `json:"id"`
