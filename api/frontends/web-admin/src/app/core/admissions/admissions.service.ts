@@ -24,6 +24,8 @@ import {
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
+    Constituent,
+    ConstituentQuery,
     CustomFieldDefinition,
     CustomFieldDefinitionQuery,
     CustomFieldDefinitionRequest,
@@ -36,6 +38,7 @@ import {
     ImportInvalidRowQuery,
     ImportInvalidRowsRequest,
     Inquiry,
+    InquiryQuery,
     InquiryRequest,
     LeadScore,
     LeadScoreQuery,
@@ -99,6 +102,12 @@ export class AdmissionsService {
     private readonly eventRegistrationsSubject = new ReplaySubject<
         PaginatedResult<AdmissionsEventRegistration>
     >(1);
+    private readonly constituentsSubject = new ReplaySubject<
+        PaginatedResult<Constituent>
+    >(1);
+    private readonly inquiriesSubject = new ReplaySubject<
+        PaginatedResult<Inquiry>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
@@ -119,6 +128,8 @@ export class AdmissionsService {
     readonly events$ = this.eventsSubject.asObservable();
     readonly eventRegistrations$ =
         this.eventRegistrationsSubject.asObservable();
+    readonly constituents$ = this.constituentsSubject.asObservable();
+    readonly inquiries$ = this.inquiriesSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -170,6 +181,41 @@ export class AdmissionsService {
     createInquiry(request: InquiryRequest): Observable<Inquiry> {
         return this.httpClient
             .post<JsonApiDocument<Inquiry>>('/v1/admissions/inquiries', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryInquiries(
+        query: InquiryQuery = {}
+    ): Observable<PaginatedResult<Inquiry>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Inquiry>>('/v1/admissions/inquiries', {
+                params: this.queryParams(query),
+            })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.inquiriesSubject.next(result))
+            );
+    }
+
+    queryConstituents(
+        query: ConstituentQuery = {}
+    ): Observable<PaginatedResult<Constituent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Constituent>>(
+                '/v1/admissions/constituents',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.constituentsSubject.next(result))
+            );
+    }
+
+    getConstituent(constituentID: string): Observable<Constituent> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Constituent>
+            >(`/v1/admissions/constituents/${constituentID}`)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -612,6 +658,8 @@ export class AdmissionsService {
         query:
             | LeadScoreQuery
             | LeadScoreRuleQuery
+            | ConstituentQuery
+            | InquiryQuery
             | ProgramQuery
             | AcademicTermQuery
             | ApplicationFormTemplateQuery
