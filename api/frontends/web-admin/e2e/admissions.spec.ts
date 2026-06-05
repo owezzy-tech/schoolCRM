@@ -456,6 +456,37 @@ test.describe('Applicant portal experience', () => {
         expect(applicantRequests.loadedEvents).toBeGreaterThanOrEqual(1);
         expect(applicantRequests.eventRegistrations).toBe(1);
     });
+
+    test('submits a portal inquiry to admissions APIs', async ({ page }) => {
+        const applicantRequests = await mockApplicantAdmissions(page);
+
+        await page.goto(
+            '/portal/inquiry?utm_source=google&utm_medium=cpc&utm_campaign=2026-intake'
+        );
+
+        await expect(
+            page.getByRole('heading', { name: 'Ask admissions' })
+        ).toBeVisible();
+        await page.getByLabel('First name').fill('John');
+        await page.getByLabel('Last name').fill('Applicant');
+        await page.getByLabel('Date of birth').fill('2005-01-15');
+        await page.getByLabel('Email').fill('applicant@example.com');
+        await page.getByLabel('Phone').fill('+254712345678');
+        await page
+            .getByLabel('Programme of interest')
+            .fill('Bachelor of Commerce');
+        await page.getByLabel('Intake term').fill('2026 Main Intake');
+        await page
+            .getByLabel('Your question')
+            .fill('What are the KCSE requirements for Commerce?');
+
+        await page.getByRole('button', { name: 'Send inquiry' }).click();
+
+        await expect(
+            page.getByText('Your inquiry has been sent.')
+        ).toBeVisible();
+        expect(applicantRequests.submittedInquiries).toBe(1);
+    });
 });
 
 async function mockApplicantAdmissions(page: Page): Promise<{
@@ -465,6 +496,7 @@ async function mockApplicantAdmissions(page: Page): Promise<{
     submittedApplications: number;
     loadedEvents: number;
     eventRegistrations: number;
+    submittedInquiries: number;
 }> {
     const requests = {
         onboardedApplicants: 0,
@@ -473,6 +505,7 @@ async function mockApplicantAdmissions(page: Page): Promise<{
         submittedApplications: 0,
         loadedEvents: 0,
         eventRegistrations: 0,
+        submittedInquiries: 0,
     };
     const applicantToken = createJwt({
         sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
@@ -667,6 +700,73 @@ async function mockApplicantAdmissions(page: Page): Promise<{
             });
         }
     );
+
+    await page.route('**/v1/admissions/inquiries', async (route) => {
+        if (route.request().method() !== 'POST') {
+            await route.fallback();
+            return;
+        }
+
+        requests.submittedInquiries += 1;
+        const payload = route.request().postDataJSON() as {
+            firstName: string;
+            lastName: string;
+            dateOfBirth: string;
+            primaryEmail: string;
+            primaryPhone: string;
+            programOfInterest?: string;
+            termOfInterest?: string;
+            source: string;
+            utmSource?: string;
+            utmMedium?: string;
+            utmCampaign?: string;
+            message?: string;
+        };
+
+        expect(payload).toMatchObject({
+            firstName: 'John',
+            lastName: 'Applicant',
+            primaryEmail: 'applicant@example.com',
+            primaryPhone: '+254712345678',
+            programOfInterest: 'Bachelor of Commerce',
+            termOfInterest: '2026 Main Intake',
+            source: 'PORTAL_INQUIRY_FORM',
+            utmSource: 'google',
+            utmMedium: 'cpc',
+            utmCampaign: '2026-intake',
+            message: 'What are the KCSE requirements for Commerce?',
+        });
+        expect(payload.dateOfBirth).toMatch(/^2005-01-15T/);
+
+        await route.fulfill({
+            contentType: 'application/vnd.api+json',
+            body: JSON.stringify({
+                jsonapi: { version: '1.1' },
+                data: {
+                    id: '4f5da65c-b653-4f87-ac8c-6685d6bd6402',
+                    type: 'inquiries',
+                    attributes: {
+                        constituentID: applicantFixture.constituentID,
+                        firstName: payload.firstName,
+                        lastName: payload.lastName,
+                        dateOfBirth: payload.dateOfBirth,
+                        primaryEmail: payload.primaryEmail,
+                        primaryPhone: payload.primaryPhone,
+                        programOfInterest: payload.programOfInterest,
+                        termOfInterest: payload.termOfInterest,
+                        source: payload.source,
+                        utmSource: payload.utmSource,
+                        utmMedium: payload.utmMedium,
+                        utmCampaign: payload.utmCampaign,
+                        message: payload.message,
+                        status: 'received',
+                        dateCreated: new Date().toISOString(),
+                        dateUpdated: new Date().toISOString(),
+                    },
+                },
+            }),
+        });
+    });
 
     await page.route(
         '**/v1/admissions/applicant/applications',
