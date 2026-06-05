@@ -496,6 +496,22 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
 }
 
+// CreateEvent applies otel to admissions event creation.
+func (ext *Extension) CreateEvent(ctx context.Context, ne admissionsbus.NewEvent) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createevent")
+	defer span.End()
+
+	return ext.bus.CreateEvent(ctx, ne)
+}
+
+// UpdateEvent applies otel to admissions event updates.
+func (ext *Extension) UpdateEvent(ctx context.Context, event admissionsbus.Event, ne admissionsbus.NewEvent) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateevent")
+	defer span.End()
+
+	return ext.bus.UpdateEvent(ctx, event, ne)
+}
+
 // QueryEvents applies otel to admissions event queries.
 func (ext *Extension) QueryEvents(ctx context.Context, filter admissionsbus.EventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Event, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryevents")

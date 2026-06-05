@@ -339,11 +339,11 @@ type EventType string
 
 // Set of valid admissions event types.
 const (
-	EventTypeOpenDay    EventType = "open-day"
-	EventTypeWebinar    EventType = "webinar"
+	EventTypeOpenDay     EventType = "open-day"
+	EventTypeWebinar     EventType = "webinar"
 	EventTypeInfoSession EventType = "info-session"
-	EventTypeCampusTour EventType = "campus-tour"
-	EventTypeFair       EventType = "fair"
+	EventTypeCampusTour  EventType = "campus-tour"
+	EventTypeFair        EventType = "fair"
 )
 
 // String returns the event type as a string.
@@ -385,9 +385,9 @@ func (status EventRegistrationStatus) String() string {
 type EventRegistrationMatchStatus string
 
 const (
-	EventRegistrationMatchStatusMatched      EventRegistrationMatchStatus = "matched"
-	EventRegistrationMatchStatusNewProspect  EventRegistrationMatchStatus = "new-prospect"
-	EventRegistrationMatchStatusNeedsReview  EventRegistrationMatchStatus = "needs-review"
+	EventRegistrationMatchStatusMatched     EventRegistrationMatchStatus = "matched"
+	EventRegistrationMatchStatusNewProspect EventRegistrationMatchStatus = "new-prospect"
+	EventRegistrationMatchStatusNeedsReview EventRegistrationMatchStatus = "needs-review"
 )
 
 func (status EventRegistrationMatchStatus) String() string {
@@ -409,40 +409,56 @@ func (source EventRegistrationSource) String() string {
 
 // Event represents an admissions engagement event.
 type Event struct {
-	ID                        uuid.UUID
-	Title                     string
-	Type                      EventType
-	Status                    EventStatus
-	Description               string
-	StartTime                 time.Time
-	EndTime                   time.Time
-	Location                  string
-	IsVirtual                 bool
-	Capacity                  int
-	RegistrationDeadline      *time.Time
-	AutoConfirmationEnabled   bool
-	AutoReminderEnabled       bool
-	DateCreated               time.Time
-	DateUpdated               time.Time
+	ID                      uuid.UUID
+	Title                   string
+	Type                    EventType
+	Status                  EventStatus
+	Description             string
+	StartTime               time.Time
+	EndTime                 time.Time
+	Location                string
+	IsVirtual               bool
+	Capacity                int
+	RegistrationDeadline    *time.Time
+	AutoConfirmationEnabled bool
+	AutoReminderEnabled     bool
+	DateCreated             time.Time
+	DateUpdated             time.Time
+}
+
+// NewEvent is what we require from clients when adding or updating an admissions event.
+type NewEvent struct {
+	Title                   string
+	Type                    EventType
+	Status                  EventStatus
+	Description             string
+	StartTime               time.Time
+	EndTime                 time.Time
+	Location                string
+	IsVirtual               bool
+	Capacity                int
+	RegistrationDeadline    *time.Time
+	AutoConfirmationEnabled bool
+	AutoReminderEnabled     bool
 }
 
 // EventRegistration represents one registration row for an admissions event.
 type EventRegistration struct {
-	ID           uuid.UUID
-	EventID      uuid.UUID
+	ID            uuid.UUID
+	EventID       uuid.UUID
 	ConstituentID *uuid.UUID
-	FirstName    string
-	LastName     string
-	Email        string
-	Phone        *string
-	Status       EventRegistrationStatus
-	MatchStatus  EventRegistrationMatchStatus
-	Source       EventRegistrationSource
-	RegisteredAt time.Time
-	CheckedInAt  *time.Time
+	FirstName     string
+	LastName      string
+	Email         string
+	Phone         *string
+	Status        EventRegistrationStatus
+	MatchStatus   EventRegistrationMatchStatus
+	Source        EventRegistrationSource
+	RegisteredAt  time.Time
+	CheckedInAt   *time.Time
 	CheckedInByID *uuid.UUID
-	DateCreated  time.Time
-	DateUpdated  time.Time
+	DateCreated   time.Time
+	DateUpdated   time.Time
 }
 
 // NewEventRegistration is what we require to register an attendee for an event.
@@ -1460,10 +1476,10 @@ type ApplicationQueryFilter struct {
 
 // EventQueryFilter holds the available fields an event query can be filtered on.
 type EventQueryFilter struct {
-	ID       *uuid.UUID
-	Type     *EventType
-	Status   *EventStatus
-	Virtual  *bool
+	ID      *uuid.UUID
+	Type    *EventType
+	Status  *EventStatus
+	Virtual *bool
 }
 
 // EventRegistrationQueryFilter holds the available fields an event registration query can be filtered on.

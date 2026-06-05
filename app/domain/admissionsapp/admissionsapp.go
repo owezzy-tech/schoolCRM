@@ -141,6 +141,59 @@ func (a *app) queryInquiryByID(ctx context.Context, r *http.Request) web.Encoder
 	return toAppInquiry(inquiry)
 }
 
+func (a *app) createEvent(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewEvent
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	ne, err := toBusNewEvent(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	event, err := a.admissionsBus.CreateEvent(ctx, ne)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "create event: %s", err)
+	}
+
+	return toAppEvent(event, nil)
+}
+
+func (a *app) updateEvent(ctx context.Context, r *http.Request) web.Encoder {
+	var app NewEvent
+	if err := web.Decode(r, &app); err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	eventID, err := uuid.Parse(web.Param(r, "event_id"))
+	if err != nil {
+		return errs.NewFieldErrors("event_id", err)
+	}
+
+	event, err := a.admissionsBus.QueryEventByID(ctx, eventID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query event: %s", err)
+	}
+
+	ne, err := toBusNewEvent(app)
+	if err != nil {
+		return errs.New(errs.InvalidArgument, err)
+	}
+
+	updated, err := a.admissionsBus.UpdateEvent(ctx, event, ne)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "update event: %s", err)
+	}
+
+	registrations, err := a.admissionsBus.QueryEventRegistrations(ctx, admissionsbus.EventRegistrationQueryFilter{EventID: &updated.ID}, admissionsbus.DefaultEventRegistrationOrderBy, page.MustParse("1", "5000"))
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query event registrations: %s", err)
+	}
+
+	return toAppEvent(updated, registrations)
+}
+
 func (a *app) queryEvents(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseEventQueryParams(r)
 

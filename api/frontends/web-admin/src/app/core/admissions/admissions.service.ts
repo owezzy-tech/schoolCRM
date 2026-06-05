@@ -1,12 +1,19 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+    AcademicTerm,
+    AcademicTermQuery,
     AdmissionsDocument,
     AdmissionsDocumentQuery,
     AdmissionsDocumentRequest,
     AdmissionsDocumentVerificationRequest,
-    AcademicTerm,
-    AcademicTermQuery,
+    AdmissionsEvent,
+    AdmissionsEventCheckInRequest,
+    AdmissionsEventQuery,
+    AdmissionsEventRegistration,
+    AdmissionsEventRegistrationQuery,
+    AdmissionsEventRegistrationRequest,
+    AdmissionsEventRequest,
     Application,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
@@ -86,6 +93,12 @@ export class AdmissionsService {
     private readonly importInvalidRowsSubject = new ReplaySubject<
         PaginatedResult<ImportInvalidRow>
     >(1);
+    private readonly eventsSubject = new ReplaySubject<
+        PaginatedResult<AdmissionsEvent>
+    >(1);
+    private readonly eventRegistrationsSubject = new ReplaySubject<
+        PaginatedResult<AdmissionsEventRegistration>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
@@ -95,13 +108,17 @@ export class AdmissionsService {
     readonly applicantPrograms$ = this.applicantProgramsSubject.asObservable();
     readonly applicantAcademicTerms$ =
         this.applicantAcademicTermsSubject.asObservable();
-    readonly applicantTemplates$ = this.applicantTemplatesSubject.asObservable();
+    readonly applicantTemplates$ =
+        this.applicantTemplatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
     readonly customFieldDefinitions$ =
         this.customFieldDefinitionsSubject.asObservable();
     readonly importBatches$ = this.importBatchesSubject.asObservable();
     readonly importInvalidRows$ = this.importInvalidRowsSubject.asObservable();
+    readonly events$ = this.eventsSubject.asObservable();
+    readonly eventRegistrations$ =
+        this.eventRegistrationsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -153,6 +170,88 @@ export class AdmissionsService {
     createInquiry(request: InquiryRequest): Observable<Inquiry> {
         return this.httpClient
             .post<JsonApiDocument<Inquiry>>('/v1/admissions/inquiries', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryEvents(
+        query: AdmissionsEventQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEvent>>(
+                '/v1/admissions/events',
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventsSubject.next(result))
+            );
+    }
+
+    getEvent(eventID: string): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<AdmissionsEvent>
+            >(`/v1/admissions/events/${eventID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createEvent(request: AdmissionsEventRequest): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEvent>
+            >('/v1/admissions/events', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateEvent(
+        eventID: string,
+        request: AdmissionsEventRequest
+    ): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<AdmissionsEvent>
+            >(`/v1/admissions/events/${eventID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryEventRegistrations(
+        eventID: string,
+        query: AdmissionsEventRegistrationQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEventRegistration>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEventRegistration>>(
+                `/v1/admissions/events/${eventID}/registrations`,
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventRegistrationsSubject.next(result))
+            );
+    }
+
+    createEventRegistration(
+        eventID: string,
+        request: AdmissionsEventRegistrationRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/events/${eventID}/registrations`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    checkInEventRegistration(
+        registrationID: string,
+        request: AdmissionsEventCheckInRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/event-registrations/${registrationID}/check-in`, request)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -490,6 +589,8 @@ export class AdmissionsService {
             | AcademicTermQuery
             | ApplicationFormTemplateQuery
             | ApplicationQuery
+            | AdmissionsEventQuery
+            | AdmissionsEventRegistrationQuery
             | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery
