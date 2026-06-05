@@ -32,6 +32,12 @@ var DefaultDuplicateReviewOrderBy = order.NewBy(OrderByDuplicateReviewDateCreate
 // DefaultApplicationOrderBy represents the default way we sort applications.
 var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order.ASC)
 
+// DefaultEventOrderBy represents the default way we sort admissions events.
+var DefaultEventOrderBy = order.NewBy(OrderByEventStartTime, order.ASC)
+
+// DefaultEventRegistrationOrderBy represents the default way we sort event registrations.
+var DefaultEventRegistrationOrderBy = order.NewBy(OrderByEventRegistrationRegisteredAt, order.DESC)
+
 // DefaultApplicationFormTemplateOrderBy represents the default way we sort application form templates.
 var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTemplatePriority, order.ASC)
 
@@ -143,6 +149,24 @@ const (
 	OrderByApplicationType        = "c"
 	OrderByApplicationSubmittedAt = "d"
 	OrderByApplicationDateCreated = "e"
+)
+
+// Set of fields that admissions events can be ordered by.
+const (
+	OrderByEventID         = "a"
+	OrderByEventType       = "b"
+	OrderByEventStatus     = "c"
+	OrderByEventStartTime  = "d"
+	OrderByEventDateCreated = "e"
+)
+
+// Set of fields that admissions event registrations can be ordered by.
+const (
+	OrderByEventRegistrationID           = "a"
+	OrderByEventRegistrationEvent        = "b"
+	OrderByEventRegistrationStatus       = "c"
+	OrderByEventRegistrationRegisteredAt = "d"
+	OrderByEventRegistrationCheckedInAt  = "e"
 )
 
 // Set of fields that application form templates can be ordered by.

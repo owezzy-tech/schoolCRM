@@ -34,6 +34,7 @@ const (
 	AdmissionsPermissionRead               AdmissionsPermission = "admissions:read"
 	AdmissionsPermissionManageConstituents AdmissionsPermission = "admissions:manage_constituents"
 	AdmissionsPermissionManageApplications AdmissionsPermission = "admissions:manage_applications"
+	AdmissionsPermissionManageEvents       AdmissionsPermission = "admissions:manage_events"
 	AdmissionsPermissionReviewApplications AdmissionsPermission = "admissions:review_applications"
 	AdmissionsPermissionResolveDuplicates  AdmissionsPermission = "admissions:resolve_duplicates"
 	AdmissionsPermissionManageReferences   AdmissionsPermission = "admissions:manage_references"
@@ -331,6 +332,135 @@ const (
 // String returns the application status as a string.
 func (status ApplicationStatus) String() string {
 	return string(status)
+}
+
+// EventType represents the kind of admissions engagement event.
+type EventType string
+
+// Set of valid admissions event types.
+const (
+	EventTypeOpenDay    EventType = "open-day"
+	EventTypeWebinar    EventType = "webinar"
+	EventTypeInfoSession EventType = "info-session"
+	EventTypeCampusTour EventType = "campus-tour"
+	EventTypeFair       EventType = "fair"
+)
+
+// String returns the event type as a string.
+func (eventType EventType) String() string {
+	return string(eventType)
+}
+
+// EventStatus represents the workflow state of an admissions event.
+type EventStatus string
+
+// Set of valid admissions event statuses.
+const (
+	EventStatusDraft     EventStatus = "draft"
+	EventStatusUpcoming  EventStatus = "upcoming"
+	EventStatusLive      EventStatus = "live"
+	EventStatusCompleted EventStatus = "completed"
+	EventStatusCancelled EventStatus = "cancelled"
+)
+
+// String returns the event status as a string.
+func (status EventStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationStatus represents the state of one event registration.
+type EventRegistrationStatus string
+
+const (
+	EventRegistrationStatusRegistered EventRegistrationStatus = "registered"
+	EventRegistrationStatusCheckedIn  EventRegistrationStatus = "checked-in"
+	EventRegistrationStatusCancelled  EventRegistrationStatus = "cancelled"
+)
+
+func (status EventRegistrationStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationMatchStatus represents CRM matching confidence for a registration.
+type EventRegistrationMatchStatus string
+
+const (
+	EventRegistrationMatchStatusMatched      EventRegistrationMatchStatus = "matched"
+	EventRegistrationMatchStatusNewProspect  EventRegistrationMatchStatus = "new-prospect"
+	EventRegistrationMatchStatusNeedsReview  EventRegistrationMatchStatus = "needs-review"
+)
+
+func (status EventRegistrationMatchStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationSource represents how a prospect registered for an event.
+type EventRegistrationSource string
+
+const (
+	EventRegistrationSourcePortal   EventRegistrationSource = "portal"
+	EventRegistrationSourceStaff    EventRegistrationSource = "staff"
+	EventRegistrationSourceCampaign EventRegistrationSource = "campaign"
+)
+
+func (source EventRegistrationSource) String() string {
+	return string(source)
+}
+
+// Event represents an admissions engagement event.
+type Event struct {
+	ID                        uuid.UUID
+	Title                     string
+	Type                      EventType
+	Status                    EventStatus
+	Description               string
+	StartTime                 time.Time
+	EndTime                   time.Time
+	Location                  string
+	IsVirtual                 bool
+	Capacity                  int
+	RegistrationDeadline      *time.Time
+	AutoConfirmationEnabled   bool
+	AutoReminderEnabled       bool
+	DateCreated               time.Time
+	DateUpdated               time.Time
+}
+
+// EventRegistration represents one registration row for an admissions event.
+type EventRegistration struct {
+	ID           uuid.UUID
+	EventID      uuid.UUID
+	ConstituentID *uuid.UUID
+	FirstName    string
+	LastName     string
+	Email        string
+	Phone        *string
+	Status       EventRegistrationStatus
+	MatchStatus  EventRegistrationMatchStatus
+	Source       EventRegistrationSource
+	RegisteredAt time.Time
+	CheckedInAt  *time.Time
+	CheckedInByID *uuid.UUID
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+// NewEventRegistration is what we require to register an attendee for an event.
+type NewEventRegistration struct {
+	EventID       uuid.UUID
+	ConstituentID *uuid.UUID
+	FirstName     string
+	LastName      string
+	Email         string
+	Phone         *string
+	Source        EventRegistrationSource
+	MatchStatus   EventRegistrationMatchStatus
+}
+
+// NewEventCheckIn is what we require to record a staff check-in.
+type NewEventCheckIn struct {
+	RegistrationID uuid.UUID
+	CheckedInByID  uuid.UUID
 }
 
 // Application represents a constituent's program application for a term.
@@ -1326,6 +1456,24 @@ type ApplicationQueryFilter struct {
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
 	CustomFields    map[string]string
+}
+
+// EventQueryFilter holds the available fields an event query can be filtered on.
+type EventQueryFilter struct {
+	ID       *uuid.UUID
+	Type     *EventType
+	Status   *EventStatus
+	Virtual  *bool
+}
+
+// EventRegistrationQueryFilter holds the available fields an event registration query can be filtered on.
+type EventRegistrationQueryFilter struct {
+	ID            *uuid.UUID
+	EventID       *uuid.UUID
+	ConstituentID *uuid.UUID
+	Status        *EventRegistrationStatus
+	MatchStatus   *EventRegistrationMatchStatus
+	Source        *EventRegistrationSource
 }
 
 // CustomFieldDefinitionQueryFilter holds fields a custom field definition query can be filtered on.
