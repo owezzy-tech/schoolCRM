@@ -22,6 +22,7 @@ const (
 	RuleAdmissionsRead               = "rule_admissions_read"
 	RuleAdmissionsManageConstituents = "rule_admissions_manage_constituents"
 	RuleAdmissionsManageApplications = "rule_admissions_manage_applications"
+	RuleAdmissionsManageEvents       = "rule_admissions_manage_events"
 	RuleAdmissionsReviewApplications = "rule_admissions_review_applications"
 	RuleAdmissionsResolveDuplicates  = "rule_admissions_resolve_duplicates"
 	RuleAdmissionsManageReferences   = "rule_admissions_manage_references"
