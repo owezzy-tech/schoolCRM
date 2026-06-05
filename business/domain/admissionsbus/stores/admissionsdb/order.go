@@ -80,6 +80,22 @@ var applicationOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationDateCreated: "date_created",
 }
 
+var eventOrderByFields = map[string]string{
+	admissionsbus.OrderByEventID:          "event_id",
+	admissionsbus.OrderByEventType:        "event_type",
+	admissionsbus.OrderByEventStatus:      "status",
+	admissionsbus.OrderByEventStartTime:   "start_time",
+	admissionsbus.OrderByEventDateCreated: "date_created",
+}
+
+var eventRegistrationOrderByFields = map[string]string{
+	admissionsbus.OrderByEventRegistrationID:           "event_registration_id",
+	admissionsbus.OrderByEventRegistrationEvent:        "event_id",
+	admissionsbus.OrderByEventRegistrationStatus:       "status",
+	admissionsbus.OrderByEventRegistrationRegisteredAt: "registered_at",
+	admissionsbus.OrderByEventRegistrationCheckedInAt:  "checked_in_at",
+}
+
 var applicationFormTemplateOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationFormTemplateID:          "form_template_id",
 	admissionsbus.OrderByApplicationFormTemplateName:        "name",
@@ -246,6 +262,24 @@ func duplicateReviewOrderByClause(orderBy order.By) (string, error) {
 
 func applicationOrderByClause(orderBy order.By) (string, error) {
 	by, exists := applicationOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func eventOrderByClause(orderBy order.By) (string, error) {
+	by, exists := eventOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func eventRegistrationOrderByClause(orderBy order.By) (string, error) {
+	by, exists := eventRegistrationOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

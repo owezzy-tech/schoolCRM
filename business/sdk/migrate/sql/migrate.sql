@@ -935,3 +935,80 @@ CREATE INDEX idx_programmes_university_code ON programmes (university_code);
 CREATE INDEX idx_programmes_cluster_code ON programmes (cluster_code);
 CREATE INDEX idx_programmes_knqf_level_code ON programmes (knqf_level_code);
 CREATE INDEX idx_programmes_name ON programmes (name);
+
+-- Version: 1.28
+-- Description: Create admissions events and registrations tables
+CREATE TABLE admissions_events (
+    event_id                     UUID      NOT NULL,
+    title                        TEXT      NOT NULL,
+    event_type                   TEXT      NOT NULL,
+    status                       TEXT      NOT NULL,
+    description                  TEXT      NOT NULL,
+    start_time                   TIMESTAMP NOT NULL,
+    end_time                     TIMESTAMP NOT NULL,
+    location                     TEXT      NOT NULL,
+    is_virtual                   BOOLEAN   NOT NULL,
+    capacity                     INT       NOT NULL,
+    registration_deadline        TIMESTAMP NULL,
+    auto_confirmation_enabled    BOOLEAN   NOT NULL,
+    auto_reminder_enabled        BOOLEAN   NOT NULL,
+    date_created                 TIMESTAMP NOT NULL,
+    date_updated                 TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (event_id),
+    CONSTRAINT admissions_events_title_not_empty CHECK (trim(title) <> ''),
+    CONSTRAINT admissions_events_description_not_empty CHECK (trim(description) <> ''),
+    CONSTRAINT admissions_events_location_not_empty CHECK (trim(location) <> ''),
+    CONSTRAINT admissions_events_type CHECK (event_type IN ('open-day', 'webinar', 'info-session', 'campus-tour', 'fair')),
+    CONSTRAINT admissions_events_status CHECK (status IN ('draft', 'upcoming', 'live', 'completed', 'cancelled')),
+    CONSTRAINT admissions_events_capacity_positive CHECK (capacity >= 0),
+    CONSTRAINT admissions_events_date_range CHECK (start_time < end_time),
+    CONSTRAINT admissions_events_deadline_window CHECK (
+        registration_deadline IS NULL OR registration_deadline <= start_time
+    )
+);
+
+CREATE INDEX idx_admissions_events_status ON admissions_events (status);
+CREATE INDEX idx_admissions_events_type ON admissions_events (event_type);
+CREATE INDEX idx_admissions_events_start_time ON admissions_events (start_time);
+
+CREATE TABLE admissions_event_registrations (
+    event_registration_id        UUID      NOT NULL,
+    event_id                     UUID      NOT NULL,
+    constituent_id               UUID      NULL,
+    first_name                   TEXT      NOT NULL,
+    last_name                    TEXT      NOT NULL,
+    email                        TEXT      NOT NULL,
+    phone                        TEXT      NULL,
+    status                       TEXT      NOT NULL,
+    match_status                 TEXT      NOT NULL,
+    source                       TEXT      NOT NULL,
+    registered_at                TIMESTAMP NOT NULL,
+    checked_in_at                TIMESTAMP NULL,
+    checked_in_by_id             UUID      NULL,
+    date_created                 TIMESTAMP NOT NULL,
+    date_updated                 TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (event_registration_id),
+    FOREIGN KEY (event_id) REFERENCES admissions_events(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE SET NULL,
+    FOREIGN KEY (checked_in_by_id) REFERENCES users(user_id),
+    CONSTRAINT admissions_event_registrations_first_name_not_empty CHECK (trim(first_name) <> ''),
+    CONSTRAINT admissions_event_registrations_last_name_not_empty CHECK (trim(last_name) <> ''),
+    CONSTRAINT admissions_event_registrations_email_not_empty CHECK (trim(email) <> ''),
+    CONSTRAINT admissions_event_registrations_status CHECK (status IN ('registered', 'checked-in', 'cancelled')),
+    CONSTRAINT admissions_event_registrations_match_status CHECK (match_status IN ('matched', 'new-prospect', 'needs-review')),
+    CONSTRAINT admissions_event_registrations_source CHECK (source IN ('portal', 'staff', 'campaign')),
+    CONSTRAINT admissions_event_registrations_checkin_consistency CHECK (
+        (status = 'checked-in' AND checked_in_at IS NOT NULL)
+        OR (status <> 'checked-in')
+    )
+);
+
+CREATE UNIQUE INDEX idx_admissions_event_registrations_event_constituent
+    ON admissions_event_registrations (event_id, constituent_id)
+    WHERE constituent_id IS NOT NULL;
+
+CREATE INDEX idx_admissions_event_registrations_event ON admissions_event_registrations (event_id);
+CREATE INDEX idx_admissions_event_registrations_status ON admissions_event_registrations (status);
+CREATE INDEX idx_admissions_event_registrations_registered_at ON admissions_event_registrations (registered_at);

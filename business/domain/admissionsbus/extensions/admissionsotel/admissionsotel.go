@@ -464,6 +464,14 @@ func (ext *Extension) CreateApplication(ctx context.Context, na admissionsbus.Ne
 	return ext.bus.CreateApplication(ctx, na)
 }
 
+// UpdateApplicationDraft applies otel to applicant draft application updates.
+func (ext *Extension) UpdateApplicationDraft(ctx context.Context, app admissionsbus.Application, na admissionsbus.NewApplication) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationdraft")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationDraft(ctx, app, na)
+}
+
 // QueryApplications applies otel to Application queries.
 func (ext *Extension) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplications")
@@ -486,6 +494,70 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	defer span.End()
 
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
+}
+
+// QueryEvents applies otel to admissions event queries.
+func (ext *Extension) QueryEvents(ctx context.Context, filter admissionsbus.EventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryevents")
+	defer span.End()
+
+	return ext.bus.QueryEvents(ctx, filter, orderBy, page)
+}
+
+// CountEvents applies otel to admissions event counts.
+func (ext *Extension) CountEvents(ctx context.Context, filter admissionsbus.EventQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countevents")
+	defer span.End()
+
+	return ext.bus.CountEvents(ctx, filter)
+}
+
+// QueryEventByID applies otel to admissions event ID lookups.
+func (ext *Extension) QueryEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventbyid")
+	defer span.End()
+
+	return ext.bus.QueryEventByID(ctx, eventID)
+}
+
+// QueryEventRegistrations applies otel to admissions event registration queries.
+func (ext *Extension) QueryEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventregistrations")
+	defer span.End()
+
+	return ext.bus.QueryEventRegistrations(ctx, filter, orderBy, page)
+}
+
+// CountEventRegistrations applies otel to admissions event registration counts.
+func (ext *Extension) CountEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.counteventregistrations")
+	defer span.End()
+
+	return ext.bus.CountEventRegistrations(ctx, filter)
+}
+
+// QueryEventRegistrationByID applies otel to admissions event registration ID lookups.
+func (ext *Extension) QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventregistrationbyid")
+	defer span.End()
+
+	return ext.bus.QueryEventRegistrationByID(ctx, registrationID)
+}
+
+// RegisterForEvent applies otel to admissions event registrations.
+func (ext *Extension) RegisterForEvent(ctx context.Context, nr admissionsbus.NewEventRegistration) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.registerforevent")
+	defer span.End()
+
+	return ext.bus.RegisterForEvent(ctx, nr)
+}
+
+// CheckInEventRegistration applies otel to admissions event check-ins.
+func (ext *Extension) CheckInEventRegistration(ctx context.Context, registration admissionsbus.EventRegistration, nc admissionsbus.NewEventCheckIn) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.checkineventregistration")
+	defer span.End()
+
+	return ext.bus.CheckInEventRegistration(ctx, registration, nc)
 }
 
 // CreateApplicationFormTemplate applies otel to Application form template creation.

@@ -117,6 +117,28 @@ type applicationQueryParams struct {
 	ActiveOnly      string
 }
 
+type eventQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	Type    string
+	Status  string
+	Virtual string
+}
+
+type eventRegistrationQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	EventID       string
+	ConstituentID string
+	Status        string
+	MatchStatus   string
+	Source        string
+}
+
 type applicationFormTemplateQueryParams struct {
 	Page            string
 	Rows            string
@@ -368,6 +390,36 @@ func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
 		ApplicationType: values.Get("application_type"),
 		Status:          values.Get("status"),
 		ActiveOnly:      values.Get("active_only"),
+	}
+}
+
+func parseEventQueryParams(r *http.Request) eventQueryParams {
+	values := r.URL.Query()
+
+	return eventQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("event_id"),
+		Type:    values.Get("type"),
+		Status:  values.Get("status"),
+		Virtual: values.Get("virtual"),
+	}
+}
+
+func parseEventRegistrationQueryParams(r *http.Request) eventRegistrationQueryParams {
+	values := r.URL.Query()
+
+	return eventRegistrationQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("event_registration_id"),
+		EventID:       values.Get("event_id"),
+		ConstituentID: values.Get("constituent_id"),
+		Status:        values.Get("status"),
+		MatchStatus:   values.Get("match_status"),
+		Source:        values.Get("source"),
 	}
 }
 
@@ -983,6 +1035,98 @@ func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.Applicatio
 
 	if fieldErrors != nil {
 		return admissionsbus.ApplicationQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseEventFilter(qp eventQueryParams) (admissionsbus.EventQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.EventQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("event_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Type != "" {
+		eventType := admissionsbus.EventType(qp.Type)
+		filter.Type = &eventType
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.EventStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Virtual != "" {
+		isVirtual, err := strconv.ParseBool(qp.Virtual)
+		if err != nil {
+			fieldErrors.Add("virtual", err)
+		} else {
+			filter.Virtual = &isVirtual
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.EventQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseEventRegistrationFilter(qp eventRegistrationQueryParams) (admissionsbus.EventRegistrationQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.EventRegistrationQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("event_registration_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.EventID != "" {
+		id, err := uuid.Parse(qp.EventID)
+		if err != nil {
+			fieldErrors.Add("event_id", err)
+		} else {
+			filter.EventID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		id, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.EventRegistrationStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.MatchStatus != "" {
+		status := admissionsbus.EventRegistrationMatchStatus(qp.MatchStatus)
+		filter.MatchStatus = &status
+	}
+
+	if qp.Source != "" {
+		source := admissionsbus.EventRegistrationSource(qp.Source)
+		filter.Source = &source
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.EventRegistrationQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

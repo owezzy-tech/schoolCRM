@@ -1505,6 +1505,228 @@ func (s *Store) queryApplication(ctx context.Context, filter admissionsbus.Appli
 	return toBusApplication(dbApplication)
 }
 
+// QueryEvents retrieves a list of admissions events from the database.
+func (s *Store) QueryEvents(ctx context.Context, filter admissionsbus.EventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Event, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		event_id, title, event_type, status, description, start_time, end_time, location, is_virtual, capacity, registration_deadline, auto_confirmation_enabled, auto_reminder_enabled, date_created, date_updated
+	FROM
+		admissions_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventFilter(filter, data, buf)
+
+	orderByClause, err := eventOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbEvents []eventDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbEvents); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusEvents(dbEvents), nil
+}
+
+// CountEvents returns the total number of admissions events in the database.
+func (s *Store) CountEvents(ctx context.Context, filter admissionsbus.EventQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryEventByID finds an admissions event by ID.
+func (s *Store) QueryEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.Event, error) {
+	filter := admissionsbus.EventQueryFilter{ID: &eventID}
+	event, err := s.queryEvent(ctx, filter)
+	if err != nil {
+		return admissionsbus.Event{}, err
+	}
+
+	return event, nil
+}
+
+func (s *Store) queryEvent(ctx context.Context, filter admissionsbus.EventQueryFilter) (admissionsbus.Event, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		event_id, title, event_type, status, description, start_time, end_time, location, is_virtual, capacity, registration_deadline, auto_confirmation_enabled, auto_reminder_enabled, date_created, date_updated
+	FROM
+		admissions_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventFilter(filter, data, buf)
+
+	var dbEvent eventDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbEvent); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.Event{}, fmt.Errorf("db: %w", admissionsbus.ErrEventNotFound)
+		}
+		return admissionsbus.Event{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusEvent(dbEvent), nil
+}
+
+// QueryEventRegistrations retrieves a list of admissions event registrations from the database.
+func (s *Store) QueryEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.EventRegistration, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		event_registration_id, event_id, constituent_id, first_name, last_name, email, phone, status, match_status, source, registered_at, checked_in_at, checked_in_by_id, date_created, date_updated
+	FROM
+		admissions_event_registrations`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventRegistrationFilter(filter, data, buf)
+
+	orderByClause, err := eventRegistrationOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbRegistrations []eventRegistrationDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbRegistrations); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusEventRegistrations(dbRegistrations), nil
+}
+
+// CountEventRegistrations returns the total number of event registrations in the database.
+func (s *Store) CountEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_event_registrations`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventRegistrationFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryEventRegistrationByID finds an admissions event registration by ID.
+func (s *Store) QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (admissionsbus.EventRegistration, error) {
+	filter := admissionsbus.EventRegistrationQueryFilter{ID: &registrationID}
+	registration, err := s.queryEventRegistration(ctx, filter)
+	if err != nil {
+		return admissionsbus.EventRegistration{}, err
+	}
+
+	return registration, nil
+}
+
+func (s *Store) queryEventRegistration(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter) (admissionsbus.EventRegistration, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		event_registration_id, event_id, constituent_id, first_name, last_name, email, phone, status, match_status, source, registered_at, checked_in_at, checked_in_by_id, date_created, date_updated
+	FROM
+		admissions_event_registrations`
+
+	buf := bytes.NewBufferString(q)
+	s.applyEventRegistrationFilter(filter, data, buf)
+
+	var dbRegistration eventRegistrationDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbRegistration); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) {
+			return admissionsbus.EventRegistration{}, fmt.Errorf("db: %w", admissionsbus.ErrEventRegistrationNotFound)
+		}
+		return admissionsbus.EventRegistration{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusEventRegistration(dbRegistration), nil
+}
+
+// CreateEventRegistration inserts a new admissions event registration into the database.
+func (s *Store) CreateEventRegistration(ctx context.Context, registration admissionsbus.EventRegistration) error {
+	const q = `
+	INSERT INTO admissions_event_registrations
+		(event_registration_id, event_id, constituent_id, first_name, last_name, email, phone, status, match_status, source, registered_at, checked_in_at, checked_in_by_id, date_created, date_updated)
+	VALUES
+		(:event_registration_id, :event_id, :constituent_id, :first_name, :last_name, :email, :phone, :status, :match_status, :source, :registered_at, :checked_in_at, :checked_in_by_id, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBEventRegistration(registration)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateEventRegistration replaces mutable admissions event registration data in the database.
+func (s *Store) UpdateEventRegistration(ctx context.Context, registration admissionsbus.EventRegistration) error {
+	const q = `
+	UPDATE
+		admissions_event_registrations
+	SET
+		event_id = :event_id,
+		constituent_id = :constituent_id,
+		first_name = :first_name,
+		last_name = :last_name,
+		email = :email,
+		phone = :phone,
+		status = :status,
+		match_status = :match_status,
+		source = :source,
+		registered_at = :registered_at,
+		checked_in_at = :checked_in_at,
+		checked_in_by_id = :checked_in_by_id,
+		date_updated = :date_updated
+	WHERE
+		event_registration_id = :event_registration_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBEventRegistration(registration)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
 // CreateApplicationFormTemplate inserts a new application form template.
 func (s *Store) CreateApplicationFormTemplate(ctx context.Context, template admissionsbus.ApplicationFormTemplate) error {
 	const q = `
