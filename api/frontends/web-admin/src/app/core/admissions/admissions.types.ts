@@ -564,6 +564,49 @@ export interface LeadScoreRuleQuery {
     active?: boolean;
 }
 
+export interface Constituent {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName?: string;
+    middleName?: string;
+    suffix?: string;
+    dateOfBirth: string;
+    primaryEmail: string;
+    primaryPhone: string;
+    externalSISID?: string;
+    nationalID?: string;
+    nationalIDVerifiedAt?: string;
+    nationalIDVerifiedByAdapter?: string;
+    upi?: string;
+    upiVerifiedAt?: string;
+    upiVerifiedByAdapter?: string;
+    kcseIndexNumber?: string;
+    kcseIndexVerifiedAt?: string;
+    kcseIndexVerifiedByAdapter?: string;
+    lifecycleStage: (typeof LIFECYCLE_STAGES)[number];
+    duplicateStatus: 'ACTIVE' | 'MERGED' | 'DUPLICATE_OF';
+    duplicateOfID?: string;
+    notificationPreferences: NotificationPreferences;
+    sisSyncedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ConstituentQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    constituent_id?: string;
+    primary_email?: string;
+    external_sis_id?: string;
+    national_id?: string;
+    upi?: string;
+    kcse_index_number?: string;
+    lifecycle_stage?: (typeof LIFECYCLE_STAGES)[number];
+    duplicate_status?: 'ACTIVE' | 'MERGED' | 'DUPLICATE_OF';
+}
+
 export interface ApplicationFormField {
     fieldName: string;
     fieldType: string;
@@ -962,4 +1005,15 @@ export interface InquiryRequest {
     utmMedium?: string | null;
     utmCampaign?: string | null;
     message?: string | null;
+}
+
+export interface InquiryQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    inquiry_id?: string;
+    constituent_id?: string;
+    primary_email?: string;
+    source?: string;
+    status?: string;
 }
