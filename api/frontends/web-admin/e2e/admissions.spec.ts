@@ -58,6 +58,27 @@ const adminEventRegistrationsFixture = [
     },
 ];
 
+const applicantEventFixture = {
+    id: '7dc3c4b1-6dd8-44c2-a255-d0c4e2f7de18',
+    title: 'Applicant Open Day',
+    type: 'open-day',
+    status: 'upcoming',
+    description: 'Join admissions advisors for an applicant-focused open day.',
+    start: '2026-07-12T09:00:00Z',
+    end: '2026-07-12T12:00:00Z',
+    location: 'Nairobi Main Campus',
+    isVirtual: false,
+    capacity: 80,
+    registeredCount: 12,
+    checkedInCount: 0,
+    registrationDeadline: '2026-07-11T21:00:00Z',
+    autoConfirmationEnabled: true,
+    autoReminderEnabled: true,
+    registrations: [],
+    dateCreated: '2026-06-01T00:00:00Z',
+    dateUpdated: '2026-06-01T00:00:00Z',
+};
+
 test.describe('Admissions staff experience', () => {
     test.beforeEach(async ({ page }) => {
         await mockAuth(page);
@@ -403,6 +424,38 @@ test.describe('Applicant portal experience', () => {
             page.getByText(/admissions@schoolcrm.ac.ke/i)
         ).toBeVisible();
     });
+
+    test('loads applicant events and submits a portal registration', async ({
+        page,
+    }) => {
+        const applicantRequests = await mockApplicantAdmissions(page);
+        await seedApplicantPortalSession(page);
+
+        await page.goto('/portal/events');
+
+        await expect(
+            page.getByRole('heading', { name: 'Visit, attend & apply' })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: applicantEventFixture.title })
+        ).toBeVisible();
+        await expect(page.getByText('68 spots left')).toBeVisible();
+
+        await page.getByRole('button', { name: 'Reserve a spot' }).click();
+
+        await expect(page.getByLabel('First name')).toHaveValue('John');
+        await page.getByLabel('Last name').fill('Applicant');
+        await page.getByLabel('Email').fill('applicant@example.com');
+        await page.getByLabel('Phone').fill('+254712345678');
+        await page.getByRole('button', { name: 'Submit registration' }).click();
+
+        await expect(
+            page.getByText('Registration confirmed for John Applicant.')
+        ).toBeVisible();
+        await expect(page.getByText('67 spots left')).toBeVisible();
+        expect(applicantRequests.loadedEvents).toBeGreaterThanOrEqual(1);
+        expect(applicantRequests.eventRegistrations).toBe(1);
+    });
 });
 
 async function mockApplicantAdmissions(page: Page): Promise<{
@@ -410,12 +463,16 @@ async function mockApplicantAdmissions(page: Page): Promise<{
     createdApplications: number;
     savedApplications: number;
     submittedApplications: number;
+    loadedEvents: number;
+    eventRegistrations: number;
 }> {
     const requests = {
         onboardedApplicants: 0,
         createdApplications: 0,
         savedApplications: 0,
         submittedApplications: 0,
+        loadedEvents: 0,
+        eventRegistrations: 0,
     };
     const applicantToken = createJwt({
         sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
@@ -540,6 +597,77 @@ async function mockApplicantAdmissions(page: Page): Promise<{
         }
     );
 
+    await page.route('**/v1/admissions/applicant/events*', async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+
+        if (request.method() !== 'GET' || path.includes('/registrations')) {
+            await route.fallback();
+            return;
+        }
+
+        requests.loadedEvents += 1;
+        await route.fulfill({
+            contentType: 'application/vnd.api+json',
+            body: JSON.stringify({
+                jsonapi: { version: '1.1' },
+                data: [
+                    {
+                        id: applicantEventFixture.id,
+                        type: 'events',
+                        attributes: applicantEventFixture,
+                    },
+                ],
+                meta: { total: 1, page: 1, rowsPerPage: 50 },
+            }),
+        });
+    });
+
+    await page.route(
+        '**/v1/admissions/applicant/events/*/registrations',
+        async (route) => {
+            requests.eventRegistrations += 1;
+            const payload = route.request().postDataJSON() as {
+                firstName: string;
+                lastName: string;
+                email: string;
+                phone?: string;
+                source: string;
+                matchStatus: string;
+            };
+
+            expect(payload).toMatchObject({
+                firstName: 'John',
+                lastName: 'Applicant',
+                email: 'applicant@example.com',
+                phone: '+254712345678',
+                source: 'portal',
+                matchStatus: 'matched',
+            });
+
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: {
+                        id: '2c5da65c-b653-4f87-ac8c-6685d6bd6401',
+                        type: 'event-registrations',
+                        attributes: {
+                            constituentId: applicantFixture.constituentID,
+                            constituentName: `${payload.firstName} ${payload.lastName}`,
+                            email: payload.email,
+                            phone: payload.phone,
+                            status: 'registered',
+                            registeredAt: '2026-06-05T12:00:00Z',
+                            matchStatus: payload.matchStatus,
+                            source: payload.source,
+                        },
+                    },
+                }),
+            });
+        }
+    );
+
     await page.route(
         '**/v1/admissions/applicant/applications',
         async (route) => {
@@ -589,6 +717,39 @@ async function mockApplicantAdmissions(page: Page): Promise<{
     );
 
     return requests;
+}
+
+async function seedApplicantPortalSession(page: Page): Promise<void> {
+    const applicantToken = createJwt({
+        sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        roles: ['APPLICANT'],
+        portal: {
+            scope: 'applicant_portal',
+            applicationID: applicantFixture.applicationID,
+            constituentID: applicantFixture.constituentID,
+            email: 'applicant@example.com',
+        },
+    });
+
+    await page.addInitScript(
+        (session) => {
+            localStorage.setItem(
+                'applicantPortalSession',
+                JSON.stringify(session)
+            );
+        },
+        {
+            id: applicantFixture.constituentID,
+            accessToken: applicantToken,
+            tokenType: 'Bearer',
+            expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+            expiresIn: 3600,
+            applicationID: applicantFixture.applicationID,
+            constituentID: applicantFixture.constituentID,
+            applicantName: 'John Applicant',
+            email: 'applicant@example.com',
+        }
+    );
 }
 
 async function mockAuth(page: Page): Promise<void> {

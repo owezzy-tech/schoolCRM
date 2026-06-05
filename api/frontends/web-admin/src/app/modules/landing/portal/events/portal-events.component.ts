@@ -6,11 +6,23 @@ import {
     inject,
     signal,
 } from '@angular/core';
+import {
+    ReactiveFormsModule,
+    UntypedFormBuilder,
+    UntypedFormGroup,
+    Validators,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { AdmissionsService } from 'app/core/admissions/admissions.service';
-import { AdmissionsEvent } from 'app/core/admissions/admissions.types';
+import {
+    AdmissionsEvent,
+    AdmissionsEventRegistration,
+    AdmissionsEventRegistrationRequest,
+} from 'app/core/admissions/admissions.types';
 import { jsonApiErrorMessage } from 'app/core/api/json-api';
 import { PortalAuthService } from 'app/core/portal/portal-auth.service';
 import { catchError, of } from 'rxjs';
@@ -26,7 +38,15 @@ interface PortalRegistrationDraft {
 
 @Component({
     selector: 'app-portal-events',
-    imports: [DatePipe, MatButtonModule, MatIconModule, RouterLink],
+    imports: [
+        DatePipe,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
+        ReactiveFormsModule,
+        RouterLink,
+    ],
     template: `
         <div class="flex flex-auto flex-col px-6 py-12 sm:px-10 lg:px-16">
             <div class="mx-auto w-full max-w-6xl">
@@ -229,40 +249,48 @@ interface PortalRegistrationDraft {
 
                         <div
                             class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+                            [formGroup]="registrationForm"
                         >
-                            <div class="rounded-xl border border-dashed p-4">
-                                <p class="text-secondary text-xs uppercase">
-                                    First name
-                                </p>
-                                <p class="mt-1 font-medium">
-                                    {{ draft.firstName }}
-                                </p>
-                            </div>
-                            <div class="rounded-xl border border-dashed p-4">
-                                <p class="text-secondary text-xs uppercase">
-                                    Last name
-                                </p>
-                                <p class="mt-1 font-medium">
-                                    {{ draft.lastName }}
-                                </p>
-                            </div>
-                            <div class="rounded-xl border border-dashed p-4">
-                                <p class="text-secondary text-xs uppercase">
-                                    Email
-                                </p>
-                                <p class="mt-1 font-medium">
-                                    {{ draft.email }}
-                                </p>
-                            </div>
-                            <div class="rounded-xl border border-dashed p-4">
-                                <p class="text-secondary text-xs uppercase">
-                                    Phone
-                                </p>
-                                <p class="mt-1 font-medium">
-                                    {{ draft.phone }}
-                                </p>
-                            </div>
+                            <mat-form-field>
+                                <mat-label>First name</mat-label>
+                                <input matInput formControlName="firstName" />
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Last name</mat-label>
+                                <input matInput formControlName="lastName" />
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Email</mat-label>
+                                <input
+                                    matInput
+                                    type="email"
+                                    formControlName="email"
+                                />
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Phone</mat-label>
+                                <input matInput formControlName="phone" />
+                            </mat-form-field>
                         </div>
+
+                        @if (registrationErrorMessage()) {
+                            <div
+                                class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200"
+                            >
+                                {{ registrationErrorMessage() }}
+                            </div>
+                        }
+
+                        @if (createdRegistration(); as registration) {
+                            <div
+                                class="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-900/20 dark:text-green-200"
+                            >
+                                Registration confirmed for
+                                {{ registration.constituentName }}. We sent
+                                confirmation details to
+                                {{ registration.email }}.
+                            </div>
+                        }
 
                         <div
                             class="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200"
@@ -271,6 +299,31 @@ interface PortalRegistrationDraft {
                             {{ remainingSpots(draft.event) }} seats remaining. A
                             confirmation email and calendar details would be
                             sent by email and SMS after submit.
+                        </div>
+
+                        <div
+                            class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end"
+                        >
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                (click)="clearRegistrationDraft()"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                mat-flat-button
+                                color="primary"
+                                type="button"
+                                [disabled]="submittingRegistration()"
+                                (click)="submitRegistration()"
+                            >
+                                {{
+                                    submittingRegistration()
+                                        ? 'Submitting…'
+                                        : 'Submit registration'
+                                }}
+                            </button>
                         </div>
                     </div>
                 }
@@ -282,6 +335,7 @@ interface PortalRegistrationDraft {
 })
 export class PortalEventsComponent {
     private readonly admissionsService = inject(AdmissionsService);
+    private readonly formBuilder = inject(UntypedFormBuilder);
     private readonly portalAuthService = inject(PortalAuthService);
 
     readonly portalSession = this.portalAuthService.session;
@@ -289,6 +343,17 @@ export class PortalEventsComponent {
     readonly events = signal<AdmissionsEvent[]>([]);
     readonly loadingEvents = signal(false);
     readonly eventsErrorMessage = signal('');
+    readonly submittingRegistration = signal(false);
+    readonly registrationErrorMessage = signal('');
+    readonly createdRegistration = signal<AdmissionsEventRegistration | null>(
+        null
+    );
+    readonly registrationForm: UntypedFormGroup = this.formBuilder.group({
+        firstName: ['', Validators.required],
+        lastName: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
+        phone: [''],
+    });
     readonly publicEvents = computed(() =>
         this.events()
             .filter((event) => ['upcoming', 'live'].includes(event.status))
@@ -329,7 +394,7 @@ export class PortalEventsComponent {
         this.eventsErrorMessage.set('');
 
         this.admissionsService
-            .queryEvents({
+            .queryApplicantEvents({
                 page: 1,
                 rows: 50,
                 orderBy: 'start_time,ASC',
@@ -363,10 +428,71 @@ export class PortalEventsComponent {
         }
 
         this.selectedEvent.set(event);
+        this.registrationErrorMessage.set('');
+        this.createdRegistration.set(null);
+        this.registrationForm.reset(this.registrationDefaults());
     }
 
     clearRegistrationDraft(): void {
         this.selectedEvent.set(null);
+        this.registrationErrorMessage.set('');
+        this.createdRegistration.set(null);
+    }
+
+    submitRegistration(): void {
+        const event = this.selectedEvent();
+        if (!event) {
+            return;
+        }
+
+        if (this.registrationForm.invalid) {
+            this.registrationForm.markAllAsTouched();
+            this.registrationErrorMessage.set(
+                'Enter a first name, last name, and valid email before registering.'
+            );
+            return;
+        }
+
+        this.submittingRegistration.set(true);
+        this.registrationErrorMessage.set('');
+        this.createdRegistration.set(null);
+
+        this.admissionsService
+            .createApplicantEventRegistration(
+                event.id,
+                this.registrationRequest()
+            )
+            .pipe(
+                catchError((error) => {
+                    this.registrationErrorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'Unable to submit event registration.'
+                        )
+                    );
+
+                    return of(null);
+                })
+            )
+            .subscribe((registration) => {
+                this.submittingRegistration.set(false);
+
+                if (!registration) {
+                    return;
+                }
+
+                this.createdRegistration.set(registration);
+                this.events.update((events) =>
+                    events.map((item) =>
+                        item.id === event.id
+                            ? {
+                                  ...item,
+                                  registeredCount: item.registeredCount + 1,
+                              }
+                            : item
+                    )
+                );
+            });
     }
 
     remainingSpots(event: AdmissionsEvent): number {
@@ -383,5 +509,42 @@ export class PortalEventsComponent {
 
     isFull(event: AdmissionsEvent): boolean {
         return this.remainingSpots(event) === 0;
+    }
+
+    private registrationDefaults(): {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+    } {
+        const draft = this.registrationDraft();
+
+        return {
+            firstName: draft?.firstName ?? '',
+            lastName: draft?.lastName ?? '',
+            email: draft?.email ?? '',
+            phone: draft?.phone ?? '',
+        };
+    }
+
+    private registrationRequest(): AdmissionsEventRegistrationRequest {
+        const session = this.portalSession();
+        const value = this.registrationForm.getRawValue() as {
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone?: string;
+        };
+        const phone = value.phone?.trim();
+
+        return {
+            constituentId: session?.constituentID ?? null,
+            firstName: value.firstName.trim(),
+            lastName: value.lastName.trim(),
+            email: value.email.trim(),
+            phone: phone || null,
+            source: 'portal',
+            matchStatus: session ? 'matched' : 'new-prospect',
+        };
     }
 }

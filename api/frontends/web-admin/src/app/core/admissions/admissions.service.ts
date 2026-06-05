@@ -189,6 +189,22 @@ export class AdmissionsService {
             );
     }
 
+    queryApplicantEvents(
+        query: AdmissionsEventQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEvent>>(
+                '/v1/admissions/applicant/events',
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventsSubject.next(result))
+            );
+    }
+
     getEvent(eventID: string): Observable<AdmissionsEvent> {
         return this.httpClient
             .get<
@@ -241,6 +257,17 @@ export class AdmissionsService {
             .post<
                 JsonApiDocument<AdmissionsEventRegistration>
             >(`/v1/admissions/events/${eventID}/registrations`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createApplicantEventRegistration(
+        eventID: string,
+        request: AdmissionsEventRegistrationRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/applicant/events/${eventID}/registrations`, request)
             .pipe(map(unwrapJsonApiResource));
     }
 
