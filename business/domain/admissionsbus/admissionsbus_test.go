@@ -2266,6 +2266,8 @@ type stubStore struct {
 	staffProfiles          []StaffProfile
 	applicantProfiles      []ApplicantProfile
 	inquiries              []Inquiry
+	events                 []Event
+	eventRegistrations     []EventRegistration
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	applicationTemplates   []ApplicationFormTemplate
@@ -2418,6 +2420,111 @@ func (s *stubStore) QueryInquiryByID(_ context.Context, inquiryID uuid.UUID) (In
 		}
 	}
 	return Inquiry{}, ErrInquiryNotFound
+}
+
+func (s *stubStore) QueryEvents(_ context.Context, filter EventQueryFilter, _ order.By, _ page.Page) ([]Event, error) {
+	events := make([]Event, 0, len(s.events))
+	for _, event := range s.events {
+		if filter.ID != nil && event.ID != *filter.ID {
+			continue
+		}
+		if filter.Type != nil && event.Type != *filter.Type {
+			continue
+		}
+		if filter.Status != nil && event.Status != *filter.Status {
+			continue
+		}
+		if filter.Virtual != nil && event.IsVirtual != *filter.Virtual {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func (s *stubStore) CountEvents(_ context.Context, filter EventQueryFilter) (int, error) {
+	events, err := s.QueryEvents(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(events), nil
+}
+
+func (s *stubStore) QueryEventByID(_ context.Context, eventID uuid.UUID) (Event, error) {
+	for _, event := range s.events {
+		if event.ID == eventID {
+			return event, nil
+		}
+	}
+
+	return Event{}, ErrEventNotFound
+}
+
+func (s *stubStore) QueryEventRegistrations(_ context.Context, filter EventRegistrationQueryFilter, _ order.By, _ page.Page) ([]EventRegistration, error) {
+	registrations := make([]EventRegistration, 0, len(s.eventRegistrations))
+	for _, registration := range s.eventRegistrations {
+		if filter.ID != nil && registration.ID != *filter.ID {
+			continue
+		}
+		if filter.EventID != nil && registration.EventID != *filter.EventID {
+			continue
+		}
+		if filter.ConstituentID != nil {
+			if registration.ConstituentID == nil || *registration.ConstituentID != *filter.ConstituentID {
+				continue
+			}
+		}
+		if filter.Status != nil && registration.Status != *filter.Status {
+			continue
+		}
+		if filter.MatchStatus != nil && registration.MatchStatus != *filter.MatchStatus {
+			continue
+		}
+		if filter.Source != nil && registration.Source != *filter.Source {
+			continue
+		}
+		registrations = append(registrations, registration)
+	}
+
+	return registrations, nil
+}
+
+func (s *stubStore) CountEventRegistrations(_ context.Context, filter EventRegistrationQueryFilter) (int, error) {
+	registrations, err := s.QueryEventRegistrations(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(registrations), nil
+}
+
+func (s *stubStore) QueryEventRegistrationByID(_ context.Context, registrationID uuid.UUID) (EventRegistration, error) {
+	for _, registration := range s.eventRegistrations {
+		if registration.ID == registrationID {
+			return registration, nil
+		}
+	}
+
+	return EventRegistration{}, ErrEventRegistrationNotFound
+}
+
+func (s *stubStore) CreateEventRegistration(_ context.Context, registration EventRegistration) error {
+	s.eventRegistrations = append(s.eventRegistrations, registration)
+	return nil
+}
+
+func (s *stubStore) UpdateEventRegistration(_ context.Context, registration EventRegistration) error {
+	for i, existing := range s.eventRegistrations {
+		if existing.ID == registration.ID {
+			s.eventRegistrations[i] = registration
+			return nil
+		}
+	}
+
+	s.eventRegistrations = append(s.eventRegistrations, registration)
+	return nil
 }
 
 func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {
