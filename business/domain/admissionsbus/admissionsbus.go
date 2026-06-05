@@ -210,6 +210,8 @@ type Storer interface {
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	CreateEvent(ctx context.Context, event Event) error
+	UpdateEvent(ctx context.Context, event Event) error
 	QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error)
 	CountEvents(ctx context.Context, filter EventQueryFilter) (int, error)
 	QueryEventByID(ctx context.Context, eventID uuid.UUID) (Event, error)
@@ -330,6 +332,8 @@ type ExtBusiness interface {
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	CreateEvent(ctx context.Context, ne NewEvent) (Event, error)
+	UpdateEvent(ctx context.Context, event Event, ne NewEvent) (Event, error)
 	QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error)
 	CountEvents(ctx context.Context, filter EventQueryFilter) (int, error)
 	QueryEventByID(ctx context.Context, eventID uuid.UUID) (Event, error)
@@ -1542,6 +1546,65 @@ func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.
 	return app, nil
 }
 
+// CreateEvent adds a new admissions event.
+func (b *Business) CreateEvent(ctx context.Context, ne NewEvent) (Event, error) {
+	if err := validateNewEvent(ne); err != nil {
+		return Event{}, err
+	}
+
+	now := time.Now()
+	event := Event{
+		ID:                      uuid.New(),
+		Title:                   strings.TrimSpace(ne.Title),
+		Type:                    ne.Type,
+		Status:                  ne.Status,
+		Description:             strings.TrimSpace(ne.Description),
+		StartTime:               ne.StartTime,
+		EndTime:                 ne.EndTime,
+		Location:                strings.TrimSpace(ne.Location),
+		IsVirtual:               ne.IsVirtual,
+		Capacity:                ne.Capacity,
+		RegistrationDeadline:    ne.RegistrationDeadline,
+		AutoConfirmationEnabled: ne.AutoConfirmationEnabled,
+		AutoReminderEnabled:     ne.AutoReminderEnabled,
+		DateCreated:             now,
+		DateUpdated:             now,
+	}
+
+	if err := b.storer.CreateEvent(ctx, event); err != nil {
+		return Event{}, fmt.Errorf("create event: %w", err)
+	}
+
+	return event, nil
+}
+
+// UpdateEvent replaces mutable admissions event data.
+func (b *Business) UpdateEvent(ctx context.Context, event Event, ne NewEvent) (Event, error) {
+	if err := validateNewEvent(ne); err != nil {
+		return Event{}, err
+	}
+
+	event.Title = strings.TrimSpace(ne.Title)
+	event.Type = ne.Type
+	event.Status = ne.Status
+	event.Description = strings.TrimSpace(ne.Description)
+	event.StartTime = ne.StartTime
+	event.EndTime = ne.EndTime
+	event.Location = strings.TrimSpace(ne.Location)
+	event.IsVirtual = ne.IsVirtual
+	event.Capacity = ne.Capacity
+	event.RegistrationDeadline = ne.RegistrationDeadline
+	event.AutoConfirmationEnabled = ne.AutoConfirmationEnabled
+	event.AutoReminderEnabled = ne.AutoReminderEnabled
+	event.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateEvent(ctx, event); err != nil {
+		return Event{}, fmt.Errorf("update event: %w", err)
+	}
+
+	return event, nil
+}
+
 // QueryEvents retrieves a list of existing admissions events.
 func (b *Business) QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error) {
 	events, err := b.storer.QueryEvents(ctx, filter, orderBy, page)
@@ -2633,6 +2696,42 @@ func validateNewEventRegistration(nr NewEventRegistration) error {
 
 	if err := validateEventRegistrationMatchStatus(nr.MatchStatus); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func validateNewEvent(ne NewEvent) error {
+	if strings.TrimSpace(ne.Title) == "" {
+		return ErrEventTitleRequired
+	}
+
+	if err := validateEventType(ne.Type); err != nil {
+		return err
+	}
+
+	if err := validateEventStatus(ne.Status); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(ne.Description) == "" {
+		return ErrEventDescriptionRequired
+	}
+
+	if !ne.StartTime.Before(ne.EndTime) {
+		return ErrEventDateRangeInvalid
+	}
+
+	if strings.TrimSpace(ne.Location) == "" {
+		return ErrEventLocationRequired
+	}
+
+	if ne.Capacity < 0 {
+		return ErrEventCapacityInvalid
+	}
+
+	if ne.RegistrationDeadline != nil && ne.RegistrationDeadline.After(ne.StartTime) {
+		return ErrEventDateRangeInvalid
 	}
 
 	return nil

@@ -1537,6 +1537,50 @@ func (s *Store) QueryEvents(ctx context.Context, filter admissionsbus.EventQuery
 	return toBusEvents(dbEvents), nil
 }
 
+// CreateEvent inserts a new admissions event into the database.
+func (s *Store) CreateEvent(ctx context.Context, event admissionsbus.Event) error {
+	const q = `
+	INSERT INTO admissions_events
+		(event_id, title, event_type, status, description, start_time, end_time, location, is_virtual, capacity, registration_deadline, auto_confirmation_enabled, auto_reminder_enabled, date_created, date_updated)
+	VALUES
+		(:event_id, :title, :event_type, :status, :description, :start_time, :end_time, :location, :is_virtual, :capacity, :registration_deadline, :auto_confirmation_enabled, :auto_reminder_enabled, :date_created, :date_updated)`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateEvent replaces mutable admissions event data in the database.
+func (s *Store) UpdateEvent(ctx context.Context, event admissionsbus.Event) error {
+	const q = `
+	UPDATE
+		admissions_events
+	SET
+		title = :title,
+		event_type = :event_type,
+		status = :status,
+		description = :description,
+		start_time = :start_time,
+		end_time = :end_time,
+		location = :location,
+		is_virtual = :is_virtual,
+		capacity = :capacity,
+		registration_deadline = :registration_deadline,
+		auto_confirmation_enabled = :auto_confirmation_enabled,
+		auto_reminder_enabled = :auto_reminder_enabled,
+		date_updated = :date_updated
+	WHERE
+		event_id = :event_id`
+
+	if err := sqldb.NamedExecContext(ctx, s.log, s.db, q, toDBEvent(event)); err != nil {
+		return fmt.Errorf("namedexeccontext: %w", err)
+	}
+
+	return nil
+}
+
 // CountEvents returns the total number of admissions events in the database.
 func (s *Store) CountEvents(ctx context.Context, filter admissionsbus.EventQueryFilter) (int, error) {
 	data := map[string]any{}

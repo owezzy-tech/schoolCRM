@@ -877,6 +877,26 @@ func toBusEvents(dbs []eventDB) []admissionsbus.Event {
 	return bus
 }
 
+func toDBEvent(bus admissionsbus.Event) eventDB {
+	return eventDB{
+		ID:                      bus.ID,
+		Title:                   bus.Title,
+		Type:                    bus.Type.String(),
+		Status:                  bus.Status.String(),
+		Description:             bus.Description,
+		StartTime:               bus.StartTime.UTC(),
+		EndTime:                 bus.EndTime.UTC(),
+		Location:                bus.Location,
+		IsVirtual:               bus.IsVirtual,
+		Capacity:                bus.Capacity,
+		RegistrationDeadline:    utcTimePtr(bus.RegistrationDeadline),
+		AutoConfirmationEnabled: bus.AutoConfirmationEnabled,
+		AutoReminderEnabled:     bus.AutoReminderEnabled,
+		DateCreated:             bus.DateCreated.UTC(),
+		DateUpdated:             bus.DateUpdated.UTC(),
+	}
+}
+
 func toDBEventRegistration(bus admissionsbus.EventRegistration) eventRegistrationDB {
 	return eventRegistrationDB{
 		ID:            bus.ID,

@@ -50,6 +50,40 @@ export const APPLICATION_STATUSES = [
     'ENROLLED',
 ] as const;
 
+export const EVENT_TYPES = [
+    'open-day',
+    'webinar',
+    'info-session',
+    'campus-tour',
+    'fair',
+] as const;
+
+export const EVENT_STATUSES = [
+    'draft',
+    'upcoming',
+    'live',
+    'completed',
+    'cancelled',
+] as const;
+
+export const EVENT_REGISTRATION_STATUSES = [
+    'registered',
+    'checked-in',
+    'cancelled',
+] as const;
+
+export const EVENT_REGISTRATION_MATCH_STATUSES = [
+    'matched',
+    'new-prospect',
+    'needs-review',
+] as const;
+
+export const EVENT_REGISTRATION_SOURCES = [
+    'portal',
+    'staff',
+    'campaign',
+] as const;
+
 export const DOCUMENT_STATUSES = [
     'UPLOADED',
     'PENDING_REVIEW',
@@ -208,6 +242,14 @@ export type LeadScoreCriterionOperator =
 export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationType = (typeof APPLICATION_TYPES)[number];
+export type EventRegistrationMatchStatus =
+    (typeof EVENT_REGISTRATION_MATCH_STATUSES)[number];
+export type EventRegistrationSource =
+    (typeof EVENT_REGISTRATION_SOURCES)[number];
+export type EventRegistrationStatus =
+    (typeof EVENT_REGISTRATION_STATUSES)[number];
+export type EventStatus = (typeof EVENT_STATUSES)[number];
+export type EventType = (typeof EVENT_TYPES)[number];
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 export type LeadAssignmentCriterionField =
     (typeof LEAD_ASSIGNMENT_CRITERION_FIELDS)[number];
@@ -653,6 +695,92 @@ export interface ApplicationTransitionRequest {
     reason?: string | null;
     note?: string | null;
     metadata?: Record<string, unknown> | null;
+}
+
+export interface AdmissionsEventRegistration {
+    id: string;
+    constituentId?: string;
+    constituentName: string;
+    email: string;
+    phone?: string;
+    status: EventRegistrationStatus;
+    registeredAt: string;
+    matchStatus: EventRegistrationMatchStatus;
+    source: EventRegistrationSource;
+    checkedInAt?: string;
+    checkedInById?: string;
+}
+
+export interface AdmissionsEvent {
+    id: string;
+    title: string;
+    type: EventType;
+    status: EventStatus;
+    description: string;
+    start: string;
+    end: string;
+    location: string;
+    isVirtual: boolean;
+    capacity: number;
+    registeredCount: number;
+    checkedInCount: number;
+    registrationDeadline?: string;
+    autoConfirmationEnabled: boolean;
+    autoReminderEnabled: boolean;
+    registrations: AdmissionsEventRegistration[];
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface AdmissionsEventRequest {
+    title: string;
+    type: EventType;
+    status: EventStatus;
+    description: string;
+    start: string;
+    end: string;
+    location: string;
+    isVirtual: boolean;
+    capacity: number;
+    registrationDeadline?: string | null;
+    autoConfirmationEnabled: boolean;
+    autoReminderEnabled: boolean;
+}
+
+export interface AdmissionsEventQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    event_id?: string;
+    type?: EventType;
+    status?: EventStatus;
+    virtual?: boolean;
+}
+
+export interface AdmissionsEventRegistrationQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    event_registration_id?: string;
+    event_id?: string;
+    constituent_id?: string;
+    status?: EventRegistrationStatus;
+    match_status?: EventRegistrationMatchStatus;
+    source?: EventRegistrationSource;
+}
+
+export interface AdmissionsEventRegistrationRequest {
+    constituentId?: string | null;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+    source: EventRegistrationSource;
+    matchStatus: EventRegistrationMatchStatus;
+}
+
+export interface AdmissionsEventCheckInRequest {
+    registrationId: string;
 }
 
 export interface ChecklistItem {

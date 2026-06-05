@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -8,12 +9,14 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
+import { AdmissionsEvent } from 'app/core/admissions/admissions.types';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
 import { PortalAuthService } from 'app/core/portal/portal-auth.service';
-import { MOCK_EVENTS } from 'app/modules/admin/events/data/events.mock';
-import { EventItem } from 'app/modules/admin/events/models/event.types';
+import { catchError, of } from 'rxjs';
 
 interface PortalRegistrationDraft {
-    event: EventItem;
+    event: AdmissionsEvent;
     firstName: string;
     lastName: string;
     email: string;
@@ -23,7 +26,7 @@ interface PortalRegistrationDraft {
 
 @Component({
     selector: 'app-portal-events',
-    imports: [MatButtonModule, MatIconModule, RouterLink],
+    imports: [DatePipe, MatButtonModule, MatIconModule, RouterLink],
     template: `
         <div class="flex flex-auto flex-col px-6 py-12 sm:px-10 lg:px-16">
             <div class="mx-auto w-full max-w-6xl">
@@ -77,6 +80,22 @@ interface PortalRegistrationDraft {
                 <div
                     class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
                 >
+                    @if (loadingEvents()) {
+                        <div
+                            class="text-secondary bg-card rounded-2xl border p-6 text-sm shadow-sm sm:col-span-2 lg:col-span-3"
+                        >
+                            Loading upcoming admissions events…
+                        </div>
+                    }
+
+                    @if (eventsErrorMessage()) {
+                        <div
+                            class="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm sm:col-span-2 lg:col-span-3 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200"
+                        >
+                            {{ eventsErrorMessage() }}
+                        </div>
+                    }
+
                     @for (event of publicEvents(); track event.id) {
                         <div
                             class="bg-card flex flex-col overflow-hidden rounded-2xl border shadow-sm"
@@ -194,10 +213,10 @@ interface PortalRegistrationDraft {
                                     {{ draft.event.title }}
                                 </h2>
                                 <p class="text-secondary mt-2">
-                                     Public registrants provide Kenyan contact
-                                     details first. The CRM attempts a
-                                     constituent match before creating a new
-                                     prospect registration.
+                                    Public registrants provide Kenyan contact
+                                    details first. The CRM attempts a
+                                    constituent match before creating a new
+                                    prospect registration.
                                 </p>
                             </div>
                             <button
@@ -251,7 +270,7 @@ interface PortalRegistrationDraft {
                             {{ draft.matchMessage }} Capacity check passed with
                             {{ remainingSpots(draft.event) }} seats remaining. A
                             confirmation email and calendar details would be
-                             sent by email and SMS after submit.
+                            sent by email and SMS after submit.
                         </div>
                     </div>
                 }
@@ -262,14 +281,18 @@ interface PortalRegistrationDraft {
     host: { class: 'flex w-full flex-auto flex-col' },
 })
 export class PortalEventsComponent {
+    private readonly admissionsService = inject(AdmissionsService);
     private readonly portalAuthService = inject(PortalAuthService);
 
     readonly portalSession = this.portalAuthService.session;
-    readonly selectedEvent = signal<EventItem | null>(null);
+    readonly selectedEvent = signal<AdmissionsEvent | null>(null);
+    readonly events = signal<AdmissionsEvent[]>([]);
+    readonly loadingEvents = signal(false);
+    readonly eventsErrorMessage = signal('');
     readonly publicEvents = computed(() =>
-        MOCK_EVENTS.filter((event) =>
-            ['upcoming', 'live'].includes(event.status)
-        ).slice(0, 6)
+        this.events()
+            .filter((event) => ['upcoming', 'live'].includes(event.status))
+            .slice(0, 6)
     );
 
     readonly registrationDraft = computed<PortalRegistrationDraft | null>(
@@ -297,7 +320,44 @@ export class PortalEventsComponent {
         }
     );
 
-    selectEvent(event: EventItem): void {
+    constructor() {
+        this.loadEvents();
+    }
+
+    loadEvents(): void {
+        this.loadingEvents.set(true);
+        this.eventsErrorMessage.set('');
+
+        this.admissionsService
+            .queryEvents({
+                page: 1,
+                rows: 50,
+                orderBy: 'start_time,ASC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.eventsErrorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'Unable to load upcoming admissions events.'
+                        )
+                    );
+
+                    return of({
+                        items: [],
+                        total: 0,
+                        page: 1,
+                        rowsPerPage: 50,
+                    });
+                })
+            )
+            .subscribe((result) => {
+                this.events.set(result.items);
+                this.loadingEvents.set(false);
+            });
+    }
+
+    selectEvent(event: AdmissionsEvent): void {
         if (this.isFull(event)) {
             return;
         }
@@ -309,11 +369,11 @@ export class PortalEventsComponent {
         this.selectedEvent.set(null);
     }
 
-    remainingSpots(event: EventItem): number {
+    remainingSpots(event: AdmissionsEvent): number {
         return Math.max(event.capacity - event.registeredCount, 0);
     }
 
-    capacityPercent(event: EventItem): number {
+    capacityPercent(event: AdmissionsEvent): number {
         if (event.capacity === 0) {
             return 0;
         }
@@ -321,7 +381,7 @@ export class PortalEventsComponent {
         return Math.round((event.registeredCount / event.capacity) * 100);
     }
 
-    isFull(event: EventItem): boolean {
+    isFull(event: AdmissionsEvent): boolean {
         return this.remainingSpots(event) === 0;
     }
 }

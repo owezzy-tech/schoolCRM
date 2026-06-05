@@ -275,8 +275,28 @@ type NewEventRegistration struct {
 	MatchStatus   string  `json:"matchStatus"`
 }
 
+type NewEvent struct {
+	Title                   string  `json:"title"`
+	Type                    string  `json:"type"`
+	Status                  string  `json:"status"`
+	Description             string  `json:"description"`
+	Start                   string  `json:"start"`
+	End                     string  `json:"end"`
+	Location                string  `json:"location"`
+	IsVirtual               bool    `json:"isVirtual"`
+	Capacity                int     `json:"capacity"`
+	RegistrationDeadline    *string `json:"registrationDeadline"`
+	AutoConfirmationEnabled bool    `json:"autoConfirmationEnabled"`
+	AutoReminderEnabled     bool    `json:"autoReminderEnabled"`
+}
+
 // Decode implements the decoder interface.
 func (app *NewEventRegistration) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+// Decode implements the decoder interface.
+func (app *NewEvent) Decode(data []byte) error {
 	return json.Unmarshal(data, app)
 }
 
@@ -380,6 +400,44 @@ func toBusNewEventRegistration(app NewEventRegistration) (admissionsbus.NewEvent
 		Phone:         app.Phone,
 		Source:        admissionsbus.EventRegistrationSource(app.Source),
 		MatchStatus:   admissionsbus.EventRegistrationMatchStatus(app.MatchStatus),
+	}, nil
+}
+
+func toBusNewEvent(app NewEvent) (admissionsbus.NewEvent, error) {
+	var fieldErrors errs.FieldErrors
+
+	startTime, err := time.Parse(time.RFC3339, app.Start)
+	if err != nil {
+		fieldErrors.Add("start", err)
+	}
+
+	endTime, err := time.Parse(time.RFC3339, app.End)
+	if err != nil {
+		fieldErrors.Add("end", err)
+	}
+
+	registrationDeadline, err := parseTimePtr(app.RegistrationDeadline)
+	if err != nil {
+		fieldErrors.Add("registrationDeadline", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEvent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEvent{
+		Title:                   app.Title,
+		Type:                    admissionsbus.EventType(app.Type),
+		Status:                  admissionsbus.EventStatus(app.Status),
+		Description:             app.Description,
+		StartTime:               startTime,
+		EndTime:                 endTime,
+		Location:                app.Location,
+		IsVirtual:               app.IsVirtual,
+		Capacity:                app.Capacity,
+		RegistrationDeadline:    registrationDeadline,
+		AutoConfirmationEnabled: app.AutoConfirmationEnabled,
+		AutoReminderEnabled:     app.AutoReminderEnabled,
 	}, nil
 }
 
