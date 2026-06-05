@@ -7,7 +7,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO admissions_staff_profiles (staff_profile_id, user_id, admissions_roles, is_active, date_created, date_updated) VALUES
 	('3adf627a-d32a-4436-8ca0-5e76fa1593d7', 'b7f1d86f-0f1f-4c7b-84d7-99a570f14b6f', '{ADMISSIONS_ADMIN}', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
-	('ccda637b-e691-4575-b487-93538fd4c943', '5cf37266-3473-4006-984f-9325122678b7', '{ADMISSIONS_ADMIN,APPLICATION_REVIEWER,REPORT_VIEWER}', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('ccda637b-e691-4575-b487-93538fd4c943', '5cf37266-3473-4006-984f-9325122678b7', '{ADMISSIONS_ADMIN,APPLICATION_REVIEWER,EVENT_MANAGER,REPORT_VIEWER}', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
 	('aee70594-4f18-4353-8bec-9d3fef476d03', 'c41fa5d3-d61f-45f1-b054-d2c7a3704019', '{APPLICATION_REVIEWER}', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
 ON CONFLICT DO NOTHING;
 
@@ -43,6 +43,55 @@ WHERE application_id = 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
 
 INSERT INTO admissions_applicant_profiles (applicant_profile_id, user_id, constituent_id, is_active, date_created, date_updated) VALUES
 	('f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_events (
+	event_id,
+	title,
+	event_type,
+	status,
+	description,
+	start_time,
+	end_time,
+	location,
+	is_virtual,
+	capacity,
+	registration_deadline,
+	auto_confirmation_enabled,
+	auto_reminder_enabled,
+	date_created,
+	date_updated
+) VALUES
+	('e1000000-0000-4000-8000-000000000001', 'Nairobi Open Day', 'open-day', 'upcoming', 'Prospective students and families tour campus, meet admissions staff, and attend programme showcases.', '2026-06-20 08:00:00', '2026-06-20 15:00:00', 'Nairobi Main Campus', false, 600, '2026-06-19 23:59:00', true, true, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e1000000-0000-4000-8000-000000000002', 'Engineering Webinar', 'webinar', 'upcoming', 'Virtual admissions webinar covering engineering pathways, fees, and scholarship timelines.', '2026-06-12 17:00:00', '2026-06-12 18:30:00', 'Zoom', true, 450, '2026-06-11 23:59:00', true, true, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e1000000-0000-4000-8000-000000000003', 'MBA Information Session', 'info-session', 'completed', 'Completed postgraduate information evening for working professionals evaluating MBA applications.', '2026-06-02 15:00:00', '2026-06-02 17:00:00', 'CBD Learning Centre', false, 120, '2026-06-01 23:59:00', true, false, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e1000000-0000-4000-8000-000000000004', 'Architecture Studio Tour', 'campus-tour', 'live', 'Guided studio and fabrication lab tour for architecture prospects currently on campus.', '2026-06-05 09:00:00', '2026-06-05 11:00:00', 'Design Block', false, 40, '2026-06-04 18:00:00', false, false, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e1000000-0000-4000-8000-000000000005', 'County Career Fair Booth', 'fair', 'cancelled', 'Regional fair appearance cancelled due to venue changes.', '2026-06-28 09:00:00', '2026-06-28 16:00:00', 'KICC Nairobi', false, 1000, '2026-06-27 23:59:00', false, false, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e1000000-0000-4000-8000-000000000006', 'September Intake Planning', 'open-day', 'draft', 'Draft event being prepared for the September intake recruitment cycle.', '2026-09-10 09:00:00', '2026-09-10 14:00:00', 'TBD', false, 800, '2026-09-08 23:59:00', true, true, '2019-03-24 00:00:00', '2019-03-24 00:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admissions_event_registrations (
+	event_registration_id,
+	event_id,
+	constituent_id,
+	first_name,
+	last_name,
+	email,
+	phone,
+	status,
+	match_status,
+	source,
+	registered_at,
+	checked_in_at,
+	checked_in_by_id,
+	date_created,
+	date_updated
+) VALUES
+	('e2000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'John', 'Applicant', 'applicant@example.com', '+254712345678', 'registered', 'matched', 'portal', '2026-05-28 10:15:00', NULL, NULL, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e2000000-0000-4000-8000-000000000002', 'e1000000-0000-4000-8000-000000000001', NULL, 'Sofia', 'Mwangi', 'sofia.mwangi@example.com', '+254711000001', 'registered', 'new-prospect', 'campaign', '2026-05-29 08:45:00', NULL, NULL, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e2000000-0000-4000-8000-000000000003', 'e1000000-0000-4000-8000-000000000002', NULL, 'Liam', 'Otieno', 'liam.otieno@example.com', '+254711000002', 'registered', 'needs-review', 'staff', '2026-05-30 13:10:00', NULL, NULL, '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e2000000-0000-4000-8000-000000000004', 'e1000000-0000-4000-8000-000000000003', NULL, 'Priya', 'Patel', 'priya.patel@example.com', '+254711000003', 'checked-in', 'matched', 'staff', '2026-05-25 09:30:00', '2026-06-02 14:52:00', '5cf37266-3473-4006-984f-9325122678b7', '2019-03-24 00:00:00', '2019-03-24 00:00:00'),
+	('e2000000-0000-4000-8000-000000000005', 'e1000000-0000-4000-8000-000000000004', NULL, 'Achieng', 'Okoro', 'achieng.okoro@example.com', '+254711000004', 'checked-in', 'new-prospect', 'portal', '2026-06-01 16:20:00', '2026-06-05 09:10:00', '5cf37266-3473-4006-984f-9325122678b7', '2019-03-24 00:00:00', '2019-03-24 00:00:00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO admissions_lead_score_rules (lead_score_rule_id, name, description, criteria, points, is_active, priority, date_created, date_updated) VALUES
