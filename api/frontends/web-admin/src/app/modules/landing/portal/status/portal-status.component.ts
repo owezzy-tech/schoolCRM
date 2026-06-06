@@ -1,26 +1,46 @@
 import { TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DestroyRef,
+    OnInit,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
+    AcademicTerm,
+    AdmissionsDocument,
+    Application,
     ApplicationFee,
     ApplicationFeeStatus,
+    ApplicationStatus,
+    ChecklistItem,
+    Program,
 } from 'app/core/admissions/admissions.types';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
 import { PortalAuthService } from 'app/core/portal/portal-auth.service';
 import { FilePondComponent } from 'app/shared/components/file-upload/file-pond.component';
 import { FilePondFile } from 'filepond';
+import { Observable, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
 type PortalDocumentStatus =
     | 'verified'
     | 'received'
     | 'missing'
     | 'uploading'
-    | 'pending-review';
+    | 'pending-review'
+    | 'rejected';
 
 interface PortalDocument {
     id: string;
+    checklistItemID: string;
     label: string;
     description: string;
     status: PortalDocumentStatus;
@@ -29,9 +49,40 @@ interface PortalDocument {
     fileName?: string;
 }
 
+interface TimelineItem {
+    label: string;
+    date: string;
+    done: boolean;
+}
+
+const STATUS_PROGRESS: Record<ApplicationStatus, number> = {
+    DRAFT: 10,
+    SUBMITTED: 30,
+    AWAITING_DOCUMENTS: 45,
+    READY_FOR_REVIEW: 60,
+    IN_REVIEW: 70,
+    DECISION_PENDING: 85,
+    ADMITTED: 100,
+    DENIED: 100,
+    WAITLISTED: 90,
+    DEFERRED: 80,
+    WITHDRAWN: 100,
+    ENROLLED: 100,
+};
+
+const TIMELINE_STAGES: Array<{
+    status: ApplicationStatus;
+    label: string;
+}> = [
+    { status: 'SUBMITTED', label: 'Submitted' },
+    { status: 'AWAITING_DOCUMENTS', label: 'Documents requested' },
+    { status: 'READY_FOR_REVIEW', label: 'Ready for review' },
+    { status: 'IN_REVIEW', label: 'Under review' },
+    { status: 'DECISION_PENDING', label: 'Decision pending' },
+];
+
 @Component({
     selector: 'app-portal-status',
-    standalone: true,
     imports: [
         FilePondComponent,
         MatButtonModule,
@@ -70,6 +121,14 @@ interface PortalDocument {
                     </div>
                 }
 
+                @if (errorMessage()) {
+                    <div
+                        class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200"
+                    >
+                        {{ errorMessage() }}
+                    </div>
+                }
+
                 <!-- Header section -->
                 <div
                     class="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -81,14 +140,14 @@ interface PortalDocument {
                             Application status
                         </h1>
                         <h2 class="text-secondary mt-1 text-lg">
-                            {{ portalSession()?.applicationID ?? 'APP-3018' }}
-                            &middot; Bachelor of Commerce &middot; 2026 Main Intake
+                            {{ applicationTitle() }}
                         </h2>
                     </div>
                     <div
-                        class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-900"
+                        class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+                        [class]="statusBadgeClass(application()?.status)"
                     >
-                        Under Review
+                        {{ statusLabel(application()?.status) }}
                     </div>
                 </div>
 
@@ -96,16 +155,25 @@ interface PortalDocument {
                 <div
                     class="bg-card mt-6 flex flex-col rounded-2xl border p-6 shadow-sm"
                 >
-                    <h3 class="text-default mb-4 text-lg font-semibold">
-                        Overall progress
-                    </h3>
+                    <div class="mb-4 flex items-center justify-between gap-4">
+                        <h3 class="text-default text-lg font-semibold">
+                            Overall progress
+                        </h3>
+                        @if (isLoading()) {
+                            <span class="text-secondary text-sm"
+                                >Loading live status…</span
+                            >
+                        }
+                    </div>
                     <mat-progress-bar
                         mode="determinate"
-                        [value]="62"
+                        [value]="overallProgress()"
                         class="mb-2"
                     ></mat-progress-bar>
                     <p class="text-secondary text-sm font-medium">
-                        62% complete &middot; 3 of 5 stages done.
+                        {{ overallProgress() }}% complete &middot;
+                        {{ completedStageCount() }} of {{ timeline().length }}
+                        stages done.
                     </p>
                 </div>
 
@@ -120,15 +188,15 @@ interface PortalDocument {
                             </h3>
                             <p class="text-secondary mt-1 text-sm">
                                 M-Pesa processing is not active in this preview.
-                                The portal shows the KES fee status returned by
-                                the admissions office.
+                                The portal derives fee readiness from the live
+                                application status until the fee API is enabled.
                             </p>
                         </div>
                         <span
                             class="w-fit rounded-full px-3 py-1 text-sm font-semibold"
-                            [class]="feeStatusClass(applicationFee.status)"
+                            [class]="feeStatusClass(applicationFee().status)"
                         >
-                            {{ formatFeeStatus(applicationFee.status) }}
+                            {{ formatFeeStatus(applicationFee().status) }}
                         </span>
                     </div>
 
@@ -142,7 +210,7 @@ interface PortalDocument {
                                 Amount
                             </div>
                             <div class="mt-1 text-2xl font-bold">
-                                {{ formatAmount(applicationFee) }}
+                                {{ formatAmount(applicationFee()) }}
                             </div>
                         </div>
                         <div
@@ -154,7 +222,7 @@ interface PortalDocument {
                                 Due date
                             </div>
                             <div class="mt-1 text-2xl font-bold">
-                                {{ applicationFee.dueAt || '—' }}
+                                {{ applicationFee().dueAt || '—' }}
                             </div>
                         </div>
                         <div
@@ -166,7 +234,11 @@ interface PortalDocument {
                                 Payment channel
                             </div>
                             <div class="mt-1 text-2xl font-bold capitalize">
-                                {{ formatPaymentProvider(applicationFee.provider) }}
+                                {{
+                                    formatPaymentProvider(
+                                        applicationFee().provider
+                                    )
+                                }}
                             </div>
                         </div>
                     </div>
@@ -182,12 +254,11 @@ interface PortalDocument {
                             Timeline
                         </h3>
                         <div class="relative flex flex-col gap-6">
-                            <!-- Vertical dashed line -->
                             <div
                                 class="absolute bottom-4 left-[11px] top-4 border-l-2 border-dashed border-gray-300"
                             ></div>
 
-                            @for (item of timeline; track item.label) {
+                            @for (item of timeline(); track item.label) {
                                 <div
                                     class="relative z-10 flex items-start gap-4"
                                 >
@@ -223,20 +294,30 @@ interface PortalDocument {
                                 </h3>
                                 <p class="text-secondary mt-1 text-sm">
                                     Upload missing or rejected items. Files go
-                                     to the upload service and move into pending
-                                     review for KCSE and admissions officers.
+                                    to the upload service and this portal saves
+                                    the returned storage ID as admissions
+                                    document metadata.
                                 </p>
                             </div>
                             <div
                                 class="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary dark:bg-primary-900/20"
                             >
-                                {{ uploadedDocumentCount }} /
-                                {{ documents.length }} received
+                                {{ uploadedDocumentCount() }} /
+                                {{ documents().length }} received
                             </div>
                         </div>
 
+                        @if (documents().length === 0 && !isLoading()) {
+                            <div
+                                class="text-secondary mt-6 rounded-2xl border border-dashed p-4 text-sm"
+                            >
+                                No checklist items have been assigned to this
+                                application yet.
+                            </div>
+                        }
+
                         <div class="mt-4 flex flex-col divide-y">
-                            @for (doc of documents; track doc.label) {
+                            @for (doc of documents(); track doc.id) {
                                 <div class="py-4">
                                     <div
                                         class="flex items-start justify-between gap-4"
@@ -286,31 +367,8 @@ interface PortalDocument {
                                         </div>
                                         <div
                                             class="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                                            [class.bg-green-100]="
-                                                doc.status === 'verified'
-                                            "
-                                            [class.text-green-800]="
-                                                doc.status === 'verified'
-                                            "
-                                            [class.bg-blue-100]="
-                                                doc.status === 'received'
-                                            "
-                                            [class.text-blue-800]="
-                                                doc.status === 'received'
-                                            "
-                                            [class.bg-red-100]="
-                                                doc.status === 'missing'
-                                            "
-                                            [class.text-red-800]="
-                                                doc.status === 'missing'
-                                            "
-                                            [class.bg-amber-100]="
-                                                doc.status === 'uploading' ||
-                                                doc.status === 'pending-review'
-                                            "
-                                            [class.text-amber-800]="
-                                                doc.status === 'uploading' ||
-                                                doc.status === 'pending-review'
+                                            [class]="
+                                                documentStatusClass(doc.status)
                                             "
                                         >
                                             {{ doc.status | titlecase }}
@@ -398,28 +456,12 @@ interface PortalDocument {
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'flex w-full flex-auto flex-col' },
 })
-export class PortalStatusComponent {
+export class PortalStatusComponent implements OnInit {
+    private readonly admissionsService = inject(AdmissionsService);
+    private readonly destroyRef = inject(DestroyRef);
     private readonly portalAuthService = inject(PortalAuthService);
 
     readonly portalSession = this.portalAuthService.session;
-    readonly applicationFee: ApplicationFee = {
-        id: 'fee-app-3018',
-        applicationID: 'APP-3018',
-        amountCents: 15000,
-        currency: 'KES',
-        status: 'PENDING',
-        provider: 'manual',
-        dueAt: 'Jun 1, 2026',
-        auditTrail: [
-            {
-                actor: 'System',
-                action: 'Fee created',
-                reason: 'Application submitted with standard intake fee.',
-                timestamp: 'May 12, 2026',
-            },
-        ],
-    };
-
     readonly acceptedDocumentTypes = ['application/pdf', 'image/*'];
     readonly serverConfig = {
         url: '/api/common/file-upload',
@@ -433,63 +475,96 @@ export class PortalStatusComponent {
         },
     };
 
-    readonly timeline = [
-        { label: 'Submitted', date: 'May 12, 2026', done: true },
-        { label: 'Documents received', date: 'May 14, 2026', done: true },
-        { label: 'Under review', date: 'May 18, 2026', done: true },
-        { label: 'Interview', date: 'Scheduled for Jun 2, 10:00 EAT', done: false },
-        { label: 'Decision', date: 'Expected late June', done: false },
-    ];
+    readonly application = signal<Application | null>(null);
+    readonly documents = signal<PortalDocument[]>([]);
+    readonly errorMessage = signal<string | null>(null);
+    readonly isLoading = signal(false);
+    readonly terms = signal<AcademicTerm[]>([]);
+    readonly programs = signal<Program[]>([]);
 
-    documents: PortalDocument[] = [
-        {
-            id: 'personal-statement',
-            label: 'Personal statement',
-            description: 'PDF or image copy of your admissions statement.',
-            status: 'verified',
-            required: true,
-            fileName: 'personal-statement.pdf',
-        },
-        {
-            id: 'kcse-result-slip',
-            label: 'KCSE result slip',
-            description:
-                'Official KCSE result slip or certificate from KNEC.',
-            status: 'verified',
-            required: true,
-            fileName: 'kcse-result-slip.pdf',
-        },
-        {
-            id: 'recommendation-1',
-            label: 'National ID or passport',
-            description:
-                'Identity document received and awaiting verification.',
-            status: 'received',
-            required: true,
-            fileName: 'national-id.pdf',
-        },
-        {
-            id: 'recommendation-2',
-            label: 'KUCCPS placement letter',
-            description:
-                'Upload your placement letter if applying through KUCCPS.',
-            status: 'missing',
-            required: false,
-        },
-        {
-            id: 'test-scores',
-            label: 'M-Pesa confirmation',
-            description: 'Optional payment confirmation message or receipt.',
-            status: 'verified',
-            required: false,
-            fileName: 'mpesa-confirmation.pdf',
-        },
-    ];
+    readonly applicationTitle = computed(() => {
+        const session = this.portalSession();
+        const application = this.application();
 
-    get uploadedDocumentCount(): number {
-        return this.documents.filter(
-            (document) => document.status !== 'missing'
-        ).length;
+        if (!application) {
+            return session?.applicationID || 'No active application selected';
+        }
+
+        const program = this.programs().find(
+            (item) => item.id === application.programID
+        );
+        const term = this.terms().find(
+            (item) => item.id === application.academicTermID
+        );
+
+        return [
+            application.id,
+            program?.name ?? 'Programme pending',
+            term?.name ?? 'Intake pending',
+        ].join(' · ');
+    });
+
+    readonly applicationFee = computed<ApplicationFee>(() => {
+        const application = this.application();
+        const status = this.feeStatusFor(application?.status);
+
+        return {
+            id: `fee-${application?.id ?? 'pending'}`,
+            applicationID:
+                application?.id ??
+                this.portalSession()?.applicationID ??
+                'pending',
+            amountCents: status === 'NOT_REQUIRED' ? 0 : 15000,
+            currency: 'KES',
+            status,
+            provider: status === 'NOT_REQUIRED' ? 'not_required' : 'manual',
+            dueAt: application?.submittedAt
+                ? this.formatDate(application.submittedAt)
+                : undefined,
+            auditTrail: [],
+        };
+    });
+
+    readonly overallProgress = computed(() => {
+        const status = this.application()?.status;
+
+        return status ? STATUS_PROGRESS[status] : 0;
+    });
+
+    readonly timeline = computed<TimelineItem[]>(() => {
+        const application = this.application();
+        if (!application) {
+            return TIMELINE_STAGES.map((stage) => ({
+                label: stage.label,
+                date: 'Waiting for live application data',
+                done: false,
+            }));
+        }
+
+        const currentIndex = this.statusIndex(application.status);
+
+        return TIMELINE_STAGES.map((stage) => {
+            const stageIndex = this.statusIndex(stage.status);
+            const done = currentIndex >= stageIndex;
+            const date = this.timelineDate(application, stage.status, done);
+
+            return { label: stage.label, date, done };
+        });
+    });
+
+    readonly completedStageCount = computed(
+        () => this.timeline().filter((item) => item.done).length
+    );
+
+    readonly uploadedDocumentCount = computed(
+        () =>
+            this.documents().filter(
+                (document) => !['missing', 'rejected'].includes(document.status)
+            ).length
+    );
+
+    ngOnInit(): void {
+        this.loadStatus();
     }
 
     feeStatusClass(status: ApplicationFeeStatus): string {
@@ -515,7 +590,7 @@ export class PortalStatusComponent {
 
     formatAmount(fee: ApplicationFee): string {
         if (fee.status === 'NOT_REQUIRED') {
-            return 'No fee';
+            return 'No fee due';
         }
 
         return new Intl.NumberFormat('en-KE', {
@@ -537,10 +612,49 @@ export class PortalStatusComponent {
         }
     }
 
+    statusBadgeClass(status: ApplicationStatus | undefined): string {
+        switch (status) {
+            case 'ADMITTED':
+            case 'ENROLLED':
+                return 'bg-green-100 text-green-900';
+            case 'DENIED':
+            case 'WITHDRAWN':
+                return 'bg-red-100 text-red-900';
+            case 'WAITLISTED':
+            case 'DEFERRED':
+                return 'bg-blue-100 text-blue-900';
+            case 'DRAFT':
+                return 'bg-slate-100 text-slate-700';
+            default:
+                return 'bg-yellow-100 text-yellow-900';
+        }
+    }
+
+    statusLabel(status: ApplicationStatus | undefined): string {
+        return status ? status.replaceAll('_', ' ') : 'Waiting for access';
+    }
+
+    documentStatusClass(status: PortalDocumentStatus): string {
+        switch (status) {
+            case 'verified':
+                return 'bg-green-100 text-green-800';
+            case 'received':
+                return 'bg-blue-100 text-blue-800';
+            case 'missing':
+            case 'rejected':
+                return 'bg-red-100 text-red-800';
+            case 'uploading':
+            case 'pending-review':
+                return 'bg-amber-100 text-amber-800';
+        }
+    }
+
     canUploadDocument(document: PortalDocument): boolean {
         return (
             this.hasPortalAccess() &&
-            ['missing', 'received', 'uploading'].includes(document.status)
+            ['missing', 'received', 'rejected', 'uploading'].includes(
+                document.status
+            )
         );
     }
 
@@ -549,7 +663,7 @@ export class PortalStatusComponent {
     }
 
     uploadLabelFor(document: PortalDocument): string {
-        if (document.status === 'received') {
+        if (document.status === 'received' || document.status === 'rejected') {
             return 'Reupload replacement or <span class="filepond--label-action">browse</span>';
         }
 
@@ -561,11 +675,54 @@ export class PortalStatusComponent {
     }
 
     markUploaded(documentId: string, file: FilePondFile): void {
+        const application = this.application();
+        const document = this.documents().find(
+            (item) => item.id === documentId
+        );
+        const storageKey = String(file.serverId ?? '');
+
+        if (!application || !document || storageKey.length === 0) {
+            this.updateDocument(documentId, { status: 'missing' });
+            this.errorMessage.set(
+                'The upload finished, but the upload service did not return a storage ID.'
+            );
+            return;
+        }
+
         this.updateDocument(documentId, {
             status: 'pending-review',
-            serverId: file.serverId,
+            serverId: storageKey,
             fileName: file.filename,
         });
+
+        this.admissionsService
+            .createApplicantDocument(application.id, {
+                checklistItemID: document.checklistItemID,
+                fileName: file.filename,
+                contentType: file.file.type || 'application/octet-stream',
+                sizeBytes: file.file.size,
+                storageKey,
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (created) => {
+                    this.mergeCreatedDocument(created);
+                    this.errorMessage.set(null);
+                },
+                error: (error) => {
+                    this.updateDocument(documentId, {
+                        status: 'missing',
+                        serverId: undefined,
+                        fileName: undefined,
+                    });
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'The file uploaded, but admissions could not save the document metadata.'
+                        )
+                    );
+                },
+            });
     }
 
     revertUpload(documentId: string): void {
@@ -580,12 +737,248 @@ export class PortalStatusComponent {
         this.updateDocument(documentId, { status: 'missing' });
     }
 
+    private loadStatus(): void {
+        if (!this.hasPortalAccess()) {
+            return;
+        }
+
+        this.isLoading.set(true);
+        this.errorMessage.set(null);
+
+        this.resolveApplicationID()
+            .pipe(
+                switchMap((applicationID) => {
+                    if (!applicationID) {
+                        throw new Error(
+                            'No application is linked to this portal session yet.'
+                        );
+                    }
+
+                    return forkJoin({
+                        application:
+                            this.admissionsService.getApplicantApplication(
+                                applicationID
+                            ),
+                        checklist:
+                            this.admissionsService.queryApplicantChecklistItems(
+                                applicationID,
+                                {
+                                    rows: 100,
+                                    orderBy: 'display_order,ASC',
+                                }
+                            ),
+                        documents:
+                            this.admissionsService.queryApplicantDocuments(
+                                applicationID,
+                                {
+                                    rows: 100,
+                                    orderBy: 'uploaded_at,DESC',
+                                }
+                            ),
+                        programs: this.admissionsService.queryApplicantPrograms(
+                            {
+                                rows: 100,
+                                active: true,
+                            }
+                        ),
+                        terms: this.admissionsService.queryApplicantAcademicTerms(
+                            {
+                                rows: 100,
+                                active: true,
+                            }
+                        ),
+                    });
+                }),
+                finalize(() => this.isLoading.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: ({
+                    application,
+                    checklist,
+                    documents,
+                    programs,
+                    terms,
+                }) => {
+                    this.application.set(application);
+                    this.programs.set(programs.items);
+                    this.terms.set(terms.items);
+                    this.documents.set(
+                        this.mapPortalDocuments(
+                            checklist.items,
+                            documents.items
+                        )
+                    );
+                    this.portalAuthService.updateApplicationID(application.id);
+                },
+                error: (error) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            error instanceof Error
+                                ? error.message
+                                : 'Admissions status could not be loaded.'
+                        )
+                    );
+                },
+            });
+    }
+
+    private resolveApplicationID(): Observable<string | null> {
+        const sessionApplicationID = this.portalSession()?.applicationID;
+        if (sessionApplicationID) {
+            return of(sessionApplicationID);
+        }
+
+        return this.admissionsService
+            .queryApplicantApplications({
+                rows: 1,
+                orderBy: 'date_updated,DESC',
+            })
+            .pipe(
+                map((result) => {
+                    const applicationID = result.items[0]?.id ?? null;
+                    if (applicationID) {
+                        this.portalAuthService.updateApplicationID(
+                            applicationID
+                        );
+                    }
+
+                    return applicationID;
+                })
+            );
+    }
+
+    private mapPortalDocuments(
+        checklistItems: ChecklistItem[],
+        documents: AdmissionsDocument[]
+    ): PortalDocument[] {
+        return [...checklistItems]
+            .sort((left, right) => left.displayOrder - right.displayOrder)
+            .map((item) => {
+                const document = documents.find(
+                    (candidate) => candidate.checklistItemID === item.id
+                );
+
+                return {
+                    id: item.id,
+                    checklistItemID: item.id,
+                    label: item.documentName,
+                    description: item.description ?? item.itemKey,
+                    status: this.portalStatusFor(
+                        document?.status ?? item.status
+                    ),
+                    required: item.required,
+                    serverId: document?.storageKey,
+                    fileName: document?.fileName,
+                };
+            });
+    }
+
+    private mergeCreatedDocument(document: AdmissionsDocument): void {
+        this.documents.update((documents) =>
+            documents.map((item) =>
+                item.checklistItemID === document.checklistItemID
+                    ? {
+                          ...item,
+                          status: this.portalStatusFor(document.status),
+                          serverId: document.storageKey,
+                          fileName: document.fileName,
+                      }
+                    : item
+            )
+        );
+    }
+
     private updateDocument(
         documentId: string,
         changes: Partial<PortalDocument>
     ): void {
-        this.documents = this.documents.map((document) =>
-            document.id === documentId ? { ...document, ...changes } : document
+        this.documents.update((documents) =>
+            documents.map((document) =>
+                document.id === documentId
+                    ? { ...document, ...changes }
+                    : document
+            )
         );
+    }
+
+    private portalStatusFor(
+        status: AdmissionsDocument['status']
+    ): PortalDocumentStatus {
+        switch (status) {
+            case 'ACCEPTED':
+            case 'SYNCED_TO_SIS':
+                return 'verified';
+            case 'UPLOADED':
+                return 'received';
+            case 'PENDING_REVIEW':
+                return 'pending-review';
+            case 'REJECTED':
+            case 'EXPIRED':
+                return 'rejected';
+            case 'WAIVED':
+                return 'verified';
+        }
+    }
+
+    private feeStatusFor(
+        status: ApplicationStatus | undefined
+    ): ApplicationFeeStatus {
+        if (!status || status === 'DRAFT' || status === 'WITHDRAWN') {
+            return 'NOT_REQUIRED';
+        }
+
+        return 'PENDING';
+    }
+
+    private statusIndex(status: ApplicationStatus): number {
+        const stageIndex = TIMELINE_STAGES.findIndex(
+            (stage) => stage.status === status
+        );
+
+        if (stageIndex >= 0) {
+            return stageIndex;
+        }
+
+        if (
+            [
+                'ADMITTED',
+                'DENIED',
+                'WAITLISTED',
+                'DEFERRED',
+                'ENROLLED',
+            ].includes(status)
+        ) {
+            return TIMELINE_STAGES.length;
+        }
+
+        return -1;
+    }
+
+    private timelineDate(
+        application: Application,
+        stage: ApplicationStatus,
+        done: boolean
+    ): string {
+        if (!done) {
+            return 'Pending';
+        }
+
+        if (stage === 'SUBMITTED' && application.submittedAt) {
+            return this.formatDate(application.submittedAt);
+        }
+
+        return this.formatDate(
+            application.dateUpdated || application.dateCreated
+        );
+    }
+
+    private formatDate(value: string): string {
+        return new Intl.DateTimeFormat('en-KE', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        }).format(new Date(value));
     }
 }
