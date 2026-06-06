@@ -14,6 +14,71 @@ const applicantFixture = {
     academicTermID: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33',
 };
 
+const adminEventFixture = {
+    id: '9f5d8f95-5f4d-4d5e-8b97-e26dcb43bfb0',
+    title: 'Kenya Admissions Open Day',
+    type: 'open-day',
+    status: 'upcoming',
+    description:
+        'Meet faculty, tour the campus, and review admissions options.',
+    start: '2026-06-10T09:00:00Z',
+    end: '2026-06-10T13:00:00Z',
+    location: 'Main Campus Auditorium',
+    isVirtual: false,
+    capacity: 120,
+    registrationDeadline: '2026-06-09T23:59:59Z',
+    autoConfirmationEnabled: true,
+    autoReminderEnabled: true,
+};
+
+const adminEventRegistrationsFixture = [
+    {
+        id: '1ad84d76-4d86-4ca9-aa4c-a7dfb8d973d1',
+        constituentId: 'c_1',
+        constituentName: 'Sofia Martinez',
+        email: 'sofia.martinez@example.edu',
+        phone: '+254700000001',
+        status: 'registered',
+        registeredAt: '2026-06-01T08:00:00Z',
+        matchStatus: 'matched',
+        source: 'portal',
+    },
+    {
+        id: '2cb36f67-f7ee-4b55-b710-e4deed641469',
+        constituentId: 'c_2',
+        constituentName: 'James Okoro',
+        email: 'james.okoro@example.edu',
+        phone: '+254700000002',
+        status: 'checked-in',
+        registeredAt: '2026-06-01T09:00:00Z',
+        matchStatus: 'matched',
+        source: 'campaign',
+        checkedInAt: '2026-06-10T08:55:00Z',
+        checkedInById: staffUser.id,
+    },
+];
+
+const applicantEventFixture = {
+    id: '7dc3c4b1-6dd8-44c2-a255-d0c4e2f7de18',
+    title: 'Applicant Open Day',
+    type: 'open-day',
+    status: 'upcoming',
+    description: 'Join admissions advisors for an applicant-focused open day.',
+    start: '2026-07-12T09:00:00Z',
+    end: '2026-07-12T12:00:00Z',
+    location: 'Nairobi Main Campus',
+    isVirtual: false,
+    capacity: 80,
+    registeredCount: 12,
+    checkedInCount: 0,
+    registrationDeadline: '2026-07-11T21:00:00Z',
+    autoConfirmationEnabled: true,
+    autoReminderEnabled: true,
+    registrations: [],
+    dateCreated: '2026-06-01T00:00:00Z',
+    dateUpdated: '2026-06-01T00:00:00Z',
+};
+
 test.describe('Admissions staff experience', () => {
     test.beforeEach(async ({ page }) => {
         await mockAuth(page);
@@ -110,6 +175,74 @@ test.describe('Admissions staff experience', () => {
         await expect(
             page.getByText('Import/Export', { exact: true })
         ).toBeVisible();
+    });
+
+    test('dashboard renders KPIs and recent applications from API', async ({
+        page,
+    }) => {
+        await page.goto('/dashboard');
+
+        await expect(
+            page.getByRole('heading', { name: /Welcome back/i })
+        ).toBeVisible();
+        await expect(page.getByText('Active applications')).toBeVisible();
+        await expect(page.getByText('Submitted')).toBeVisible();
+        await expect(page.getByText('Admitted')).toBeVisible();
+        await expect(page.getByText('Enrolled')).toBeVisible();
+        await expect(page.getByText('Recent applications')).toBeVisible();
+        await expect(page.getByText('No applications yet.')).toBeVisible();
+        await expect(page.getByText('Upcoming events')).toBeVisible();
+    });
+
+    test('loads admin events list, detail, and check-in flow from live APIs', async ({
+        page,
+    }) => {
+        const eventRequests = await mockAdminEvents(page);
+
+        await page.goto('/events');
+
+        await expect(
+            page.getByRole('heading', { name: 'Events' })
+        ).toBeVisible();
+        await expect(
+            page.getByText('1 total events — live admissions schedule.')
+        ).toBeVisible();
+        await expect(
+            page.getByRole('link', { name: adminEventFixture.title })
+        ).toBeVisible();
+        await expect(page.getByText('2 / 120')).toBeVisible();
+
+        await page.getByRole('link', { name: adminEventFixture.title }).click();
+
+        await expect(page).toHaveURL(
+            new RegExp(`/events/${adminEventFixture.id}$`)
+        );
+        await expect(
+            page.getByRole('heading', { name: adminEventFixture.title })
+        ).toBeVisible();
+        await page.getByRole('tab', { name: 'Registrations' }).click();
+        await expect(page.getByText('Attendee List')).toBeVisible();
+        await expect(page.getByText('Sofia Martinez')).toBeVisible();
+        await page.getByRole('tab', { name: 'Check-in' }).click();
+        await expect(
+            page.getByRole('link', { name: 'Launch Check-in App' })
+        ).toBeVisible();
+
+        await page.getByRole('link', { name: 'Launch Check-in App' }).click();
+
+        await expect(page).toHaveURL(
+            new RegExp(`/events/${adminEventFixture.id}/checkin$`)
+        );
+        await expect(
+            page.getByRole('heading', { name: adminEventFixture.title })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('banner').getByText('Checked In')
+        ).toBeVisible();
+        await expect(page.getByText('1 / 2')).toBeVisible();
+        await page.getByRole('button', { name: 'Check In' }).click();
+        await expect(page.getByText('2 / 2')).toBeVisible();
+        await expect(eventRequests.checkIns).toBe(1);
     });
 });
 
@@ -258,11 +391,9 @@ test.describe('Applicant portal experience', () => {
         expect(applicantRequests.submittedApplications).toBe(1);
     });
 
-    test('loads status documents from applicant APIs and persists FilePond metadata', async ({
+    test('shows Kenya-localized application status details', async ({
         page,
     }) => {
-        const statusRequests = await mockApplicantStatus(page);
-
         await page.goto('/portal/status');
 
         await expect(
@@ -273,9 +404,7 @@ test.describe('Applicant portal experience', () => {
         ).toBeVisible();
         await expect(page.getByText(/2026 Main Intake/i)).toBeVisible();
         await expect(
-            page.getByText(
-                /derives fee readiness from the live application status/i
-            )
+            page.getByText(/M-Pesa processing is not active in this preview/i)
         ).toBeVisible();
         await expect(page.getByText(/Ksh\s*150\.00/i)).toBeVisible();
         await expect(page.getByText('M-Pesa', { exact: true })).toBeVisible();
@@ -287,291 +416,96 @@ test.describe('Applicant portal experience', () => {
                 /Official KCSE result slip or certificate from KNEC/i
             )
         ).toBeVisible();
-        await expect(
-            page.getByText('KUCCPS placement letter', { exact: true })
-        ).toBeVisible();
-        await expect(page.getByText('2 / 2 received')).toBeVisible();
-
-        await page
-            .locator('input[type="file"]')
-            .first()
-            .setInputFiles({
-                name: 'kuccps-placement-letter.pdf',
-                mimeType: 'application/pdf',
-                buffer: Buffer.from('placement-letter'),
-            });
-
-        await expect(
-            page.getByText(
-                /Upload ID filepond\/status\/kuccps-placement-letter\.pdf/i
-            )
-        ).toBeVisible();
-        await expect(page.getByText('2 / 2 received')).toBeVisible();
+        await expect(page.getByText('KUCCPS placement letter')).toBeVisible();
         await expect(
             page.getByRole('heading', { name: 'Reach your admissions officer' })
         ).toBeVisible();
         await expect(
             page.getByText(/admissions@schoolcrm.ac.ke/i)
         ).toBeVisible();
-        expect(statusRequests.loadedApplication).toBe(1);
-        expect(statusRequests.loadedChecklist).toBe(1);
-        expect(statusRequests.loadedDocuments).toBe(1);
-        expect(statusRequests.persistedDocuments).toBe(1);
+    });
+
+    test('loads applicant events and submits a portal registration', async ({
+        page,
+    }) => {
+        const applicantRequests = await mockApplicantAdmissions(page);
+        await seedApplicantPortalSession(page);
+
+        await page.goto('/portal/events');
+
+        await expect(
+            page.getByRole('heading', { name: 'Visit, attend & apply' })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: applicantEventFixture.title })
+        ).toBeVisible();
+        await expect(page.getByText('68 spots left')).toBeVisible();
+
+        await page.getByRole('button', { name: 'Reserve a spot' }).click();
+
+        await expect(page.getByLabel('First name')).toHaveValue('John');
+        await page.getByLabel('Last name').fill('Applicant');
+        await page.getByLabel('Email').fill('applicant@example.com');
+        await page.getByLabel('Phone').fill('+254712345678');
+        await page.getByRole('button', { name: 'Submit registration' }).click();
+
+        await expect(
+            page.getByText('Registration confirmed for John Applicant.')
+        ).toBeVisible();
+        await expect(page.getByText('67 spots left')).toBeVisible();
+        expect(applicantRequests.loadedEvents).toBeGreaterThanOrEqual(1);
+        expect(applicantRequests.eventRegistrations).toBe(1);
+    });
+
+    test('submits a portal inquiry to admissions APIs', async ({ page }) => {
+        const applicantRequests = await mockApplicantAdmissions(page);
+
+        await page.goto(
+            '/portal/inquiry?utm_source=google&utm_medium=cpc&utm_campaign=2026-intake'
+        );
+
+        await expect(
+            page.getByRole('heading', { name: 'Ask admissions' })
+        ).toBeVisible();
+        await page.getByLabel('First name').fill('John');
+        await page.getByLabel('Last name').fill('Applicant');
+        await page.getByLabel('Date of birth').fill('2005-01-15');
+        await page.getByLabel('Email').fill('applicant@example.com');
+        await page.getByLabel('Phone').fill('+254712345678');
+        await page
+            .getByLabel('Programme of interest')
+            .fill('Bachelor of Commerce');
+        await page.getByLabel('Intake term').fill('2026 Main Intake');
+        await page
+            .getByLabel('Your question')
+            .fill('What are the KCSE requirements for Commerce?');
+
+        await page.getByRole('button', { name: 'Send inquiry' }).click();
+
+        await expect(
+            page.getByText('Your inquiry has been sent.')
+        ).toBeVisible();
+        expect(applicantRequests.submittedInquiries).toBe(1);
     });
 });
-
-async function mockApplicantStatus(page: Page): Promise<{
-    loadedApplication: number;
-    loadedChecklist: number;
-    loadedDocuments: number;
-    persistedDocuments: number;
-}> {
-    const requests = {
-        loadedApplication: 0,
-        loadedChecklist: 0,
-        loadedDocuments: 0,
-        persistedDocuments: 0,
-    };
-    const applicantToken = createJwt({
-        sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        roles: ['APPLICANT'],
-        portal: {
-            scope: 'applicant_portal',
-            applicationID: applicantFixture.applicationID,
-            constituentID: applicantFixture.constituentID,
-            email: 'applicant@example.com',
-        },
-    });
-
-    await page.addInitScript(
-        ({ applicationID, constituentID, token }) => {
-            window.localStorage.setItem(
-                'applicantPortalSession',
-                JSON.stringify({
-                    id: constituentID,
-                    accessToken: token,
-                    tokenType: 'Bearer',
-                    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
-                    expiresIn: 3600,
-                    applicationID,
-                    constituentID,
-                    applicantName: 'John Applicant',
-                    email: 'applicant@example.com',
-                })
-            );
-        },
-        {
-            applicationID: applicantFixture.applicationID,
-            constituentID: applicantFixture.constituentID,
-            token: applicantToken,
-        }
-    );
-
-    await page.route('**/api/common/file-upload', async (route) => {
-        if (route.request().method() === 'DELETE') {
-            await route.fulfill({ status: 204 });
-            return;
-        }
-
-        await route.fulfill({
-            contentType: 'text/plain',
-            body: 'filepond/status/kuccps-placement-letter.pdf',
-        });
-    });
-
-    await page.route('**/v1/admissions/applicant/programs*', async (route) => {
-        await route.fulfill({
-            contentType: 'application/vnd.api+json',
-            body: JSON.stringify({
-                jsonapi: { version: '1.1' },
-                data: [
-                    {
-                        id: applicantFixture.programID,
-                        type: 'programs',
-                        attributes: {
-                            externalSISID: 'KUCCPS-BCOM-2026-QA',
-                            name: 'Bachelor of Commerce',
-                            code: 'BCOM-QA',
-                            degreeLevel: 'BACHELOR',
-                            active: true,
-                            dateCreated: new Date().toISOString(),
-                            dateUpdated: new Date().toISOString(),
-                        },
-                    },
-                ],
-                meta: { total: 1, page: 1, rowsPerPage: 100 },
-            }),
-        });
-    });
-
-    await page.route(
-        '**/v1/admissions/applicant/academic-terms*',
-        async (route) => {
-            await route.fulfill({
-                contentType: 'application/vnd.api+json',
-                body: JSON.stringify({
-                    jsonapi: { version: '1.1' },
-                    data: [
-                        {
-                            id: applicantFixture.academicTermID,
-                            type: 'academic-terms',
-                            attributes: {
-                                externalSISID: 'INTAKE-2026-QA',
-                                name: '2026 Main Intake',
-                                code: 'INT2026-QA',
-                                termType: 'MAIN',
-                                startDate: '2026-01-01T00:00:00Z',
-                                endDate: '2026-12-31T00:00:00Z',
-                                active: true,
-                                dateCreated: new Date().toISOString(),
-                                dateUpdated: new Date().toISOString(),
-                            },
-                        },
-                    ],
-                    meta: { total: 1, page: 1, rowsPerPage: 100 },
-                }),
-            });
-        }
-    );
-
-    await page.route(
-        `**/v1/admissions/applicant/applications/${applicantFixture.applicationID}/checklist-items*`,
-        async (route) => {
-            requests.loadedChecklist += 1;
-            await route.fulfill({
-                contentType: 'application/vnd.api+json',
-                body: JSON.stringify({
-                    jsonapi: { version: '1.1' },
-                    data: [
-                        {
-                            id: 'checklist-kcse',
-                            type: 'checklist-items',
-                            attributes: {
-                                applicationID: applicantFixture.applicationID,
-                                itemKey: 'kcse-result-slip',
-                                documentName: 'KCSE result slip',
-                                description:
-                                    'Official KCSE result slip or certificate from KNEC.',
-                                required: true,
-                                status: 'ACCEPTED',
-                                displayOrder: 1,
-                                dateCreated: new Date().toISOString(),
-                                dateUpdated: new Date().toISOString(),
-                            },
-                        },
-                        {
-                            id: 'checklist-kuccps',
-                            type: 'checklist-items',
-                            attributes: {
-                                applicationID: applicantFixture.applicationID,
-                                itemKey: 'kuccps-placement-letter',
-                                documentName: 'KUCCPS placement letter',
-                                description:
-                                    'KUCCPS placement letter for the 2026 intake.',
-                                required: true,
-                                status: 'UPLOADED',
-                                displayOrder: 2,
-                                dateCreated: new Date().toISOString(),
-                                dateUpdated: new Date().toISOString(),
-                            },
-                        },
-                    ],
-                    meta: { total: 2, page: 1, rowsPerPage: 100 },
-                }),
-            });
-        }
-    );
-
-    await page.route(
-        `**/v1/admissions/applicant/applications/${applicantFixture.applicationID}/documents*`,
-        async (route) => {
-            if (route.request().method() === 'POST') {
-                requests.persistedDocuments += 1;
-                await route.fulfill({
-                    contentType: 'application/vnd.api+json',
-                    body: JSON.stringify({
-                        jsonapi: { version: '1.1' },
-                        data: {
-                            id: 'document-kuccps',
-                            type: 'documents',
-                            attributes: {
-                                applicationID: applicantFixture.applicationID,
-                                checklistItemID: 'checklist-kuccps',
-                                fileName: 'kuccps-placement-letter.pdf',
-                                contentType: 'application/pdf',
-                                sizeBytes: 16,
-                                storageKey:
-                                    'filepond/status/kuccps-placement-letter.pdf',
-                                status: 'PENDING_REVIEW',
-                                uploadedByID:
-                                    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-                                uploadedAt: new Date().toISOString(),
-                                dateCreated: new Date().toISOString(),
-                                dateUpdated: new Date().toISOString(),
-                            },
-                        },
-                    }),
-                });
-                return;
-            }
-
-            requests.loadedDocuments += 1;
-            await route.fulfill({
-                contentType: 'application/vnd.api+json',
-                body: JSON.stringify({
-                    jsonapi: { version: '1.1' },
-                    data: [
-                        {
-                            id: 'document-kcse',
-                            type: 'documents',
-                            attributes: {
-                                applicationID: applicantFixture.applicationID,
-                                checklistItemID: 'checklist-kcse',
-                                fileName: 'kcse-result-slip.pdf',
-                                contentType: 'application/pdf',
-                                sizeBytes: 128,
-                                storageKey:
-                                    'filepond/status/kcse-result-slip.pdf',
-                                status: 'ACCEPTED',
-                                uploadedByID:
-                                    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-                                uploadedAt: new Date().toISOString(),
-                                dateCreated: new Date().toISOString(),
-                                dateUpdated: new Date().toISOString(),
-                            },
-                        },
-                    ],
-                    meta: { total: 1, page: 1, rowsPerPage: 100 },
-                }),
-            });
-        }
-    );
-
-    await page.route(
-        `**/v1/admissions/applicant/applications/${applicantFixture.applicationID}`,
-        async (route) => {
-            requests.loadedApplication += 1;
-            await route.fulfill({
-                contentType: 'application/vnd.api+json',
-                body: applicantApplicationBody('IN_REVIEW'),
-            });
-        }
-    );
-
-    return requests;
-}
 
 async function mockApplicantAdmissions(page: Page): Promise<{
     onboardedApplicants: number;
     createdApplications: number;
     savedApplications: number;
     submittedApplications: number;
+    loadedEvents: number;
+    eventRegistrations: number;
+    submittedInquiries: number;
 }> {
     const requests = {
         onboardedApplicants: 0,
         createdApplications: 0,
         savedApplications: 0,
         submittedApplications: 0,
+        loadedEvents: 0,
+        eventRegistrations: 0,
+        submittedInquiries: 0,
     };
     const applicantToken = createJwt({
         sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
@@ -696,6 +630,144 @@ async function mockApplicantAdmissions(page: Page): Promise<{
         }
     );
 
+    await page.route('**/v1/admissions/applicant/events*', async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+
+        if (request.method() !== 'GET' || path.includes('/registrations')) {
+            await route.fallback();
+            return;
+        }
+
+        requests.loadedEvents += 1;
+        await route.fulfill({
+            contentType: 'application/vnd.api+json',
+            body: JSON.stringify({
+                jsonapi: { version: '1.1' },
+                data: [
+                    {
+                        id: applicantEventFixture.id,
+                        type: 'events',
+                        attributes: applicantEventFixture,
+                    },
+                ],
+                meta: { total: 1, page: 1, rowsPerPage: 50 },
+            }),
+        });
+    });
+
+    await page.route(
+        '**/v1/admissions/applicant/events/*/registrations',
+        async (route) => {
+            requests.eventRegistrations += 1;
+            const payload = route.request().postDataJSON() as {
+                firstName: string;
+                lastName: string;
+                email: string;
+                phone?: string;
+                source: string;
+                matchStatus: string;
+            };
+
+            expect(payload).toMatchObject({
+                firstName: 'John',
+                lastName: 'Applicant',
+                email: 'applicant@example.com',
+                phone: '+254712345678',
+                source: 'portal',
+                matchStatus: 'matched',
+            });
+
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: {
+                        id: '2c5da65c-b653-4f87-ac8c-6685d6bd6401',
+                        type: 'event-registrations',
+                        attributes: {
+                            constituentId: applicantFixture.constituentID,
+                            constituentName: `${payload.firstName} ${payload.lastName}`,
+                            email: payload.email,
+                            phone: payload.phone,
+                            status: 'registered',
+                            registeredAt: '2026-06-05T12:00:00Z',
+                            matchStatus: payload.matchStatus,
+                            source: payload.source,
+                        },
+                    },
+                }),
+            });
+        }
+    );
+
+    await page.route('**/v1/admissions/inquiries', async (route) => {
+        if (route.request().method() !== 'POST') {
+            await route.fallback();
+            return;
+        }
+
+        requests.submittedInquiries += 1;
+        const payload = route.request().postDataJSON() as {
+            firstName: string;
+            lastName: string;
+            dateOfBirth: string;
+            primaryEmail: string;
+            primaryPhone: string;
+            programOfInterest?: string;
+            termOfInterest?: string;
+            source: string;
+            utmSource?: string;
+            utmMedium?: string;
+            utmCampaign?: string;
+            message?: string;
+        };
+
+        expect(payload).toMatchObject({
+            firstName: 'John',
+            lastName: 'Applicant',
+            primaryEmail: 'applicant@example.com',
+            primaryPhone: '+254712345678',
+            programOfInterest: 'Bachelor of Commerce',
+            termOfInterest: '2026 Main Intake',
+            source: 'PORTAL_INQUIRY_FORM',
+            utmSource: 'google',
+            utmMedium: 'cpc',
+            utmCampaign: '2026-intake',
+            message: 'What are the KCSE requirements for Commerce?',
+        });
+        expect(payload.dateOfBirth).toMatch(/^2005-01-15T/);
+
+        await route.fulfill({
+            contentType: 'application/vnd.api+json',
+            body: JSON.stringify({
+                jsonapi: { version: '1.1' },
+                data: {
+                    id: '4f5da65c-b653-4f87-ac8c-6685d6bd6402',
+                    type: 'inquiries',
+                    attributes: {
+                        constituentID: applicantFixture.constituentID,
+                        firstName: payload.firstName,
+                        lastName: payload.lastName,
+                        dateOfBirth: payload.dateOfBirth,
+                        primaryEmail: payload.primaryEmail,
+                        primaryPhone: payload.primaryPhone,
+                        programOfInterest: payload.programOfInterest,
+                        termOfInterest: payload.termOfInterest,
+                        source: payload.source,
+                        utmSource: payload.utmSource,
+                        utmMedium: payload.utmMedium,
+                        utmCampaign: payload.utmCampaign,
+                        message: payload.message,
+                        status: 'received',
+                        dateCreated: new Date().toISOString(),
+                        dateUpdated: new Date().toISOString(),
+                    },
+                },
+            }),
+        });
+    });
+
     await page.route(
         '**/v1/admissions/applicant/applications',
         async (route) => {
@@ -745,6 +817,39 @@ async function mockApplicantAdmissions(page: Page): Promise<{
     );
 
     return requests;
+}
+
+async function seedApplicantPortalSession(page: Page): Promise<void> {
+    const applicantToken = createJwt({
+        sub: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        roles: ['APPLICANT'],
+        portal: {
+            scope: 'applicant_portal',
+            applicationID: applicantFixture.applicationID,
+            constituentID: applicantFixture.constituentID,
+            email: 'applicant@example.com',
+        },
+    });
+
+    await page.addInitScript(
+        (session) => {
+            localStorage.setItem(
+                'applicantPortalSession',
+                JSON.stringify(session)
+            );
+        },
+        {
+            id: applicantFixture.constituentID,
+            accessToken: applicantToken,
+            tokenType: 'Bearer',
+            expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+            expiresIn: 3600,
+            applicationID: applicantFixture.applicationID,
+            constituentID: applicantFixture.constituentID,
+            applicantName: 'John Applicant',
+            email: 'applicant@example.com',
+        }
+    );
 }
 
 async function mockAuth(page: Page): Promise<void> {
@@ -800,6 +905,120 @@ async function mockAuth(page: Page): Promise<void> {
     });
 }
 
+async function mockAdminEvents(page: Page): Promise<{ checkIns: number }> {
+    const state = {
+        checkIns: 0,
+        registrations: adminEventRegistrationsFixture.map((registration) => ({
+            ...registration,
+        })),
+    };
+
+    await page.route(/\/v1\/admissions\/events(?:\?|\/|$)/, async (route) => {
+        const request = route.request();
+        const url = new URL(request.url());
+        const path = url.pathname;
+
+        if (
+            request.method() === 'GET' &&
+            path.endsWith(`/events/${adminEventFixture.id}`)
+        ) {
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: {
+                        id: adminEventFixture.id,
+                        type: 'events',
+                        attributes: adminEventAttributes(state.registrations),
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (
+            request.method() === 'GET' &&
+            path.endsWith(`/events/${adminEventFixture.id}/registrations`)
+        ) {
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: state.registrations.map((registration) => ({
+                        id: registration.id,
+                        type: 'event-registrations',
+                        attributes: {
+                            ...registration,
+                        },
+                    })),
+                    meta: {
+                        total: state.registrations.length,
+                        page: 1,
+                        rowsPerPage: state.registrations.length,
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (request.method() === 'GET' && path.endsWith('/events')) {
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: [
+                        {
+                            id: adminEventFixture.id,
+                            type: 'events',
+                            attributes: adminEventAttributes(
+                                state.registrations
+                            ),
+                        },
+                    ],
+                    meta: { total: 1, page: 1, rowsPerPage: 50 },
+                }),
+            });
+            return;
+        }
+
+        await route.fallback();
+    });
+
+    await page.route(
+        '**/v1/admissions/event-registrations/*/check-in',
+        async (route) => {
+            state.checkIns += 1;
+            const registrationID =
+                route.request().url().split('/').at(-2) ?? '';
+            const registration = state.registrations.find(
+                (item) => item.id === registrationID
+            );
+
+            if (registration) {
+                registration.status = 'checked-in';
+                registration.checkedInAt = '2026-06-10T09:15:00Z';
+                registration.checkedInById = staffUser.id;
+            }
+
+            await route.fulfill({
+                contentType: 'application/vnd.api+json',
+                body: JSON.stringify({
+                    jsonapi: { version: '1.1' },
+                    data: {
+                        id: registrationID,
+                        type: 'event-registrations',
+                        attributes: {
+                            ...registration,
+                        },
+                    },
+                }),
+            });
+        }
+    );
+
+    return state;
+}
+
 async function signIn(page: Page): Promise<void> {
     await page.goto('/sign-in');
     await page.getByLabel('Email address').fill(staffUser.email);
@@ -808,9 +1027,7 @@ async function signIn(page: Page): Promise<void> {
     await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-function applicantApplicationBody(
-    status: 'DRAFT' | 'SUBMITTED' | 'IN_REVIEW'
-): string {
+function applicantApplicationBody(status: 'DRAFT' | 'SUBMITTED'): string {
     return JSON.stringify({
         jsonapi: { version: '1.1' },
         data: {
@@ -840,12 +1057,43 @@ function applicantApplicationBody(
                     meanPoints: 10,
                 },
                 submittedAt:
-                    status === 'DRAFT' ? undefined : new Date().toISOString(),
+                    status === 'SUBMITTED'
+                        ? new Date().toISOString()
+                        : undefined,
                 dateCreated: new Date().toISOString(),
                 dateUpdated: new Date().toISOString(),
             },
         },
     });
+}
+
+function adminEventAttributes(
+    registrations: Array<{
+        id: string;
+        constituentId?: string;
+        constituentName: string;
+        email: string;
+        phone?: string;
+        status: string;
+        registeredAt: string;
+        matchStatus: string;
+        source: string;
+        checkedInAt?: string;
+        checkedInById?: string;
+    }>
+): Record<string, unknown> {
+    return {
+        ...adminEventFixture,
+        registeredCount: registrations.filter(
+            (registration) => registration.status !== 'cancelled'
+        ).length,
+        checkedInCount: registrations.filter(
+            (registration) => registration.status === 'checked-in'
+        ).length,
+        registrations,
+        dateCreated: '2026-05-20T10:00:00Z',
+        dateUpdated: '2026-06-05T10:00:00Z',
+    };
 }
 
 function createJwt(payload: Record<string, unknown>): string {

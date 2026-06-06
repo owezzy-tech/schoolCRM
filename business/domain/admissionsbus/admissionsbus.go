@@ -50,8 +50,24 @@ var (
 	ErrDuplicateReviewResolved        = errors.New("duplicate review already resolved")
 	ErrResolutionActorRequired        = errors.New("resolution actor required")
 	ErrApplicationNotFound            = errors.New("application not found")
+	ErrEventNotFound                  = errors.New("event not found")
+	ErrEventRegistrationNotFound      = errors.New("event registration not found")
 	ErrInvalidApplicationType         = errors.New("invalid application type")
 	ErrInvalidApplicationStatus       = errors.New("invalid application status")
+	ErrInvalidEventType               = errors.New("invalid event type")
+	ErrInvalidEventStatus             = errors.New("invalid event status")
+	ErrEventTitleRequired             = errors.New("event title required")
+	ErrEventDescriptionRequired       = errors.New("event description required")
+	ErrEventLocationRequired          = errors.New("event location required")
+	ErrEventCapacityInvalid           = errors.New("event capacity must be greater than or equal to zero")
+	ErrEventDateRangeInvalid          = errors.New("event start time must be before end time")
+	ErrInvalidEventRegistrationStatus = errors.New("invalid event registration status")
+	ErrInvalidEventMatchStatus        = errors.New("invalid event registration match status")
+	ErrInvalidEventRegistrationSource = errors.New("invalid event registration source")
+	ErrEventRegistrationNameRequired  = errors.New("event registration name required")
+	ErrEventRegistrationEmailRequired = errors.New("event registration email required")
+	ErrEventCheckInActorRequired      = errors.New("event check-in actor required")
+	ErrEventAlreadyCheckedIn          = errors.New("event registration already checked in")
 	ErrDuplicateApplication           = errors.New("active application already exists for constituent term and program")
 	ErrApplicationNotDraft            = errors.New("application must be in draft status")
 	ErrConstituentIDRequired          = errors.New("constituent id required")
@@ -121,6 +137,9 @@ var (
 	ErrSyncEventNotFound              = errors.New("sync event not found")
 	ErrSyncEventResourceRequired      = errors.New("sync event resource required")
 	ErrSyncEventPayloadHashRequired   = errors.New("sync event payload hash required")
+	ErrCampaignNotFound               = errors.New("campaign not found")
+	ErrCampaignAuditEventNotFound     = errors.New("campaign audit event not found")
+	ErrCommunicationNotFound          = errors.New("communication not found")
 	ErrCustomFieldDefinitionNotFound  = errors.New("custom field definition not found")
 	ErrCustomFieldValueNotFound       = errors.New("custom field value not found")
 	ErrCustomFieldOwnerInvalid        = errors.New("custom field owner must be constituent or application")
@@ -194,6 +213,16 @@ type Storer interface {
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	CreateEvent(ctx context.Context, event Event) error
+	UpdateEvent(ctx context.Context, event Event) error
+	QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error)
+	CountEvents(ctx context.Context, filter EventQueryFilter) (int, error)
+	QueryEventByID(ctx context.Context, eventID uuid.UUID) (Event, error)
+	QueryEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]EventRegistration, error)
+	CountEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter) (int, error)
+	QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (EventRegistration, error)
+	CreateEventRegistration(ctx context.Context, registration EventRegistration) error
+	UpdateEventRegistration(ctx context.Context, registration EventRegistration) error
 	QueryActiveApplicationByTuple(ctx context.Context, constituentID uuid.UUID, academicTermID uuid.UUID, programID uuid.UUID) (Application, error)
 	UpdateApplication(ctx context.Context, app Application) error
 	CreateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate) error
@@ -242,6 +271,15 @@ type Storer interface {
 	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
 	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
 	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
+	QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error)
+	CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error)
+	QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error)
+	QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error)
+	CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error)
+	QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error)
+	QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error)
+	CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error)
+	QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -306,6 +344,16 @@ type ExtBusiness interface {
 	QueryApplications(ctx context.Context, filter ApplicationQueryFilter, orderBy order.By, page page.Page) ([]Application, error)
 	CountApplications(ctx context.Context, filter ApplicationQueryFilter) (int, error)
 	QueryApplicationByID(ctx context.Context, applicationID uuid.UUID) (Application, error)
+	CreateEvent(ctx context.Context, ne NewEvent) (Event, error)
+	UpdateEvent(ctx context.Context, event Event, ne NewEvent) (Event, error)
+	QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error)
+	CountEvents(ctx context.Context, filter EventQueryFilter) (int, error)
+	QueryEventByID(ctx context.Context, eventID uuid.UUID) (Event, error)
+	QueryEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]EventRegistration, error)
+	CountEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter) (int, error)
+	QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (EventRegistration, error)
+	RegisterForEvent(ctx context.Context, nr NewEventRegistration) (EventRegistration, error)
+	CheckInEventRegistration(ctx context.Context, registration EventRegistration, nc NewEventCheckIn) (EventRegistration, error)
 	TransitionApplicationStatus(ctx context.Context, app Application, nt NewApplicationTransition) (Application, ApplicationTransition, error)
 	CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
 	UpdateApplicationFormTemplate(ctx context.Context, template ApplicationFormTemplate, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error)
@@ -352,6 +400,15 @@ type ExtBusiness interface {
 	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
 	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
 	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
+	QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error)
+	CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error)
+	QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error)
+	QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error)
+	CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error)
+	QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error)
+	QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error)
+	CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error)
+	QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error)
 }
 
 // CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
@@ -1510,6 +1567,185 @@ func (b *Business) QueryApplicationByID(ctx context.Context, applicationID uuid.
 	return app, nil
 }
 
+// CreateEvent adds a new admissions event.
+func (b *Business) CreateEvent(ctx context.Context, ne NewEvent) (Event, error) {
+	if err := validateNewEvent(ne); err != nil {
+		return Event{}, err
+	}
+
+	now := time.Now()
+	event := Event{
+		ID:                      uuid.New(),
+		Title:                   strings.TrimSpace(ne.Title),
+		Type:                    ne.Type,
+		Status:                  ne.Status,
+		Description:             strings.TrimSpace(ne.Description),
+		StartTime:               ne.StartTime,
+		EndTime:                 ne.EndTime,
+		Location:                strings.TrimSpace(ne.Location),
+		IsVirtual:               ne.IsVirtual,
+		Capacity:                ne.Capacity,
+		RegistrationDeadline:    ne.RegistrationDeadline,
+		AutoConfirmationEnabled: ne.AutoConfirmationEnabled,
+		AutoReminderEnabled:     ne.AutoReminderEnabled,
+		DateCreated:             now,
+		DateUpdated:             now,
+	}
+
+	if err := b.storer.CreateEvent(ctx, event); err != nil {
+		return Event{}, fmt.Errorf("create event: %w", err)
+	}
+
+	return event, nil
+}
+
+// UpdateEvent replaces mutable admissions event data.
+func (b *Business) UpdateEvent(ctx context.Context, event Event, ne NewEvent) (Event, error) {
+	if err := validateNewEvent(ne); err != nil {
+		return Event{}, err
+	}
+
+	event.Title = strings.TrimSpace(ne.Title)
+	event.Type = ne.Type
+	event.Status = ne.Status
+	event.Description = strings.TrimSpace(ne.Description)
+	event.StartTime = ne.StartTime
+	event.EndTime = ne.EndTime
+	event.Location = strings.TrimSpace(ne.Location)
+	event.IsVirtual = ne.IsVirtual
+	event.Capacity = ne.Capacity
+	event.RegistrationDeadline = ne.RegistrationDeadline
+	event.AutoConfirmationEnabled = ne.AutoConfirmationEnabled
+	event.AutoReminderEnabled = ne.AutoReminderEnabled
+	event.DateUpdated = time.Now()
+
+	if err := b.storer.UpdateEvent(ctx, event); err != nil {
+		return Event{}, fmt.Errorf("update event: %w", err)
+	}
+
+	return event, nil
+}
+
+// QueryEvents retrieves a list of existing admissions events.
+func (b *Business) QueryEvents(ctx context.Context, filter EventQueryFilter, orderBy order.By, page page.Page) ([]Event, error) {
+	events, err := b.storer.QueryEvents(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query events: %w", err)
+	}
+
+	return events, nil
+}
+
+// CountEvents returns the total number of admissions events.
+func (b *Business) CountEvents(ctx context.Context, filter EventQueryFilter) (int, error) {
+	return b.storer.CountEvents(ctx, filter)
+}
+
+// QueryEventByID finds an admissions event by ID.
+func (b *Business) QueryEventByID(ctx context.Context, eventID uuid.UUID) (Event, error) {
+	event, err := b.storer.QueryEventByID(ctx, eventID)
+	if err != nil {
+		return Event{}, fmt.Errorf("query event: eventID[%s]: %w", eventID, err)
+	}
+
+	return event, nil
+}
+
+// QueryEventRegistrations retrieves a list of event registrations.
+func (b *Business) QueryEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]EventRegistration, error) {
+	registrations, err := b.storer.QueryEventRegistrations(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query event registrations: %w", err)
+	}
+
+	return registrations, nil
+}
+
+// CountEventRegistrations returns the total number of event registrations.
+func (b *Business) CountEventRegistrations(ctx context.Context, filter EventRegistrationQueryFilter) (int, error) {
+	return b.storer.CountEventRegistrations(ctx, filter)
+}
+
+// QueryEventRegistrationByID finds an event registration by ID.
+func (b *Business) QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (EventRegistration, error) {
+	registration, err := b.storer.QueryEventRegistrationByID(ctx, registrationID)
+	if err != nil {
+		return EventRegistration{}, fmt.Errorf("query event registration: registrationID[%s]: %w", registrationID, err)
+	}
+
+	return registration, nil
+}
+
+// RegisterForEvent records a new admissions event registration.
+func (b *Business) RegisterForEvent(ctx context.Context, nr NewEventRegistration) (EventRegistration, error) {
+	if err := validateNewEventRegistration(nr); err != nil {
+		return EventRegistration{}, err
+	}
+
+	event, err := b.storer.QueryEventByID(ctx, nr.EventID)
+	if err != nil {
+		return EventRegistration{}, fmt.Errorf("query event: %w", err)
+	}
+
+	_ = event
+
+	if nr.ConstituentID != nil {
+		if _, err := b.storer.QueryConstituentByID(ctx, *nr.ConstituentID); err != nil {
+			return EventRegistration{}, fmt.Errorf("query constituent: %w", err)
+		}
+	}
+
+	now := time.Now()
+	registration := EventRegistration{
+		ID:            uuid.New(),
+		EventID:       nr.EventID,
+		ConstituentID: nr.ConstituentID,
+		FirstName:     strings.TrimSpace(nr.FirstName),
+		LastName:      strings.TrimSpace(nr.LastName),
+		Email:         strings.TrimSpace(nr.Email),
+		Phone:         trimStringPtr(nr.Phone),
+		Status:        EventRegistrationStatusRegistered,
+		MatchStatus:   nr.MatchStatus,
+		Source:        nr.Source,
+		RegisteredAt:  now,
+		DateCreated:   now,
+		DateUpdated:   now,
+	}
+
+	if err := b.storer.CreateEventRegistration(ctx, registration); err != nil {
+		return EventRegistration{}, fmt.Errorf("create event registration: %w", err)
+	}
+
+	return registration, nil
+}
+
+// CheckInEventRegistration records attendance for an event registration.
+func (b *Business) CheckInEventRegistration(ctx context.Context, registration EventRegistration, nc NewEventCheckIn) (EventRegistration, error) {
+	if err := validateNewEventCheckIn(nc); err != nil {
+		return EventRegistration{}, err
+	}
+
+	if registration.ID != nc.RegistrationID {
+		return EventRegistration{}, ErrEventRegistrationNotFound
+	}
+
+	if registration.Status == EventRegistrationStatusCheckedIn {
+		return EventRegistration{}, ErrEventAlreadyCheckedIn
+	}
+
+	now := time.Now()
+	registration.Status = EventRegistrationStatusCheckedIn
+	registration.CheckedInAt = &now
+	registration.CheckedInByID = &nc.CheckedInByID
+	registration.DateUpdated = now
+
+	if err := b.storer.UpdateEventRegistration(ctx, registration); err != nil {
+		return EventRegistration{}, fmt.Errorf("update event registration: %w", err)
+	}
+
+	return registration, nil
+}
+
 // CreateApplicationFormTemplate adds a configurable application form template.
 func (b *Business) CreateApplicationFormTemplate(ctx context.Context, nt NewApplicationFormTemplate) (ApplicationFormTemplate, error) {
 	if err := validateNewApplicationFormTemplate(nt); err != nil {
@@ -2337,6 +2573,81 @@ func (b *Business) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (S
 	return event, nil
 }
 
+// QueryCampaigns retrieves admissions campaigns.
+func (b *Business) QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error) {
+	campaigns, err := b.storer.QueryCampaigns(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query campaigns: %w", err)
+	}
+
+	return campaigns, nil
+}
+
+// CountCampaigns returns the total number of admissions campaigns.
+func (b *Business) CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error) {
+	return b.storer.CountCampaigns(ctx, filter)
+}
+
+// QueryCampaignByID finds an admissions campaign by ID.
+func (b *Business) QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error) {
+	campaign, err := b.storer.QueryCampaignByID(ctx, campaignID)
+	if err != nil {
+		return Campaign{}, fmt.Errorf("query campaign: campaignID[%s]: %w", campaignID, err)
+	}
+
+	return campaign, nil
+}
+
+// QueryCampaignAuditEvents retrieves lifecycle audit entries for admissions campaigns.
+func (b *Business) QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error) {
+	events, err := b.storer.QueryCampaignAuditEvents(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query campaign audit events: %w", err)
+	}
+
+	return events, nil
+}
+
+// CountCampaignAuditEvents returns the total number of lifecycle audit entries.
+func (b *Business) CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error) {
+	return b.storer.CountCampaignAuditEvents(ctx, filter)
+}
+
+// QueryCampaignAuditEventByID finds a lifecycle audit entry by ID.
+func (b *Business) QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error) {
+	event, err := b.storer.QueryCampaignAuditEventByID(ctx, eventID)
+	if err != nil {
+		return CampaignAuditEvent{}, fmt.Errorf("query campaign audit event: eventID[%s]: %w", eventID, err)
+	}
+
+	return event, nil
+}
+
+// QueryCommunications retrieves admissions communication history.
+func (b *Business) QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error) {
+	communications, err := b.storer.QueryCommunications(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query communications: %w", err)
+	}
+
+	return communications, nil
+}
+
+// CountCommunications returns the total number of admissions communications.
+func (b *Business) CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error) {
+	return b.storer.CountCommunications(ctx, filter)
+}
+
+// QueryCommunicationByID finds an admissions communication by ID.
+func (b *Business) QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error) {
+	communication, err := b.storer.QueryCommunicationByID(ctx, communicationID)
+	if err != nil {
+		return Communication{}, fmt.Errorf("query communication: communicationID[%s]: %w", communicationID, err)
+	}
+
+	return communication, nil
+}
+
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {
 	if strings.TrimSpace(firstName) == "" {
 		return ErrFirstNameRequired
@@ -2398,6 +2709,137 @@ func validateNewInquiry(ni NewInquiry) error {
 
 	if strings.TrimSpace(ni.Source) == "" {
 		return ErrInquirySourceRequired
+	}
+
+	return nil
+}
+
+func validateEventType(eventType EventType) error {
+	switch eventType {
+	case EventTypeOpenDay,
+		EventTypeWebinar,
+		EventTypeInfoSession,
+		EventTypeCampusTour,
+		EventTypeFair:
+		return nil
+	default:
+		return ErrInvalidEventType
+	}
+}
+
+func validateEventStatus(status EventStatus) error {
+	switch status {
+	case EventStatusDraft,
+		EventStatusUpcoming,
+		EventStatusLive,
+		EventStatusCompleted,
+		EventStatusCancelled:
+		return nil
+	default:
+		return ErrInvalidEventStatus
+	}
+}
+
+func validateEventRegistrationStatus(status EventRegistrationStatus) error {
+	switch status {
+	case EventRegistrationStatusRegistered,
+		EventRegistrationStatusCheckedIn,
+		EventRegistrationStatusCancelled:
+		return nil
+	default:
+		return ErrInvalidEventRegistrationStatus
+	}
+}
+
+func validateEventRegistrationMatchStatus(status EventRegistrationMatchStatus) error {
+	switch status {
+	case EventRegistrationMatchStatusMatched,
+		EventRegistrationMatchStatusNewProspect,
+		EventRegistrationMatchStatusNeedsReview:
+		return nil
+	default:
+		return ErrInvalidEventMatchStatus
+	}
+}
+
+func validateEventRegistrationSource(source EventRegistrationSource) error {
+	switch source {
+	case EventRegistrationSourcePortal,
+		EventRegistrationSourceStaff,
+		EventRegistrationSourceCampaign:
+		return nil
+	default:
+		return ErrInvalidEventRegistrationSource
+	}
+}
+
+func validateNewEventRegistration(nr NewEventRegistration) error {
+	if nr.EventID == uuid.Nil {
+		return ErrEventNotFound
+	}
+
+	if strings.TrimSpace(nr.FirstName) == "" || strings.TrimSpace(nr.LastName) == "" {
+		return ErrEventRegistrationNameRequired
+	}
+
+	if strings.TrimSpace(nr.Email) == "" {
+		return ErrEventRegistrationEmailRequired
+	}
+
+	if err := validateEventRegistrationSource(nr.Source); err != nil {
+		return err
+	}
+
+	if err := validateEventRegistrationMatchStatus(nr.MatchStatus); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateNewEvent(ne NewEvent) error {
+	if strings.TrimSpace(ne.Title) == "" {
+		return ErrEventTitleRequired
+	}
+
+	if err := validateEventType(ne.Type); err != nil {
+		return err
+	}
+
+	if err := validateEventStatus(ne.Status); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(ne.Description) == "" {
+		return ErrEventDescriptionRequired
+	}
+
+	if !ne.StartTime.Before(ne.EndTime) {
+		return ErrEventDateRangeInvalid
+	}
+
+	if strings.TrimSpace(ne.Location) == "" {
+		return ErrEventLocationRequired
+	}
+
+	if ne.Capacity < 0 {
+		return ErrEventCapacityInvalid
+	}
+
+	if ne.RegistrationDeadline != nil && ne.RegistrationDeadline.After(ne.StartTime) {
+		return ErrEventDateRangeInvalid
+	}
+
+	return nil
+}
+
+func validateNewEventCheckIn(nc NewEventCheckIn) error {
+	if nc.RegistrationID == uuid.Nil {
+		return ErrEventRegistrationNotFound
+	}
+
+	if nc.CheckedInByID == uuid.Nil {
+		return ErrEventCheckInActorRequired
 	}
 
 	return nil
@@ -2869,6 +3311,7 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionRead,
 			AdmissionsPermissionManageConstituents,
 			AdmissionsPermissionManageApplications,
+			AdmissionsPermissionManageEvents,
 			AdmissionsPermissionReviewApplications,
 			AdmissionsPermissionResolveDuplicates,
 			AdmissionsPermissionManageReferences,
@@ -2880,6 +3323,7 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 			AdmissionsPermissionRead,
 			AdmissionsPermissionManageConstituents,
 			AdmissionsPermissionManageApplications,
+			AdmissionsPermissionManageEvents,
 		}
 	case AdmissionsRoleApplicationReviewer:
 		return []AdmissionsPermission{
@@ -2891,6 +3335,7 @@ func admissionsPermissionsForRole(role AdmissionsRole) []AdmissionsPermission {
 		AdmissionsRoleEventManager:
 		return []AdmissionsPermission{
 			AdmissionsPermissionRead,
+			AdmissionsPermissionManageEvents,
 			AdmissionsPermissionManageLeadScoring,
 		}
 	case AdmissionsRoleReportViewer,

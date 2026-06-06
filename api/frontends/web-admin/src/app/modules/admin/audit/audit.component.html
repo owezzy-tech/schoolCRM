@@ -17,6 +17,11 @@
             </div>
 
             <div class="bg-card border rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
+                @if (loading()) {
+                    <div class="px-6 py-6 text-sm text-secondary">Loading audit log…</div>
+                } @else if (errorMessage()) {
+                    <div class="px-6 py-6 text-sm text-warn">{{ errorMessage() }}</div>
+                } @else {
                 <table class="w-full text-sm">
                     <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
                         <tr>
@@ -29,7 +34,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (event of events; track event.id) {
+                        @for (event of events(); track event.id) {
                             <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                                 <td class="px-6 py-4 text-secondary whitespace-nowrap">{{ event.timestamp }}</td>
                                 <td class="px-6 py-4 font-medium">{{ event.actor }}</td>
@@ -60,9 +65,14 @@
                                     <a class="text-primary hover:underline cursor-pointer">View</a>
                                 </td>
                             </tr>
+                        } @empty {
+                            <tr>
+                                <td class="px-6 py-6 text-secondary" colspan="6">No audit events found.</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
     </div>

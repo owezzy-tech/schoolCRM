@@ -1841,6 +1841,237 @@ func TestCreateApplicationAllowsClosedPriorApplication(t *testing.T) {
 	}
 }
 
+func TestCreateEventStoresNormalizedData(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+	registrationDeadline := time.Date(2026, time.June, 5, 9, 0, 0, 0, time.UTC)
+
+	event, err := bus.CreateEvent(context.Background(), NewEvent{
+		Title:                   "  Spring Open Day  ",
+		Type:                    EventTypeOpenDay,
+		Status:                  EventStatusUpcoming,
+		Description:             "  Campus-wide visit day  ",
+		StartTime:               time.Date(2026, time.June, 10, 9, 0, 0, 0, time.UTC),
+		EndTime:                 time.Date(2026, time.June, 10, 15, 0, 0, 0, time.UTC),
+		Location:                "  Main Campus  ",
+		Capacity:                250,
+		RegistrationDeadline:    &registrationDeadline,
+		AutoConfirmationEnabled: true,
+		AutoReminderEnabled:     true,
+	})
+	if err != nil {
+		t.Fatalf("CreateEvent returned error: %v", err)
+	}
+
+	if event.Title != "Spring Open Day" {
+		t.Fatalf("Title = %q, want trimmed title", event.Title)
+	}
+
+	if event.Description != "Campus-wide visit day" {
+		t.Fatalf("Description = %q, want trimmed description", event.Description)
+	}
+
+	if event.Location != "Main Campus" {
+		t.Fatalf("Location = %q, want trimmed location", event.Location)
+	}
+
+	if len(store.events) != 1 {
+		t.Fatalf("event count = %d, want 1", len(store.events))
+	}
+}
+
+func TestCreateEventValidatesRequiredFields(t *testing.T) {
+	t.Parallel()
+
+	bus := newTestBusiness()
+	start := time.Date(2026, time.June, 10, 9, 0, 0, 0, time.UTC)
+	end := start.Add(2 * time.Hour)
+
+	tests := []struct {
+		name string
+		ne   NewEvent
+		want error
+	}{
+		{
+			name: "title",
+			ne: NewEvent{
+				Type:        EventTypeOpenDay,
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Location:    "Main Campus",
+				Capacity:    10,
+			},
+			want: ErrEventTitleRequired,
+		},
+		{
+			name: "type",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventType("unknown"),
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Location:    "Main Campus",
+				Capacity:    10,
+			},
+			want: ErrInvalidEventType,
+		},
+		{
+			name: "status",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventTypeOpenDay,
+				Status:      EventStatus("unknown"),
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Location:    "Main Campus",
+				Capacity:    10,
+			},
+			want: ErrInvalidEventStatus,
+		},
+		{
+			name: "description",
+			ne: NewEvent{
+				Title:     "Open Day",
+				Type:      EventTypeOpenDay,
+				Status:    EventStatusUpcoming,
+				StartTime: start,
+				EndTime:   end,
+				Location:  "Main Campus",
+				Capacity:  10,
+			},
+			want: ErrEventDescriptionRequired,
+		},
+		{
+			name: "date range",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventTypeOpenDay,
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   end,
+				EndTime:     start,
+				Location:    "Main Campus",
+				Capacity:    10,
+			},
+			want: ErrEventDateRangeInvalid,
+		},
+		{
+			name: "location",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventTypeOpenDay,
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Capacity:    10,
+			},
+			want: ErrEventLocationRequired,
+		},
+		{
+			name: "capacity",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventTypeOpenDay,
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Location:    "Main Campus",
+				Capacity:    -1,
+			},
+			want: ErrEventCapacityInvalid,
+		},
+		{
+			name: "registration deadline after start",
+			ne: NewEvent{
+				Title:       "Open Day",
+				Type:        EventTypeOpenDay,
+				Status:      EventStatusUpcoming,
+				Description: "Description",
+				StartTime:   start,
+				EndTime:     end,
+				Location:    "Main Campus",
+				Capacity:    10,
+				RegistrationDeadline: func() *time.Time {
+					deadline := start.Add(time.Hour)
+					return &deadline
+				}(),
+			},
+			want: ErrEventDateRangeInvalid,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := bus.CreateEvent(context.Background(), tt.ne)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpdateEventReplacesMutableFields(t *testing.T) {
+	t.Parallel()
+
+	store := &stubStore{}
+	start := time.Date(2026, time.June, 10, 9, 0, 0, 0, time.UTC)
+	end := start.Add(2 * time.Hour)
+	event := Event{
+		ID:          uuid.New(),
+		Title:       "Open Day",
+		Type:        EventTypeOpenDay,
+		Status:      EventStatusDraft,
+		Description: "Description",
+		StartTime:   start,
+		EndTime:     end,
+		Location:    "Main Campus",
+		Capacity:    100,
+		DateCreated: start,
+		DateUpdated: start,
+	}
+	store.events = append(store.events, event)
+	bus := NewBusiness(logger.New(ioDiscard{}, logger.LevelInfo, "TEST", func(context.Context) string { return "" }), nil, store)
+
+	updated, err := bus.UpdateEvent(context.Background(), event, NewEvent{
+		Title:                   " Updated Webinar ",
+		Type:                    EventTypeWebinar,
+		Status:                  EventStatusUpcoming,
+		Description:             " Updated description ",
+		StartTime:               start.Add(24 * time.Hour),
+		EndTime:                 end.Add(24 * time.Hour),
+		Location:                " Zoom ",
+		IsVirtual:               true,
+		Capacity:                250,
+		AutoConfirmationEnabled: true,
+	})
+	if err != nil {
+		t.Fatalf("UpdateEvent returned error: %v", err)
+	}
+
+	if updated.ID != event.ID {
+		t.Fatalf("ID changed from %s to %s", event.ID, updated.ID)
+	}
+
+	if updated.Title != "Updated Webinar" || updated.Location != "Zoom" {
+		t.Fatalf("updated event = %+v, want trimmed mutable fields", updated)
+	}
+
+	if updated.Type != EventTypeWebinar || updated.Status != EventStatusUpcoming {
+		t.Fatalf("type/status = %s/%s, want %s/%s", updated.Type, updated.Status, EventTypeWebinar, EventStatusUpcoming)
+	}
+}
+
 func TestCreateApplicationValidatesApplicationType(t *testing.T) {
 	t.Parallel()
 
@@ -2266,6 +2497,8 @@ type stubStore struct {
 	staffProfiles          []StaffProfile
 	applicantProfiles      []ApplicantProfile
 	inquiries              []Inquiry
+	events                 []Event
+	eventRegistrations     []EventRegistration
 	leadScoreRules         []LeadScoreRule
 	leadScores             []LeadScore
 	applicationTemplates   []ApplicationFormTemplate
@@ -2418,6 +2651,128 @@ func (s *stubStore) QueryInquiryByID(_ context.Context, inquiryID uuid.UUID) (In
 		}
 	}
 	return Inquiry{}, ErrInquiryNotFound
+}
+
+func (s *stubStore) QueryEvents(_ context.Context, filter EventQueryFilter, _ order.By, _ page.Page) ([]Event, error) {
+	events := make([]Event, 0, len(s.events))
+	for _, event := range s.events {
+		if filter.ID != nil && event.ID != *filter.ID {
+			continue
+		}
+		if filter.Type != nil && event.Type != *filter.Type {
+			continue
+		}
+		if filter.Status != nil && event.Status != *filter.Status {
+			continue
+		}
+		if filter.Virtual != nil && event.IsVirtual != *filter.Virtual {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func (s *stubStore) CountEvents(_ context.Context, filter EventQueryFilter) (int, error) {
+	events, err := s.QueryEvents(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(events), nil
+}
+
+func (s *stubStore) QueryEventByID(_ context.Context, eventID uuid.UUID) (Event, error) {
+	for _, event := range s.events {
+		if event.ID == eventID {
+			return event, nil
+		}
+	}
+
+	return Event{}, ErrEventNotFound
+}
+
+func (s *stubStore) CreateEvent(_ context.Context, event Event) error {
+	s.events = append(s.events, event)
+	return nil
+}
+
+func (s *stubStore) UpdateEvent(_ context.Context, event Event) error {
+	for i, existing := range s.events {
+		if existing.ID == event.ID {
+			s.events[i] = event
+			return nil
+		}
+	}
+
+	s.events = append(s.events, event)
+	return nil
+}
+
+func (s *stubStore) QueryEventRegistrations(_ context.Context, filter EventRegistrationQueryFilter, _ order.By, _ page.Page) ([]EventRegistration, error) {
+	registrations := make([]EventRegistration, 0, len(s.eventRegistrations))
+	for _, registration := range s.eventRegistrations {
+		if filter.ID != nil && registration.ID != *filter.ID {
+			continue
+		}
+		if filter.EventID != nil && registration.EventID != *filter.EventID {
+			continue
+		}
+		if filter.ConstituentID != nil {
+			if registration.ConstituentID == nil || *registration.ConstituentID != *filter.ConstituentID {
+				continue
+			}
+		}
+		if filter.Status != nil && registration.Status != *filter.Status {
+			continue
+		}
+		if filter.MatchStatus != nil && registration.MatchStatus != *filter.MatchStatus {
+			continue
+		}
+		if filter.Source != nil && registration.Source != *filter.Source {
+			continue
+		}
+		registrations = append(registrations, registration)
+	}
+
+	return registrations, nil
+}
+
+func (s *stubStore) CountEventRegistrations(_ context.Context, filter EventRegistrationQueryFilter) (int, error) {
+	registrations, err := s.QueryEventRegistrations(context.Background(), filter, order.By{}, page.Page{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(registrations), nil
+}
+
+func (s *stubStore) QueryEventRegistrationByID(_ context.Context, registrationID uuid.UUID) (EventRegistration, error) {
+	for _, registration := range s.eventRegistrations {
+		if registration.ID == registrationID {
+			return registration, nil
+		}
+	}
+
+	return EventRegistration{}, ErrEventRegistrationNotFound
+}
+
+func (s *stubStore) CreateEventRegistration(_ context.Context, registration EventRegistration) error {
+	s.eventRegistrations = append(s.eventRegistrations, registration)
+	return nil
+}
+
+func (s *stubStore) UpdateEventRegistration(_ context.Context, registration EventRegistration) error {
+	for i, existing := range s.eventRegistrations {
+		if existing.ID == registration.ID {
+			s.eventRegistrations[i] = registration
+			return nil
+		}
+	}
+
+	s.eventRegistrations = append(s.eventRegistrations, registration)
+	return nil
 }
 
 func (s *stubStore) CreateLeadScoreRule(_ context.Context, rule LeadScoreRule) error {
@@ -3037,4 +3392,40 @@ func (s *stubStore) QuerySyncEventByID(_ context.Context, eventID uuid.UUID) (Sy
 		}
 	}
 	return SyncEvent{}, ErrSyncEventNotFound
+}
+
+func (s *stubStore) QueryCampaigns(context.Context, CampaignQueryFilter, order.By, page.Page) ([]Campaign, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCampaigns(context.Context, CampaignQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCampaignByID(context.Context, uuid.UUID) (Campaign, error) {
+	return Campaign{}, ErrCampaignNotFound
+}
+
+func (s *stubStore) QueryCampaignAuditEvents(context.Context, CampaignAuditEventQueryFilter, order.By, page.Page) ([]CampaignAuditEvent, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCampaignAuditEvents(context.Context, CampaignAuditEventQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCampaignAuditEventByID(context.Context, uuid.UUID) (CampaignAuditEvent, error) {
+	return CampaignAuditEvent{}, ErrCampaignAuditEventNotFound
+}
+
+func (s *stubStore) QueryCommunications(context.Context, CommunicationQueryFilter, order.By, page.Page) ([]Communication, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCommunications(context.Context, CommunicationQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCommunicationByID(context.Context, uuid.UUID) (Communication, error) {
+	return Communication{}, ErrCommunicationNotFound
 }

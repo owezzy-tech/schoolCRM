@@ -34,6 +34,8 @@
                         type="text"
                         class="w-full rounded-full border bg-transparent py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="Search applications..."
+                        [ngModel]="searchTerm()"
+                        (ngModelChange)="updateSearchTerm($event)"
                     />
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -47,6 +49,26 @@
                                 svgIcon="heroicons_outline:chevron-down"
                             ></mat-icon>
                         </button>
+                    }
+                </div>
+            </div>
+
+            @if (errorMessage()) {
+                <div
+                    class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200"
+                    role="alert"
+                >
+                    {{ errorMessage() }}
+                </div>
+            }
+
+            <div class="mb-4 flex items-center justify-between text-sm">
+                <div class="text-secondary">
+                    @if (isLoading()) {
+                        Loading applications from admissions…
+                    } @else {
+                        Showing {{ rows().length }} of
+                        {{ totalApplications() }} applications
                     }
                 </div>
             </div>
@@ -76,7 +98,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (app of applications; track app.id) {
+                        @for (app of rows(); track app.id) {
                             <tr
                                 class="border-b transition-colors last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900"
                             >
@@ -131,7 +153,9 @@
                                     <span
                                         class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium dark:bg-gray-800"
                                     >
-                                        {{ app.status }}
+                                        {{
+                                            formatApplicationStatus(app.status)
+                                        }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -178,6 +202,22 @@
                                         {{ app.score }}
                                     } @else {
                                         <span class="text-secondary">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        } @empty {
+                            <tr>
+                                <td
+                                    class="text-secondary px-6 py-10 text-center"
+                                    colspan="11"
+                                >
+                                    @if (isLoading()) {
+                                        Loading applications…
+                                    } @else if (searchTerm()) {
+                                        No applications match your search.
+                                    } @else {
+                                        No applications have been returned by
+                                        the admissions API yet.
                                     }
                                 </td>
                             </tr>

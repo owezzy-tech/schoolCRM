@@ -1,6 +1,7 @@
 package admissionsbus
 
 import (
+	"encoding/json"
 	"net/mail"
 	"time"
 
@@ -34,6 +35,7 @@ const (
 	AdmissionsPermissionRead               AdmissionsPermission = "admissions:read"
 	AdmissionsPermissionManageConstituents AdmissionsPermission = "admissions:manage_constituents"
 	AdmissionsPermissionManageApplications AdmissionsPermission = "admissions:manage_applications"
+	AdmissionsPermissionManageEvents       AdmissionsPermission = "admissions:manage_events"
 	AdmissionsPermissionReviewApplications AdmissionsPermission = "admissions:review_applications"
 	AdmissionsPermissionResolveDuplicates  AdmissionsPermission = "admissions:resolve_duplicates"
 	AdmissionsPermissionManageReferences   AdmissionsPermission = "admissions:manage_references"
@@ -331,6 +333,151 @@ const (
 // String returns the application status as a string.
 func (status ApplicationStatus) String() string {
 	return string(status)
+}
+
+// EventType represents the kind of admissions engagement event.
+type EventType string
+
+// Set of valid admissions event types.
+const (
+	EventTypeOpenDay     EventType = "open-day"
+	EventTypeWebinar     EventType = "webinar"
+	EventTypeInfoSession EventType = "info-session"
+	EventTypeCampusTour  EventType = "campus-tour"
+	EventTypeFair        EventType = "fair"
+)
+
+// String returns the event type as a string.
+func (eventType EventType) String() string {
+	return string(eventType)
+}
+
+// EventStatus represents the workflow state of an admissions event.
+type EventStatus string
+
+// Set of valid admissions event statuses.
+const (
+	EventStatusDraft     EventStatus = "draft"
+	EventStatusUpcoming  EventStatus = "upcoming"
+	EventStatusLive      EventStatus = "live"
+	EventStatusCompleted EventStatus = "completed"
+	EventStatusCancelled EventStatus = "cancelled"
+)
+
+// String returns the event status as a string.
+func (status EventStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationStatus represents the state of one event registration.
+type EventRegistrationStatus string
+
+const (
+	EventRegistrationStatusRegistered EventRegistrationStatus = "registered"
+	EventRegistrationStatusCheckedIn  EventRegistrationStatus = "checked-in"
+	EventRegistrationStatusCancelled  EventRegistrationStatus = "cancelled"
+)
+
+func (status EventRegistrationStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationMatchStatus represents CRM matching confidence for a registration.
+type EventRegistrationMatchStatus string
+
+const (
+	EventRegistrationMatchStatusMatched     EventRegistrationMatchStatus = "matched"
+	EventRegistrationMatchStatusNewProspect EventRegistrationMatchStatus = "new-prospect"
+	EventRegistrationMatchStatusNeedsReview EventRegistrationMatchStatus = "needs-review"
+)
+
+func (status EventRegistrationMatchStatus) String() string {
+	return string(status)
+}
+
+// EventRegistrationSource represents how a prospect registered for an event.
+type EventRegistrationSource string
+
+const (
+	EventRegistrationSourcePortal   EventRegistrationSource = "portal"
+	EventRegistrationSourceStaff    EventRegistrationSource = "staff"
+	EventRegistrationSourceCampaign EventRegistrationSource = "campaign"
+)
+
+func (source EventRegistrationSource) String() string {
+	return string(source)
+}
+
+// Event represents an admissions engagement event.
+type Event struct {
+	ID                      uuid.UUID
+	Title                   string
+	Type                    EventType
+	Status                  EventStatus
+	Description             string
+	StartTime               time.Time
+	EndTime                 time.Time
+	Location                string
+	IsVirtual               bool
+	Capacity                int
+	RegistrationDeadline    *time.Time
+	AutoConfirmationEnabled bool
+	AutoReminderEnabled     bool
+	DateCreated             time.Time
+	DateUpdated             time.Time
+}
+
+// NewEvent is what we require from clients when adding or updating an admissions event.
+type NewEvent struct {
+	Title                   string
+	Type                    EventType
+	Status                  EventStatus
+	Description             string
+	StartTime               time.Time
+	EndTime                 time.Time
+	Location                string
+	IsVirtual               bool
+	Capacity                int
+	RegistrationDeadline    *time.Time
+	AutoConfirmationEnabled bool
+	AutoReminderEnabled     bool
+}
+
+// EventRegistration represents one registration row for an admissions event.
+type EventRegistration struct {
+	ID            uuid.UUID
+	EventID       uuid.UUID
+	ConstituentID *uuid.UUID
+	FirstName     string
+	LastName      string
+	Email         string
+	Phone         *string
+	Status        EventRegistrationStatus
+	MatchStatus   EventRegistrationMatchStatus
+	Source        EventRegistrationSource
+	RegisteredAt  time.Time
+	CheckedInAt   *time.Time
+	CheckedInByID *uuid.UUID
+	DateCreated   time.Time
+	DateUpdated   time.Time
+}
+
+// NewEventRegistration is what we require to register an attendee for an event.
+type NewEventRegistration struct {
+	EventID       uuid.UUID
+	ConstituentID *uuid.UUID
+	FirstName     string
+	LastName      string
+	Email         string
+	Phone         *string
+	Source        EventRegistrationSource
+	MatchStatus   EventRegistrationMatchStatus
+}
+
+// NewEventCheckIn is what we require to record a staff check-in.
+type NewEventCheckIn struct {
+	RegistrationID uuid.UUID
+	CheckedInByID  uuid.UUID
 }
 
 // Application represents a constituent's program application for a term.
@@ -1081,6 +1228,139 @@ type SyncEvent struct {
 	DateUpdated       time.Time
 }
 
+// CampaignStatus represents the lifecycle state of an admissions campaign.
+type CampaignStatus string
+
+// Set of valid admissions campaign statuses.
+const (
+	CampaignStatusDraft     CampaignStatus = "DRAFT"
+	CampaignStatusActive    CampaignStatus = "ACTIVE"
+	CampaignStatusPaused    CampaignStatus = "PAUSED"
+	CampaignStatusCompleted CampaignStatus = "COMPLETED"
+)
+
+// String returns the campaign status as a string.
+func (status CampaignStatus) String() string {
+	return string(status)
+}
+
+// CampaignChannel represents the primary outbound channel for a campaign.
+type CampaignChannel string
+
+// Set of valid admissions campaign channels.
+const (
+	CampaignChannelEmail CampaignChannel = "EMAIL"
+	CampaignChannelSMS   CampaignChannel = "SMS"
+)
+
+// String returns the campaign channel as a string.
+func (channel CampaignChannel) String() string {
+	return string(channel)
+}
+
+// Campaign represents an admissions marketing or operational campaign.
+type Campaign struct {
+	ID             uuid.UUID
+	Name           string
+	Status         CampaignStatus
+	Channel        CampaignChannel
+	AudienceName   string
+	TemplateName   string
+	MessagePreview string
+	Segment        json.RawMessage
+	Metrics        json.RawMessage
+	StartsAt       *time.Time
+	EndsAt         *time.Time
+	CreatedByID    *uuid.UUID
+	DateCreated    time.Time
+	DateUpdated    time.Time
+}
+
+// CampaignAuditEvent records a lifecycle action for an admissions campaign.
+type CampaignAuditEvent struct {
+	ID          uuid.UUID
+	CampaignID  uuid.UUID
+	ActorName   string
+	Action      string
+	OccurredAt  time.Time
+	DateCreated time.Time
+}
+
+// CommunicationChannel represents a supported communication transport.
+type CommunicationChannel string
+
+// Set of valid admissions communication channels.
+const (
+	CommunicationChannelSMS          CommunicationChannel = "SMS"
+	CommunicationChannelWhatsApp     CommunicationChannel = "WHATSAPP"
+	CommunicationChannelEmail        CommunicationChannel = "EMAIL"
+	CommunicationChannelPhoneCall    CommunicationChannel = "PHONE_CALL"
+	CommunicationChannelNotification CommunicationChannel = "NOTIFICATION"
+)
+
+// String returns the communication channel as a string.
+func (channel CommunicationChannel) String() string {
+	return string(channel)
+}
+
+// CommunicationDirection represents whether a communication was inbound or outbound.
+type CommunicationDirection string
+
+// Set of valid admissions communication directions.
+const (
+	CommunicationDirectionInbound  CommunicationDirection = "INBOUND"
+	CommunicationDirectionOutbound CommunicationDirection = "OUTBOUND"
+)
+
+// String returns the communication direction as a string.
+func (direction CommunicationDirection) String() string {
+	return string(direction)
+}
+
+// CommunicationStatus represents provider or manually logged delivery state.
+type CommunicationStatus string
+
+// Set of valid admissions communication statuses.
+const (
+	CommunicationStatusQueued    CommunicationStatus = "QUEUED"
+	CommunicationStatusSent      CommunicationStatus = "SENT"
+	CommunicationStatusDelivered CommunicationStatus = "DELIVERED"
+	CommunicationStatusFailed    CommunicationStatus = "FAILED"
+	CommunicationStatusOpened    CommunicationStatus = "OPENED"
+	CommunicationStatusBounced   CommunicationStatus = "BOUNCED"
+	CommunicationStatusReplied   CommunicationStatus = "REPLIED"
+	CommunicationStatusLogged    CommunicationStatus = "LOGGED"
+)
+
+// String returns the communication status as a string.
+func (status CommunicationStatus) String() string {
+	return string(status)
+}
+
+// Communication records one inbound, outbound, provider-tracked, or manually logged touchpoint.
+type Communication struct {
+	ID                uuid.UUID
+	ExternalMessageID string
+	Channel           CommunicationChannel
+	Direction         CommunicationDirection
+	ConstituentID     uuid.UUID
+	ApplicationID     *uuid.UUID
+	CampaignID        *uuid.UUID
+	RecipientSender   string
+	RecipientInitials string
+	Subject           string
+	Preview           string
+	Status            CommunicationStatus
+	Provider          *string
+	OwnerName         string
+	Outcome           *string
+	Duration          *string
+	OccurredAt        time.Time
+	ProviderPayload   json.RawMessage
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
 // NewSyncEvent is what workflow hooks provide when enqueueing a selected real-time SIS event.
 type NewSyncEvent struct {
 	JobID             *uuid.UUID
@@ -1326,6 +1606,50 @@ type ApplicationQueryFilter struct {
 	Status          *ApplicationStatus
 	ActiveOnly      *bool
 	CustomFields    map[string]string
+}
+
+// EventQueryFilter holds the available fields an event query can be filtered on.
+type EventQueryFilter struct {
+	ID      *uuid.UUID
+	Type    *EventType
+	Status  *EventStatus
+	Virtual *bool
+}
+
+// CampaignQueryFilter holds fields an admissions campaign query can be filtered on.
+type CampaignQueryFilter struct {
+	ID          *uuid.UUID
+	Status      *CampaignStatus
+	Channel     *CampaignChannel
+	CreatedByID *uuid.UUID
+}
+
+// CampaignAuditEventQueryFilter holds fields a campaign audit event query can be filtered on.
+type CampaignAuditEventQueryFilter struct {
+	ID         *uuid.UUID
+	CampaignID *uuid.UUID
+}
+
+// CommunicationQueryFilter holds fields an admissions communication query can be filtered on.
+type CommunicationQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	ApplicationID *uuid.UUID
+	CampaignID    *uuid.UUID
+	Channel       *CommunicationChannel
+	Direction     *CommunicationDirection
+	Status        *CommunicationStatus
+	Provider      *string
+}
+
+// EventRegistrationQueryFilter holds the available fields an event registration query can be filtered on.
+type EventRegistrationQueryFilter struct {
+	ID            *uuid.UUID
+	EventID       *uuid.UUID
+	ConstituentID *uuid.UUID
+	Status        *EventRegistrationStatus
+	MatchStatus   *EventRegistrationMatchStatus
+	Source        *EventRegistrationSource
 }
 
 // CustomFieldDefinitionQueryFilter holds fields a custom field definition query can be filtered on.
