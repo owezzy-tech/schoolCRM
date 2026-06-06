@@ -1,12 +1,12 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-05-29
-**Commit:** d7e9bab
-**Branch:** feature/api-auth
+**Generated:** 2026-06-07
+**Commit:** 271bc65
+**Branch:** develop
 
 ## OVERVIEW
 
-Angular 21 admin dashboard built on Fuse Template v21. Standalone components, Tailwind + SCSS + Angular Material, RxJS service-based state, REST API with mock layer for dev.
+Angular 21 admin dashboard built on Fuse Template v21. Standalone components, Tailwind + SCSS + Angular Material, RxJS service-based state, JSON:API REST integration, and a dev mock layer for template/demo fixtures.
 
 ## STRUCTURE
 
@@ -35,6 +35,8 @@ web-admin-ng/
 |------|----------|-------|
 | Add feature module | `src/app/modules/` | Standalone component + lazy route in `app.routes.ts` |
 | Auth flow | `src/app/core/auth/` | AuthService, guards (CanActivateFn), interceptor |
+| Admissions REST client | `src/app/core/admissions/` | JSON:API unwrap helpers, ReplaySubject streams, query/create/update methods |
+| Admissions admin screens | `src/app/modules/admin/` | Applications, events, campaigns, communications, records, audit, and settings use live `AdmissionsService` APIs |
 | Add HTTP interceptor | `src/app/core/auth/auth.provider.ts` | Chain via `withInterceptors()` |
 | Layout/theme config | `src/app/app.config.ts` → `provideFuse()` | Scheme, theme, layout type |
 | Custom validators | `src/@fuse/validators/` | `mustMatch`, `isEmptyInputValue` |
@@ -69,13 +71,14 @@ web-admin-ng/
 ```bash
 npm start          # Dev server (:4200)
 npm run build      # Production build → dist/fuse/
-npm test           # Karma + Jasmine (no tests exist yet)
+npm test           # Angular test runner backed by Vitest specs
 ```
 
 ## NOTES
 
 - **Monorepo context**: Backend uses gRPC (port 6001) but frontend uses REST. No ConnectRPC.
-- **Mock API**: All `api/*` calls intercepted in dev by `src/app/mock-api/`. Disable by removing from `provideFuse()`.
+- **Mock API**: `src/app/mock-api/` remains for dev/template fixtures. Admissions admin workflows now call live `/v1/admissions/*` JSON:API endpoints through `AdmissionsService`; do not add new admissions admin behavior only to mocks.
+- **Admissions settings**: Custom fields, application form templates, lead scoring rules, programs, academic terms, and import batches are loaded from live Admissions APIs. Assignment rules/candidates remain local preview data until backend endpoints exist.
 - **Build budgets**: 3MB warn / 5MB error (initial), 75KB / 90KB (component styles)
 - **Auth tokens**: Stored in localStorage, validated via `AuthUtils.isTokenExpired()`
 - **API responses**: Backend REST APIs return JSON:API v1.1 envelopes. Read resource payloads from `data.attributes`, collection payloads from `data` plus `meta`, and error messages from `errors[0].detail`.

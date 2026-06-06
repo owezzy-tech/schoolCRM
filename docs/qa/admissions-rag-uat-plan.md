@@ -39,7 +39,7 @@ Environment:
 | Application detail | `/applications/:id` | Applicant summary, documents, timeline, decisions | Pending |
 | Reviewer workspace | Application review screen | Assigned reviewer workflow and RAG assistant affordance | Pending |
 | Leads | `/leads` | Static data renders and primary actions are reachable | Pending |
-| Admissions settings | `/admissions-settings` | Configuration screen renders static settings | Pending |
+| Admissions settings | `/admissions-settings` | Configuration screen renders live API-backed settings for custom fields, templates, scoring rules, programs, terms, and import batches; assignment rules remain preview-only until APIs exist | Pending |
 | Applicant portal | `/applicant/...` | Application/status screens render and remain applicant scoped | Pending |
 
 ## Execution Order

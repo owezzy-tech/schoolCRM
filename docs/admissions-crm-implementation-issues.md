@@ -10,6 +10,17 @@ Related planning artifacts:
 - [`docs/diagrams/admissions-crm-application-workflow.excalidraw`](diagrams/admissions-crm-application-workflow.excalidraw)
 - [`docs/diagrams/admissions-crm-screens-png/`](diagrams/admissions-crm-screens-png/) — frontend implementation wireframe screens
 
+## Current implementation status
+
+As of commit `271bc65`, the `schoolCRM-5ve` epic is closed. The highest-impact admissions admin screens have been moved off static/mock-only data and onto JSON:API-backed services:
+
+- Applications list/detail and applicant document/status flows use live Admissions APIs.
+- Events, campaigns, communications, constituents, inquiries, and audit screens use live Admissions APIs.
+- Admissions settings loads programs, academic terms, custom field definitions, application form templates, lead scoring rules, and import batches through `AdmissionsService` ReplaySubject streams.
+- Settings assignment rules and assignment candidates remain local preview data because backend endpoints for assignment-rule persistence/evaluation are not exposed yet.
+
+Keep the issue breakdown below as the product implementation map. When adding follow-up work, prefer Beads issues over editing this historical breakdown in place.
+
 ## Milestone 1: Constituent and Application Core
 
 ### Issue 1: Add admissions bounded context scaffold
