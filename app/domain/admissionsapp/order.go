@@ -173,3 +173,27 @@ var syncEventOrderByFields = map[string]string{
 	"resource_id":   admissionsbus.OrderBySyncEventResource,
 	"date_created":  admissionsbus.OrderBySyncEventDateCreated,
 }
+
+var campaignOrderByFields = map[string]string{
+	"campaign_id":  admissionsbus.OrderByCampaignID,
+	"name":         admissionsbus.OrderByCampaignName,
+	"status":       admissionsbus.OrderByCampaignStatus,
+	"channel":      admissionsbus.OrderByCampaignChannel,
+	"starts_at":    admissionsbus.OrderByCampaignStartsAt,
+	"date_created": admissionsbus.OrderByCampaignDateCreated,
+}
+
+var campaignAuditEventOrderByFields = map[string]string{
+	"campaign_audit_event_id": admissionsbus.OrderByCampaignAuditEventID,
+	"campaign_id":             admissionsbus.OrderByCampaignAuditEventCampaign,
+	"occurred_at":             admissionsbus.OrderByCampaignAuditEventOccurredAt,
+}
+
+var communicationOrderByFields = map[string]string{
+	"communication_id": admissionsbus.OrderByCommunicationID,
+	"channel":          admissionsbus.OrderByCommunicationChannel,
+	"direction":        admissionsbus.OrderByCommunicationDirection,
+	"status":           admissionsbus.OrderByCommunicationStatus,
+	"occurred_at":      admissionsbus.OrderByCommunicationOccurredAt,
+	"date_created":     admissionsbus.OrderByCommunicationDateCreated,
+}

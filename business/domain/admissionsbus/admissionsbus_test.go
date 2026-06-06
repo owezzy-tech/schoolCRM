@@ -3393,3 +3393,39 @@ func (s *stubStore) QuerySyncEventByID(_ context.Context, eventID uuid.UUID) (Sy
 	}
 	return SyncEvent{}, ErrSyncEventNotFound
 }
+
+func (s *stubStore) QueryCampaigns(context.Context, CampaignQueryFilter, order.By, page.Page) ([]Campaign, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCampaigns(context.Context, CampaignQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCampaignByID(context.Context, uuid.UUID) (Campaign, error) {
+	return Campaign{}, ErrCampaignNotFound
+}
+
+func (s *stubStore) QueryCampaignAuditEvents(context.Context, CampaignAuditEventQueryFilter, order.By, page.Page) ([]CampaignAuditEvent, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCampaignAuditEvents(context.Context, CampaignAuditEventQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCampaignAuditEventByID(context.Context, uuid.UUID) (CampaignAuditEvent, error) {
+	return CampaignAuditEvent{}, ErrCampaignAuditEventNotFound
+}
+
+func (s *stubStore) QueryCommunications(context.Context, CommunicationQueryFilter, order.By, page.Page) ([]Communication, error) {
+	return nil, nil
+}
+
+func (s *stubStore) CountCommunications(context.Context, CommunicationQueryFilter) (int, error) {
+	return 0, nil
+}
+
+func (s *stubStore) QueryCommunicationByID(context.Context, uuid.UUID) (Communication, error) {
+	return Communication{}, ErrCommunicationNotFound
+}

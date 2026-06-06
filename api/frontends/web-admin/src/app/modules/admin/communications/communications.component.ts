@@ -2,12 +2,15 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    inject,
     signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { COMMUNICATIONS } from './data/communications.mock';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { catchError, of } from 'rxjs';
 import {
     CommunicationChannel,
     CommunicationDirection,
@@ -28,10 +31,14 @@ interface CommunicationTab {
     templateUrl: './communications.component.html',
 })
 export class CommunicationsComponent {
+    private readonly admissionsService = inject(AdmissionsService);
+
     readonly activeChannel = signal<CommunicationChannel | 'ALL'>('ALL');
     readonly directionFilter = signal<CommunicationDirection | 'ALL'>('ALL');
     readonly statusFilter = signal<CommunicationStatus | 'ALL'>('ALL');
-    readonly records = signal<CommunicationRecord[]>(COMMUNICATIONS);
+    readonly loading = signal(false);
+    readonly errorMessage = signal('');
+    readonly records = signal<CommunicationRecord[]>([]);
 
     readonly tabs: CommunicationTab[] = [
         { label: 'All Messages', channel: 'ALL' },
@@ -82,7 +89,7 @@ export class CommunicationsComponent {
             ['FAILED', 'BOUNCED'].includes(record.status)
         ).length;
         const linkedApplications = records.filter(
-            (record) => record.applicationId
+            (record) => record.applicationID
         ).length;
 
         return [
@@ -121,8 +128,54 @@ export class CommunicationsComponent {
         notes: 'Confirmed virtual interview schedule and scholarship document expectations.',
     };
 
+    constructor() {
+        this.loadRecords();
+    }
+
+    loadRecords(): void {
+        const channel = this.activeChannel();
+        const direction = this.directionFilter();
+        const status = this.statusFilter();
+
+        this.loading.set(true);
+        this.errorMessage.set('');
+
+        this.admissionsService
+            .queryCommunications({
+                page: 1,
+                rows: 50,
+                orderBy: 'occurred_at,DESC',
+                channel: channel === 'ALL' ? undefined : channel,
+                direction: direction === 'ALL' ? undefined : direction,
+                status: status === 'ALL' ? undefined : status,
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'Unable to load communications.'
+                        )
+                    );
+                    this.records.set([]);
+
+                    return of(undefined);
+                })
+            )
+            .subscribe((result) => {
+                this.loading.set(false);
+
+                if (!result) {
+                    return;
+                }
+
+                this.records.set(result.items);
+            });
+    }
+
     setChannel(channel: CommunicationChannel | 'ALL'): void {
         this.activeChannel.set(channel);
+        this.loadRecords();
     }
 
     setDirectionFilter(event: Event): void {
@@ -130,6 +183,7 @@ export class CommunicationsComponent {
 
         if (this.isDirectionFilter(value)) {
             this.directionFilter.set(value);
+            this.loadRecords();
         }
     }
 
@@ -138,6 +192,7 @@ export class CommunicationsComponent {
 
         if (this.isStatusFilter(value)) {
             this.statusFilter.set(value);
+            this.loadRecords();
         }
     }
 

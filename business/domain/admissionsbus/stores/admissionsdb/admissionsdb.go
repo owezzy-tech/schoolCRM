@@ -2722,6 +2722,273 @@ func (s *Store) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (admi
 	return tobusSyncEvent(dbEvent), nil
 }
 
+// QueryCampaigns retrieves admissions campaigns matching the provided filter.
+func (s *Store) QueryCampaigns(ctx context.Context, filter admissionsbus.CampaignQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Campaign, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		campaign_id, name, status, channel, audience_name, template_name, message_preview, segment, metrics, starts_at, ends_at, created_by_id, date_created, date_updated
+	FROM
+		admissions_campaigns`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignFilter(filter, data, buf)
+
+	orderByClause, err := campaignOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbCampaigns []campaignDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbCampaigns); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCampaigns(dbCampaigns), nil
+}
+
+// CountCampaigns returns the total number of admissions campaigns matching the provided filter.
+func (s *Store) CountCampaigns(ctx context.Context, filter admissionsbus.CampaignQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_campaigns`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCampaignByID retrieves a single admissions campaign by ID.
+func (s *Store) QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (admissionsbus.Campaign, error) {
+	filter := admissionsbus.CampaignQueryFilter{ID: &campaignID}
+	campaign, err := s.queryCampaign(ctx, filter)
+	if err != nil {
+		return admissionsbus.Campaign{}, err
+	}
+
+	return campaign, nil
+}
+
+func (s *Store) queryCampaign(ctx context.Context, filter admissionsbus.CampaignQueryFilter) (admissionsbus.Campaign, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		campaign_id, name, status, channel, audience_name, template_name, message_preview, segment, metrics, starts_at, ends_at, created_by_id, date_created, date_updated
+	FROM
+		admissions_campaigns`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignFilter(filter, data, buf)
+
+	var dbCampaign campaignDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbCampaign); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.Campaign{}, fmt.Errorf("db: %w", admissionsbus.ErrCampaignNotFound)
+		}
+		return admissionsbus.Campaign{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCampaign(dbCampaign), nil
+}
+
+// QueryCampaignAuditEvents retrieves lifecycle audit events for admissions campaigns.
+func (s *Store) QueryCampaignAuditEvents(ctx context.Context, filter admissionsbus.CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CampaignAuditEvent, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		campaign_audit_event_id, campaign_id, actor_name, action, occurred_at, date_created
+	FROM
+		admissions_campaign_audit_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignAuditEventFilter(filter, data, buf)
+
+	orderByClause, err := campaignAuditEventOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbEvents []campaignAuditEventDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbEvents); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCampaignAuditEvents(dbEvents), nil
+}
+
+// CountCampaignAuditEvents returns the total number of campaign lifecycle audit events.
+func (s *Store) CountCampaignAuditEvents(ctx context.Context, filter admissionsbus.CampaignAuditEventQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_campaign_audit_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignAuditEventFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCampaignAuditEventByID retrieves a single campaign lifecycle audit event by ID.
+func (s *Store) QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.CampaignAuditEvent, error) {
+	filter := admissionsbus.CampaignAuditEventQueryFilter{ID: &eventID}
+	event, err := s.queryCampaignAuditEvent(ctx, filter)
+	if err != nil {
+		return admissionsbus.CampaignAuditEvent{}, err
+	}
+
+	return event, nil
+}
+
+func (s *Store) queryCampaignAuditEvent(ctx context.Context, filter admissionsbus.CampaignAuditEventQueryFilter) (admissionsbus.CampaignAuditEvent, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		campaign_audit_event_id, campaign_id, actor_name, action, occurred_at, date_created
+	FROM
+		admissions_campaign_audit_events`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCampaignAuditEventFilter(filter, data, buf)
+
+	var dbEvent campaignAuditEventDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbEvent); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.CampaignAuditEvent{}, fmt.Errorf("db: %w", admissionsbus.ErrCampaignAuditEventNotFound)
+		}
+		return admissionsbus.CampaignAuditEvent{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCampaignAuditEvent(dbEvent), nil
+}
+
+// QueryCommunications retrieves admissions communication history matching the provided filter.
+func (s *Store) QueryCommunications(ctx context.Context, filter admissionsbus.CommunicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Communication, error) {
+	data := map[string]any{
+		"offset":        (page.Number() - 1) * page.RowsPerPage(),
+		"rows_per_page": page.RowsPerPage(),
+	}
+
+	const q = `
+	SELECT
+		communication_id, external_message_id, channel, direction, constituent_id, application_id, campaign_id, recipient_sender, recipient_initials, subject, preview, status, provider, owner_name, outcome, duration, occurred_at, provider_payload, date_created, date_updated
+	FROM
+		admissions_communications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCommunicationFilter(filter, data, buf)
+
+	orderByClause, err := communicationOrderByClause(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	buf.WriteString(orderByClause)
+	buf.WriteString(" OFFSET :offset ROWS FETCH NEXT :rows_per_page ROWS ONLY")
+
+	var dbCommunications []communicationDB
+	if err := sqldb.NamedQuerySlice(ctx, s.log, s.db, buf.String(), data, &dbCommunications); err != nil {
+		return nil, fmt.Errorf("namedqueryslice: %w", err)
+	}
+
+	return toBusCommunications(dbCommunications), nil
+}
+
+// CountCommunications returns the total number of admissions communications matching the provided filter.
+func (s *Store) CountCommunications(ctx context.Context, filter admissionsbus.CommunicationQueryFilter) (int, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		count(1)
+	FROM
+		admissions_communications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCommunicationFilter(filter, data, buf)
+
+	var count struct {
+		Count int `db:"count"`
+	}
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &count); err != nil {
+		return 0, fmt.Errorf("db: %w", err)
+	}
+
+	return count.Count, nil
+}
+
+// QueryCommunicationByID retrieves a single admissions communication by ID.
+func (s *Store) QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (admissionsbus.Communication, error) {
+	filter := admissionsbus.CommunicationQueryFilter{ID: &communicationID}
+	communication, err := s.queryCommunication(ctx, filter)
+	if err != nil {
+		return admissionsbus.Communication{}, err
+	}
+
+	return communication, nil
+}
+
+func (s *Store) queryCommunication(ctx context.Context, filter admissionsbus.CommunicationQueryFilter) (admissionsbus.Communication, error) {
+	data := map[string]any{}
+
+	const q = `
+	SELECT
+		communication_id, external_message_id, channel, direction, constituent_id, application_id, campaign_id, recipient_sender, recipient_initials, subject, preview, status, provider, owner_name, outcome, duration, occurred_at, provider_payload, date_created, date_updated
+	FROM
+		admissions_communications`
+
+	buf := bytes.NewBufferString(q)
+	s.applyCommunicationFilter(filter, data, buf)
+
+	var dbCommunication communicationDB
+	if err := sqldb.NamedQueryStruct(ctx, s.log, s.db, buf.String(), data, &dbCommunication); err != nil {
+		if errors.Is(err, sqldb.ErrDBNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return admissionsbus.Communication{}, fmt.Errorf("db: %w", admissionsbus.ErrCommunicationNotFound)
+		}
+		return admissionsbus.Communication{}, fmt.Errorf("db: %w", err)
+	}
+
+	return toBusCommunication(dbCommunication), nil
+}
+
 func (s *Store) queryDocument(ctx context.Context, filter admissionsbus.DocumentQueryFilter) (admissionsbus.Document, error) {
 	data := map[string]any{}
 

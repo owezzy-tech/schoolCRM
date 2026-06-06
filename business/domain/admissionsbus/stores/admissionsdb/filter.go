@@ -739,3 +739,100 @@ func (s *Store) applySyncEventFilter(filter admissionsbus.SyncEventQueryFilter, 
 		buf.WriteString(strings.Join(wc, " AND "))
 	}
 }
+
+func (s *Store) applyCampaignFilter(filter admissionsbus.CampaignQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["campaign_id"] = filter.ID
+		wc = append(wc, "campaign_id = :campaign_id")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Channel != nil {
+		data["channel"] = filter.Channel.String()
+		wc = append(wc, "channel = :channel")
+	}
+
+	if filter.CreatedByID != nil {
+		data["created_by_id"] = filter.CreatedByID
+		wc = append(wc, "created_by_id = :created_by_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyCampaignAuditEventFilter(filter admissionsbus.CampaignAuditEventQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["campaign_audit_event_id"] = filter.ID
+		wc = append(wc, "campaign_audit_event_id = :campaign_audit_event_id")
+	}
+
+	if filter.CampaignID != nil {
+		data["campaign_id"] = filter.CampaignID
+		wc = append(wc, "campaign_id = :campaign_id")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}
+
+func (s *Store) applyCommunicationFilter(filter admissionsbus.CommunicationQueryFilter, data map[string]any, buf *bytes.Buffer) {
+	var wc []string
+
+	if filter.ID != nil {
+		data["communication_id"] = filter.ID
+		wc = append(wc, "communication_id = :communication_id")
+	}
+
+	if filter.ConstituentID != nil {
+		data["constituent_id"] = filter.ConstituentID
+		wc = append(wc, "constituent_id = :constituent_id")
+	}
+
+	if filter.ApplicationID != nil {
+		data["application_id"] = filter.ApplicationID
+		wc = append(wc, "application_id = :application_id")
+	}
+
+	if filter.CampaignID != nil {
+		data["campaign_id"] = filter.CampaignID
+		wc = append(wc, "campaign_id = :campaign_id")
+	}
+
+	if filter.Channel != nil {
+		data["channel"] = filter.Channel.String()
+		wc = append(wc, "channel = :channel")
+	}
+
+	if filter.Direction != nil {
+		data["direction"] = filter.Direction.String()
+		wc = append(wc, "direction = :direction")
+	}
+
+	if filter.Status != nil {
+		data["status"] = filter.Status.String()
+		wc = append(wc, "status = :status")
+	}
+
+	if filter.Provider != nil {
+		data["provider"] = filter.Provider
+		wc = append(wc, "provider = :provider")
+	}
+
+	if len(wc) > 0 {
+		buf.WriteString(" WHERE ")
+		buf.WriteString(strings.Join(wc, " AND "))
+	}
+}

@@ -137,6 +137,9 @@ var (
 	ErrSyncEventNotFound              = errors.New("sync event not found")
 	ErrSyncEventResourceRequired      = errors.New("sync event resource required")
 	ErrSyncEventPayloadHashRequired   = errors.New("sync event payload hash required")
+	ErrCampaignNotFound               = errors.New("campaign not found")
+	ErrCampaignAuditEventNotFound     = errors.New("campaign audit event not found")
+	ErrCommunicationNotFound          = errors.New("communication not found")
 	ErrCustomFieldDefinitionNotFound  = errors.New("custom field definition not found")
 	ErrCustomFieldValueNotFound       = errors.New("custom field value not found")
 	ErrCustomFieldOwnerInvalid        = errors.New("custom field owner must be constituent or application")
@@ -268,6 +271,15 @@ type Storer interface {
 	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
 	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
 	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
+	QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error)
+	CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error)
+	QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error)
+	QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error)
+	CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error)
+	QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error)
+	QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error)
+	CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error)
+	QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error)
 }
 
 // ExtBusiness interface provides support for extensions that wrap extra functionality
@@ -388,6 +400,15 @@ type ExtBusiness interface {
 	QuerySyncEvents(ctx context.Context, filter SyncEventQueryFilter, orderBy order.By, page page.Page) ([]SyncEvent, error)
 	CountSyncEvents(ctx context.Context, filter SyncEventQueryFilter) (int, error)
 	QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (SyncEvent, error)
+	QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error)
+	CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error)
+	QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error)
+	QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error)
+	CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error)
+	QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error)
+	QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error)
+	CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error)
+	QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error)
 }
 
 // CreateStaffProfile adds a context-specific admissions staff profile for an identity user.
@@ -2550,6 +2571,81 @@ func (b *Business) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID) (S
 	}
 
 	return event, nil
+}
+
+// QueryCampaigns retrieves admissions campaigns.
+func (b *Business) QueryCampaigns(ctx context.Context, filter CampaignQueryFilter, orderBy order.By, page page.Page) ([]Campaign, error) {
+	campaigns, err := b.storer.QueryCampaigns(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query campaigns: %w", err)
+	}
+
+	return campaigns, nil
+}
+
+// CountCampaigns returns the total number of admissions campaigns.
+func (b *Business) CountCampaigns(ctx context.Context, filter CampaignQueryFilter) (int, error) {
+	return b.storer.CountCampaigns(ctx, filter)
+}
+
+// QueryCampaignByID finds an admissions campaign by ID.
+func (b *Business) QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (Campaign, error) {
+	campaign, err := b.storer.QueryCampaignByID(ctx, campaignID)
+	if err != nil {
+		return Campaign{}, fmt.Errorf("query campaign: campaignID[%s]: %w", campaignID, err)
+	}
+
+	return campaign, nil
+}
+
+// QueryCampaignAuditEvents retrieves lifecycle audit entries for admissions campaigns.
+func (b *Business) QueryCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]CampaignAuditEvent, error) {
+	events, err := b.storer.QueryCampaignAuditEvents(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query campaign audit events: %w", err)
+	}
+
+	return events, nil
+}
+
+// CountCampaignAuditEvents returns the total number of lifecycle audit entries.
+func (b *Business) CountCampaignAuditEvents(ctx context.Context, filter CampaignAuditEventQueryFilter) (int, error) {
+	return b.storer.CountCampaignAuditEvents(ctx, filter)
+}
+
+// QueryCampaignAuditEventByID finds a lifecycle audit entry by ID.
+func (b *Business) QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (CampaignAuditEvent, error) {
+	event, err := b.storer.QueryCampaignAuditEventByID(ctx, eventID)
+	if err != nil {
+		return CampaignAuditEvent{}, fmt.Errorf("query campaign audit event: eventID[%s]: %w", eventID, err)
+	}
+
+	return event, nil
+}
+
+// QueryCommunications retrieves admissions communication history.
+func (b *Business) QueryCommunications(ctx context.Context, filter CommunicationQueryFilter, orderBy order.By, page page.Page) ([]Communication, error) {
+	communications, err := b.storer.QueryCommunications(ctx, filter, orderBy, page)
+	if err != nil {
+		return nil, fmt.Errorf("query communications: %w", err)
+	}
+
+	return communications, nil
+}
+
+// CountCommunications returns the total number of admissions communications.
+func (b *Business) CountCommunications(ctx context.Context, filter CommunicationQueryFilter) (int, error) {
+	return b.storer.CountCommunications(ctx, filter)
+}
+
+// QueryCommunicationByID finds an admissions communication by ID.
+func (b *Business) QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (Communication, error) {
+	communication, err := b.storer.QueryCommunicationByID(ctx, communicationID)
+	if err != nil {
+		return Communication{}, fmt.Errorf("query communication: communicationID[%s]: %w", communicationID, err)
+	}
+
+	return communication, nil
 }
 
 func validateRequiredConstituentFields(firstName string, lastName string, dob time.Time, primaryPhone string) error {

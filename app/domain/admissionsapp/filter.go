@@ -246,6 +246,38 @@ type syncEventQueryParams struct {
 	ResourceID   string
 }
 
+type campaignQueryParams struct {
+	Page        string
+	Rows        string
+	OrderBy     string
+	ID          string
+	Status      string
+	Channel     string
+	CreatedByID string
+}
+
+type campaignAuditEventQueryParams struct {
+	Page       string
+	Rows       string
+	OrderBy    string
+	ID         string
+	CampaignID string
+}
+
+type communicationQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ConstituentID string
+	ApplicationID string
+	CampaignID    string
+	Channel       string
+	Direction     string
+	Status        string
+	Provider      string
+}
+
 func parseProgramQueryParams(r *http.Request) programQueryParams {
 	values := r.URL.Query()
 
@@ -567,6 +599,50 @@ func parseSyncEventQueryParams(r *http.Request) syncEventQueryParams {
 		Direction:    values.Get("direction"),
 		ResourceType: values.Get("resource_type"),
 		ResourceID:   values.Get("resource_id"),
+	}
+}
+
+func parseCampaignQueryParams(r *http.Request) campaignQueryParams {
+	values := r.URL.Query()
+
+	return campaignQueryParams{
+		Page:        values.Get("page"),
+		Rows:        values.Get("rows"),
+		OrderBy:     values.Get("orderBy"),
+		ID:          values.Get("campaign_id"),
+		Status:      values.Get("status"),
+		Channel:     values.Get("channel"),
+		CreatedByID: values.Get("created_by_id"),
+	}
+}
+
+func parseCampaignAuditEventQueryParams(r *http.Request) campaignAuditEventQueryParams {
+	values := r.URL.Query()
+
+	return campaignAuditEventQueryParams{
+		Page:       values.Get("page"),
+		Rows:       values.Get("rows"),
+		OrderBy:    values.Get("orderBy"),
+		ID:         values.Get("campaign_audit_event_id"),
+		CampaignID: values.Get("campaign_id"),
+	}
+}
+
+func parseCommunicationQueryParams(r *http.Request) communicationQueryParams {
+	values := r.URL.Query()
+
+	return communicationQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("communication_id"),
+		ConstituentID: values.Get("constituent_id"),
+		ApplicationID: values.Get("application_id"),
+		CampaignID:    values.Get("campaign_id"),
+		Channel:       values.Get("channel"),
+		Direction:     values.Get("direction"),
+		Status:        values.Get("status"),
+		Provider:      values.Get("provider"),
 	}
 }
 
@@ -1591,6 +1667,140 @@ func parseSyncEventFilter(qp syncEventQueryParams) (admissionsbus.SyncEventQuery
 
 	if fieldErrors != nil {
 		return admissionsbus.SyncEventQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseCampaignFilter(qp campaignQueryParams) (admissionsbus.CampaignQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CampaignQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("campaign_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.CampaignStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Channel != "" {
+		channel := admissionsbus.CampaignChannel(qp.Channel)
+		filter.Channel = &channel
+	}
+
+	if qp.CreatedByID != "" {
+		id, err := uuid.Parse(qp.CreatedByID)
+		if err != nil {
+			fieldErrors.Add("created_by_id", err)
+		} else {
+			filter.CreatedByID = &id
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CampaignQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseCampaignAuditEventFilter(qp campaignAuditEventQueryParams) (admissionsbus.CampaignAuditEventQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CampaignAuditEventQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("campaign_audit_event_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.CampaignID != "" {
+		id, err := uuid.Parse(qp.CampaignID)
+		if err != nil {
+			fieldErrors.Add("campaign_id", err)
+		} else {
+			filter.CampaignID = &id
+		}
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CampaignAuditEventQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseCommunicationFilter(qp communicationQueryParams) (admissionsbus.CommunicationQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CommunicationQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("communication_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		id, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.CampaignID != "" {
+		id, err := uuid.Parse(qp.CampaignID)
+		if err != nil {
+			fieldErrors.Add("campaign_id", err)
+		} else {
+			filter.CampaignID = &id
+		}
+	}
+
+	if qp.Channel != "" {
+		channel := admissionsbus.CommunicationChannel(qp.Channel)
+		filter.Channel = &channel
+	}
+
+	if qp.Direction != "" {
+		direction := admissionsbus.CommunicationDirection(qp.Direction)
+		filter.Direction = &direction
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.CommunicationStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Provider != "" {
+		filter.Provider = &qp.Provider
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CommunicationQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

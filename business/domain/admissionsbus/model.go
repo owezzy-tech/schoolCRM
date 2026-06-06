@@ -1,6 +1,7 @@
 package admissionsbus
 
 import (
+	"encoding/json"
 	"net/mail"
 	"time"
 
@@ -1227,6 +1228,139 @@ type SyncEvent struct {
 	DateUpdated       time.Time
 }
 
+// CampaignStatus represents the lifecycle state of an admissions campaign.
+type CampaignStatus string
+
+// Set of valid admissions campaign statuses.
+const (
+	CampaignStatusDraft     CampaignStatus = "DRAFT"
+	CampaignStatusActive    CampaignStatus = "ACTIVE"
+	CampaignStatusPaused    CampaignStatus = "PAUSED"
+	CampaignStatusCompleted CampaignStatus = "COMPLETED"
+)
+
+// String returns the campaign status as a string.
+func (status CampaignStatus) String() string {
+	return string(status)
+}
+
+// CampaignChannel represents the primary outbound channel for a campaign.
+type CampaignChannel string
+
+// Set of valid admissions campaign channels.
+const (
+	CampaignChannelEmail CampaignChannel = "EMAIL"
+	CampaignChannelSMS   CampaignChannel = "SMS"
+)
+
+// String returns the campaign channel as a string.
+func (channel CampaignChannel) String() string {
+	return string(channel)
+}
+
+// Campaign represents an admissions marketing or operational campaign.
+type Campaign struct {
+	ID             uuid.UUID
+	Name           string
+	Status         CampaignStatus
+	Channel        CampaignChannel
+	AudienceName   string
+	TemplateName   string
+	MessagePreview string
+	Segment        json.RawMessage
+	Metrics        json.RawMessage
+	StartsAt       *time.Time
+	EndsAt         *time.Time
+	CreatedByID    *uuid.UUID
+	DateCreated    time.Time
+	DateUpdated    time.Time
+}
+
+// CampaignAuditEvent records a lifecycle action for an admissions campaign.
+type CampaignAuditEvent struct {
+	ID          uuid.UUID
+	CampaignID  uuid.UUID
+	ActorName   string
+	Action      string
+	OccurredAt  time.Time
+	DateCreated time.Time
+}
+
+// CommunicationChannel represents a supported communication transport.
+type CommunicationChannel string
+
+// Set of valid admissions communication channels.
+const (
+	CommunicationChannelSMS          CommunicationChannel = "SMS"
+	CommunicationChannelWhatsApp     CommunicationChannel = "WHATSAPP"
+	CommunicationChannelEmail        CommunicationChannel = "EMAIL"
+	CommunicationChannelPhoneCall    CommunicationChannel = "PHONE_CALL"
+	CommunicationChannelNotification CommunicationChannel = "NOTIFICATION"
+)
+
+// String returns the communication channel as a string.
+func (channel CommunicationChannel) String() string {
+	return string(channel)
+}
+
+// CommunicationDirection represents whether a communication was inbound or outbound.
+type CommunicationDirection string
+
+// Set of valid admissions communication directions.
+const (
+	CommunicationDirectionInbound  CommunicationDirection = "INBOUND"
+	CommunicationDirectionOutbound CommunicationDirection = "OUTBOUND"
+)
+
+// String returns the communication direction as a string.
+func (direction CommunicationDirection) String() string {
+	return string(direction)
+}
+
+// CommunicationStatus represents provider or manually logged delivery state.
+type CommunicationStatus string
+
+// Set of valid admissions communication statuses.
+const (
+	CommunicationStatusQueued    CommunicationStatus = "QUEUED"
+	CommunicationStatusSent      CommunicationStatus = "SENT"
+	CommunicationStatusDelivered CommunicationStatus = "DELIVERED"
+	CommunicationStatusFailed    CommunicationStatus = "FAILED"
+	CommunicationStatusOpened    CommunicationStatus = "OPENED"
+	CommunicationStatusBounced   CommunicationStatus = "BOUNCED"
+	CommunicationStatusReplied   CommunicationStatus = "REPLIED"
+	CommunicationStatusLogged    CommunicationStatus = "LOGGED"
+)
+
+// String returns the communication status as a string.
+func (status CommunicationStatus) String() string {
+	return string(status)
+}
+
+// Communication records one inbound, outbound, provider-tracked, or manually logged touchpoint.
+type Communication struct {
+	ID                uuid.UUID
+	ExternalMessageID string
+	Channel           CommunicationChannel
+	Direction         CommunicationDirection
+	ConstituentID     uuid.UUID
+	ApplicationID     *uuid.UUID
+	CampaignID        *uuid.UUID
+	RecipientSender   string
+	RecipientInitials string
+	Subject           string
+	Preview           string
+	Status            CommunicationStatus
+	Provider          *string
+	OwnerName         string
+	Outcome           *string
+	Duration          *string
+	OccurredAt        time.Time
+	ProviderPayload   json.RawMessage
+	DateCreated       time.Time
+	DateUpdated       time.Time
+}
+
 // NewSyncEvent is what workflow hooks provide when enqueueing a selected real-time SIS event.
 type NewSyncEvent struct {
 	JobID             *uuid.UUID
@@ -1480,6 +1614,32 @@ type EventQueryFilter struct {
 	Type    *EventType
 	Status  *EventStatus
 	Virtual *bool
+}
+
+// CampaignQueryFilter holds fields an admissions campaign query can be filtered on.
+type CampaignQueryFilter struct {
+	ID          *uuid.UUID
+	Status      *CampaignStatus
+	Channel     *CampaignChannel
+	CreatedByID *uuid.UUID
+}
+
+// CampaignAuditEventQueryFilter holds fields a campaign audit event query can be filtered on.
+type CampaignAuditEventQueryFilter struct {
+	ID         *uuid.UUID
+	CampaignID *uuid.UUID
+}
+
+// CommunicationQueryFilter holds fields an admissions communication query can be filtered on.
+type CommunicationQueryFilter struct {
+	ID            *uuid.UUID
+	ConstituentID *uuid.UUID
+	ApplicationID *uuid.UUID
+	CampaignID    *uuid.UUID
+	Channel       *CommunicationChannel
+	Direction     *CommunicationDirection
+	Status        *CommunicationStatus
+	Provider      *string
 }
 
 // EventRegistrationQueryFilter holds the available fields an event registration query can be filtered on.

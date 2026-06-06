@@ -114,7 +114,16 @@
                     <div class="col-span-2 text-right">Date</div>
                 </div>
 
-                @for (record of filteredRecords(); track record.id) {
+                @if (loading()) {
+                    <div class="px-4 py-10 text-center text-secondary">
+                        Loading communications...
+                    </div>
+                } @else if (errorMessage()) {
+                    <div class="border-t border-red-200 bg-red-50 px-4 py-5 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                        {{ errorMessage() }}
+                    </div>
+                } @else {
+                    @for (record of filteredRecords(); track record.id) {
                     <div class="grid grid-cols-12 gap-3 border-b px-4 py-4 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <div class="col-span-12 flex items-start gap-3 md:col-span-4">
                             <div class="relative flex-none">
@@ -132,14 +141,14 @@
                                 <p class="font-medium">{{ record.recipientSender }}</p>
                                 <div class="mt-1 flex flex-wrap gap-2 text-xs text-secondary">
                                     <a class="font-medium text-primary" routerLink="/constituents">
-                                        {{ record.constituentId }}
+                                        {{ record.constituentID }}
                                     </a>
-                                    @if (record.applicationId) {
+                                    @if (record.applicationID) {
                                         <a
                                             class="font-medium text-primary"
-                                            [routerLink]="['/applications', record.applicationId]"
+                                            [routerLink]="['/applications', record.applicationID]"
                                         >
-                                            {{ record.applicationId }}
+                                            {{ record.applicationID }}
                                         </a>
                                     }
                                 </div>
@@ -159,8 +168,8 @@
                             <p class="mt-1 line-clamp-2 text-sm text-secondary">
                                 {{ record.preview }}
                             </p>
-                            @if (record.campaignId) {
-                                <p class="mt-1 text-xs font-medium text-primary">{{ record.campaignId }}</p>
+                            @if (record.campaignID) {
+                                <p class="mt-1 text-xs font-medium text-primary">{{ record.campaignID }}</p>
                             }
                         </div>
 
@@ -181,14 +190,15 @@
                         </div>
 
                         <div class="col-span-12 text-sm text-secondary md:col-span-2 md:text-right">
-                            <p>{{ record.date }}</p>
-                            <p class="mt-1">Owner: {{ record.owner }}</p>
+                            <p>{{ record.occurredAt }}</p>
+                            <p class="mt-1">Owner: {{ record.ownerName }}</p>
                         </div>
                     </div>
-                } @empty {
-                    <div class="px-4 py-10 text-center text-secondary">
-                        No communications match the selected filters.
-                    </div>
+                    } @empty {
+                        <div class="px-4 py-10 text-center text-secondary">
+                            No communications match the selected filters.
+                        </div>
+                    }
                 }
             </div>
 
