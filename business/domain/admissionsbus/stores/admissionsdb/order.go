@@ -80,6 +80,22 @@ var applicationOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationDateCreated: "date_created",
 }
 
+var eventOrderByFields = map[string]string{
+	admissionsbus.OrderByEventID:          "event_id",
+	admissionsbus.OrderByEventType:        "event_type",
+	admissionsbus.OrderByEventStatus:      "status",
+	admissionsbus.OrderByEventStartTime:   "start_time",
+	admissionsbus.OrderByEventDateCreated: "date_created",
+}
+
+var eventRegistrationOrderByFields = map[string]string{
+	admissionsbus.OrderByEventRegistrationID:           "event_registration_id",
+	admissionsbus.OrderByEventRegistrationEvent:        "event_id",
+	admissionsbus.OrderByEventRegistrationStatus:       "status",
+	admissionsbus.OrderByEventRegistrationRegisteredAt: "registered_at",
+	admissionsbus.OrderByEventRegistrationCheckedInAt:  "checked_in_at",
+}
+
 var applicationFormTemplateOrderByFields = map[string]string{
 	admissionsbus.OrderByApplicationFormTemplateID:          "form_template_id",
 	admissionsbus.OrderByApplicationFormTemplateName:        "name",
@@ -161,6 +177,30 @@ var syncEventOrderByFields = map[string]string{
 	admissionsbus.OrderBySyncEventDirection:   "direction",
 	admissionsbus.OrderBySyncEventResource:    "resource_type",
 	admissionsbus.OrderBySyncEventDateCreated: "date_created",
+}
+
+var campaignOrderByFields = map[string]string{
+	admissionsbus.OrderByCampaignID:          "campaign_id",
+	admissionsbus.OrderByCampaignName:        "name",
+	admissionsbus.OrderByCampaignStatus:      "status",
+	admissionsbus.OrderByCampaignChannel:     "channel",
+	admissionsbus.OrderByCampaignStartsAt:    "starts_at",
+	admissionsbus.OrderByCampaignDateCreated: "date_created",
+}
+
+var campaignAuditEventOrderByFields = map[string]string{
+	admissionsbus.OrderByCampaignAuditEventID:         "campaign_audit_event_id",
+	admissionsbus.OrderByCampaignAuditEventCampaign:   "campaign_id",
+	admissionsbus.OrderByCampaignAuditEventOccurredAt: "occurred_at",
+}
+
+var communicationOrderByFields = map[string]string{
+	admissionsbus.OrderByCommunicationID:          "communication_id",
+	admissionsbus.OrderByCommunicationChannel:     "channel",
+	admissionsbus.OrderByCommunicationDirection:   "direction",
+	admissionsbus.OrderByCommunicationStatus:      "status",
+	admissionsbus.OrderByCommunicationOccurredAt:  "occurred_at",
+	admissionsbus.OrderByCommunicationDateCreated: "date_created",
 }
 
 func programOrderByClause(orderBy order.By) (string, error) {
@@ -253,6 +293,24 @@ func applicationOrderByClause(orderBy order.By) (string, error) {
 	return " ORDER BY " + by + " " + orderBy.Direction, nil
 }
 
+func eventOrderByClause(orderBy order.By) (string, error) {
+	by, exists := eventOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func eventRegistrationOrderByClause(orderBy order.By) (string, error) {
+	by, exists := eventRegistrationOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
 func applicationFormTemplateOrderByClause(orderBy order.By) (string, error) {
 	by, exists := applicationFormTemplateOrderByFields[orderBy.Field]
 	if !exists {
@@ -336,6 +394,33 @@ func syncJobOrderByClause(orderBy order.By) (string, error) {
 
 func syncEventOrderByClause(orderBy order.By) (string, error) {
 	by, exists := syncEventOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func campaignOrderByClause(orderBy order.By) (string, error) {
+	by, exists := campaignOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func campaignAuditEventOrderByClause(orderBy order.By) (string, error) {
+	by, exists := campaignAuditEventOrderByFields[orderBy.Field]
+	if !exists {
+		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
+	}
+
+	return " ORDER BY " + by + " " + orderBy.Direction, nil
+}
+
+func communicationOrderByClause(orderBy order.By) (string, error) {
+	by, exists := communicationOrderByFields[orderBy.Field]
 	if !exists {
 		return "", fmt.Errorf("field %q does not exist", orderBy.Field)
 	}

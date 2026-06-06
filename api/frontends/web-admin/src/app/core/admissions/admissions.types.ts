@@ -50,6 +50,40 @@ export const APPLICATION_STATUSES = [
     'ENROLLED',
 ] as const;
 
+export const EVENT_TYPES = [
+    'open-day',
+    'webinar',
+    'info-session',
+    'campus-tour',
+    'fair',
+] as const;
+
+export const EVENT_STATUSES = [
+    'draft',
+    'upcoming',
+    'live',
+    'completed',
+    'cancelled',
+] as const;
+
+export const EVENT_REGISTRATION_STATUSES = [
+    'registered',
+    'checked-in',
+    'cancelled',
+] as const;
+
+export const EVENT_REGISTRATION_MATCH_STATUSES = [
+    'matched',
+    'new-prospect',
+    'needs-review',
+] as const;
+
+export const EVENT_REGISTRATION_SOURCES = [
+    'portal',
+    'staff',
+    'campaign',
+] as const;
+
 export const DOCUMENT_STATUSES = [
     'UPLOADED',
     'PENDING_REVIEW',
@@ -200,6 +234,36 @@ export const SIS_SYNC_OPERATIONS = [
 
 export const NOTIFICATION_CHANNELS = ['SMS', 'WHATSAPP', 'EMAIL'] as const;
 
+export const CAMPAIGN_STATUSES = [
+    'DRAFT',
+    'ACTIVE',
+    'PAUSED',
+    'COMPLETED',
+] as const;
+
+export const CAMPAIGN_CHANNELS = ['EMAIL', 'SMS'] as const;
+
+export const COMMUNICATION_CHANNELS = [
+    'SMS',
+    'WHATSAPP',
+    'EMAIL',
+    'PHONE_CALL',
+    'NOTIFICATION',
+] as const;
+
+export const COMMUNICATION_DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
+
+export const COMMUNICATION_STATUSES = [
+    'QUEUED',
+    'SENT',
+    'DELIVERED',
+    'FAILED',
+    'OPENED',
+    'BOUNCED',
+    'REPLIED',
+    'LOGGED',
+] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -208,6 +272,14 @@ export type LeadScoreCriterionOperator =
 export type AdmissionsRole = (typeof ADMISSIONS_ROLES)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationType = (typeof APPLICATION_TYPES)[number];
+export type EventRegistrationMatchStatus =
+    (typeof EVENT_REGISTRATION_MATCH_STATUSES)[number];
+export type EventRegistrationSource =
+    (typeof EVENT_REGISTRATION_SOURCES)[number];
+export type EventRegistrationStatus =
+    (typeof EVENT_REGISTRATION_STATUSES)[number];
+export type EventStatus = (typeof EVENT_STATUSES)[number];
+export type EventType = (typeof EVENT_TYPES)[number];
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 export type LeadAssignmentCriterionField =
     (typeof LEAD_ASSIGNMENT_CRITERION_FIELDS)[number];
@@ -223,6 +295,12 @@ export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
 export type KenyaAdapter = (typeof KENYA_ADAPTERS)[number];
 export type SisSyncOperation = (typeof SIS_SYNC_OPERATIONS)[number];
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
+export type CommunicationChannel = (typeof COMMUNICATION_CHANNELS)[number];
+export type CommunicationDirection =
+    (typeof COMMUNICATION_DIRECTIONS)[number];
+export type CommunicationStatus = (typeof COMMUNICATION_STATUSES)[number];
 export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
 export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
@@ -522,6 +600,49 @@ export interface LeadScoreRuleQuery {
     active?: boolean;
 }
 
+export interface Constituent {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName?: string;
+    middleName?: string;
+    suffix?: string;
+    dateOfBirth: string;
+    primaryEmail: string;
+    primaryPhone: string;
+    externalSISID?: string;
+    nationalID?: string;
+    nationalIDVerifiedAt?: string;
+    nationalIDVerifiedByAdapter?: string;
+    upi?: string;
+    upiVerifiedAt?: string;
+    upiVerifiedByAdapter?: string;
+    kcseIndexNumber?: string;
+    kcseIndexVerifiedAt?: string;
+    kcseIndexVerifiedByAdapter?: string;
+    lifecycleStage: (typeof LIFECYCLE_STAGES)[number];
+    duplicateStatus: 'ACTIVE' | 'MERGED' | 'DUPLICATE_OF';
+    duplicateOfID?: string;
+    notificationPreferences: NotificationPreferences;
+    sisSyncedAt?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface ConstituentQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    constituent_id?: string;
+    primary_email?: string;
+    external_sis_id?: string;
+    national_id?: string;
+    upi?: string;
+    kcse_index_number?: string;
+    lifecycle_stage?: (typeof LIFECYCLE_STAGES)[number];
+    duplicate_status?: 'ACTIVE' | 'MERGED' | 'DUPLICATE_OF';
+}
+
 export interface ApplicationFormField {
     fieldName: string;
     fieldType: string;
@@ -660,6 +781,92 @@ export interface ApplicationTransitionQuery {
     rows?: number;
     orderBy?: string;
     application_id?: string;
+}
+
+export interface AdmissionsEventRegistration {
+    id: string;
+    constituentId?: string;
+    constituentName: string;
+    email: string;
+    phone?: string;
+    status: EventRegistrationStatus;
+    registeredAt: string;
+    matchStatus: EventRegistrationMatchStatus;
+    source: EventRegistrationSource;
+    checkedInAt?: string;
+    checkedInById?: string;
+}
+
+export interface AdmissionsEvent {
+    id: string;
+    title: string;
+    type: EventType;
+    status: EventStatus;
+    description: string;
+    start: string;
+    end: string;
+    location: string;
+    isVirtual: boolean;
+    capacity: number;
+    registeredCount: number;
+    checkedInCount: number;
+    registrationDeadline?: string;
+    autoConfirmationEnabled: boolean;
+    autoReminderEnabled: boolean;
+    registrations: AdmissionsEventRegistration[];
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface AdmissionsEventRequest {
+    title: string;
+    type: EventType;
+    status: EventStatus;
+    description: string;
+    start: string;
+    end: string;
+    location: string;
+    isVirtual: boolean;
+    capacity: number;
+    registrationDeadline?: string | null;
+    autoConfirmationEnabled: boolean;
+    autoReminderEnabled: boolean;
+}
+
+export interface AdmissionsEventQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    event_id?: string;
+    type?: EventType;
+    status?: EventStatus;
+    virtual?: boolean;
+}
+
+export interface AdmissionsEventRegistrationQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    event_registration_id?: string;
+    event_id?: string;
+    constituent_id?: string;
+    status?: EventRegistrationStatus;
+    match_status?: EventRegistrationMatchStatus;
+    source?: EventRegistrationSource;
+}
+
+export interface AdmissionsEventRegistrationRequest {
+    constituentId?: string | null;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+    source: EventRegistrationSource;
+    matchStatus: EventRegistrationMatchStatus;
+}
+
+export interface AdmissionsEventCheckInRequest {
+    registrationId: string;
 }
 
 export interface ChecklistItem {
@@ -808,6 +1015,109 @@ export interface ImportInvalidRowQuery {
     import_batch_id?: string;
 }
 
+export interface CampaignSegmentFilter {
+    applicationTypes: ApplicationType[];
+    applicationStatuses: ApplicationStatus[];
+    academicTerms: string[];
+    programs: string[];
+    eventAttendance: EventAttendanceStatus;
+    leadScoreBands: LeadScoreBand[];
+    recruiters: string[];
+    territories: string[];
+}
+
+export interface CampaignMetrics {
+    audienceSize: number;
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    replied: number;
+}
+
+export interface CampaignAuditEvent {
+    id: string;
+    campaignID: string;
+    actorName: string;
+    action: string;
+    occurredAt: string;
+    dateCreated: string;
+}
+
+export interface Campaign {
+    id: string;
+    name: string;
+    status: CampaignStatus;
+    channel: CampaignChannel;
+    audienceName: string;
+    templateName: string;
+    messagePreview: string;
+    segment: CampaignSegmentFilter;
+    metrics: CampaignMetrics;
+    startsAt?: string;
+    endsAt?: string;
+    createdByID?: string;
+    auditTrail: CampaignAuditEvent[];
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CampaignQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    campaign_id?: string;
+    status?: CampaignStatus;
+    channel?: CampaignChannel;
+    created_by_id?: string;
+}
+
+export interface CampaignAuditEventQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    campaign_audit_event_id?: string;
+    campaign_id?: string;
+}
+
+export interface CommunicationRecord {
+    id: string;
+    externalMessageID: string;
+    channel: CommunicationChannel;
+    direction: CommunicationDirection;
+    constituentID: string;
+    applicationID?: string;
+    campaignID?: string;
+    recipientSender: string;
+    recipientInitials: string;
+    subject: string;
+    preview: string;
+    status: CommunicationStatus;
+    provider?: string;
+    ownerName: string;
+    outcome?: string;
+    duration?: string;
+    occurredAt: string;
+    providerPayload?: Record<string, unknown>;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CommunicationQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    communication_id?: string;
+    constituent_id?: string;
+    application_id?: string;
+    campaign_id?: string;
+    channel?: CommunicationChannel;
+    direction?: CommunicationDirection;
+    status?: CommunicationStatus;
+    provider?: string;
+}
+
 export interface Inquiry {
     id: string;
     constituentID: string;
@@ -841,4 +1151,15 @@ export interface InquiryRequest {
     utmMedium?: string | null;
     utmCampaign?: string | null;
     message?: string | null;
+}
+
+export interface InquiryQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    inquiry_id?: string;
+    constituent_id?: string;
+    primary_email?: string;
+    source?: string;
+    status?: string;
 }

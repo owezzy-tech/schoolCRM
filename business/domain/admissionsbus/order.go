@@ -32,6 +32,12 @@ var DefaultDuplicateReviewOrderBy = order.NewBy(OrderByDuplicateReviewDateCreate
 // DefaultApplicationOrderBy represents the default way we sort applications.
 var DefaultApplicationOrderBy = order.NewBy(OrderByApplicationDateCreated, order.ASC)
 
+// DefaultEventOrderBy represents the default way we sort admissions events.
+var DefaultEventOrderBy = order.NewBy(OrderByEventStartTime, order.ASC)
+
+// DefaultEventRegistrationOrderBy represents the default way we sort event registrations.
+var DefaultEventRegistrationOrderBy = order.NewBy(OrderByEventRegistrationRegisteredAt, order.DESC)
+
 // DefaultApplicationFormTemplateOrderBy represents the default way we sort application form templates.
 var DefaultApplicationFormTemplateOrderBy = order.NewBy(OrderByApplicationFormTemplatePriority, order.ASC)
 
@@ -61,6 +67,15 @@ var DefaultSyncJobOrderBy = order.NewBy(OrderBySyncJobDateCreated, order.DESC)
 
 // DefaultSyncEventOrderBy represents the default way we sort SIS sync events.
 var DefaultSyncEventOrderBy = order.NewBy(OrderBySyncEventDateCreated, order.DESC)
+
+// DefaultCampaignOrderBy represents the default way we sort admissions campaigns.
+var DefaultCampaignOrderBy = order.NewBy(OrderByCampaignDateCreated, order.DESC)
+
+// DefaultCampaignAuditEventOrderBy represents the default way we sort admissions campaign audit events.
+var DefaultCampaignAuditEventOrderBy = order.NewBy(OrderByCampaignAuditEventOccurredAt, order.DESC)
+
+// DefaultCommunicationOrderBy represents the default way we sort admissions communications.
+var DefaultCommunicationOrderBy = order.NewBy(OrderByCommunicationOccurredAt, order.DESC)
 
 // Set of fields that programs can be ordered by.
 const (
@@ -143,6 +158,24 @@ const (
 	OrderByApplicationType        = "c"
 	OrderByApplicationSubmittedAt = "d"
 	OrderByApplicationDateCreated = "e"
+)
+
+// Set of fields that admissions events can be ordered by.
+const (
+	OrderByEventID          = "a"
+	OrderByEventType        = "b"
+	OrderByEventStatus      = "c"
+	OrderByEventStartTime   = "d"
+	OrderByEventDateCreated = "e"
+)
+
+// Set of fields that admissions event registrations can be ordered by.
+const (
+	OrderByEventRegistrationID           = "a"
+	OrderByEventRegistrationEvent        = "b"
+	OrderByEventRegistrationStatus       = "c"
+	OrderByEventRegistrationRegisteredAt = "d"
+	OrderByEventRegistrationCheckedInAt  = "e"
 )
 
 // Set of fields that application form templates can be ordered by.
@@ -236,4 +269,31 @@ const (
 	OrderBySyncEventDirection   = "e"
 	OrderBySyncEventResource    = "f"
 	OrderBySyncEventDateCreated = "g"
+)
+
+// Set of fields that admissions campaigns can be ordered by.
+const (
+	OrderByCampaignID          = "a"
+	OrderByCampaignName        = "b"
+	OrderByCampaignStatus      = "c"
+	OrderByCampaignChannel     = "d"
+	OrderByCampaignStartsAt    = "e"
+	OrderByCampaignDateCreated = "f"
+)
+
+// Set of fields that campaign audit events can be ordered by.
+const (
+	OrderByCampaignAuditEventID         = "a"
+	OrderByCampaignAuditEventCampaign   = "b"
+	OrderByCampaignAuditEventOccurredAt = "c"
+)
+
+// Set of fields that admissions communications can be ordered by.
+const (
+	OrderByCommunicationID          = "a"
+	OrderByCommunicationChannel     = "b"
+	OrderByCommunicationDirection   = "c"
+	OrderByCommunicationStatus      = "d"
+	OrderByCommunicationOccurredAt  = "e"
+	OrderByCommunicationDateCreated = "f"
 )

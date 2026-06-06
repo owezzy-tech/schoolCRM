@@ -75,6 +75,22 @@ var applicationOrderByFields = map[string]string{
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
 }
 
+var eventOrderByFields = map[string]string{
+	"event_id":     admissionsbus.OrderByEventID,
+	"type":         admissionsbus.OrderByEventType,
+	"status":       admissionsbus.OrderByEventStatus,
+	"start_time":   admissionsbus.OrderByEventStartTime,
+	"date_created": admissionsbus.OrderByEventDateCreated,
+}
+
+var eventRegistrationOrderByFields = map[string]string{
+	"event_registration_id": admissionsbus.OrderByEventRegistrationID,
+	"event_id":              admissionsbus.OrderByEventRegistrationEvent,
+	"status":                admissionsbus.OrderByEventRegistrationStatus,
+	"registered_at":         admissionsbus.OrderByEventRegistrationRegisteredAt,
+	"checked_in_at":         admissionsbus.OrderByEventRegistrationCheckedInAt,
+}
+
 var applicationFormTemplateOrderByFields = map[string]string{
 	"form_template_id": admissionsbus.OrderByApplicationFormTemplateID,
 	"name":             admissionsbus.OrderByApplicationFormTemplateName,
@@ -156,4 +172,28 @@ var syncEventOrderByFields = map[string]string{
 	"direction":     admissionsbus.OrderBySyncEventDirection,
 	"resource_id":   admissionsbus.OrderBySyncEventResource,
 	"date_created":  admissionsbus.OrderBySyncEventDateCreated,
+}
+
+var campaignOrderByFields = map[string]string{
+	"campaign_id":  admissionsbus.OrderByCampaignID,
+	"name":         admissionsbus.OrderByCampaignName,
+	"status":       admissionsbus.OrderByCampaignStatus,
+	"channel":      admissionsbus.OrderByCampaignChannel,
+	"starts_at":    admissionsbus.OrderByCampaignStartsAt,
+	"date_created": admissionsbus.OrderByCampaignDateCreated,
+}
+
+var campaignAuditEventOrderByFields = map[string]string{
+	"campaign_audit_event_id": admissionsbus.OrderByCampaignAuditEventID,
+	"campaign_id":             admissionsbus.OrderByCampaignAuditEventCampaign,
+	"occurred_at":             admissionsbus.OrderByCampaignAuditEventOccurredAt,
+}
+
+var communicationOrderByFields = map[string]string{
+	"communication_id": admissionsbus.OrderByCommunicationID,
+	"channel":          admissionsbus.OrderByCommunicationChannel,
+	"direction":        admissionsbus.OrderByCommunicationDirection,
+	"status":           admissionsbus.OrderByCommunicationStatus,
+	"occurred_at":      admissionsbus.OrderByCommunicationOccurredAt,
+	"date_created":     admissionsbus.OrderByCommunicationDateCreated,
 }

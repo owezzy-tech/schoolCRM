@@ -935,3 +935,183 @@ CREATE INDEX idx_programmes_university_code ON programmes (university_code);
 CREATE INDEX idx_programmes_cluster_code ON programmes (cluster_code);
 CREATE INDEX idx_programmes_knqf_level_code ON programmes (knqf_level_code);
 CREATE INDEX idx_programmes_name ON programmes (name);
+
+-- Version: 1.28
+-- Description: Create admissions events and registrations tables
+CREATE TABLE admissions_events (
+    event_id                     UUID      NOT NULL,
+    title                        TEXT      NOT NULL,
+    event_type                   TEXT      NOT NULL,
+    status                       TEXT      NOT NULL,
+    description                  TEXT      NOT NULL,
+    start_time                   TIMESTAMP NOT NULL,
+    end_time                     TIMESTAMP NOT NULL,
+    location                     TEXT      NOT NULL,
+    is_virtual                   BOOLEAN   NOT NULL,
+    capacity                     INT       NOT NULL,
+    registration_deadline        TIMESTAMP NULL,
+    auto_confirmation_enabled    BOOLEAN   NOT NULL,
+    auto_reminder_enabled        BOOLEAN   NOT NULL,
+    date_created                 TIMESTAMP NOT NULL,
+    date_updated                 TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (event_id),
+    CONSTRAINT admissions_events_title_not_empty CHECK (trim(title) <> ''),
+    CONSTRAINT admissions_events_description_not_empty CHECK (trim(description) <> ''),
+    CONSTRAINT admissions_events_location_not_empty CHECK (trim(location) <> ''),
+    CONSTRAINT admissions_events_type CHECK (event_type IN ('open-day', 'webinar', 'info-session', 'campus-tour', 'fair')),
+    CONSTRAINT admissions_events_status CHECK (status IN ('draft', 'upcoming', 'live', 'completed', 'cancelled')),
+    CONSTRAINT admissions_events_capacity_positive CHECK (capacity >= 0),
+    CONSTRAINT admissions_events_date_range CHECK (start_time < end_time),
+    CONSTRAINT admissions_events_deadline_window CHECK (
+        registration_deadline IS NULL OR registration_deadline <= start_time
+    )
+);
+
+CREATE INDEX idx_admissions_events_status ON admissions_events (status);
+CREATE INDEX idx_admissions_events_type ON admissions_events (event_type);
+CREATE INDEX idx_admissions_events_start_time ON admissions_events (start_time);
+
+CREATE TABLE admissions_event_registrations (
+    event_registration_id        UUID      NOT NULL,
+    event_id                     UUID      NOT NULL,
+    constituent_id               UUID      NULL,
+    first_name                   TEXT      NOT NULL,
+    last_name                    TEXT      NOT NULL,
+    email                        TEXT      NOT NULL,
+    phone                        TEXT      NULL,
+    status                       TEXT      NOT NULL,
+    match_status                 TEXT      NOT NULL,
+    source                       TEXT      NOT NULL,
+    registered_at                TIMESTAMP NOT NULL,
+    checked_in_at                TIMESTAMP NULL,
+    checked_in_by_id             UUID      NULL,
+    date_created                 TIMESTAMP NOT NULL,
+    date_updated                 TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (event_registration_id),
+    FOREIGN KEY (event_id) REFERENCES admissions_events(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id) ON DELETE SET NULL,
+    FOREIGN KEY (checked_in_by_id) REFERENCES users(user_id),
+    CONSTRAINT admissions_event_registrations_first_name_not_empty CHECK (trim(first_name) <> ''),
+    CONSTRAINT admissions_event_registrations_last_name_not_empty CHECK (trim(last_name) <> ''),
+    CONSTRAINT admissions_event_registrations_email_not_empty CHECK (trim(email) <> ''),
+    CONSTRAINT admissions_event_registrations_status CHECK (status IN ('registered', 'checked-in', 'cancelled')),
+    CONSTRAINT admissions_event_registrations_match_status CHECK (match_status IN ('matched', 'new-prospect', 'needs-review')),
+    CONSTRAINT admissions_event_registrations_source CHECK (source IN ('portal', 'staff', 'campaign')),
+    CONSTRAINT admissions_event_registrations_checkin_consistency CHECK (
+        (status = 'checked-in' AND checked_in_at IS NOT NULL)
+        OR (status <> 'checked-in')
+    )
+);
+
+CREATE UNIQUE INDEX idx_admissions_event_registrations_event_constituent
+    ON admissions_event_registrations (event_id, constituent_id)
+    WHERE constituent_id IS NOT NULL;
+
+CREATE INDEX idx_admissions_event_registrations_event ON admissions_event_registrations (event_id);
+CREATE INDEX idx_admissions_event_registrations_status ON admissions_event_registrations (status);
+CREATE INDEX idx_admissions_event_registrations_registered_at ON admissions_event_registrations (registered_at);
+
+-- Version: 1.29
+-- Description: Create admissions campaign and communication source tables
+CREATE TABLE admissions_campaigns (
+    campaign_id      UUID      NOT NULL,
+    name             TEXT      NOT NULL,
+    status           TEXT      NOT NULL,
+    channel          TEXT      NOT NULL,
+    audience_name    TEXT      NOT NULL,
+    template_name    TEXT      NOT NULL,
+    message_preview  TEXT      NOT NULL,
+    segment          JSONB     NOT NULL,
+    metrics          JSONB     NOT NULL,
+    starts_at        TIMESTAMP NULL,
+    ends_at          TIMESTAMP NULL,
+    created_by_id    UUID      NULL,
+    date_created     TIMESTAMP NOT NULL,
+    date_updated     TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (campaign_id),
+    FOREIGN KEY (created_by_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT admissions_campaigns_name_not_empty CHECK (trim(name) <> ''),
+    CONSTRAINT admissions_campaigns_status CHECK (status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED')),
+    CONSTRAINT admissions_campaigns_channel CHECK (channel IN ('EMAIL', 'SMS')),
+    CONSTRAINT admissions_campaigns_audience_not_empty CHECK (trim(audience_name) <> ''),
+    CONSTRAINT admissions_campaigns_template_not_empty CHECK (trim(template_name) <> ''),
+    CONSTRAINT admissions_campaigns_preview_not_empty CHECK (trim(message_preview) <> ''),
+    CONSTRAINT admissions_campaigns_date_range CHECK (starts_at IS NULL OR ends_at IS NULL OR starts_at <= ends_at),
+    CONSTRAINT admissions_campaigns_metrics_shape CHECK (jsonb_typeof(metrics) = 'object'),
+    CONSTRAINT admissions_campaigns_segment_shape CHECK (jsonb_typeof(segment) = 'object')
+);
+
+CREATE INDEX idx_admissions_campaigns_status ON admissions_campaigns (status);
+CREATE INDEX idx_admissions_campaigns_channel ON admissions_campaigns (channel);
+CREATE INDEX idx_admissions_campaigns_created ON admissions_campaigns (date_created DESC);
+
+CREATE TABLE admissions_campaign_audit_events (
+    campaign_audit_event_id UUID      NOT NULL,
+    campaign_id             UUID      NOT NULL,
+    actor_name              TEXT      NOT NULL,
+    action                  TEXT      NOT NULL,
+    occurred_at             TIMESTAMP NOT NULL,
+    date_created            TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (campaign_audit_event_id),
+    FOREIGN KEY (campaign_id) REFERENCES admissions_campaigns(campaign_id) ON DELETE CASCADE,
+    CONSTRAINT admissions_campaign_audit_actor_not_empty CHECK (trim(actor_name) <> ''),
+    CONSTRAINT admissions_campaign_audit_action_not_empty CHECK (trim(action) <> '')
+);
+
+CREATE INDEX idx_admissions_campaign_audit_campaign ON admissions_campaign_audit_events (campaign_id);
+CREATE INDEX idx_admissions_campaign_audit_occurred ON admissions_campaign_audit_events (occurred_at DESC);
+
+CREATE TABLE admissions_communications (
+    communication_id     UUID      NOT NULL,
+    external_message_id  TEXT      NOT NULL,
+    channel              TEXT      NOT NULL,
+    direction            TEXT      NOT NULL,
+    constituent_id       UUID      NOT NULL,
+    application_id       UUID      NULL,
+    campaign_id          UUID      NULL,
+    recipient_sender     TEXT      NOT NULL,
+    recipient_initials   TEXT      NOT NULL,
+    subject              TEXT      NOT NULL,
+    preview              TEXT      NOT NULL,
+    status               TEXT      NOT NULL,
+    provider             TEXT      NULL,
+    owner_name           TEXT      NOT NULL,
+    outcome              TEXT      NULL,
+    duration             TEXT      NULL,
+    occurred_at          TIMESTAMP NOT NULL,
+    provider_payload     JSONB     NULL,
+    date_created         TIMESTAMP NOT NULL,
+    date_updated         TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (communication_id),
+    FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id),
+    FOREIGN KEY (application_id) REFERENCES admissions_applications(application_id) ON DELETE SET NULL,
+    FOREIGN KEY (campaign_id) REFERENCES admissions_campaigns(campaign_id) ON DELETE SET NULL,
+    CONSTRAINT admissions_communications_external_message_unique UNIQUE (external_message_id),
+    CONSTRAINT admissions_communications_channel CHECK (channel IN ('SMS', 'WHATSAPP', 'EMAIL', 'PHONE_CALL', 'NOTIFICATION')),
+    CONSTRAINT admissions_communications_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT admissions_communications_status CHECK (status IN ('QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'OPENED', 'BOUNCED', 'REPLIED', 'LOGGED')),
+    CONSTRAINT admissions_communications_external_message_not_empty CHECK (trim(external_message_id) <> ''),
+    CONSTRAINT admissions_communications_recipient_not_empty CHECK (trim(recipient_sender) <> ''),
+    CONSTRAINT admissions_communications_initials_not_empty CHECK (trim(recipient_initials) <> ''),
+    CONSTRAINT admissions_communications_subject_not_empty CHECK (trim(subject) <> ''),
+    CONSTRAINT admissions_communications_preview_not_empty CHECK (trim(preview) <> ''),
+    CONSTRAINT admissions_communications_owner_not_empty CHECK (trim(owner_name) <> ''),
+    CONSTRAINT admissions_communications_provider_payload_shape CHECK (provider_payload IS NULL OR jsonb_typeof(provider_payload) = 'object')
+);
+
+CREATE INDEX idx_admissions_communications_constituent ON admissions_communications (constituent_id);
+CREATE INDEX idx_admissions_communications_application ON admissions_communications (application_id) WHERE application_id IS NOT NULL;
+CREATE INDEX idx_admissions_communications_campaign ON admissions_communications (campaign_id) WHERE campaign_id IS NOT NULL;
+CREATE INDEX idx_admissions_communications_channel ON admissions_communications (channel);
+CREATE INDEX idx_admissions_communications_direction ON admissions_communications (direction);
+CREATE INDEX idx_admissions_communications_status ON admissions_communications (status);
+CREATE INDEX idx_admissions_communications_occurred ON admissions_communications (occurred_at DESC);
+
+ALTER TABLE admissions_sync_events
+    DROP CONSTRAINT sync_events_event_type,
+    ADD CONSTRAINT sync_events_event_type CHECK (event_type IN ('BATCH_TERMS_PULL', 'BATCH_PROGRAMS_PULL', 'BATCH_PERSON_MATCHES_PULL', 'BATCH_ENROLLMENT_PULL', 'APPLICATION_SUBMISSION', 'APPLICATION_DECISION', 'DOCUMENT_STATUS', 'ENROLLMENT_INTENT', 'KUCCPS_PLACEMENT_PULL', 'KUCCPS_PLACEMENT_CONFIRM', 'KNEC_RESULT_VERIFICATION', 'IPRS_IDENTITY_VERIFICATION', 'MPESA_STK_PUSH', 'MPESA_C2B_CALLBACK', 'MPESA_TRANSACTION_QUERY', 'SMS_OUTBOUND', 'SMS_DELIVERY_REPORT', 'WHATSAPP_MESSAGE_SEND', 'WHATSAPP_WEBHOOK_INBOUND'));
