@@ -234,6 +234,36 @@ export const SIS_SYNC_OPERATIONS = [
 
 export const NOTIFICATION_CHANNELS = ['SMS', 'WHATSAPP', 'EMAIL'] as const;
 
+export const CAMPAIGN_STATUSES = [
+    'DRAFT',
+    'ACTIVE',
+    'PAUSED',
+    'COMPLETED',
+] as const;
+
+export const CAMPAIGN_CHANNELS = ['EMAIL', 'SMS'] as const;
+
+export const COMMUNICATION_CHANNELS = [
+    'SMS',
+    'WHATSAPP',
+    'EMAIL',
+    'PHONE_CALL',
+    'NOTIFICATION',
+] as const;
+
+export const COMMUNICATION_DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
+
+export const COMMUNICATION_STATUSES = [
+    'QUEUED',
+    'SENT',
+    'DELIVERED',
+    'FAILED',
+    'OPENED',
+    'BOUNCED',
+    'REPLIED',
+    'LOGGED',
+] as const;
+
 export type LeadScoreBand = (typeof LEAD_SCORE_BANDS)[number];
 export type LeadScoreCriterionField =
     (typeof LEAD_SCORE_CRITERION_FIELDS)[number];
@@ -265,6 +295,12 @@ export type SisSyncEventType = (typeof SIS_SYNC_EVENT_TYPES)[number];
 export type KenyaAdapter = (typeof KENYA_ADAPTERS)[number];
 export type SisSyncOperation = (typeof SIS_SYNC_OPERATIONS)[number];
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
+export type CommunicationChannel = (typeof COMMUNICATION_CHANNELS)[number];
+export type CommunicationDirection =
+    (typeof COMMUNICATION_DIRECTIONS)[number];
+export type CommunicationStatus = (typeof COMMUNICATION_STATUSES)[number];
 export type CustomFieldOwner = (typeof CUSTOM_FIELD_OWNERS)[number];
 export type CustomFieldDataType = (typeof CUSTOM_FIELD_DATA_TYPES)[number];
 export type ImportBatchStatus = (typeof IMPORT_BATCH_STATUSES)[number];
@@ -970,6 +1006,109 @@ export interface ImportInvalidRowQuery {
     rows?: number;
     orderBy?: string;
     import_batch_id?: string;
+}
+
+export interface CampaignSegmentFilter {
+    applicationTypes: ApplicationType[];
+    applicationStatuses: ApplicationStatus[];
+    academicTerms: string[];
+    programs: string[];
+    eventAttendance: EventAttendanceStatus;
+    leadScoreBands: LeadScoreBand[];
+    recruiters: string[];
+    territories: string[];
+}
+
+export interface CampaignMetrics {
+    audienceSize: number;
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    replied: number;
+}
+
+export interface CampaignAuditEvent {
+    id: string;
+    campaignID: string;
+    actorName: string;
+    action: string;
+    occurredAt: string;
+    dateCreated: string;
+}
+
+export interface Campaign {
+    id: string;
+    name: string;
+    status: CampaignStatus;
+    channel: CampaignChannel;
+    audienceName: string;
+    templateName: string;
+    messagePreview: string;
+    segment: CampaignSegmentFilter;
+    metrics: CampaignMetrics;
+    startsAt?: string;
+    endsAt?: string;
+    createdByID?: string;
+    auditTrail: CampaignAuditEvent[];
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CampaignQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    campaign_id?: string;
+    status?: CampaignStatus;
+    channel?: CampaignChannel;
+    created_by_id?: string;
+}
+
+export interface CampaignAuditEventQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    campaign_audit_event_id?: string;
+    campaign_id?: string;
+}
+
+export interface CommunicationRecord {
+    id: string;
+    externalMessageID: string;
+    channel: CommunicationChannel;
+    direction: CommunicationDirection;
+    constituentID: string;
+    applicationID?: string;
+    campaignID?: string;
+    recipientSender: string;
+    recipientInitials: string;
+    subject: string;
+    preview: string;
+    status: CommunicationStatus;
+    provider?: string;
+    ownerName: string;
+    outcome?: string;
+    duration?: string;
+    occurredAt: string;
+    providerPayload?: Record<string, unknown>;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+export interface CommunicationQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    communication_id?: string;
+    constituent_id?: string;
+    application_id?: string;
+    campaign_id?: string;
+    channel?: CommunicationChannel;
+    direction?: CommunicationDirection;
+    status?: CommunicationStatus;
+    provider?: string;
 }
 
 export interface Inquiry {

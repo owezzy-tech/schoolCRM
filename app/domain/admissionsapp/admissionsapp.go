@@ -2285,6 +2285,164 @@ func (a *app) queryImportInvalidRowByID(ctx context.Context, r *http.Request) we
 	return toAppImportInvalidRow(row)
 }
 
+func (a *app) queryCampaigns(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCampaignQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCampaignFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(campaignOrderByFields, qp.OrderBy, admissionsbus.DefaultCampaignOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	campaigns, err := a.admissionsBus.QueryCampaigns(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query campaigns: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCampaigns(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count campaigns: %s", err)
+	}
+
+	audits, appErr := a.campaignAuditTrail(ctx, campaigns)
+	if appErr != nil {
+		return appErr
+	}
+
+	return query.NewResult(toAppCampaigns(campaigns, audits), total, page)
+}
+
+func (a *app) queryCampaignByID(ctx context.Context, r *http.Request) web.Encoder {
+	campaignID, err := uuid.Parse(web.Param(r, "campaign_id"))
+	if err != nil {
+		return errs.NewFieldErrors("campaign_id", err)
+	}
+
+	campaign, err := a.admissionsBus.QueryCampaignByID(ctx, campaignID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query campaign: %s", err)
+	}
+
+	auditEvents, err := a.admissionsBus.QueryCampaignAuditEvents(
+		ctx,
+		admissionsbus.CampaignAuditEventQueryFilter{CampaignID: &campaignID},
+		admissionsbus.DefaultCampaignAuditEventOrderBy,
+		page.MustParse("1", "5000"),
+	)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query campaign audit events: %s", err)
+	}
+
+	return toAppCampaign(campaign, auditEvents)
+}
+
+func (a *app) queryCampaignAuditEvents(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCampaignAuditEventQueryParams(r)
+	if qp.CampaignID == "" {
+		qp.CampaignID = web.Param(r, "campaign_id")
+	}
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCampaignAuditEventFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(campaignAuditEventOrderByFields, qp.OrderBy, admissionsbus.DefaultCampaignAuditEventOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	events, err := a.admissionsBus.QueryCampaignAuditEvents(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query campaign audit events: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCampaignAuditEvents(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count campaign audit events: %s", err)
+	}
+
+	return query.NewResult(toAppCampaignAuditEvents(events), total, page)
+}
+
+func (a *app) queryCommunications(ctx context.Context, r *http.Request) web.Encoder {
+	qp := parseCommunicationQueryParams(r)
+
+	page, err := page.Parse(qp.Page, qp.Rows)
+	if err != nil {
+		return errs.NewFieldErrors("page", err)
+	}
+
+	filter, err := parseCommunicationFilter(qp)
+	if err != nil {
+		return err.(*errs.Error)
+	}
+
+	orderBy, err := order.Parse(communicationOrderByFields, qp.OrderBy, admissionsbus.DefaultCommunicationOrderBy)
+	if err != nil {
+		return errs.NewFieldErrors("order", err)
+	}
+
+	communications, err := a.admissionsBus.QueryCommunications(ctx, filter, orderBy, page)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query communications: %s", err)
+	}
+
+	total, err := a.admissionsBus.CountCommunications(ctx, filter)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "count communications: %s", err)
+	}
+
+	return query.NewResult(toAppCommunications(communications), total, page)
+}
+
+func (a *app) queryCommunicationByID(ctx context.Context, r *http.Request) web.Encoder {
+	communicationID, err := uuid.Parse(web.Param(r, "communication_id"))
+	if err != nil {
+		return errs.NewFieldErrors("communication_id", err)
+	}
+
+	communication, err := a.admissionsBus.QueryCommunicationByID(ctx, communicationID)
+	if err != nil {
+		return errs.Errorf(errs.Internal, "query communication: %s", err)
+	}
+
+	return toAppCommunication(communication)
+}
+
+func (a *app) campaignAuditTrail(ctx context.Context, campaigns []admissionsbus.Campaign) (map[uuid.UUID][]admissionsbus.CampaignAuditEvent, *errs.Error) {
+	audits := make(map[uuid.UUID][]admissionsbus.CampaignAuditEvent, len(campaigns))
+	for _, campaign := range campaigns {
+		campaignID := campaign.ID
+		events, err := a.admissionsBus.QueryCampaignAuditEvents(
+			ctx,
+			admissionsbus.CampaignAuditEventQueryFilter{CampaignID: &campaignID},
+			admissionsbus.DefaultCampaignAuditEventOrderBy,
+			page.MustParse("1", "5000"),
+		)
+		if err != nil {
+			return nil, errs.Errorf(errs.Internal, "query campaign audit events: %s", err)
+		}
+		audits[campaign.ID] = events
+	}
+
+	return audits, nil
+}
+
 func (a *app) downloadImportInvalidRows(ctx context.Context, r *http.Request) web.Encoder {
 	qp := parseImportInvalidRowQueryParams(r)
 	qp.BatchID = web.Param(r, "import_batch_id")

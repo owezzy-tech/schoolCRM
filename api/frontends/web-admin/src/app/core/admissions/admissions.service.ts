@@ -14,6 +14,10 @@ import {
     AdmissionsEventRegistrationQuery,
     AdmissionsEventRegistrationRequest,
     AdmissionsEventRequest,
+    Campaign,
+    CampaignAuditEvent,
+    CampaignAuditEventQuery,
+    CampaignQuery,
     Application,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
@@ -24,6 +28,8 @@ import {
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
+    CommunicationQuery,
+    CommunicationRecord,
     Constituent,
     ConstituentQuery,
     CustomFieldDefinition,
@@ -108,6 +114,12 @@ export class AdmissionsService {
     private readonly inquiriesSubject = new ReplaySubject<
         PaginatedResult<Inquiry>
     >(1);
+    private readonly campaignsSubject = new ReplaySubject<
+        PaginatedResult<Campaign>
+    >(1);
+    private readonly communicationsSubject = new ReplaySubject<
+        PaginatedResult<CommunicationRecord>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
@@ -130,6 +142,8 @@ export class AdmissionsService {
         this.eventRegistrationsSubject.asObservable();
     readonly constituents$ = this.constituentsSubject.asObservable();
     readonly inquiries$ = this.inquiriesSubject.asObservable();
+    readonly campaigns$ = this.campaignsSubject.asObservable();
+    readonly communications$ = this.communicationsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -325,6 +339,62 @@ export class AdmissionsService {
             .post<
                 JsonApiDocument<AdmissionsEventRegistration>
             >(`/v1/admissions/event-registrations/${registrationID}/check-in`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryCampaigns(
+        query: CampaignQuery = {}
+    ): Observable<PaginatedResult<Campaign>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Campaign>>(
+                '/v1/admissions/campaigns',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.campaignsSubject.next(result))
+            );
+    }
+
+    getCampaign(campaignID: string): Observable<Campaign> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Campaign>
+            >(`/v1/admissions/campaigns/${campaignID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryCampaignAuditEvents(
+        campaignID: string,
+        query: CampaignAuditEventQuery = {}
+    ): Observable<PaginatedResult<CampaignAuditEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<CampaignAuditEvent>>(
+                `/v1/admissions/campaigns/${campaignID}/audit-events`,
+                { params: this.queryParams(query) }
+            )
+            .pipe(map(unwrapJsonApiCollection));
+    }
+
+    queryCommunications(
+        query: CommunicationQuery = {}
+    ): Observable<PaginatedResult<CommunicationRecord>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<CommunicationRecord>>(
+                '/v1/admissions/communications',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.communicationsSubject.next(result))
+            );
+    }
+
+    getCommunication(communicationID: string): Observable<CommunicationRecord> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<CommunicationRecord>
+            >(`/v1/admissions/communications/${communicationID}`)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -671,6 +741,9 @@ export class AdmissionsService {
             | AdmissionsDocumentQuery
             | ImportBatchQuery
             | ImportInvalidRowQuery
+            | CampaignQuery
+            | CampaignAuditEventQuery
+            | CommunicationQuery
     ): HttpParams {
         let params = new HttpParams();
 

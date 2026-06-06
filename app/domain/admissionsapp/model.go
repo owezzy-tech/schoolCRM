@@ -2466,6 +2466,154 @@ func toBusNewSyncEvent(app NewSyncEvent) (admissionsbus.NewSyncEvent, error) {
 	}, nil
 }
 
+// CampaignAuditEvent represents one lifecycle action for an admissions campaign.
+type CampaignAuditEvent struct {
+	ID          string `json:"id"`
+	CampaignID  string `json:"campaignID"`
+	ActorName   string `json:"actorName"`
+	Action      string `json:"action"`
+	OccurredAt  string `json:"occurredAt"`
+	DateCreated string `json:"dateCreated"`
+}
+
+// Campaign represents an admissions marketing or operational campaign.
+type Campaign struct {
+	ID             string               `json:"id"`
+	Name           string               `json:"name"`
+	Status         string               `json:"status"`
+	Channel        string               `json:"channel"`
+	AudienceName   string               `json:"audienceName"`
+	TemplateName   string               `json:"templateName"`
+	MessagePreview string               `json:"messagePreview"`
+	Segment        json.RawMessage      `json:"segment"`
+	Metrics        json.RawMessage      `json:"metrics"`
+	StartsAt       *string              `json:"startsAt,omitempty"`
+	EndsAt         *string              `json:"endsAt,omitempty"`
+	CreatedByID    *string              `json:"createdByID,omitempty"`
+	AuditTrail     []CampaignAuditEvent `json:"auditTrail"`
+	DateCreated    string               `json:"dateCreated"`
+	DateUpdated    string               `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Campaign) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCampaign(campaign admissionsbus.Campaign, auditTrail []admissionsbus.CampaignAuditEvent) Campaign {
+	return Campaign{
+		ID:             campaign.ID.String(),
+		Name:           campaign.Name,
+		Status:         campaign.Status.String(),
+		Channel:        campaign.Channel.String(),
+		AudienceName:   campaign.AudienceName,
+		TemplateName:   campaign.TemplateName,
+		MessagePreview: campaign.MessagePreview,
+		Segment:        campaign.Segment,
+		Metrics:        campaign.Metrics,
+		StartsAt:       formatTimePtr(campaign.StartsAt),
+		EndsAt:         formatTimePtr(campaign.EndsAt),
+		CreatedByID:    uuidStringPtr(campaign.CreatedByID),
+		AuditTrail:     toAppCampaignAuditEvents(auditTrail),
+		DateCreated:    campaign.DateCreated.Format(time.RFC3339),
+		DateUpdated:    campaign.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCampaigns(campaigns []admissionsbus.Campaign, audits map[uuid.UUID][]admissionsbus.CampaignAuditEvent) []Campaign {
+	app := make([]Campaign, len(campaigns))
+	for i, campaign := range campaigns {
+		app[i] = toAppCampaign(campaign, audits[campaign.ID])
+	}
+
+	return app
+}
+
+func toAppCampaignAuditEvent(event admissionsbus.CampaignAuditEvent) CampaignAuditEvent {
+	return CampaignAuditEvent{
+		ID:          event.ID.String(),
+		CampaignID:  event.CampaignID.String(),
+		ActorName:   event.ActorName,
+		Action:      event.Action,
+		OccurredAt:  event.OccurredAt.Format(time.RFC3339),
+		DateCreated: event.DateCreated.Format(time.RFC3339),
+	}
+}
+
+func toAppCampaignAuditEvents(events []admissionsbus.CampaignAuditEvent) []CampaignAuditEvent {
+	app := make([]CampaignAuditEvent, len(events))
+	for i, event := range events {
+		app[i] = toAppCampaignAuditEvent(event)
+	}
+
+	return app
+}
+
+// Communication represents one inbound, outbound, provider-tracked, or manually logged touchpoint.
+type Communication struct {
+	ID                string          `json:"id"`
+	ExternalMessageID string          `json:"externalMessageID"`
+	Channel           string          `json:"channel"`
+	Direction         string          `json:"direction"`
+	ConstituentID     string          `json:"constituentID"`
+	ApplicationID     *string         `json:"applicationID,omitempty"`
+	CampaignID        *string         `json:"campaignID,omitempty"`
+	RecipientSender   string          `json:"recipientSender"`
+	RecipientInitials string          `json:"recipientInitials"`
+	Subject           string          `json:"subject"`
+	Preview           string          `json:"preview"`
+	Status            string          `json:"status"`
+	Provider          *string         `json:"provider,omitempty"`
+	OwnerName         string          `json:"ownerName"`
+	Outcome           *string         `json:"outcome,omitempty"`
+	Duration          *string         `json:"duration,omitempty"`
+	OccurredAt        string          `json:"occurredAt"`
+	ProviderPayload   json.RawMessage `json:"providerPayload,omitempty"`
+	DateCreated       string          `json:"dateCreated"`
+	DateUpdated       string          `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Communication) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCommunication(communication admissionsbus.Communication) Communication {
+	return Communication{
+		ID:                communication.ID.String(),
+		ExternalMessageID: communication.ExternalMessageID,
+		Channel:           communication.Channel.String(),
+		Direction:         communication.Direction.String(),
+		ConstituentID:     communication.ConstituentID.String(),
+		ApplicationID:     uuidStringPtr(communication.ApplicationID),
+		CampaignID:        uuidStringPtr(communication.CampaignID),
+		RecipientSender:   communication.RecipientSender,
+		RecipientInitials: communication.RecipientInitials,
+		Subject:           communication.Subject,
+		Preview:           communication.Preview,
+		Status:            communication.Status.String(),
+		Provider:          communication.Provider,
+		OwnerName:         communication.OwnerName,
+		Outcome:           communication.Outcome,
+		Duration:          communication.Duration,
+		OccurredAt:        communication.OccurredAt.Format(time.RFC3339),
+		ProviderPayload:   communication.ProviderPayload,
+		DateCreated:       communication.DateCreated.Format(time.RFC3339),
+		DateUpdated:       communication.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCommunications(communications []admissionsbus.Communication) []Communication {
+	app := make([]Communication, len(communications))
+	for i, communication := range communications {
+		app[i] = toAppCommunication(communication)
+	}
+
+	return app
+}
+
 func formatTimePtr(t *time.Time) *string {
 	if t == nil {
 		return nil

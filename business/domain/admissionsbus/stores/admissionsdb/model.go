@@ -1409,6 +1409,55 @@ type syncEventDB struct {
 	DateUpdated       time.Time  `db:"date_updated"`
 }
 
+type campaignDB struct {
+	ID             uuid.UUID       `db:"campaign_id"`
+	Name           string          `db:"name"`
+	Status         string          `db:"status"`
+	Channel        string          `db:"channel"`
+	AudienceName   string          `db:"audience_name"`
+	TemplateName   string          `db:"template_name"`
+	MessagePreview string          `db:"message_preview"`
+	Segment        json.RawMessage `db:"segment"`
+	Metrics        json.RawMessage `db:"metrics"`
+	StartsAt       *time.Time      `db:"starts_at"`
+	EndsAt         *time.Time      `db:"ends_at"`
+	CreatedByID    *uuid.UUID      `db:"created_by_id"`
+	DateCreated    time.Time       `db:"date_created"`
+	DateUpdated    time.Time       `db:"date_updated"`
+}
+
+type campaignAuditEventDB struct {
+	ID          uuid.UUID `db:"campaign_audit_event_id"`
+	CampaignID  uuid.UUID `db:"campaign_id"`
+	ActorName   string    `db:"actor_name"`
+	Action      string    `db:"action"`
+	OccurredAt  time.Time `db:"occurred_at"`
+	DateCreated time.Time `db:"date_created"`
+}
+
+type communicationDB struct {
+	ID                uuid.UUID       `db:"communication_id"`
+	ExternalMessageID string          `db:"external_message_id"`
+	Channel           string          `db:"channel"`
+	Direction         string          `db:"direction"`
+	ConstituentID     uuid.UUID       `db:"constituent_id"`
+	ApplicationID     *uuid.UUID      `db:"application_id"`
+	CampaignID        *uuid.UUID      `db:"campaign_id"`
+	RecipientSender   string          `db:"recipient_sender"`
+	RecipientInitials string          `db:"recipient_initials"`
+	Subject           string          `db:"subject"`
+	Preview           string          `db:"preview"`
+	Status            string          `db:"status"`
+	Provider          *string         `db:"provider"`
+	OwnerName         string          `db:"owner_name"`
+	Outcome           *string         `db:"outcome"`
+	Duration          *string         `db:"duration"`
+	OccurredAt        time.Time       `db:"occurred_at"`
+	ProviderPayload   json.RawMessage `db:"provider_payload"`
+	DateCreated       time.Time       `db:"date_created"`
+	DateUpdated       time.Time       `db:"date_updated"`
+}
+
 func toDBSyncJob(bus admissionsbus.SyncJob) syncJobDB {
 	return syncJobDB{
 		ID:                bus.ID,
@@ -1534,6 +1583,88 @@ func tobusSyncEvents(dbs []syncEventDB) []admissionsbus.SyncEvent {
 	for i, db := range dbs {
 		bus[i] = tobusSyncEvent(db)
 	}
+	return bus
+}
+
+func toBusCampaign(db campaignDB) admissionsbus.Campaign {
+	return admissionsbus.Campaign{
+		ID:             db.ID,
+		Name:           db.Name,
+		Status:         admissionsbus.CampaignStatus(db.Status),
+		Channel:        admissionsbus.CampaignChannel(db.Channel),
+		AudienceName:   db.AudienceName,
+		TemplateName:   db.TemplateName,
+		MessagePreview: db.MessagePreview,
+		Segment:        db.Segment,
+		Metrics:        db.Metrics,
+		StartsAt:       localTimePtr(db.StartsAt),
+		EndsAt:         localTimePtr(db.EndsAt),
+		CreatedByID:    db.CreatedByID,
+		DateCreated:    db.DateCreated.In(time.Local),
+		DateUpdated:    db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCampaigns(dbs []campaignDB) []admissionsbus.Campaign {
+	bus := make([]admissionsbus.Campaign, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCampaign(db)
+	}
+
+	return bus
+}
+
+func toBusCampaignAuditEvent(db campaignAuditEventDB) admissionsbus.CampaignAuditEvent {
+	return admissionsbus.CampaignAuditEvent{
+		ID:          db.ID,
+		CampaignID:  db.CampaignID,
+		ActorName:   db.ActorName,
+		Action:      db.Action,
+		OccurredAt:  db.OccurredAt.In(time.Local),
+		DateCreated: db.DateCreated.In(time.Local),
+	}
+}
+
+func toBusCampaignAuditEvents(dbs []campaignAuditEventDB) []admissionsbus.CampaignAuditEvent {
+	bus := make([]admissionsbus.CampaignAuditEvent, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCampaignAuditEvent(db)
+	}
+
+	return bus
+}
+
+func toBusCommunication(db communicationDB) admissionsbus.Communication {
+	return admissionsbus.Communication{
+		ID:                db.ID,
+		ExternalMessageID: db.ExternalMessageID,
+		Channel:           admissionsbus.CommunicationChannel(db.Channel),
+		Direction:         admissionsbus.CommunicationDirection(db.Direction),
+		ConstituentID:     db.ConstituentID,
+		ApplicationID:     db.ApplicationID,
+		CampaignID:        db.CampaignID,
+		RecipientSender:   db.RecipientSender,
+		RecipientInitials: db.RecipientInitials,
+		Subject:           db.Subject,
+		Preview:           db.Preview,
+		Status:            admissionsbus.CommunicationStatus(db.Status),
+		Provider:          db.Provider,
+		OwnerName:         db.OwnerName,
+		Outcome:           db.Outcome,
+		Duration:          db.Duration,
+		OccurredAt:        db.OccurredAt.In(time.Local),
+		ProviderPayload:   db.ProviderPayload,
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCommunications(dbs []communicationDB) []admissionsbus.Communication {
+	bus := make([]admissionsbus.Communication, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCommunication(db)
+	}
+
 	return bus
 }
 

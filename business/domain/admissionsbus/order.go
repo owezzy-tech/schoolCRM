@@ -68,6 +68,15 @@ var DefaultSyncJobOrderBy = order.NewBy(OrderBySyncJobDateCreated, order.DESC)
 // DefaultSyncEventOrderBy represents the default way we sort SIS sync events.
 var DefaultSyncEventOrderBy = order.NewBy(OrderBySyncEventDateCreated, order.DESC)
 
+// DefaultCampaignOrderBy represents the default way we sort admissions campaigns.
+var DefaultCampaignOrderBy = order.NewBy(OrderByCampaignDateCreated, order.DESC)
+
+// DefaultCampaignAuditEventOrderBy represents the default way we sort admissions campaign audit events.
+var DefaultCampaignAuditEventOrderBy = order.NewBy(OrderByCampaignAuditEventOccurredAt, order.DESC)
+
+// DefaultCommunicationOrderBy represents the default way we sort admissions communications.
+var DefaultCommunicationOrderBy = order.NewBy(OrderByCommunicationOccurredAt, order.DESC)
+
 // Set of fields that programs can be ordered by.
 const (
 	OrderByStaffProfileID          = "a"
@@ -153,10 +162,10 @@ const (
 
 // Set of fields that admissions events can be ordered by.
 const (
-	OrderByEventID         = "a"
-	OrderByEventType       = "b"
-	OrderByEventStatus     = "c"
-	OrderByEventStartTime  = "d"
+	OrderByEventID          = "a"
+	OrderByEventType        = "b"
+	OrderByEventStatus      = "c"
+	OrderByEventStartTime   = "d"
 	OrderByEventDateCreated = "e"
 )
 
@@ -260,4 +269,31 @@ const (
 	OrderBySyncEventDirection   = "e"
 	OrderBySyncEventResource    = "f"
 	OrderBySyncEventDateCreated = "g"
+)
+
+// Set of fields that admissions campaigns can be ordered by.
+const (
+	OrderByCampaignID          = "a"
+	OrderByCampaignName        = "b"
+	OrderByCampaignStatus      = "c"
+	OrderByCampaignChannel     = "d"
+	OrderByCampaignStartsAt    = "e"
+	OrderByCampaignDateCreated = "f"
+)
+
+// Set of fields that campaign audit events can be ordered by.
+const (
+	OrderByCampaignAuditEventID         = "a"
+	OrderByCampaignAuditEventCampaign   = "b"
+	OrderByCampaignAuditEventOccurredAt = "c"
+)
+
+// Set of fields that admissions communications can be ordered by.
+const (
+	OrderByCommunicationID          = "a"
+	OrderByCommunicationChannel     = "b"
+	OrderByCommunicationDirection   = "c"
+	OrderByCommunicationStatus      = "d"
+	OrderByCommunicationOccurredAt  = "e"
+	OrderByCommunicationDateCreated = "f"
 )
