@@ -776,6 +776,13 @@ export interface ApplicationTransitionRequest {
     metadata?: Record<string, unknown> | null;
 }
 
+export interface ApplicationTransitionQuery {
+    page?: number;
+    rows?: number;
+    orderBy?: string;
+    application_id?: string;
+}
+
 export interface AdmissionsEventRegistration {
     id: string;
     constituentId?: string;
