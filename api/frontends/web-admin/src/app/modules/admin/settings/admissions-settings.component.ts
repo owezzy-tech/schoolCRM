@@ -1,5 +1,10 @@
 import { AsyncPipe, JsonPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
@@ -12,6 +17,7 @@ import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
     APPLICATION_STATUSES,
     APPLICATION_TYPES,
+    AcademicTerm,
     ApplicationChecklistTemplateItem,
     ApplicationFormField,
     ApplicationFormTemplate,
@@ -41,6 +47,7 @@ import {
     LeadScoreCriterionOperator,
     LeadScoreRule,
     LeadScoreRuleRequest,
+    Program,
 } from 'app/core/admissions/admissions.types';
 import { jsonApiErrorMessage } from 'app/core/api/json-api';
 import { catchError, of } from 'rxjs';
@@ -177,100 +184,6 @@ const emptyCustomFieldForm: CustomFieldDefinitionForm = {
     active: true,
 };
 
-const CUSTOM_FIELD_DEFINITIONS: CustomFieldDefinition[] = [
-    {
-        id: 'field-kuccps-placement-id',
-        owner: 'APPLICATION',
-        fieldKey: 'kuccps_placement_id',
-        label: 'KUCCPS placement ID',
-        description:
-            'KUCCPS placement reference captured before admissions review.',
-        dataType: 'TEXT',
-        required: false,
-        options: [],
-        validation: 'max:40',
-        searchable: true,
-        reportable: true,
-        importable: true,
-        exportable: true,
-        displayOrder: 5,
-        active: true,
-        dateCreated: '2026-06-01T08:00:00Z',
-        dateUpdated: '2026-06-01T08:00:00Z',
-    },
-    {
-        id: 'field-kcse-mean-grade',
-        owner: 'CONSTITUENT',
-        fieldKey: 'kcse_mean_grade',
-        label: 'KCSE mean grade',
-        description:
-            'Normalized KCSE mean grade for application eligibility reporting.',
-        dataType: 'SELECT',
-        required: false,
-        options: [
-            'A',
-            'A-',
-            'B+',
-            'B',
-            'B-',
-            'C+',
-            'C',
-            'C-',
-            'D+',
-            'D',
-            'D-',
-            'E',
-        ],
-        searchable: true,
-        reportable: true,
-        importable: true,
-        exportable: true,
-        displayOrder: 10,
-        active: true,
-        dateCreated: '2026-06-01T08:00:00Z',
-        dateUpdated: '2026-06-01T08:00:00Z',
-    },
-    {
-        id: 'field-kuccps-cluster-points',
-        owner: 'APPLICATION',
-        fieldKey: 'kuccps_cluster_points',
-        label: 'KUCCPS cluster points',
-        description:
-            'Public cluster-point approximation used until private KNEC PI data is available.',
-        dataType: 'NUMBER',
-        required: false,
-        options: [],
-        validation: 'min:0|max:48',
-        searchable: true,
-        reportable: true,
-        importable: true,
-        exportable: true,
-        displayOrder: 20,
-        active: true,
-        dateCreated: '2026-06-01T08:00:00Z',
-        dateUpdated: '2026-06-01T08:00:00Z',
-    },
-    {
-        id: 'field-alumni-connection',
-        owner: 'CONSTITUENT',
-        fieldKey: 'alumni_connection',
-        label: 'Alumni connection',
-        description:
-            'Optional context for family or mentor relationship reporting.',
-        dataType: 'BOOLEAN',
-        required: false,
-        options: [],
-        searchable: false,
-        reportable: true,
-        importable: true,
-        exportable: true,
-        displayOrder: 30,
-        active: false,
-        dateCreated: '2026-06-01T08:00:00Z',
-        dateUpdated: '2026-06-01T08:00:00Z',
-    },
-];
-
 const emptyAssignmentForm: AssignmentRuleForm = {
     id: '',
     name: '',
@@ -283,31 +196,21 @@ const emptyAssignmentForm: AssignmentRuleForm = {
     active: true,
 };
 
-const TERRITORIES = [
+const DEFAULT_TERRITORIES = [
     'Northeast',
     'Mid-Atlantic',
     'Midwest',
     'Southwest',
 ] as const;
 
-const PROGRAMS = [
-    'B.Sc. Computer Science',
-    'Bachelor of Commerce',
-    'Diploma in ICT',
-    'M.A. Education',
-    'Certificate in Data Support',
-] as const;
-
-const TERMS = ['September 2026', 'January 2027', 'May 2027'] as const;
-
-const LEAD_SOURCES = [
+const DEFAULT_LEAD_SOURCES = [
     'Web form',
     'Open house',
     'Counselor',
     'Referral',
 ] as const;
 
-const ASSIGNEES = [
+const DEFAULT_ASSIGNEES = [
     'Maya Schultz',
     'Andre Park',
     'Avery',
@@ -460,59 +363,7 @@ const ASSIGNMENT_CANDIDATES: AssignmentCandidate[] = [
     },
 ];
 
-const IMPORT_BATCHES: ImportBatch[] = [
-    {
-        id: 'import-2026-0601-constituents',
-        source: 'MANUAL_UPLOAD',
-        fileType: 'CSV',
-        target: 'CONSTITUENTS',
-        status: 'VALIDATION_FAILED',
-        fileName: 'fall-2026-open-house-leads.csv',
-        storageKey: 'admissions/imports/fall-2026-open-house-leads.csv',
-        uploadedByID: 'user-maya-schultz',
-        totalRows: 420,
-        validRows: 392,
-        invalidRows: 18,
-        duplicateRows: 10,
-        fieldMapping: {
-            first_name: 'First Name',
-            last_name: 'Last Name',
-            primary_email: 'Email',
-            scholarship_level: 'Scholarship Level',
-        },
-        invalidReportKey:
-            'admissions/imports/reports/fall-2026-open-house-leads-invalid.csv',
-        validationSummary:
-            '18 rows need correction: missing email, invalid phone, or unknown program code.',
-        dateCreated: '2026-06-01T10:30:00Z',
-        dateUpdated: '2026-06-01T10:34:00Z',
-    },
-    {
-        id: 'import-2026-0531-applications',
-        source: 'SIS_EXPORT',
-        fileType: 'XLSX',
-        target: 'APPLICATIONS',
-        status: 'COMPLETED',
-        fileName: 'spring-2027-applications.xlsx',
-        uploadedByID: 'user-priya-reviewer',
-        totalRows: 128,
-        validRows: 124,
-        invalidRows: 0,
-        duplicateRows: 4,
-        fieldMapping: {
-            constituent_id: 'Student ID',
-            program_id: 'Program Code',
-            academic_term_id: 'Term Code',
-        },
-        committedAt: '2026-05-31T16:45:00Z',
-        validationSummary:
-            '124 applications committed. 4 duplicate active applications skipped.',
-        dateCreated: '2026-05-31T16:35:00Z',
-        dateUpdated: '2026-05-31T16:45:00Z',
-    },
-];
-
-const IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
+const CORE_IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
     {
         key: 'first_name',
         label: 'First name',
@@ -583,6 +434,7 @@ const IMPORT_TEMPLATE_COLUMNS: ImportTemplateColumn[] = [
 })
 export class AdmissionsSettingsComponent {
     private readonly admissionsService = inject(AdmissionsService);
+    private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
     readonly fields = LEAD_SCORE_CRITERION_FIELDS;
     readonly operators = LEAD_SCORE_CRITERION_OPERATORS;
@@ -593,33 +445,53 @@ export class AdmissionsSettingsComponent {
     readonly applicationStatuses = APPLICATION_STATUSES;
     readonly customFieldOwners = CUSTOM_FIELD_OWNERS;
     readonly customFieldDataTypes = CUSTOM_FIELD_DATA_TYPES;
-    readonly customFieldDefinitions = CUSTOM_FIELD_DEFINITIONS;
     readonly importBatchStatuses = IMPORT_BATCH_STATUSES;
     readonly importSources = IMPORT_SOURCES;
     readonly importFileTypes = IMPORT_FILE_TYPES;
     readonly importTargets = IMPORT_TARGETS;
-    readonly importBatches = IMPORT_BATCHES;
-    readonly importTemplateColumns = IMPORT_TEMPLATE_COLUMNS;
     readonly eventAttendanceStatuses = EVENT_ATTENDANCE_STATUSES;
     readonly assignmentRules = ASSIGNMENT_RULES;
     readonly assignmentCandidates = ASSIGNMENT_CANDIDATES;
-    readonly assignees = ASSIGNEES;
+    readonly assignees = DEFAULT_ASSIGNEES;
     readonly rules$ = this.admissionsService.rules$;
     readonly templates$ = this.admissionsService.templates$;
+    readonly programs$ = this.admissionsService.programs$;
+    readonly academicTerms$ = this.admissionsService.academicTerms$;
     readonly customFieldDefinitions$ =
         this.admissionsService.customFieldDefinitions$;
+    readonly importBatches$ = this.admissionsService.importBatches$;
 
     errorMessage = '';
     saving = false;
     form: LeadScoreRuleForm = { ...emptyForm };
     templateSaving = false;
     templateForm: ApplicationFormTemplateForm = { ...emptyTemplateForm };
+    customFieldSaving = false;
     customFieldForm: CustomFieldDefinitionForm = { ...emptyCustomFieldForm };
     assignmentForm: AssignmentRuleForm = { ...emptyAssignmentForm };
+    private programSuggestions: string[] = [];
+    private academicTermSuggestions: string[] = [];
 
     constructor() {
+        this.loadOptions();
         this.loadRules();
         this.loadTemplates();
+    }
+
+    importTemplateColumns(
+        definitions: CustomFieldDefinition[]
+    ): ImportTemplateColumn[] {
+        const customColumns = definitions
+            .filter((definition) => definition.importable)
+            .map((definition) => ({
+                key: definition.fieldKey,
+                label: definition.label,
+                required: definition.required,
+                owner: 'Custom Field' as const,
+                example: definition.options[0] ?? definition.fieldKey,
+            }));
+
+        return [...CORE_IMPORT_TEMPLATE_COLUMNS, ...customColumns];
     }
 
     editCustomField(definition: CustomFieldDefinition): void {
@@ -725,6 +597,98 @@ export class AdmissionsSettingsComponent {
                 })
             )
             .subscribe();
+    }
+
+    loadCustomFields(): void {
+        this.errorMessage = '';
+        this.admissionsService
+            .queryCustomFieldDefinitions({
+                page: 1,
+                rows: 100,
+                orderBy: 'display_order,ASC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load custom field definitions.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe();
+    }
+
+    loadImportBatches(): void {
+        this.errorMessage = '';
+        this.admissionsService
+            .queryImportBatches({
+                page: 1,
+                rows: 25,
+                orderBy: 'date_created,DESC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load import batches.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe();
+    }
+
+    loadOptions(): void {
+        this.errorMessage = '';
+        this.admissionsService
+            .queryPrograms({
+                page: 1,
+                rows: 100,
+                active: true,
+                orderBy: 'name,ASC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load admissions programs.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe((result) => {
+                this.programSuggestions = this.programOptionLabels(
+                    result?.items ?? []
+                );
+                this.changeDetectorRef.markForCheck();
+            });
+
+        this.admissionsService
+            .queryAcademicTerms({
+                page: 1,
+                rows: 100,
+                active: true,
+                orderBy: 'start_date,DESC',
+            })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load academic terms.'
+                    );
+                    return of(undefined);
+                })
+            )
+            .subscribe((result) => {
+                this.academicTermSuggestions = this.academicTermOptionLabels(
+                    result?.items ?? []
+                );
+                this.changeDetectorRef.markForCheck();
+            });
+
+        this.loadCustomFields();
+        this.loadImportBatches();
     }
 
     editRule(rule: LeadScoreRule): void {
@@ -856,6 +820,40 @@ export class AdmissionsSettingsComponent {
             });
     }
 
+    saveCustomField(): void {
+        this.errorMessage = '';
+        this.customFieldSaving = true;
+
+        const request = this.toCustomFieldRequest(this.customFieldForm);
+        const save$ = this.customFieldForm.id
+            ? this.admissionsService.updateCustomFieldDefinition(
+                  this.customFieldForm.id,
+                  request
+              )
+            : this.admissionsService.createCustomFieldDefinition(request);
+
+        save$
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to save custom field definition.'
+                    );
+                    this.customFieldSaving = false;
+                    return of(undefined);
+                })
+            )
+            .subscribe((definition) => {
+                if (!definition) {
+                    return;
+                }
+
+                this.customFieldSaving = false;
+                this.resetCustomFieldForm();
+                this.loadCustomFields();
+            });
+    }
+
     criterionSummary(rule: LeadScoreRule): string {
         return rule.criteria
             .map(
@@ -874,9 +872,18 @@ export class AdmissionsSettingsComponent {
             case 'application_status':
                 return this.applicationStatuses;
             case 'program_id':
+                return this.programSuggestions;
             case 'academic_term_id':
-                return [];
+                return this.academicTermSuggestions;
         }
+    }
+
+    programOptionLabel(program: Program): string {
+        return `${program.name} (${program.code})`;
+    }
+
+    academicTermOptionLabel(term: AcademicTerm): string {
+        return `${term.name} (${term.code})`;
     }
 
     templateSummary(template: ApplicationFormTemplate): string {
@@ -895,15 +902,15 @@ export class AdmissionsSettingsComponent {
     assignmentSuggestedValues(): readonly string[] {
         switch (this.assignmentForm.field) {
             case 'territory':
-                return TERRITORIES;
+                return DEFAULT_TERRITORIES;
             case 'program_interest':
-                return PROGRAMS;
+                return this.programSuggestions;
             case 'application_type':
                 return this.applicationTypes;
             case 'academic_term':
-                return TERMS;
+                return this.academicTermSuggestions;
             case 'lead_source':
-                return LEAD_SOURCES;
+                return DEFAULT_LEAD_SOURCES;
             case 'event_attendance':
                 return this.eventAttendanceStatuses;
             case 'alpha_range':
@@ -971,5 +978,13 @@ export class AdmissionsSettingsComponent {
             priority: Number(form.priority),
             active: form.active,
         };
+    }
+
+    private programOptionLabels(programs: Program[]): string[] {
+        return programs.map((program) => this.programOptionLabel(program));
+    }
+
+    private academicTermOptionLabels(terms: AcademicTerm[]): string[] {
+        return terms.map((term) => this.academicTermOptionLabel(term));
     }
 }
