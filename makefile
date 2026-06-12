@@ -121,6 +121,8 @@ PROMTAIL        := grafana/promtail:3.6.0
 
 KIND_CLUSTER    := schoolcrm-cluster
 NAMESPACE       := schoolcrm-system
+KUBE_CONTEXT    ?= kind-$(KIND_CLUSTER)
+KUBECTL         ?= kubectl --context $(KUBE_CONTEXT)
 
 SCHOOLCRM_APP   := schoolcrm
 AUTH_APP        := auth
@@ -241,7 +243,7 @@ dev-up:
 		--name $(KIND_CLUSTER) \
 		--config zarf/k8s/dev/kind-config.yaml
 
-	kubectl wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
+	$(KUBECTL) wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
 
 	docker save $(POSTGRES) | docker exec -i $(KIND_CLUSTER)-control-plane ctr --namespace=k8s.io images import - & \
 	docker save $(GRAFANA) | docker exec -i $(KIND_CLUSTER)-control-plane ctr --namespace=k8s.io images import - & \
@@ -263,12 +265,12 @@ dev-down-registry:
 	docker rm kind-registry 2>/dev/null || true
 
 dev-status-all:
-	kubectl get nodes -o wide
-	kubectl get svc -o wide
-	kubectl get pods -o wide --watch --all-namespaces
+	$(KUBECTL) get nodes -o wide
+	$(KUBECTL) get svc -o wide
+	$(KUBECTL) get pods -o wide --watch --all-namespaces
 
 dev-status:
-	watch -n 2 kubectl get pods -o wide --all-namespaces
+	watch -n 2 $(KUBECTL) get pods -o wide --all-namespaces
 
 # ------------------------------------------------------------------------------
 
@@ -280,33 +282,33 @@ dev-load:
 	kind load docker-image $(RAG_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
 
-dev-apply:
-	kustomize build zarf/k8s/dev/grafana | kubectl apply -f -
-	kustomize build zarf/k8s/dev/prometheus | kubectl apply -f -
-	kustomize build zarf/k8s/dev/tempo | kubectl apply -f -
-	kustomize build zarf/k8s/dev/loki | kubectl apply -f -
-	kustomize build zarf/k8s/dev/promtail | kubectl apply -f -
+dev-apply: dev-load
+	kustomize build zarf/k8s/dev/grafana | $(KUBECTL) apply -f -
+	kustomize build zarf/k8s/dev/prometheus | $(KUBECTL) apply -f -
+	kustomize build zarf/k8s/dev/tempo | $(KUBECTL) apply -f -
+	kustomize build zarf/k8s/dev/loki | $(KUBECTL) apply -f -
+	kustomize build zarf/k8s/dev/promtail | $(KUBECTL) apply -f -
 
-	kustomize build zarf/k8s/dev/database | kubectl apply -f -
-	kubectl rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
+	kustomize build zarf/k8s/dev/database | $(KUBECTL) apply -f -
+	$(KUBECTL) rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
 
-	kustomize build zarf/k8s/dev/auth | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/auth | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/rag | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(RAG_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/rag | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(RAG_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/schoolcrm | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/web-admin | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(WEB_ADMIN_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/web-admin | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(WEB_ADMIN_APP) --timeout=120s --for=condition=Ready
 
 dev-restart:
-	kubectl rollout restart deployment $(AUTH_APP) --namespace=$(NAMESPACE)
-	kubectl rollout restart deployment $(RAG_APP) --namespace=$(NAMESPACE)
-	kubectl rollout restart deployment $(SCHOOLCRM_APP) --namespace=$(NAMESPACE)
-	kubectl rollout restart deployment $(WEB_ADMIN_APP) --namespace=$(NAMESPACE)
+	$(KUBECTL) rollout restart deployment $(AUTH_APP) --namespace=$(NAMESPACE)
+	$(KUBECTL) rollout restart deployment $(RAG_APP) --namespace=$(NAMESPACE)
+	$(KUBECTL) rollout restart deployment $(SCHOOLCRM_APP) --namespace=$(NAMESPACE)
+	$(KUBECTL) rollout restart deployment $(WEB_ADMIN_APP) --namespace=$(NAMESPACE)
 
 dev-run: build dev-up dev-load dev-apply
 
@@ -315,89 +317,89 @@ dev-update: build dev-load dev-restart
 dev-update-apply: build dev-load dev-apply
 
 dev-logs:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | go run api/tooling/logfmt/main.go -service=$(SCHOOLCRM_APP)
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | go run api/tooling/logfmt/main.go -service=$(SCHOOLCRM_APP)
 
 dev-logs-auth:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(AUTH_APP) --all-containers=true -f --tail=100 | go run api/tooling/logfmt/main.go
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(AUTH_APP) --all-containers=true -f --tail=100 | go run api/tooling/logfmt/main.go
 
 dev-logs-web-admin:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(WEB_ADMIN_APP) --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(WEB_ADMIN_APP) --all-containers=true -f --tail=100
 
 dev-logs-rag:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(RAG_APP) --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(RAG_APP) --all-containers=true -f --tail=100
 
 # ------------------------------------------------------------------------------
 
 dev-logs-init:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) -f --tail=100 -c init-migrate-seed
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) -f --tail=100 -c init-migrate-seed
 
 dev-describe-node:
-	kubectl describe node
+	$(KUBECTL) describe node
 
 dev-describe-deployment:
-	kubectl describe deployment --namespace=$(NAMESPACE) $(SCHOOLCRM_APP)
+	$(KUBECTL) describe deployment --namespace=$(NAMESPACE) $(SCHOOLCRM_APP)
 
 dev-describe-schoolcrm:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 dev-describe-auth:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(AUTH_APP)
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=$(AUTH_APP)
 
 dev-describe-database:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=database
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=database
 
 dev-describe-grafana:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=grafana
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=grafana
 
 # ------------------------------------------------------------------------------
 
 dev-logs-db:
-	kubectl logs --namespace=$(NAMESPACE) -l app=database --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=database --all-containers=true -f --tail=100
 
 dev-logs-grafana:
-	kubectl logs --namespace=$(NAMESPACE) -l app=grafana --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=grafana --all-containers=true -f --tail=100
 
 dev-logs-tempo:
-	kubectl logs --namespace=$(NAMESPACE) -l app=tempo --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=tempo --all-containers=true -f --tail=100
 
 dev-logs-loki:
-	kubectl logs --namespace=$(NAMESPACE) -l app=loki --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=loki --all-containers=true -f --tail=100
 
 dev-logs-promtail:
-	kubectl logs --namespace=$(NAMESPACE) -l app=promtail --all-containers=true -f --tail=100
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=promtail --all-containers=true -f --tail=100
 
 # ------------------------------------------------------------------------------
 
 dev-services-delete:
-	kustomize build zarf/k8s/dev/rag | kubectl delete -f -
-	kustomize build zarf/k8s/dev/schoolcrm | kubectl delete -f -
-	kustomize build zarf/k8s/dev/grafana | kubectl delete -f -
-	kustomize build zarf/k8s/dev/tempo | kubectl delete -f -
-	kustomize build zarf/k8s/dev/loki | kubectl delete -f -
-	kustomize build zarf/k8s/dev/promtail | kubectl delete -f -
-	kustomize build zarf/k8s/dev/database | kubectl delete -f -
+	kustomize build zarf/k8s/dev/rag | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/schoolcrm | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/grafana | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/tempo | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/loki | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/promtail | $(KUBECTL) delete -f -
+	kustomize build zarf/k8s/dev/database | $(KUBECTL) delete -f -
 
 dev-describe-replicaset:
-	kubectl get rs
-	kubectl describe rs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
+	$(KUBECTL) get rs
+	$(KUBECTL) describe rs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 dev-events:
-	kubectl get ev --sort-by metadata.creationTimestamp
+	$(KUBECTL) get ev --sort-by metadata.creationTimestamp
 
 dev-events-warn:
-	kubectl get ev --field-selector type=Warning --sort-by metadata.creationTimestamp
+	$(KUBECTL) get ev --field-selector type=Warning --sort-by metadata.creationTimestamp
 
 dev-shell:
-	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep schoolcrm | cut -c1-26) --container $(SCHOOLCRM_APP) -- /bin/sh
+	$(KUBECTL) exec --namespace=$(NAMESPACE) -it $(shell $(KUBECTL) get pods --namespace=$(NAMESPACE) | grep schoolcrm | cut -c1-26) --container $(SCHOOLCRM_APP) -- /bin/sh
 
 dev-auth-shell:
-	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep auth | cut -c1-26) --container $(AUTH_APP) -- /bin/sh
+	$(KUBECTL) exec --namespace=$(NAMESPACE) -it $(shell $(KUBECTL) get pods --namespace=$(NAMESPACE) | grep auth | cut -c1-26) --container $(AUTH_APP) -- /bin/sh
 
 dev-db-shell:
-	kubectl exec --namespace=$(NAMESPACE) -it $(shell kubectl get pods --namespace=$(NAMESPACE) | grep database | cut -c1-10) -- /bin/sh
+	$(KUBECTL) exec --namespace=$(NAMESPACE) -it $(shell $(KUBECTL) get pods --namespace=$(NAMESPACE) | grep database | cut -c1-10) -- /bin/sh
 
 dev-database-restart:
-	kubectl rollout restart statefulset database --namespace=$(NAMESPACE)
+	$(KUBECTL) rollout restart statefulset database --namespace=$(NAMESPACE)
 
 # ==============================================================================
 # Docker Compose
@@ -677,7 +679,7 @@ talk-up:
 		--name $(KIND_CLUSTER) \
 		--config zarf/k8s/dev/kind-config.yaml
 
-	kubectl wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
+	$(KUBECTL) wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
 
 	docker save $(POSTGRES) | docker exec -i $(KIND_CLUSTER)-control-plane ctr --namespace=k8s.io images import -
 
@@ -687,15 +689,15 @@ talk-load:
 	kind load docker-image $(AUTH_IMAGE) --name $(KIND_CLUSTER) & \
 	wait;
 
-talk-apply:
-	kustomize build zarf/k8s/dev/database | kubectl apply -f -
-	kubectl rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
+talk-apply: talk-load
+	kustomize build zarf/k8s/dev/database | $(KUBECTL) apply -f -
+	$(KUBECTL) rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
 
-	kustomize build zarf/k8s/dev/auth | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/auth | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(AUTH_APP) --timeout=120s --for=condition=Ready
 
-	kustomize build zarf/k8s/dev/schoolcrm | kubectl apply -f -
-	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
+	kustomize build zarf/k8s/dev/schoolcrm | $(KUBECTL) apply -f -
+	$(KUBECTL) wait pods --namespace=$(NAMESPACE) --selector app=$(SCHOOLCRM_APP) --timeout=120s --for=condition=Ready
 
 talk-run: build talk-up talk-load talk-apply
 
@@ -703,19 +705,19 @@ talk-run-load:
 	hey -m GET -c 10 -n 1000 -H "Authorization: Bearer ${TOKEN}" "http://localhost:3000/v1/users?page=1&rows=2"
 
 talk-logs:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6
 
 talk-logs-cpu:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep SCHED
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep SCHED
 
 talk-logs-mem:
-	kubectl logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep "ms clock"
+	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) --all-containers=true -f --tail=100 --max-log-requests=6 | grep "ms clock"
 
 talk-describe:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP)
 
 talk-describe-min:
-	kubectl describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) | grep -i -A 21 '  schoolcrm:' | sed -n '1p;3p;11,16p;18,22p'
+	$(KUBECTL) describe pod --namespace=$(NAMESPACE) -l app=$(SCHOOLCRM_APP) | grep -i -A 21 '  schoolcrm:' | sed -n '1p;3p;11,16p;18,22p'
 
 talk-metrics:
 	expvarmon -ports="localhost:4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
