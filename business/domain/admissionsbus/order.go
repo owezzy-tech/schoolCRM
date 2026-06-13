@@ -123,6 +123,7 @@ const (
 	OrderByConstituentLastName       = "b"
 	OrderByConstituentPrimaryEmail   = "c"
 	OrderByConstituentLifecycleStage = "d"
+	OrderByConstituentDateCreated    = "e"
 )
 
 // Set of fields that programs can be ordered by.
@@ -153,11 +154,12 @@ const (
 
 // Set of fields that applications can be ordered by.
 const (
-	OrderByApplicationID          = "a"
-	OrderByApplicationStatus      = "b"
-	OrderByApplicationType        = "c"
-	OrderByApplicationSubmittedAt = "d"
-	OrderByApplicationDateCreated = "e"
+	OrderByApplicationID           = "a"
+	OrderByApplicationStatus       = "b"
+	OrderByApplicationType         = "c"
+	OrderByApplicationSubmittedAt  = "d"
+	OrderByApplicationDateCreated  = "e"
+	OrderByApplicationDateUpdated  = "f"
 )
 
 // Set of fields that admissions events can be ordered by.
