@@ -14,6 +14,10 @@ spec:
     spec:
       containers:
         - name: web-admin
+          ports:
+            - name: http
+              containerPort: 80
+              hostPort: 30080
           resources:
             requests:
               cpu: "50m"
