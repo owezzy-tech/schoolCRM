@@ -325,6 +325,9 @@ dev-logs-auth:
 dev-logs-web-admin:
 	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(WEB_ADMIN_APP) --all-containers=true -f --tail=100
 
+dev-proxy-web-admin:
+	$(KUBECTL) port-forward --namespace=$(NAMESPACE) svc/web-admin-service 4200:80
+
 dev-logs-rag:
 	$(KUBECTL) logs --namespace=$(NAMESPACE) -l app=$(RAG_APP) --all-containers=true -f --tail=100
 
@@ -768,6 +771,7 @@ help:
 	@echo "  local-rag               Run RAG locally against local auth"
 	@echo "  local-rag-dev           Run RAG locally with anonymous auth"
 	@echo "  local-web-admin         Run Angular admin locally"
+	@echo "  dev-proxy-web-admin     Port-forward web-admin → http://localhost:4200"
 	@echo "  dev-up                  Start the KIND cluster"
 	@echo "  dev-down                Stop the KIND cluster"
 	@echo "  dev-status-all          Show the status of the KIND cluster"
