@@ -73,7 +73,7 @@ export class DashboardComponent implements OnInit {
             submitted: this.admissionsService.queryApplications({ rows: 1, status: 'SUBMITTED' }),
             admitted: this.admissionsService.queryApplications({ rows: 1, status: 'ADMITTED' }),
             enrolled: this.admissionsService.queryApplications({ rows: 1, status: 'ENROLLED' }),
-            recent: this.admissionsService.queryApplications({ rows: 5, orderBy: '-date_created' }),
+            recent: this.admissionsService.queryApplications({ rows: 5, orderBy: 'date_created,DESC' }),
         }).subscribe({
             next: (results) => {
                 this.kpiCounts.set({
