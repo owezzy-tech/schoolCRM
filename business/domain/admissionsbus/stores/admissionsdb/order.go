@@ -46,6 +46,7 @@ var constituentOrderByFields = map[string]string{
 	admissionsbus.OrderByConstituentLastName:       "last_name",
 	admissionsbus.OrderByConstituentPrimaryEmail:   "primary_email",
 	admissionsbus.OrderByConstituentLifecycleStage: "lifecycle_stage",
+	admissionsbus.OrderByConstituentDateCreated:    "date_created",
 }
 
 var inquiryOrderByFields = map[string]string{
@@ -73,11 +74,12 @@ var duplicateReviewOrderByFields = map[string]string{
 }
 
 var applicationOrderByFields = map[string]string{
-	admissionsbus.OrderByApplicationID:          "application_id",
-	admissionsbus.OrderByApplicationStatus:      "status",
-	admissionsbus.OrderByApplicationType:        "application_type",
-	admissionsbus.OrderByApplicationSubmittedAt: "submitted_at",
-	admissionsbus.OrderByApplicationDateCreated: "date_created",
+	admissionsbus.OrderByApplicationID:           "application_id",
+	admissionsbus.OrderByApplicationStatus:       "status",
+	admissionsbus.OrderByApplicationType:         "application_type",
+	admissionsbus.OrderByApplicationSubmittedAt:  "submitted_at",
+	admissionsbus.OrderByApplicationDateCreated:  "date_created",
+	admissionsbus.OrderByApplicationDateUpdated:  "date_updated",
 }
 
 var eventOrderByFields = map[string]string{

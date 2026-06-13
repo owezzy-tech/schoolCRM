@@ -41,6 +41,7 @@ var constituentOrderByFields = map[string]string{
 	"last_name":       admissionsbus.OrderByConstituentLastName,
 	"primary_email":   admissionsbus.OrderByConstituentPrimaryEmail,
 	"lifecycle_stage": admissionsbus.OrderByConstituentLifecycleStage,
+	"date_created":    admissionsbus.OrderByConstituentDateCreated,
 }
 
 var inquiryOrderByFields = map[string]string{
@@ -73,6 +74,7 @@ var applicationOrderByFields = map[string]string{
 	"application_type": admissionsbus.OrderByApplicationType,
 	"submitted_at":     admissionsbus.OrderByApplicationSubmittedAt,
 	"date_created":     admissionsbus.OrderByApplicationDateCreated,
+	"date_updated":     admissionsbus.OrderByApplicationDateUpdated,
 }
 
 var eventOrderByFields = map[string]string{
