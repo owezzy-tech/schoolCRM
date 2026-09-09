@@ -21,6 +21,14 @@ make dev-brew
 make dev-docker
 ```
 
+Run the checks for each toolchain from the repository root:
+
+```bash
+make test             # Go tests, vet, staticcheck, and vulnerability checks
+npm run test:frontend # Angular unit tests
+npm run test:rag      # RAG pytest suite
+```
+
 ## Docker Compose
 
 Build and start the stack:

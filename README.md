@@ -58,7 +58,12 @@ make dev-gotooling
 make dev-brew
 make dev-docker
 make test
+npm run test:frontend
+npm run test:rag
 ```
+
+`make test` runs the Go checks. The frontend and RAG checks are separate because they use
+their own toolchains.
 
 ## Local development
 
