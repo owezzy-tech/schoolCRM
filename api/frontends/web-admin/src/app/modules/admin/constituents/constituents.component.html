@@ -29,6 +29,11 @@
             </div>
 
             <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                @if (loading()) {
+                    <div class="px-4 py-6 text-sm text-secondary">Loading constituents…</div>
+                } @else if (errorMessage()) {
+                    <div class="px-4 py-6 text-sm text-warn">{{ errorMessage() }}</div>
+                } @else {
                 <table class="w-full text-sm">
                     <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
                         <tr>
@@ -43,7 +48,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of constituents; track c.email) {
+                        @for (c of constituents(); track c.email) {
                             <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900">
                                 <td class="px-4 py-3">
                                     <div class="font-medium">{{ c.name }}</div>
@@ -59,9 +64,14 @@
                                 <td class="px-4 py-3">{{ c.owner }}</td>
                                 <td class="px-4 py-3 text-secondary">{{ c.lastActivity }}</td>
                             </tr>
+                        } @empty {
+                            <tr>
+                                <td class="px-4 py-6 text-secondary" colspan="8">No constituents found.</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
     </div>

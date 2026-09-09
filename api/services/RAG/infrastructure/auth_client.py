@@ -17,8 +17,17 @@ class AuthenticatedUser:
 
 
 class AuthServiceClient:
-    def __init__(self, base_url: str, timeout_seconds: float) -> None:
-        self._client = httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=timeout_seconds)
+    def __init__(
+        self,
+        base_url: str,
+        timeout_seconds: float,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._client = httpx.AsyncClient(
+            base_url=base_url.rstrip("/"),
+            timeout=timeout_seconds,
+            transport=transport,
+        )
 
     async def authenticate(self, bearer_token: str) -> AuthenticatedUser:
         response = await self._client.get(
@@ -28,7 +37,7 @@ class AuthServiceClient:
         if response.status_code != 200:
             raise AuthServiceError("auth service rejected bearer token")
 
-        payload = response.json()
+        payload = _attributes(response.json())
         claims = payload.get("Claims") or payload.get("claims") or {}
         user_id = str(
             payload.get("UserID") or payload.get("userID") or payload.get("user_id") or ""
@@ -48,3 +57,15 @@ class AuthServiceClient:
 
     async def close(self) -> None:
         await self._client.aclose()
+
+
+def _attributes(payload: dict[str, Any]) -> dict[str, Any]:
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return payload
+
+    attributes = data.get("attributes")
+    if not isinstance(attributes, dict):
+        return payload
+
+    return attributes

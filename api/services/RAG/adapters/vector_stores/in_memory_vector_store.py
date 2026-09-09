@@ -19,10 +19,20 @@ class InMemoryVectorStore(IVectorStore):
         for chunk, embedding in zip(chunks, embeddings, strict=False):
             self._chunks.append(_StoredChunk(chunk=chunk, embedding=embedding))
 
-    async def search(self, embedding: Embedding, limit: int) -> list[SearchMatch]:
+    async def search(
+        self,
+        embedding: Embedding,
+        limit: int,
+        collection: str | None = None,
+    ) -> list[SearchMatch]:
+        chunks = [
+            stored
+            for stored in self._chunks
+            if collection is None or stored.chunk.metadata.collection == collection
+        ]
         ranked = [
             SearchMatch(chunk=stored.chunk, score=self._dot(embedding, stored.embedding))
-            for stored in self._chunks
+            for stored in chunks
         ]
         ranked.sort(key=lambda item: item.score, reverse=True)
         return ranked[:limit]

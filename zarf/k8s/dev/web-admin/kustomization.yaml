@@ -8,5 +8,5 @@ patches:
   - path: ./dev-web-admin-patch-service.yaml
 images:
   - name: web-admin-image
-    newName: localhost:5001/schoolcrm/web-admin
-    newTag: develop
+    newName: localhost/schoolcrm/web-admin
+    newTag: 0.0.1

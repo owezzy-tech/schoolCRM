@@ -119,7 +119,17 @@ services:
       - RAG_API_HOST=0.0.0.0
       - RAG_API_PORT=7000
       - RAG_ALLOW_ANONYMOUS=true
+      - RAG_AUTH_SERVICE_URL=http://auth:6000
+      - RAG_AUTH_REQUEST_TIMEOUT_SECONDS=5.0
       - RAG_FILE_STORAGE_DIR=/service/var/files
+      - RAG_GRAPH_RETRIEVER=memory
+      - RAG_NEO4J_URI=bolt://neo4j:7687
+      - RAG_NEO4J_USERNAME=neo4j
+      - RAG_NEO4J_PASSWORD=password
+      - RAG_ADMISSIONS_ANSWER_PROVIDER=stub
+      - RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - RAG_OLLAMA_MODEL=nemotron-3-super:cloud
+      - RAG_OLLAMA_TIMEOUT_SECONDS=60.0
     healthcheck:
       test:
         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7000/v1/liveness')"]

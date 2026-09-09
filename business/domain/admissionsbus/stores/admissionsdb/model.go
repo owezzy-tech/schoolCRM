@@ -146,6 +146,42 @@ type applicationDB struct {
 	DateUpdated        time.Time       `db:"date_updated"`
 }
 
+type eventDB struct {
+	ID                      uuid.UUID  `db:"event_id"`
+	Title                   string     `db:"title"`
+	Type                    string     `db:"event_type"`
+	Status                  string     `db:"status"`
+	Description             string     `db:"description"`
+	StartTime               time.Time  `db:"start_time"`
+	EndTime                 time.Time  `db:"end_time"`
+	Location                string     `db:"location"`
+	IsVirtual               bool       `db:"is_virtual"`
+	Capacity                int        `db:"capacity"`
+	RegistrationDeadline    *time.Time `db:"registration_deadline"`
+	AutoConfirmationEnabled bool       `db:"auto_confirmation_enabled"`
+	AutoReminderEnabled     bool       `db:"auto_reminder_enabled"`
+	DateCreated             time.Time  `db:"date_created"`
+	DateUpdated             time.Time  `db:"date_updated"`
+}
+
+type eventRegistrationDB struct {
+	ID            uuid.UUID  `db:"event_registration_id"`
+	EventID       uuid.UUID  `db:"event_id"`
+	ConstituentID *uuid.UUID `db:"constituent_id"`
+	FirstName     string     `db:"first_name"`
+	LastName      string     `db:"last_name"`
+	Email         string     `db:"email"`
+	Phone         *string    `db:"phone"`
+	Status        string     `db:"status"`
+	MatchStatus   string     `db:"match_status"`
+	Source        string     `db:"source"`
+	RegisteredAt  time.Time  `db:"registered_at"`
+	CheckedInAt   *time.Time `db:"checked_in_at"`
+	CheckedInByID *uuid.UUID `db:"checked_in_by_id"`
+	DateCreated   time.Time  `db:"date_created"`
+	DateUpdated   time.Time  `db:"date_updated"`
+}
+
 type applicationFormTemplateDB struct {
 	ID              uuid.UUID       `db:"form_template_id"`
 	ProgramID       uuid.UUID       `db:"program_id"`
@@ -812,6 +848,104 @@ func toBusApplications(dbs []applicationDB) ([]admissionsbus.Application, error)
 	return bus, nil
 }
 
+func toBusEvent(db eventDB) admissionsbus.Event {
+	return admissionsbus.Event{
+		ID:                      db.ID,
+		Title:                   db.Title,
+		Type:                    admissionsbus.EventType(db.Type),
+		Status:                  admissionsbus.EventStatus(db.Status),
+		Description:             db.Description,
+		StartTime:               db.StartTime.In(time.Local),
+		EndTime:                 db.EndTime.In(time.Local),
+		Location:                db.Location,
+		IsVirtual:               db.IsVirtual,
+		Capacity:                db.Capacity,
+		RegistrationDeadline:    localTimePtr(db.RegistrationDeadline),
+		AutoConfirmationEnabled: db.AutoConfirmationEnabled,
+		AutoReminderEnabled:     db.AutoReminderEnabled,
+		DateCreated:             db.DateCreated.In(time.Local),
+		DateUpdated:             db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusEvents(dbs []eventDB) []admissionsbus.Event {
+	bus := make([]admissionsbus.Event, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusEvent(db)
+	}
+
+	return bus
+}
+
+func toDBEvent(bus admissionsbus.Event) eventDB {
+	return eventDB{
+		ID:                      bus.ID,
+		Title:                   bus.Title,
+		Type:                    bus.Type.String(),
+		Status:                  bus.Status.String(),
+		Description:             bus.Description,
+		StartTime:               bus.StartTime.UTC(),
+		EndTime:                 bus.EndTime.UTC(),
+		Location:                bus.Location,
+		IsVirtual:               bus.IsVirtual,
+		Capacity:                bus.Capacity,
+		RegistrationDeadline:    utcTimePtr(bus.RegistrationDeadline),
+		AutoConfirmationEnabled: bus.AutoConfirmationEnabled,
+		AutoReminderEnabled:     bus.AutoReminderEnabled,
+		DateCreated:             bus.DateCreated.UTC(),
+		DateUpdated:             bus.DateUpdated.UTC(),
+	}
+}
+
+func toDBEventRegistration(bus admissionsbus.EventRegistration) eventRegistrationDB {
+	return eventRegistrationDB{
+		ID:            bus.ID,
+		EventID:       bus.EventID,
+		ConstituentID: bus.ConstituentID,
+		FirstName:     bus.FirstName,
+		LastName:      bus.LastName,
+		Email:         bus.Email,
+		Phone:         bus.Phone,
+		Status:        bus.Status.String(),
+		MatchStatus:   bus.MatchStatus.String(),
+		Source:        bus.Source.String(),
+		RegisteredAt:  bus.RegisteredAt.UTC(),
+		CheckedInAt:   utcTimePtr(bus.CheckedInAt),
+		CheckedInByID: bus.CheckedInByID,
+		DateCreated:   bus.DateCreated.UTC(),
+		DateUpdated:   bus.DateUpdated.UTC(),
+	}
+}
+
+func toBusEventRegistration(db eventRegistrationDB) admissionsbus.EventRegistration {
+	return admissionsbus.EventRegistration{
+		ID:            db.ID,
+		EventID:       db.EventID,
+		ConstituentID: db.ConstituentID,
+		FirstName:     db.FirstName,
+		LastName:      db.LastName,
+		Email:         db.Email,
+		Phone:         db.Phone,
+		Status:        admissionsbus.EventRegistrationStatus(db.Status),
+		MatchStatus:   admissionsbus.EventRegistrationMatchStatus(db.MatchStatus),
+		Source:        admissionsbus.EventRegistrationSource(db.Source),
+		RegisteredAt:  db.RegisteredAt.In(time.Local),
+		CheckedInAt:   localTimePtr(db.CheckedInAt),
+		CheckedInByID: db.CheckedInByID,
+		DateCreated:   db.DateCreated.In(time.Local),
+		DateUpdated:   db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusEventRegistrations(dbs []eventRegistrationDB) []admissionsbus.EventRegistration {
+	bus := make([]admissionsbus.EventRegistration, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusEventRegistration(db)
+	}
+
+	return bus
+}
+
 func toDBApplicationFormTemplate(bus admissionsbus.ApplicationFormTemplate) (applicationFormTemplateDB, error) {
 	requiredFields, err := json.Marshal(bus.RequiredFields)
 	if err != nil {
@@ -1275,6 +1409,55 @@ type syncEventDB struct {
 	DateUpdated       time.Time  `db:"date_updated"`
 }
 
+type campaignDB struct {
+	ID             uuid.UUID       `db:"campaign_id"`
+	Name           string          `db:"name"`
+	Status         string          `db:"status"`
+	Channel        string          `db:"channel"`
+	AudienceName   string          `db:"audience_name"`
+	TemplateName   string          `db:"template_name"`
+	MessagePreview string          `db:"message_preview"`
+	Segment        json.RawMessage `db:"segment"`
+	Metrics        json.RawMessage `db:"metrics"`
+	StartsAt       *time.Time      `db:"starts_at"`
+	EndsAt         *time.Time      `db:"ends_at"`
+	CreatedByID    *uuid.UUID      `db:"created_by_id"`
+	DateCreated    time.Time       `db:"date_created"`
+	DateUpdated    time.Time       `db:"date_updated"`
+}
+
+type campaignAuditEventDB struct {
+	ID          uuid.UUID `db:"campaign_audit_event_id"`
+	CampaignID  uuid.UUID `db:"campaign_id"`
+	ActorName   string    `db:"actor_name"`
+	Action      string    `db:"action"`
+	OccurredAt  time.Time `db:"occurred_at"`
+	DateCreated time.Time `db:"date_created"`
+}
+
+type communicationDB struct {
+	ID                uuid.UUID       `db:"communication_id"`
+	ExternalMessageID string          `db:"external_message_id"`
+	Channel           string          `db:"channel"`
+	Direction         string          `db:"direction"`
+	ConstituentID     uuid.UUID       `db:"constituent_id"`
+	ApplicationID     *uuid.UUID      `db:"application_id"`
+	CampaignID        *uuid.UUID      `db:"campaign_id"`
+	RecipientSender   string          `db:"recipient_sender"`
+	RecipientInitials string          `db:"recipient_initials"`
+	Subject           string          `db:"subject"`
+	Preview           string          `db:"preview"`
+	Status            string          `db:"status"`
+	Provider          *string         `db:"provider"`
+	OwnerName         string          `db:"owner_name"`
+	Outcome           *string         `db:"outcome"`
+	Duration          *string         `db:"duration"`
+	OccurredAt        time.Time       `db:"occurred_at"`
+	ProviderPayload   json.RawMessage `db:"provider_payload"`
+	DateCreated       time.Time       `db:"date_created"`
+	DateUpdated       time.Time       `db:"date_updated"`
+}
+
 func toDBSyncJob(bus admissionsbus.SyncJob) syncJobDB {
 	return syncJobDB{
 		ID:                bus.ID,
@@ -1400,6 +1583,88 @@ func tobusSyncEvents(dbs []syncEventDB) []admissionsbus.SyncEvent {
 	for i, db := range dbs {
 		bus[i] = tobusSyncEvent(db)
 	}
+	return bus
+}
+
+func toBusCampaign(db campaignDB) admissionsbus.Campaign {
+	return admissionsbus.Campaign{
+		ID:             db.ID,
+		Name:           db.Name,
+		Status:         admissionsbus.CampaignStatus(db.Status),
+		Channel:        admissionsbus.CampaignChannel(db.Channel),
+		AudienceName:   db.AudienceName,
+		TemplateName:   db.TemplateName,
+		MessagePreview: db.MessagePreview,
+		Segment:        db.Segment,
+		Metrics:        db.Metrics,
+		StartsAt:       localTimePtr(db.StartsAt),
+		EndsAt:         localTimePtr(db.EndsAt),
+		CreatedByID:    db.CreatedByID,
+		DateCreated:    db.DateCreated.In(time.Local),
+		DateUpdated:    db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCampaigns(dbs []campaignDB) []admissionsbus.Campaign {
+	bus := make([]admissionsbus.Campaign, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCampaign(db)
+	}
+
+	return bus
+}
+
+func toBusCampaignAuditEvent(db campaignAuditEventDB) admissionsbus.CampaignAuditEvent {
+	return admissionsbus.CampaignAuditEvent{
+		ID:          db.ID,
+		CampaignID:  db.CampaignID,
+		ActorName:   db.ActorName,
+		Action:      db.Action,
+		OccurredAt:  db.OccurredAt.In(time.Local),
+		DateCreated: db.DateCreated.In(time.Local),
+	}
+}
+
+func toBusCampaignAuditEvents(dbs []campaignAuditEventDB) []admissionsbus.CampaignAuditEvent {
+	bus := make([]admissionsbus.CampaignAuditEvent, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCampaignAuditEvent(db)
+	}
+
+	return bus
+}
+
+func toBusCommunication(db communicationDB) admissionsbus.Communication {
+	return admissionsbus.Communication{
+		ID:                db.ID,
+		ExternalMessageID: db.ExternalMessageID,
+		Channel:           admissionsbus.CommunicationChannel(db.Channel),
+		Direction:         admissionsbus.CommunicationDirection(db.Direction),
+		ConstituentID:     db.ConstituentID,
+		ApplicationID:     db.ApplicationID,
+		CampaignID:        db.CampaignID,
+		RecipientSender:   db.RecipientSender,
+		RecipientInitials: db.RecipientInitials,
+		Subject:           db.Subject,
+		Preview:           db.Preview,
+		Status:            admissionsbus.CommunicationStatus(db.Status),
+		Provider:          db.Provider,
+		OwnerName:         db.OwnerName,
+		Outcome:           db.Outcome,
+		Duration:          db.Duration,
+		OccurredAt:        db.OccurredAt.In(time.Local),
+		ProviderPayload:   db.ProviderPayload,
+		DateCreated:       db.DateCreated.In(time.Local),
+		DateUpdated:       db.DateUpdated.In(time.Local),
+	}
+}
+
+func toBusCommunications(dbs []communicationDB) []admissionsbus.Communication {
+	bus := make([]admissionsbus.Communication, len(dbs))
+	for i, db := range dbs {
+		bus[i] = toBusCommunication(db)
+	}
+
 	return bus
 }
 

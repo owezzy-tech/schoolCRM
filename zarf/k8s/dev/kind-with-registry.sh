@@ -64,6 +64,9 @@ nodes:
       # Tempo (tracing)
       - containerPort: 9411
         hostPort: 9411
+      # Web Admin
+      - containerPort: 30080
+        hostPort: 4200
 EOF
 
 # 3. Add the registry config to the nodes

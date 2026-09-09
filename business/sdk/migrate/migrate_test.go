@@ -135,6 +135,58 @@ func TestKenyaReferenceCatalogSeedCoversCanonicalCounts(t *testing.T) {
 	}
 }
 
+func TestAdmissionsAdminSourceDataMigrationCreatesCampaignAndCommunicationTables(t *testing.T) {
+	t.Parallel()
+
+	migration := migrationBlock(t, "-- Version: 1.29")
+
+	checks := []string{
+		"CREATE TABLE admissions_campaigns",
+		"CREATE TABLE admissions_campaign_audit_events",
+		"CREATE TABLE admissions_communications",
+		"FOREIGN KEY (campaign_id) REFERENCES admissions_campaigns(campaign_id)",
+		"FOREIGN KEY (constituent_id) REFERENCES admissions_constituents(constituent_id)",
+		"CREATE INDEX idx_admissions_campaigns_status",
+		"CREATE INDEX idx_admissions_communications_status",
+		"DROP CONSTRAINT sync_events_event_type",
+		"'SMS_OUTBOUND'",
+		"'WHATSAPP_WEBHOOK_INBOUND'",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(migration, check) {
+			t.Fatalf("admissions admin source data migration missing %q", check)
+		}
+	}
+}
+
+func TestAdmissionsAdminSeedCoversCampaignCommunicationAndProviderStatuses(t *testing.T) {
+	t.Parallel()
+
+	checks := []string{
+		"INSERT INTO admissions_campaigns",
+		"INSERT INTO admissions_campaign_audit_events",
+		"INSERT INTO admissions_communications",
+		"INSERT INTO admissions_sync_jobs",
+		"INSERT INTO admissions_sync_events",
+		"INSERT INTO audit",
+		"Fall 2026 Open House Invite",
+		"Missing Documents Reminder",
+		"Financial Aid Deadline",
+		"Spring 2026 Yield Campaign",
+		"MSG-8492",
+		"MSG-8486-WA",
+		"RATE_LIMITED",
+		"INVALID_SIGNATURE",
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(seedDoc, check) {
+			t.Fatalf("admissions admin seed missing %q", check)
+		}
+	}
+}
+
 func migrationBlock(t *testing.T, marker string) string {
 	t.Helper()
 

@@ -38,6 +38,8 @@ Admissions CRM v1 is admissions/enrollment-first. It includes:
 - Staff policy RAG, applicant checklist/status assistant, and reviewer assistant released in phases with strict access boundaries.
 - Cloud-hosted dev/test/prod environments.
 
+Implementation status note: by commit `271bc65`, the Angular admin admissions screens covered by Beads epic `schoolCRM-5ve` use live JSON:API-backed services for applications, events, campaigns, communications, records, audit, and settings option sources. This PRD remains the product scope reference; use Beads and implementation docs for current delivery status.
+
 ## Out of Scope for V1
 
 - Full school operations CRM.

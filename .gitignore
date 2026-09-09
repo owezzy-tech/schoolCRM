@@ -8,6 +8,7 @@ database-data/
 
 # Environment
 api/cmd/frontends/admin/.env
+api/services/RAG/.env
 
 # Mac
 .DS_Store

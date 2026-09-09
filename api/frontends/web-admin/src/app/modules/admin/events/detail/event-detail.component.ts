@@ -13,7 +13,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
-import { MOCK_EVENTS } from '../data/events.mock';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { catchError, of } from 'rxjs';
 import { EventItem, EventRegistration } from '../models/event.types';
 
 @Component({
@@ -33,6 +35,7 @@ import { EventItem, EventRegistration } from '../models/event.types';
     templateUrl: './event-detail.component.html'
 })
 export class EventDetailComponent implements OnInit {
+    private readonly admissionsService = inject(AdmissionsService);
     private readonly route = inject(ActivatedRoute);
 
     readonly event = signal<EventItem | null>(null);
@@ -47,16 +50,43 @@ export class EventDetailComponent implements OnInit {
         return Math.max(event.capacity - event.registeredCount, 0);
     });
     readonly capacityEnforced = computed(() => this.remainingCapacity() === 0);
+    readonly loading = signal(false);
+
+    errorMessage = '';
 
     ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id');
-        const found = MOCK_EVENTS.find((e) => e.id === id);
-        if (found) {
-            this.event.set(found);
-        } else {
-            // Default to first if not found for mockup purposes
-            this.event.set(MOCK_EVENTS[0]);
+        if (!id) {
+            this.errorMessage = 'Event ID is missing.';
+
+            return;
         }
+
+        this.loadEvent(id);
+    }
+
+    loadEvent(eventID: string): void {
+        this.loading.set(true);
+        this.errorMessage = '';
+        this.admissionsService
+            .getEvent(eventID)
+            .pipe(
+                catchError((error) => {
+                    this.loading.set(false);
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load event details.'
+                    );
+
+                    return of(undefined);
+                })
+            )
+            .subscribe((event) => {
+                this.loading.set(false);
+                if (event) {
+                    this.event.set(event);
+                }
+            });
     }
 
     getMatchStatusClasses(status: EventRegistration['matchStatus']): string {

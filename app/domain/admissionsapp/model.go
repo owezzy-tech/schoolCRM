@@ -208,6 +208,257 @@ func toBusLeadScoreCriteria(app []LeadScoreCriterion) []admissionsbus.LeadScoreC
 	return criteria
 }
 
+// EventRegistration represents one admissions event registration for app responses.
+type EventRegistration struct {
+	ID              string  `json:"id"`
+	ConstituentID   *string `json:"constituentId,omitempty"`
+	ConstituentName string  `json:"constituentName"`
+	Email           string  `json:"email"`
+	Phone           *string `json:"phone,omitempty"`
+	Status          string  `json:"status"`
+	RegisteredAt    string  `json:"registeredAt"`
+	MatchStatus     string  `json:"matchStatus"`
+	Source          string  `json:"source"`
+	CheckedInAt     *string `json:"checkedInAt,omitempty"`
+	CheckedInByID   *string `json:"checkedInById,omitempty"`
+	FirstName       string  `json:"-"`
+	LastName        string  `json:"-"`
+}
+
+// Encode implements the encoder interface.
+func (app EventRegistration) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+// Event represents an admissions engagement event for app responses.
+type Event struct {
+	ID                      string              `json:"id"`
+	Title                   string              `json:"title"`
+	Type                    string              `json:"type"`
+	Status                  string              `json:"status"`
+	Description             string              `json:"description"`
+	Start                   string              `json:"start"`
+	End                     string              `json:"end"`
+	Location                string              `json:"location"`
+	IsVirtual               bool                `json:"isVirtual"`
+	Capacity                int                 `json:"capacity"`
+	RegisteredCount         int                 `json:"registeredCount"`
+	CheckedInCount          int                 `json:"checkedInCount"`
+	RegistrationDeadline    *string             `json:"registrationDeadline,omitempty"`
+	AutoConfirmationEnabled bool                `json:"autoConfirmationEnabled"`
+	AutoReminderEnabled     bool                `json:"autoReminderEnabled"`
+	Registrations           []EventRegistration `json:"registrations"`
+	DateCreated             string              `json:"dateCreated"`
+	DateUpdated             string              `json:"dateUpdated"`
+}
+
+// Decode implements the decoder interface.
+func (app *Event) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+// Encode implements the encoder interface.
+func (app Event) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+type NewEventRegistration struct {
+	EventID       string  `json:"eventId"`
+	ConstituentID *string `json:"constituentId"`
+	FirstName     string  `json:"firstName"`
+	LastName      string  `json:"lastName"`
+	Email         string  `json:"email"`
+	Phone         *string `json:"phone"`
+	Source        string  `json:"source"`
+	MatchStatus   string  `json:"matchStatus"`
+}
+
+type NewEvent struct {
+	Title                   string  `json:"title"`
+	Type                    string  `json:"type"`
+	Status                  string  `json:"status"`
+	Description             string  `json:"description"`
+	Start                   string  `json:"start"`
+	End                     string  `json:"end"`
+	Location                string  `json:"location"`
+	IsVirtual               bool    `json:"isVirtual"`
+	Capacity                int     `json:"capacity"`
+	RegistrationDeadline    *string `json:"registrationDeadline"`
+	AutoConfirmationEnabled bool    `json:"autoConfirmationEnabled"`
+	AutoReminderEnabled     bool    `json:"autoReminderEnabled"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewEventRegistration) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+// Decode implements the decoder interface.
+func (app *NewEvent) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+type NewEventCheckIn struct {
+	RegistrationID string `json:"registrationId"`
+}
+
+// Decode implements the decoder interface.
+func (app *NewEventCheckIn) Decode(data []byte) error {
+	return json.Unmarshal(data, app)
+}
+
+func toAppEventRegistration(registration admissionsbus.EventRegistration) EventRegistration {
+	fullName := registration.FirstName
+	if registration.LastName != "" {
+		fullName = registration.FirstName + " " + registration.LastName
+	}
+
+	checkedInByID := uuidStringPtr(registration.CheckedInByID)
+
+	return EventRegistration{
+		ID:              registration.ID.String(),
+		ConstituentID:   uuidStringPtr(registration.ConstituentID),
+		ConstituentName: fullName,
+		Email:           registration.Email,
+		Phone:           registration.Phone,
+		Status:          registration.Status.String(),
+		RegisteredAt:    registration.RegisteredAt.Format(time.RFC3339),
+		MatchStatus:     registration.MatchStatus.String(),
+		Source:          registration.Source.String(),
+		CheckedInAt:     formatTimePtr(registration.CheckedInAt),
+		CheckedInByID:   checkedInByID,
+		FirstName:       registration.FirstName,
+		LastName:        registration.LastName,
+	}
+}
+
+func toAppEventRegistrations(registrations []admissionsbus.EventRegistration) []EventRegistration {
+	app := make([]EventRegistration, len(registrations))
+	for i, registration := range registrations {
+		app[i] = toAppEventRegistration(registration)
+	}
+
+	return app
+}
+
+func toAppEvent(event admissionsbus.Event, registrations []admissionsbus.EventRegistration) Event {
+	registeredCount := len(registrations)
+	checkedInCount := 0
+	for _, registration := range registrations {
+		if registration.Status == admissionsbus.EventRegistrationStatusCheckedIn {
+			checkedInCount++
+		}
+	}
+
+	return Event{
+		ID:                      event.ID.String(),
+		Title:                   event.Title,
+		Type:                    event.Type.String(),
+		Status:                  event.Status.String(),
+		Description:             event.Description,
+		Start:                   event.StartTime.Format(time.RFC3339),
+		End:                     event.EndTime.Format(time.RFC3339),
+		Location:                event.Location,
+		IsVirtual:               event.IsVirtual,
+		Capacity:                event.Capacity,
+		RegisteredCount:         registeredCount,
+		CheckedInCount:          checkedInCount,
+		RegistrationDeadline:    formatTimePtr(event.RegistrationDeadline),
+		AutoConfirmationEnabled: event.AutoConfirmationEnabled,
+		AutoReminderEnabled:     event.AutoReminderEnabled,
+		Registrations:           toAppEventRegistrations(registrations),
+		DateCreated:             event.DateCreated.Format(time.RFC3339),
+		DateUpdated:             event.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toBusNewEventRegistration(app NewEventRegistration) (admissionsbus.NewEventRegistration, error) {
+	var fieldErrors errs.FieldErrors
+
+	eventID, err := uuid.Parse(app.EventID)
+	if err != nil {
+		fieldErrors.Add("eventId", err)
+	}
+
+	constituentID, err := parseUUIDPtr(app.ConstituentID)
+	if err != nil {
+		fieldErrors.Add("constituentId", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEventRegistration{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEventRegistration{
+		EventID:       eventID,
+		ConstituentID: constituentID,
+		FirstName:     app.FirstName,
+		LastName:      app.LastName,
+		Email:         app.Email,
+		Phone:         app.Phone,
+		Source:        admissionsbus.EventRegistrationSource(app.Source),
+		MatchStatus:   admissionsbus.EventRegistrationMatchStatus(app.MatchStatus),
+	}, nil
+}
+
+func toBusNewEvent(app NewEvent) (admissionsbus.NewEvent, error) {
+	var fieldErrors errs.FieldErrors
+
+	startTime, err := time.Parse(time.RFC3339, app.Start)
+	if err != nil {
+		fieldErrors.Add("start", err)
+	}
+
+	endTime, err := time.Parse(time.RFC3339, app.End)
+	if err != nil {
+		fieldErrors.Add("end", err)
+	}
+
+	registrationDeadline, err := parseTimePtr(app.RegistrationDeadline)
+	if err != nil {
+		fieldErrors.Add("registrationDeadline", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEvent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEvent{
+		Title:                   app.Title,
+		Type:                    admissionsbus.EventType(app.Type),
+		Status:                  admissionsbus.EventStatus(app.Status),
+		Description:             app.Description,
+		StartTime:               startTime,
+		EndTime:                 endTime,
+		Location:                app.Location,
+		IsVirtual:               app.IsVirtual,
+		Capacity:                app.Capacity,
+		RegistrationDeadline:    registrationDeadline,
+		AutoConfirmationEnabled: app.AutoConfirmationEnabled,
+		AutoReminderEnabled:     app.AutoReminderEnabled,
+	}, nil
+}
+
+func toBusNewEventCheckIn(app NewEventCheckIn, checkedInByID uuid.UUID) (admissionsbus.NewEventCheckIn, error) {
+	var fieldErrors errs.FieldErrors
+
+	registrationID, err := uuid.Parse(app.RegistrationID)
+	if err != nil {
+		fieldErrors.Add("registrationId", err)
+	}
+
+	if len(fieldErrors) > 0 {
+		return admissionsbus.NewEventCheckIn{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
+	}
+
+	return admissionsbus.NewEventCheckIn{
+		RegistrationID: registrationID,
+		CheckedInByID:  checkedInByID,
+	}, nil
+}
+
 // LeadScoreRule represents an explainable rule contributing points to a lead score.
 type LeadScoreRule struct {
 	ID          string               `json:"id"`
@@ -2213,6 +2464,154 @@ func toBusNewSyncEvent(app NewSyncEvent) (admissionsbus.NewSyncEvent, error) {
 		PayloadHash:  app.PayloadHash,
 		AuditMessage: app.AuditMessage,
 	}, nil
+}
+
+// CampaignAuditEvent represents one lifecycle action for an admissions campaign.
+type CampaignAuditEvent struct {
+	ID          string `json:"id"`
+	CampaignID  string `json:"campaignID"`
+	ActorName   string `json:"actorName"`
+	Action      string `json:"action"`
+	OccurredAt  string `json:"occurredAt"`
+	DateCreated string `json:"dateCreated"`
+}
+
+// Campaign represents an admissions marketing or operational campaign.
+type Campaign struct {
+	ID             string               `json:"id"`
+	Name           string               `json:"name"`
+	Status         string               `json:"status"`
+	Channel        string               `json:"channel"`
+	AudienceName   string               `json:"audienceName"`
+	TemplateName   string               `json:"templateName"`
+	MessagePreview string               `json:"messagePreview"`
+	Segment        json.RawMessage      `json:"segment"`
+	Metrics        json.RawMessage      `json:"metrics"`
+	StartsAt       *string              `json:"startsAt,omitempty"`
+	EndsAt         *string              `json:"endsAt,omitempty"`
+	CreatedByID    *string              `json:"createdByID,omitempty"`
+	AuditTrail     []CampaignAuditEvent `json:"auditTrail"`
+	DateCreated    string               `json:"dateCreated"`
+	DateUpdated    string               `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Campaign) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCampaign(campaign admissionsbus.Campaign, auditTrail []admissionsbus.CampaignAuditEvent) Campaign {
+	return Campaign{
+		ID:             campaign.ID.String(),
+		Name:           campaign.Name,
+		Status:         campaign.Status.String(),
+		Channel:        campaign.Channel.String(),
+		AudienceName:   campaign.AudienceName,
+		TemplateName:   campaign.TemplateName,
+		MessagePreview: campaign.MessagePreview,
+		Segment:        campaign.Segment,
+		Metrics:        campaign.Metrics,
+		StartsAt:       formatTimePtr(campaign.StartsAt),
+		EndsAt:         formatTimePtr(campaign.EndsAt),
+		CreatedByID:    uuidStringPtr(campaign.CreatedByID),
+		AuditTrail:     toAppCampaignAuditEvents(auditTrail),
+		DateCreated:    campaign.DateCreated.Format(time.RFC3339),
+		DateUpdated:    campaign.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCampaigns(campaigns []admissionsbus.Campaign, audits map[uuid.UUID][]admissionsbus.CampaignAuditEvent) []Campaign {
+	app := make([]Campaign, len(campaigns))
+	for i, campaign := range campaigns {
+		app[i] = toAppCampaign(campaign, audits[campaign.ID])
+	}
+
+	return app
+}
+
+func toAppCampaignAuditEvent(event admissionsbus.CampaignAuditEvent) CampaignAuditEvent {
+	return CampaignAuditEvent{
+		ID:          event.ID.String(),
+		CampaignID:  event.CampaignID.String(),
+		ActorName:   event.ActorName,
+		Action:      event.Action,
+		OccurredAt:  event.OccurredAt.Format(time.RFC3339),
+		DateCreated: event.DateCreated.Format(time.RFC3339),
+	}
+}
+
+func toAppCampaignAuditEvents(events []admissionsbus.CampaignAuditEvent) []CampaignAuditEvent {
+	app := make([]CampaignAuditEvent, len(events))
+	for i, event := range events {
+		app[i] = toAppCampaignAuditEvent(event)
+	}
+
+	return app
+}
+
+// Communication represents one inbound, outbound, provider-tracked, or manually logged touchpoint.
+type Communication struct {
+	ID                string          `json:"id"`
+	ExternalMessageID string          `json:"externalMessageID"`
+	Channel           string          `json:"channel"`
+	Direction         string          `json:"direction"`
+	ConstituentID     string          `json:"constituentID"`
+	ApplicationID     *string         `json:"applicationID,omitempty"`
+	CampaignID        *string         `json:"campaignID,omitempty"`
+	RecipientSender   string          `json:"recipientSender"`
+	RecipientInitials string          `json:"recipientInitials"`
+	Subject           string          `json:"subject"`
+	Preview           string          `json:"preview"`
+	Status            string          `json:"status"`
+	Provider          *string         `json:"provider,omitempty"`
+	OwnerName         string          `json:"ownerName"`
+	Outcome           *string         `json:"outcome,omitempty"`
+	Duration          *string         `json:"duration,omitempty"`
+	OccurredAt        string          `json:"occurredAt"`
+	ProviderPayload   json.RawMessage `json:"providerPayload,omitempty"`
+	DateCreated       string          `json:"dateCreated"`
+	DateUpdated       string          `json:"dateUpdated"`
+}
+
+// Encode implements the encoder interface.
+func (app Communication) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(app)
+	return data, "application/json", err
+}
+
+func toAppCommunication(communication admissionsbus.Communication) Communication {
+	return Communication{
+		ID:                communication.ID.String(),
+		ExternalMessageID: communication.ExternalMessageID,
+		Channel:           communication.Channel.String(),
+		Direction:         communication.Direction.String(),
+		ConstituentID:     communication.ConstituentID.String(),
+		ApplicationID:     uuidStringPtr(communication.ApplicationID),
+		CampaignID:        uuidStringPtr(communication.CampaignID),
+		RecipientSender:   communication.RecipientSender,
+		RecipientInitials: communication.RecipientInitials,
+		Subject:           communication.Subject,
+		Preview:           communication.Preview,
+		Status:            communication.Status.String(),
+		Provider:          communication.Provider,
+		OwnerName:         communication.OwnerName,
+		Outcome:           communication.Outcome,
+		Duration:          communication.Duration,
+		OccurredAt:        communication.OccurredAt.Format(time.RFC3339),
+		ProviderPayload:   communication.ProviderPayload,
+		DateCreated:       communication.DateCreated.Format(time.RFC3339),
+		DateUpdated:       communication.DateUpdated.Format(time.RFC3339),
+	}
+}
+
+func toAppCommunications(communications []admissionsbus.Communication) []Communication {
+	app := make([]Communication, len(communications))
+	for i, communication := range communications {
+		app[i] = toAppCommunication(communication)
+	}
+
+	return app
 }
 
 func formatTimePtr(t *time.Time) *string {

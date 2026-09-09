@@ -109,7 +109,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 			Password     string `conf:"default:postgres,mask"`
 			Host         string `conf:"default:database-service"`
 			Name         string `conf:"default:postgres"`
-			MaxIdleConns int    `conf:"default:0"`
+			MaxIdleConns int    `conf:"default:2"`
 			MaxOpenConns int    `conf:"default:0"`
 			DisableTLS   bool   `conf:"default:true"`
 		}

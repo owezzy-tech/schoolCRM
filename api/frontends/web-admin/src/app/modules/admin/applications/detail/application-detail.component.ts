@@ -1,16 +1,32 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DestroyRef,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
+    AcademicTerm,
+    Application,
     ApplicationFee,
     ApplicationFeeStatus,
     ApplicationKCSEResult,
+    ApplicationStatus,
+    ApplicationTransition,
     KUCCPSPlacement,
     NotificationChannel,
     NotificationPreferences,
+    Program,
 } from 'app/core/admissions/admissions.types';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { finalize, forkJoin } from 'rxjs';
 import { ApplicationDocumentsComponent } from '../components/documents/application-documents.component';
 
 interface TimelineEvent {
@@ -40,9 +56,26 @@ interface ContactPreferenceRow {
     consentNote: string;
 }
 
+const EMPTY_KUCCPS_PLACEMENT: KUCCPSPlacement = {
+    placementID: 'Not captured',
+    institutionCode: '—',
+    programmeCode: '—',
+    programmeName: 'No KUCCPS placement attached',
+    placementYear: new Date().getFullYear(),
+    weightedPointsNote:
+        'KUCCPS placement details will appear here when the admissions API returns them.',
+};
+
+const EMPTY_KCSE_RESULT: ApplicationKCSEResult = {
+    indexNumber: 'Not captured',
+    examYear: new Date().getFullYear(),
+    meanGrade: '—',
+    meanPoints: 0,
+    subjects: [],
+};
+
 @Component({
     selector: 'app-application-detail',
-    standalone: true,
     imports: [
         RouterLink,
         MatButtonModule,
@@ -54,103 +87,141 @@ interface ContactPreferenceRow {
     templateUrl: './application-detail.component.html',
 })
 export class ApplicationDetailComponent {
+    private readonly admissionsService = inject(AdmissionsService);
+    private readonly destroyRef = inject(DestroyRef);
     private readonly route = inject(ActivatedRoute);
-    readonly applicationId = this.route.snapshot.paramMap.get('id');
 
-    readonly applicantName = 'Achieng Otieno';
-    readonly status = 'In review';
-    readonly applicationType = 'KUCCPS PLACEMENT';
-    readonly kuccpsPlacement: KUCCPSPlacement = {
-        placementID: 'KUCCPS-2026-003024',
-        admissionNumber: 'SCM/2026/003024',
-        institutionCode: 'SCM001',
-        programmeCode: 'BSC-CS',
-        programmeName: 'B.Sc. Computer Science',
-        placementYear: 2026,
-        clusterCode: 'CS01',
-        clusterPoints: 42.318,
-        weightedPointsNote:
-            'Public KUCCPS approximation; exact points require private KNEC performance indices.',
-    };
-    readonly kcseResult: ApplicationKCSEResult = {
-        indexNumber: '204003024',
-        examYear: 2025,
-        meanGrade: 'A-',
-        meanPoints: 74,
-        subjects: [
-            { subjectCode: '101', grade: 'A-', points: 11 },
-            { subjectCode: '102', grade: 'B+', points: 10 },
-            { subjectCode: '121', grade: 'A', points: 12 },
-            { subjectCode: '232', grade: 'A-', points: 11 },
-        ],
-    };
-    readonly fee: ApplicationFee = {
-        id: 'fee-app-3024',
-        applicationID: 'APP-3024',
-        amountCents: 250000,
-        currency: 'KES',
-        status: 'PAID',
-        provider: 'manual',
-        transactionID: 'mpesa-qe3024',
-        paidAt: 'May 30, 2026 10:12 AM',
-        auditTrail: [
-            {
-                actor: 'System',
-                action: 'Payment recorded',
-                reason: 'Stripe provider webhook marked application fee paid.',
-                timestamp: 'May 30, 2026 10:12 AM',
-            },
-            {
-                actor: 'Avery',
-                action: 'Receipt reviewed',
-                reason: 'Confirmed payment before moving application forward.',
-                timestamp: 'May 30, 2026 10:45 AM',
-            },
-        ],
-    };
+    readonly applicationId = this.route.snapshot.paramMap.get('id') ?? '';
+    readonly application = signal<Application | null>(null);
+    readonly errorMessage = signal<string | null>(null);
+    readonly isLoading = signal(false);
+    readonly programs = signal<Program[]>([]);
+    readonly terms = signal<AcademicTerm[]>([]);
+    readonly transitions = signal<ApplicationTransition[]>([]);
 
-    readonly summaryCards = [
-        { label: 'Programme', value: 'B.Sc. Computer Science' },
-        { label: 'Application type', value: this.applicationType },
-        { label: 'Term', value: 'September 2026' },
-        { label: 'Submitted', value: '2 hours ago' },
-        { label: 'Application Fee', value: 'Paid · KES 2,500.00' },
-    ];
+    readonly applicantName = computed(
+        () => this.application()?.constituentID ?? 'Applicant pending'
+    );
+    readonly status = computed(() =>
+        this.formatApplicationStatus(this.application()?.status)
+    );
+    readonly applicationType = computed(() =>
+        this.application()?.applicationType
+            ? this.formatApplicationType(this.application()!.applicationType)
+            : 'Application type pending'
+    );
+    readonly kuccpsPlacement = computed(
+        () => this.application()?.kuccpsPlacement ?? EMPTY_KUCCPS_PLACEMENT
+    );
+    readonly kcseResult = computed(
+        () => this.application()?.kcseResult ?? EMPTY_KCSE_RESULT
+    );
+    readonly program = computed(() =>
+        this.programs().find(
+            (program) => program.id === this.application()?.programID
+        )
+    );
+    readonly term = computed(() =>
+        this.terms().find(
+            (term) => term.id === this.application()?.academicTermID
+        )
+    );
+    readonly fee = computed<ApplicationFee>(() => {
+        const application = this.application();
+        const status = this.feeStatusFor(application?.status);
 
-    readonly applicantInfo = [
-        { label: 'Name', value: 'Achieng Otieno' },
-        { label: 'Email', value: 'achieng.otieno@example.ac.ke' },
-        { label: 'Phone', value: '+254 712 345 678' },
-        { label: 'DOB', value: 'May 14, 2007' },
-        { label: 'National ID', value: '42817391' },
-        { label: 'UPI', value: 'KEMIS7Q4A2' },
-        { label: 'Address', value: 'P.O. Box 1024-40100, Kisumu' },
+        return {
+            id: `fee-${application?.id ?? this.applicationId}`,
+            applicationID: application?.id ?? this.applicationId,
+            amountCents: status === 'NOT_REQUIRED' ? 0 : 15000,
+            currency: 'KES',
+            status,
+            provider: status === 'NOT_REQUIRED' ? 'not_required' : 'manual',
+            dueAt: application?.submittedAt,
+            auditTrail: this.transitions().map((transition) => ({
+                actor: transition.actorID,
+                action: `${this.formatApplicationStatus(transition.fromStatus)} → ${this.formatApplicationStatus(transition.toStatus)}`,
+                reason:
+                    transition.reason ?? transition.note ?? 'Status updated',
+                timestamp: this.formatDate(transition.dateCreated),
+            })),
+        };
+    });
+    readonly summaryCards = computed(() => [
         {
-            label: 'Essay excerpt',
-            value: '"My interest in software engineering began through a county robotics club..."',
+            label: 'Programme',
+            value: this.program()?.name ?? 'Programme pending',
         },
-    ];
-
+        { label: 'Application type', value: this.applicationType() },
+        { label: 'Term', value: this.term()?.name ?? 'Term pending' },
+        {
+            label: 'Submitted',
+            value: this.application()?.submittedAt
+                ? this.formatDate(this.application()!.submittedAt!)
+                : 'Not submitted',
+        },
+        {
+            label: 'Application Fee',
+            value: `${this.formatFeeStatus(this.fee().status)} · ${this.formatAmount(this.fee())}`,
+        },
+    ]);
+    readonly applicantInfo = computed(() => {
+        const application = this.application();
+        return [
+            {
+                label: 'Constituent ID',
+                value: application?.constituentID ?? '—',
+            },
+            {
+                label: 'Application ID',
+                value: application?.id ?? this.applicationId,
+            },
+            { label: 'Programme ID', value: application?.programID ?? '—' },
+            {
+                label: 'Academic term ID',
+                value: application?.academicTermID ?? '—',
+            },
+            {
+                label: 'Reviewer',
+                value: application?.assignedReviewerID ?? 'Unassigned',
+            },
+            {
+                label: 'Created',
+                value: application?.dateCreated
+                    ? this.formatDate(application.dateCreated)
+                    : '—',
+            },
+            {
+                label: 'Updated',
+                value: application?.dateUpdated
+                    ? this.formatDate(application.dateUpdated)
+                    : '—',
+            },
+            {
+                label: 'Data source',
+                value: 'Admissions application API',
+            },
+        ];
+    });
     readonly notificationPreferences: NotificationPreferences = {
         smsOptIn: true,
         whatsAppOptIn: false,
         emailOptIn: true,
         priority: ['SMS', 'WHATSAPP', 'EMAIL'],
     };
-
-    readonly contactPreferenceRows: ContactPreferenceRow[] = [
+    readonly contactPreferenceRows = computed<ContactPreferenceRow[]>(() => [
         {
             channel: 'SMS',
             label: 'SMS',
-            destination: '+254 712 345 678',
+            destination: 'Applicant phone from constituent profile',
             optIn: this.notificationPreferences.smsOptIn,
             provider: 'Celcom Africa SMS',
-            consentNote: 'Default urgent-alert channel for Kenya applicants.',
+            consentNote: 'Constituent preference API is not embedded yet.',
         },
         {
             channel: 'WHATSAPP',
             label: 'WhatsApp',
-            destination: '+254 712 345 678',
+            destination: 'Applicant WhatsApp from constituent profile',
             optIn: this.notificationPreferences.whatsAppOptIn,
             provider: 'WhatsApp Cloud',
             consentNote: 'Off until the applicant explicitly opts in.',
@@ -158,80 +229,90 @@ export class ApplicationDetailComponent {
         {
             channel: 'EMAIL',
             label: 'Email',
-            destination: 'achieng.otieno@example.ac.ke',
+            destination: 'Applicant email from constituent profile',
             optIn: this.notificationPreferences.emailOptIn,
             provider: 'SchoolCRM mailer',
             consentNote: 'Kept on for long-form admissions notices.',
         },
-    ];
+    ]);
+    readonly notes = computed<Note[]>(() => {
+        const notes = this.transitions()
+            .filter((transition) => transition.note || transition.reason)
+            .map((transition) => ({
+                authorInitials: this.initialsFor(transition.actorID),
+                authorName: transition.actorID,
+                timestamp: this.formatDate(transition.dateCreated),
+                body:
+                    transition.note ??
+                    transition.reason ??
+                    'Status transition recorded.',
+            }));
 
-    readonly notes: Note[] = [
-        {
-            authorInitials: 'AM',
-            authorName: 'Avery',
-            timestamp: '1 hour ago',
-            body: 'Strong KCSE profile and KUCCPS placement matches the selected programme catalog record.',
-        },
-        {
-            authorInitials: 'PP',
-            authorName: 'Priya',
-            timestamp: 'Yesterday',
-            body: 'KCSE result slip verified; waiting for finance receipt reconciliation.',
-        },
-        {
-            authorInitials: 'SM',
-            authorName: 'System',
-            timestamp: '2 days ago',
-            body: 'Application submitted successfully.',
-        },
-    ];
+        if (notes.length > 0) {
+            return notes;
+        }
 
-    readonly timelineEvents: TimelineEvent[] = [
-        {
-            icon: 'heroicons_outline:check-circle',
-            title: 'Review started',
-            date: 'Today, 9:00 AM',
-        },
-        {
-            icon: 'heroicons_outline:document-text',
-            title: 'All documents received',
-            date: 'Yesterday, 2:30 PM',
-        },
-        {
-            icon: 'heroicons_outline:arrow-up-tray',
-            title: 'Transcript uploaded',
-            date: 'Yesterday, 10:15 AM',
-        },
-        {
-            icon: 'heroicons_outline:envelope',
-            title: 'Recommendation 2 received',
-            date: 'May 28, 4:00 PM',
-        },
-        {
-            icon: 'heroicons_outline:envelope',
-            title: 'Recommendation 1 received',
-            date: 'May 27, 11:20 AM',
-        },
-        {
-            icon: 'heroicons_outline:paper-airplane',
-            title: 'Application submitted',
-            date: 'May 26, 8:45 PM',
-        },
-    ];
+        return [
+            {
+                authorInitials: 'API',
+                authorName: 'Admissions API',
+                timestamp: 'Live data',
+                body: 'No reviewer notes have been recorded in application transitions yet.',
+            },
+        ];
+    });
+    readonly timelineEvents = computed<TimelineEvent[]>(() => {
+        const transitions = this.transitions();
+        if (transitions.length > 0) {
+            return transitions.map((transition) => ({
+                icon: 'heroicons_outline:arrow-path',
+                title: `${this.formatApplicationStatus(transition.fromStatus)} → ${this.formatApplicationStatus(transition.toStatus)}`,
+                date: this.formatDate(transition.dateCreated),
+            }));
+        }
 
-    readonly insights: Insight[] = [
-        {
-            title: 'Recommended decision',
-            description:
-                'Strong admit based on KCSE mean grade and cluster estimate.',
-        },
-        { title: 'Risk flags', description: 'None identified.' },
-        {
-            title: 'Similar profiles',
-            description:
-                'Matches prior KUCCPS placement admits for B.Sc. Computer Science.',
-        },
-    ];
+        const application = this.application();
+        if (!application) {
+            return [];
+        }
+
+        return [
+            {
+                icon: 'heroicons_outline:paper-airplane',
+                title: this.formatApplicationStatus(application.status),
+                date: this.formatDate(application.dateUpdated),
+            },
+        ];
+    });
+    readonly insights = computed<Insight[]>(() => {
+        const application = this.application();
+        const kcse = application?.kcseResult;
+
+        return [
+            {
+                title: 'Recommended next action',
+                description: application
+                    ? `Application is ${this.formatApplicationStatus(application.status).toLowerCase()}; use transitions and document reviews to move it forward.`
+                    : 'Load the application to calculate next action.',
+            },
+            {
+                title: 'KCSE signal',
+                description: kcse
+                    ? `${kcse.meanGrade} mean grade with ${kcse.meanPoints} aggregate points.`
+                    : 'KCSE result has not been captured on this application.',
+            },
+            {
+                title: 'Reviewer assignment',
+                description:
+                    application?.assignedReviewerID ??
+                    'No reviewer assigned yet.',
+            },
+        ];
+    });
+
+    constructor() {
+        this.loadApplication();
+    }
 
     feeStatusClass(status: ApplicationFeeStatus): string {
         switch (status) {
@@ -255,6 +336,10 @@ export class ApplicationDetailComponent {
     }
 
     formatAmount(fee: ApplicationFee): string {
+        if (fee.status === 'NOT_REQUIRED') {
+            return 'No fee';
+        }
+
         return new Intl.NumberFormat('en-KE', {
             style: 'currency',
             currency: fee.currency,
@@ -269,5 +354,92 @@ export class ApplicationDetailComponent {
         };
 
         return icons[channel];
+    }
+
+    private loadApplication(): void {
+        if (!this.applicationId) {
+            this.errorMessage.set('No application ID was supplied.');
+            return;
+        }
+
+        this.isLoading.set(true);
+        this.errorMessage.set(null);
+
+        forkJoin({
+            application: this.admissionsService.getApplication(
+                this.applicationId
+            ),
+            transitions: this.admissionsService.queryApplicationTransitions(
+                this.applicationId,
+                {
+                    page: 1,
+                    rows: 100,
+                    orderBy: 'date_created,DESC',
+                }
+            ),
+            programs: this.admissionsService.queryPrograms({
+                rows: 100,
+                active: true,
+            }),
+            terms: this.admissionsService.queryAcademicTerms({
+                rows: 100,
+                active: true,
+            }),
+        })
+            .pipe(
+                finalize(() => this.isLoading.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: ({ application, transitions, programs, terms }) => {
+                    this.application.set(application);
+                    this.transitions.set(transitions.items);
+                    this.programs.set(programs.items);
+                    this.terms.set(terms.items);
+                },
+                error: (error) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'Application detail could not be loaded.'
+                        )
+                    );
+                },
+            });
+    }
+
+    private feeStatusFor(
+        status: ApplicationStatus | undefined
+    ): ApplicationFeeStatus {
+        if (!status || status === 'DRAFT' || status === 'WITHDRAWN') {
+            return 'NOT_REQUIRED';
+        }
+
+        return 'PENDING';
+    }
+
+    private formatApplicationStatus(
+        status: ApplicationStatus | undefined
+    ): string {
+        return status ? status.replaceAll('_', ' ') : 'Status pending';
+    }
+
+    private formatApplicationType(type: string): string {
+        return type.replaceAll('_', ' ');
+    }
+
+    private formatDate(value: string): string {
+        return new Intl.DateTimeFormat('en-KE', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        }).format(new Date(value));
+    }
+
+    private initialsFor(value: string): string {
+        const clean = value.replaceAll('-', ' ').trim();
+        const parts = clean.split(/\s+/).filter(Boolean);
+
+        return (parts[0]?.[0] ?? 'A') + (parts[1]?.[0] ?? 'P');
     }
 }

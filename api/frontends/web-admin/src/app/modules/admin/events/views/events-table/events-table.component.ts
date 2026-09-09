@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MOCK_EVENTS } from '../../data/events.mock';
 import { EventsComponent } from '../../events.component';
 
 @Component({
@@ -27,7 +26,7 @@ import { EventsComponent } from '../../events.component';
 })
 export class EventsTableComponent {
     private readonly shell = inject(EventsComponent);
-    
+
     readonly displayedColumns = [
         'datetime',
         'title',
@@ -37,8 +36,8 @@ export class EventsTableComponent {
         'capacity',
         'actions'
     ];
-    
-    readonly events = signal(MOCK_EVENTS);
+
+    readonly events = this.shell.events;
     
     getTypeColor(type: string): string {
         switch (type) {

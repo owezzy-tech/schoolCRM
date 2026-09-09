@@ -81,7 +81,7 @@
                                 Custom field registry
                             </h2>
                             <p class="text-secondary mt-2 text-sm">
-                                Static preview of configurable fields for
+                                Live registry of configurable fields for
                                 constituents and applications only. Core
                                 identity, status, program, term, and decision
                                 fields remain first-class.
@@ -90,97 +90,113 @@
                         <div
                             class="rounded-2xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary"
                         >
-                            {{ customFieldDefinitions.length }} fields ·
-                            constituent/application scope
+                            @if (customFieldDefinitions$ | async; as result) {
+                                {{ result.total }} fields ·
+                                constituent/application scope
+                            } @else {
+                                Loading fields…
+                            }
                         </div>
                     </div>
                 </div>
 
                 <div class="divide-y">
-                    @for (field of customFieldDefinitions; track field.id) {
-                        <div
-                            class="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[140px_minmax(0,1fr)_160px_100px] lg:items-center"
-                        >
-                            <div>
-                                <div
-                                    class="text-secondary text-xs uppercase tracking-wide"
-                                >
-                                    Owner
-                                </div>
-                                <div class="mt-1 font-semibold">
-                                    {{ field.owner }}
-                                </div>
-                                <div class="text-secondary mt-1 text-xs">
-                                    #{{ field.displayOrder }}
-                                </div>
-                            </div>
-                            <div>
-                                <div class="font-semibold">
-                                    {{ field.label }}
-                                </div>
-                                <div class="text-secondary mt-1 text-sm">
-                                    {{ customFieldSummary(field) }}
-                                </div>
-                                <div class="text-secondary mt-2 text-xs">
-                                    Key {{ field.fieldKey }} ·
-                                    {{ customFieldOptionsLabel(field) }}
-                                </div>
-                                @if (field.description) {
-                                    <div class="text-secondary mt-2 text-xs">
-                                        {{ field.description }}
-                                    </div>
-                                }
-                            </div>
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                @if (field.searchable) {
-                                    <span
-                                        class="rounded-full bg-blue-100 px-3 py-1 font-semibold text-blue-700"
-                                        >Search</span
-                                    >
-                                }
-                                @if (field.reportable) {
-                                    <span
-                                        class="rounded-full bg-purple-100 px-3 py-1 font-semibold text-purple-700"
-                                        >Report</span
-                                    >
-                                }
-                                @if (field.importable) {
-                                    <span
-                                        class="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-700"
-                                        >Import</span
-                                    >
-                                }
-                                @if (field.exportable) {
-                                    <span
-                                        class="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700"
-                                        >Export</span
-                                    >
-                                }
-                            </div>
+                    @if (customFieldDefinitions$ | async; as result) {
+                        @for (field of result.items; track field.id) {
                             <div
-                                class="flex items-center justify-between gap-3 lg:justify-end"
+                                class="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[140px_minmax(0,1fr)_160px_100px] lg:items-center"
                             >
-                                <span
-                                    class="rounded-full px-3 py-1 text-xs font-semibold"
-                                    [class.bg-green-100]="field.active"
-                                    [class.text-green-700]="field.active"
-                                    [class.bg-slate-100]="!field.active"
-                                    [class.text-secondary]="!field.active"
+                                <div>
+                                    <div
+                                        class="text-secondary text-xs uppercase tracking-wide"
+                                    >
+                                        Owner
+                                    </div>
+                                    <div class="mt-1 font-semibold">
+                                        {{ field.owner }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-xs">
+                                        #{{ field.displayOrder }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">
+                                        {{ field.label }}
+                                    </div>
+                                    <div class="text-secondary mt-1 text-sm">
+                                        {{ customFieldSummary(field) }}
+                                    </div>
+                                    <div class="text-secondary mt-2 text-xs">
+                                        Key {{ field.fieldKey }} ·
+                                        {{ customFieldOptionsLabel(field) }}
+                                    </div>
+                                    @if (field.description) {
+                                        <div
+                                            class="text-secondary mt-2 text-xs"
+                                        >
+                                            {{ field.description }}
+                                        </div>
+                                    }
+                                </div>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    @if (field.searchable) {
+                                        <span
+                                            class="rounded-full bg-blue-100 px-3 py-1 font-semibold text-blue-700"
+                                            >Search</span
+                                        >
+                                    }
+                                    @if (field.reportable) {
+                                        <span
+                                            class="rounded-full bg-purple-100 px-3 py-1 font-semibold text-purple-700"
+                                            >Report</span
+                                        >
+                                    }
+                                    @if (field.importable) {
+                                        <span
+                                            class="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-700"
+                                            >Import</span
+                                        >
+                                    }
+                                    @if (field.exportable) {
+                                        <span
+                                            class="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700"
+                                            >Export</span
+                                        >
+                                    }
+                                </div>
+                                <div
+                                    class="flex items-center justify-between gap-3 lg:justify-end"
                                 >
-                                    {{ field.active ? 'Active' : 'Inactive' }}
-                                </span>
-                                <button
-                                    mat-icon-button
-                                    type="button"
-                                    [attr.aria-label]="'Edit ' + field.label"
-                                    (click)="editCustomField(field)"
-                                >
-                                    <mat-icon
-                                        svgIcon="heroicons_outline:pencil-square"
-                                    ></mat-icon>
-                                </button>
+                                    <span
+                                        class="rounded-full px-3 py-1 text-xs font-semibold"
+                                        [class.bg-green-100]="field.active"
+                                        [class.text-green-700]="field.active"
+                                        [class.bg-slate-100]="!field.active"
+                                        [class.text-secondary]="!field.active"
+                                    >
+                                        {{
+                                            field.active ? 'Active' : 'Inactive'
+                                        }}
+                                    </span>
+                                    <button
+                                        mat-icon-button
+                                        type="button"
+                                        [attr.aria-label]="
+                                            'Edit ' + field.label
+                                        "
+                                        (click)="editCustomField(field)"
+                                    >
+                                        <mat-icon
+                                            svgIcon="heroicons_outline:pencil-square"
+                                        ></mat-icon>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        } @empty {
+                            <div class="text-secondary p-8 text-center">
+                                No custom fields have been configured.
+                            </div>
+                        }
                     }
                 </div>
             </section>
@@ -194,9 +210,8 @@
                     }}
                 </h2>
                 <p class="text-secondary mt-2 text-sm">
-                    Static form only. API integration will use the registry seam
-                    added in this slice once the feature moves from mock data to
-                    persisted settings.
+                    Saved through the admissions configuration API and
+                    immediately reloaded into the registry.
                 </p>
 
                 <form class="mt-6 space-y-4">
@@ -345,8 +360,21 @@
                         >
                             Reset
                         </button>
-                        <button mat-flat-button color="primary" type="button">
-                            Static preview
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="button"
+                            [disabled]="
+                                !customFieldForm.fieldKey ||
+                                !customFieldForm.label
+                            "
+                            (click)="saveCustomField()"
+                        >
+                            {{
+                                customFieldSaving
+                                    ? 'Saving...'
+                                    : 'Save custom field'
+                            }}
                         </button>
                     </div>
                 </form>
@@ -488,25 +516,45 @@
                         </mat-form-field>
                     </div>
 
-                    <mat-form-field appearance="outline" class="w-full">
-                        <mat-label>Program ID</mat-label>
-                        <input
-                            matInput
-                            required
-                            name="templateProgramID"
-                            [(ngModel)]="templateForm.programID"
-                        />
-                    </mat-form-field>
+                    @if (programs$ | async; as programsResult) {
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Program</mat-label>
+                            <mat-select
+                                required
+                                name="templateProgramID"
+                                [(ngModel)]="templateForm.programID"
+                            >
+                                @for (
+                                    program of programsResult.items;
+                                    track program.id
+                                ) {
+                                    <mat-option [value]="program.id">
+                                        {{ programOptionLabel(program) }}
+                                    </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    }
 
-                    <mat-form-field appearance="outline" class="w-full">
-                        <mat-label>Academic term ID</mat-label>
-                        <input
-                            matInput
-                            required
-                            name="templateAcademicTermID"
-                            [(ngModel)]="templateForm.academicTermID"
-                        />
-                    </mat-form-field>
+                    @if (academicTerms$ | async; as termsResult) {
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Academic term</mat-label>
+                            <mat-select
+                                required
+                                name="templateAcademicTermID"
+                                [(ngModel)]="templateForm.academicTermID"
+                            >
+                                @for (
+                                    term of termsResult.items;
+                                    track term.id
+                                ) {
+                                    <mat-option [value]="term.id">
+                                        {{ academicTermOptionLabel(term) }}
+                                    </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    }
 
                     <mat-form-field appearance="outline" class="w-full">
                         <mat-label>Description</mat-label>
@@ -685,8 +733,9 @@
                 <div class="border-t bg-gray-50 p-6 dark:bg-gray-900/40">
                     <h3 class="text-base font-bold">Assignment review queue</h3>
                     <p class="text-secondary mt-1 text-sm">
-                        Static preview of auto-assigned records and manual
-                        overrides that must remain auditable.
+                        Preview of auto-assigned records and manual overrides.
+                        Assignment-rule APIs are not exposed yet, so this queue
+                        remains local reference data.
                     </p>
 
                     <div class="bg-card mt-4 overflow-x-auto rounded-xl border">
@@ -820,7 +869,7 @@
                     }}
                 </h2>
                 <p class="text-secondary mt-2 text-sm">
-                    Static rule builder for the future API: one primary
+                    Local rule builder for the future API: one primary
                     criterion, priority, target assignee, and active state.
                 </p>
 
@@ -1159,10 +1208,9 @@
                                 Import / Export batches
                             </h2>
                             <p class="text-secondary mt-2 text-sm">
-                                Static preview for CSV and Excel imports. Each
-                                upload records a batch, stores field mappings,
-                                and exposes invalid rows for correction
-                                download.
+                                Live CSV and Excel import batches. Each upload
+                                records a batch, stores field mappings, and
+                                exposes invalid rows for correction download.
                             </p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs font-semibold">
@@ -1178,107 +1226,125 @@
                 </div>
 
                 <div class="divide-y">
-                    @for (batch of importBatches; track batch.id) {
-                        <div class="p-6">
-                            <div
-                                class="grid grid-cols-1 gap-4 lg:grid-cols-[160px_minmax(0,1fr)_180px] lg:items-start"
-                            >
-                                <div>
-                                    <div
-                                        class="text-secondary text-xs uppercase tracking-wide"
-                                    >
-                                        {{ batch.fileType }} ·
-                                        {{ batch.target }}
-                                    </div>
-                                    <div class="mt-2 font-semibold">
-                                        {{ batch.fileName }}
-                                    </div>
-                                    <div class="text-secondary mt-1 text-xs">
-                                        {{ batch.source }}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="flex flex-wrap gap-2">
-                                        <span
-                                            class="rounded-full px-3 py-1 text-xs font-semibold"
-                                            [class.bg-green-100]="
-                                                batch.status === 'COMPLETED'
-                                            "
-                                            [class.text-green-700]="
-                                                batch.status === 'COMPLETED'
-                                            "
-                                            [class.bg-amber-100]="
-                                                batch.status ===
-                                                'VALIDATION_FAILED'
-                                            "
-                                            [class.text-amber-700]="
-                                                batch.status ===
-                                                'VALIDATION_FAILED'
-                                            "
-                                            [class.bg-blue-100]="
-                                                batch.status !== 'COMPLETED' &&
-                                                batch.status !==
-                                                    'VALIDATION_FAILED'
-                                            "
-                                            [class.text-blue-700]="
-                                                batch.status !== 'COMPLETED' &&
-                                                batch.status !==
-                                                    'VALIDATION_FAILED'
-                                            "
-                                        >
-                                            {{ importBatchStatusLabel(batch) }}
-                                        </span>
-                                        <span
-                                            class="text-secondary rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold"
-                                        >
-                                            {{ batch.totalRows }} rows
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"
-                                    >
+                    @if (importBatches$ | async; as result) {
+                        @for (batch of result.items; track batch.id) {
+                            <div class="p-6">
+                                <div
+                                    class="grid grid-cols-1 gap-4 lg:grid-cols-[160px_minmax(0,1fr)_180px] lg:items-start"
+                                >
+                                    <div>
                                         <div
-                                            class="h-full rounded-full bg-primary"
-                                            [style.width.%]="
-                                                importBatchProgress(batch)
-                                            "
-                                        ></div>
-                                    </div>
-                                    <div class="text-secondary mt-2 text-sm">
-                                        {{ importBatchSummary(batch) }}
-                                    </div>
-                                    <div class="text-secondary mt-2 text-xs">
-                                        {{ importMappingSummary(batch) }}
-                                    </div>
-                                    @if (batch.validationSummary) {
-                                        <div
-                                            class="text-secondary mt-3 rounded-xl bg-slate-50 p-3 text-sm"
+                                            class="text-secondary text-xs uppercase tracking-wide"
                                         >
-                                            {{ batch.validationSummary }}
+                                            {{ batch.fileType }} ·
+                                            {{ batch.target }}
                                         </div>
-                                    }
-                                </div>
+                                        <div class="mt-2 font-semibold">
+                                            {{ batch.fileName }}
+                                        </div>
+                                        <div
+                                            class="text-secondary mt-1 text-xs"
+                                        >
+                                            {{ batch.source }}
+                                        </div>
+                                    </div>
 
-                                <div class="flex flex-col gap-2">
-                                    <button
-                                        mat-stroked-button
-                                        type="button"
-                                        disabled
-                                    >
-                                        Download invalid rows
-                                    </button>
-                                    <button
-                                        mat-stroked-button
-                                        type="button"
-                                        disabled
-                                    >
-                                        Export corrected file
-                                    </button>
+                                    <div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <span
+                                                class="rounded-full px-3 py-1 text-xs font-semibold"
+                                                [class.bg-green-100]="
+                                                    batch.status === 'COMPLETED'
+                                                "
+                                                [class.text-green-700]="
+                                                    batch.status === 'COMPLETED'
+                                                "
+                                                [class.bg-amber-100]="
+                                                    batch.status ===
+                                                    'VALIDATION_FAILED'
+                                                "
+                                                [class.text-amber-700]="
+                                                    batch.status ===
+                                                    'VALIDATION_FAILED'
+                                                "
+                                                [class.bg-blue-100]="
+                                                    batch.status !==
+                                                        'COMPLETED' &&
+                                                    batch.status !==
+                                                        'VALIDATION_FAILED'
+                                                "
+                                                [class.text-blue-700]="
+                                                    batch.status !==
+                                                        'COMPLETED' &&
+                                                    batch.status !==
+                                                        'VALIDATION_FAILED'
+                                                "
+                                            >
+                                                {{
+                                                    importBatchStatusLabel(
+                                                        batch
+                                                    )
+                                                }}
+                                            </span>
+                                            <span
+                                                class="text-secondary rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold"
+                                            >
+                                                {{ batch.totalRows }} rows
+                                            </span>
+                                        </div>
+
+                                        <div
+                                            class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"
+                                        >
+                                            <div
+                                                class="h-full rounded-full bg-primary"
+                                                [style.width.%]="
+                                                    importBatchProgress(batch)
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="text-secondary mt-2 text-sm"
+                                        >
+                                            {{ importBatchSummary(batch) }}
+                                        </div>
+                                        <div
+                                            class="text-secondary mt-2 text-xs"
+                                        >
+                                            {{ importMappingSummary(batch) }}
+                                        </div>
+                                        @if (batch.validationSummary) {
+                                            <div
+                                                class="text-secondary mt-3 rounded-xl bg-slate-50 p-3 text-sm"
+                                            >
+                                                {{ batch.validationSummary }}
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="flex flex-col gap-2">
+                                        <button
+                                            mat-stroked-button
+                                            type="button"
+                                            disabled
+                                        >
+                                            Download invalid rows
+                                        </button>
+                                        <button
+                                            mat-stroked-button
+                                            type="button"
+                                            disabled
+                                        >
+                                            Export corrected file
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        } @empty {
+                            <div class="text-secondary p-8 text-center">
+                                No import batches have been recorded.
+                            </div>
+                        }
                     }
                 </div>
             </section>
@@ -1286,9 +1352,8 @@
             <aside class="bg-card rounded-2xl p-6 shadow">
                 <h2 class="text-xl font-bold">Import template</h2>
                 <p class="text-secondary mt-2 text-sm">
-                    Static layout for the downloadable CSV/XLSX templates. Core
-                    admissions fields stay fixed while custom fields opt into
-                    import/export from the registry.
+                    Template layout combines fixed core fields with live
+                    importable custom fields from the registry.
                 </p>
 
                 <div class="mt-6 grid grid-cols-1 gap-3">
@@ -1300,35 +1365,47 @@
                 </div>
 
                 <div class="mt-6 space-y-3">
-                    @for (column of importTemplateColumns; track column.key) {
-                        <div class="rounded-2xl border p-4">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <div class="font-semibold">
-                                        {{ column.label }}
-                                    </div>
-                                    <div class="text-secondary mt-1 text-xs">
-                                        {{ column.key }} · {{ column.owner }}
-                                    </div>
-                                </div>
-                                <span
-                                    class="rounded-full px-3 py-1 text-xs font-semibold"
-                                    [class.bg-red-100]="column.required"
-                                    [class.text-red-700]="column.required"
-                                    [class.bg-slate-100]="!column.required"
-                                    [class.text-secondary]="!column.required"
+                    @if (customFieldDefinitions$ | async; as result) {
+                        @for (
+                            column of importTemplateColumns(result.items);
+                            track column.key
+                        ) {
+                            <div class="rounded-2xl border p-4">
+                                <div
+                                    class="flex items-start justify-between gap-3"
                                 >
-                                    {{
-                                        column.required
-                                            ? 'Required'
-                                            : 'Optional'
-                                    }}
-                                </span>
+                                    <div>
+                                        <div class="font-semibold">
+                                            {{ column.label }}
+                                        </div>
+                                        <div
+                                            class="text-secondary mt-1 text-xs"
+                                        >
+                                            {{ column.key }} ·
+                                            {{ column.owner }}
+                                        </div>
+                                    </div>
+                                    <span
+                                        class="rounded-full px-3 py-1 text-xs font-semibold"
+                                        [class.bg-red-100]="column.required"
+                                        [class.text-red-700]="column.required"
+                                        [class.bg-slate-100]="!column.required"
+                                        [class.text-secondary]="
+                                            !column.required
+                                        "
+                                    >
+                                        {{
+                                            column.required
+                                                ? 'Required'
+                                                : 'Optional'
+                                        }}
+                                    </span>
+                                </div>
+                                <div class="text-secondary mt-3 text-sm">
+                                    Example: {{ column.example }}
+                                </div>
                             </div>
-                            <div class="text-secondary mt-3 text-sm">
-                                Example: {{ column.example }}
-                            </div>
-                        </div>
+                        }
                     }
                 </div>
             </aside>

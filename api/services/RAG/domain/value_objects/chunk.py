@@ -7,3 +7,4 @@ class ChunkMetadata:
     chunk_index: int
     start_offset: int
     end_offset: int
+    collection: str = "default"

@@ -324,6 +324,8 @@ Sub-sections (tab bar or cards):
 - **SIS Sync Status**: last sync time, sync errors table, manual sync trigger button, approved field mapping display.
 - **Import/Export Config**: import templates (CSV/Excel) for constituents, inquiries, applications, event registrations, campaign audiences.
 
+Implementation note: the Angular settings screen now loads custom field definitions, application form templates, lead scoring rules, programs, academic terms, and import batches from `AdmissionsService` live JSON:API streams. Lead assignment rules/candidates in this screen are still local preview data until assignment-rule APIs are implemented.
+
 ### 16. RAG Staff Assistant
 
 Route: `/admin/admissions/rag-assistant`  

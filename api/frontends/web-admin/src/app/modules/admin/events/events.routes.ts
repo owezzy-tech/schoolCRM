@@ -36,5 +36,9 @@ export default [
     {
         path: ':id/edit',
         loadComponent: () => import('./form/event-form.component').then(m => m.EventFormComponent)
+    },
+    {
+        path: ':id/checkin',
+        loadComponent: () => import('./checkin/event-checkin.component').then(m => m.EventCheckinComponent)
     }
 ] as Routes;

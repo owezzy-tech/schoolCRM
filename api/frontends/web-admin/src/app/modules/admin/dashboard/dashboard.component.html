@@ -1,4 +1,14 @@
-@if (true) {
+@if (loading()) {
+    <div class="flex items-center justify-center min-h-[400px]">
+        <mat-spinner diameter="48"></mat-spinner>
+    </div>
+} @else if (error()) {
+    <div class="flex flex-col items-center justify-center min-h-[400px] text-center px-6">
+        <mat-icon class="icon-size-12 text-warn mb-4" svgIcon="heroicons_outline:exclamation-triangle"></mat-icon>
+        <p class="text-lg font-medium">{{ error() }}</p>
+        <button mat-flat-button color="primary" class="mt-4" (click)="ngOnInit()">Retry</button>
+    </div>
+} @else {
     <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
         <div class="flex-auto p-6 sm:p-10">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -19,16 +29,10 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                @for (kpi of kpis; track kpi.label) {
+                @for (kpi of kpis(); track kpi.label) {
                     <div class="bg-card border rounded-2xl p-5 shadow-sm">
                         <div class="text-sm font-medium text-secondary">{{ kpi.label }}</div>
                         <div class="text-3xl font-semibold mt-2">{{ kpi.value }}</div>
-                        <div class="text-sm mt-2"
-                             [class.text-green-600]="kpi.trend === 'up'"
-                             [class.text-red-600]="kpi.trend === 'down'">
-                            {{ kpi.delta }}
-                            <span class="text-secondary"> vs last month</span>
-                        </div>
                     </div>
                 }
             </div>
@@ -39,30 +43,32 @@
                         <h2 class="text-lg font-semibold">Recent applications</h2>
                         <a [routerLink]="['/applications']" class="text-primary text-sm font-medium">View all</a>
                     </div>
-                    <table class="w-full text-sm">
-                        <thead class="text-left text-secondary border-b">
-                            <tr>
-                                <th class="py-2 font-medium">ID</th>
-                                <th class="py-2 font-medium">Applicant</th>
-                                <th class="py-2 font-medium">Program</th>
-                                <th class="py-2 font-medium">Status</th>
-                                <th class="py-2 font-medium text-right">Submitted</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (app of recentApplications; track app.id) {
-                                <tr class="border-b last:border-0">
-                                    <td class="py-3 font-mono text-xs">{{ app.id }}</td>
-                                    <td class="py-3">{{ app.applicant }}</td>
-                                    <td class="py-3">{{ app.program }}</td>
-                                    <td class="py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ app.status }}</span>
-                                    </td>
-                                    <td class="py-3 text-right text-secondary">{{ app.submitted }}</td>
+                    @if (recentApplications().length === 0) {
+                        <p class="text-secondary py-8 text-center">No applications yet.</p>
+                    } @else {
+                        <table class="w-full text-sm">
+                            <thead class="text-left text-secondary border-b">
+                                <tr>
+                                    <th class="py-2 font-medium">ID</th>
+                                    <th class="py-2 font-medium">Status</th>
+                                    <th class="py-2 font-medium">Type</th>
+                                    <th class="py-2 font-medium text-right">Created</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @for (app of recentApplications(); track app.id) {
+                                    <tr class="border-b last:border-0">
+                                        <td class="py-3 font-mono text-xs">{{ app.id | slice:0:8 }}</td>
+                                        <td class="py-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ app.status }}</span>
+                                        </td>
+                                        <td class="py-3">{{ app.applicationType }}</td>
+                                        <td class="py-3 text-right text-secondary">{{ app.dateCreated | slice:0:10 }}</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
                 </div>
 
                 <div class="bg-card border rounded-2xl p-6 shadow-sm">

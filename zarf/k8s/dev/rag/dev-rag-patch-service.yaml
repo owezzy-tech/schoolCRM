@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-service
+  namespace: schoolcrm-system
+
+spec:
+  type: ClusterIP
+
+  ports:
+    - name: rag
+      port: 7000
+      targetPort: rag

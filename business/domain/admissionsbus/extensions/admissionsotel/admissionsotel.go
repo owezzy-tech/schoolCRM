@@ -464,6 +464,14 @@ func (ext *Extension) CreateApplication(ctx context.Context, na admissionsbus.Ne
 	return ext.bus.CreateApplication(ctx, na)
 }
 
+// UpdateApplicationDraft applies otel to applicant draft application updates.
+func (ext *Extension) UpdateApplicationDraft(ctx context.Context, app admissionsbus.Application, na admissionsbus.NewApplication) (admissionsbus.Application, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateapplicationdraft")
+	defer span.End()
+
+	return ext.bus.UpdateApplicationDraft(ctx, app, na)
+}
+
 // QueryApplications applies otel to Application queries.
 func (ext *Extension) QueryApplications(ctx context.Context, filter admissionsbus.ApplicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Application, error) {
 	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryapplications")
@@ -486,6 +494,86 @@ func (ext *Extension) QueryApplicationByID(ctx context.Context, applicationID uu
 	defer span.End()
 
 	return ext.bus.QueryApplicationByID(ctx, applicationID)
+}
+
+// CreateEvent applies otel to admissions event creation.
+func (ext *Extension) CreateEvent(ctx context.Context, ne admissionsbus.NewEvent) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.createevent")
+	defer span.End()
+
+	return ext.bus.CreateEvent(ctx, ne)
+}
+
+// UpdateEvent applies otel to admissions event updates.
+func (ext *Extension) UpdateEvent(ctx context.Context, event admissionsbus.Event, ne admissionsbus.NewEvent) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.updateevent")
+	defer span.End()
+
+	return ext.bus.UpdateEvent(ctx, event, ne)
+}
+
+// QueryEvents applies otel to admissions event queries.
+func (ext *Extension) QueryEvents(ctx context.Context, filter admissionsbus.EventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryevents")
+	defer span.End()
+
+	return ext.bus.QueryEvents(ctx, filter, orderBy, page)
+}
+
+// CountEvents applies otel to admissions event counts.
+func (ext *Extension) CountEvents(ctx context.Context, filter admissionsbus.EventQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countevents")
+	defer span.End()
+
+	return ext.bus.CountEvents(ctx, filter)
+}
+
+// QueryEventByID applies otel to admissions event ID lookups.
+func (ext *Extension) QueryEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.Event, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventbyid")
+	defer span.End()
+
+	return ext.bus.QueryEventByID(ctx, eventID)
+}
+
+// QueryEventRegistrations applies otel to admissions event registration queries.
+func (ext *Extension) QueryEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventregistrations")
+	defer span.End()
+
+	return ext.bus.QueryEventRegistrations(ctx, filter, orderBy, page)
+}
+
+// CountEventRegistrations applies otel to admissions event registration counts.
+func (ext *Extension) CountEventRegistrations(ctx context.Context, filter admissionsbus.EventRegistrationQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.counteventregistrations")
+	defer span.End()
+
+	return ext.bus.CountEventRegistrations(ctx, filter)
+}
+
+// QueryEventRegistrationByID applies otel to admissions event registration ID lookups.
+func (ext *Extension) QueryEventRegistrationByID(ctx context.Context, registrationID uuid.UUID) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.queryeventregistrationbyid")
+	defer span.End()
+
+	return ext.bus.QueryEventRegistrationByID(ctx, registrationID)
+}
+
+// RegisterForEvent applies otel to admissions event registrations.
+func (ext *Extension) RegisterForEvent(ctx context.Context, nr admissionsbus.NewEventRegistration) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.registerforevent")
+	defer span.End()
+
+	return ext.bus.RegisterForEvent(ctx, nr)
+}
+
+// CheckInEventRegistration applies otel to admissions event check-ins.
+func (ext *Extension) CheckInEventRegistration(ctx context.Context, registration admissionsbus.EventRegistration, nc admissionsbus.NewEventCheckIn) (admissionsbus.EventRegistration, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.checkineventregistration")
+	defer span.End()
+
+	return ext.bus.CheckInEventRegistration(ctx, registration, nc)
 }
 
 // CreateApplicationFormTemplate applies otel to Application form template creation.
@@ -854,4 +942,76 @@ func (ext *Extension) QuerySyncEventByID(ctx context.Context, eventID uuid.UUID)
 	defer span.End()
 
 	return ext.bus.QuerySyncEventByID(ctx, eventID)
+}
+
+// QueryCampaigns applies otel to admissions campaign queries.
+func (ext *Extension) QueryCampaigns(ctx context.Context, filter admissionsbus.CampaignQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Campaign, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycampaigns")
+	defer span.End()
+
+	return ext.bus.QueryCampaigns(ctx, filter, orderBy, page)
+}
+
+// CountCampaigns applies otel to admissions campaign counts.
+func (ext *Extension) CountCampaigns(ctx context.Context, filter admissionsbus.CampaignQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countcampaigns")
+	defer span.End()
+
+	return ext.bus.CountCampaigns(ctx, filter)
+}
+
+// QueryCampaignByID applies otel to admissions campaign ID lookups.
+func (ext *Extension) QueryCampaignByID(ctx context.Context, campaignID uuid.UUID) (admissionsbus.Campaign, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycampaignbyid")
+	defer span.End()
+
+	return ext.bus.QueryCampaignByID(ctx, campaignID)
+}
+
+// QueryCampaignAuditEvents applies otel to admissions campaign audit event queries.
+func (ext *Extension) QueryCampaignAuditEvents(ctx context.Context, filter admissionsbus.CampaignAuditEventQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.CampaignAuditEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycampaignauditevents")
+	defer span.End()
+
+	return ext.bus.QueryCampaignAuditEvents(ctx, filter, orderBy, page)
+}
+
+// CountCampaignAuditEvents applies otel to admissions campaign audit event counts.
+func (ext *Extension) CountCampaignAuditEvents(ctx context.Context, filter admissionsbus.CampaignAuditEventQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countcampaignauditevents")
+	defer span.End()
+
+	return ext.bus.CountCampaignAuditEvents(ctx, filter)
+}
+
+// QueryCampaignAuditEventByID applies otel to admissions campaign audit event ID lookups.
+func (ext *Extension) QueryCampaignAuditEventByID(ctx context.Context, eventID uuid.UUID) (admissionsbus.CampaignAuditEvent, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycampaignauditeventbyid")
+	defer span.End()
+
+	return ext.bus.QueryCampaignAuditEventByID(ctx, eventID)
+}
+
+// QueryCommunications applies otel to admissions communication queries.
+func (ext *Extension) QueryCommunications(ctx context.Context, filter admissionsbus.CommunicationQueryFilter, orderBy order.By, page page.Page) ([]admissionsbus.Communication, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycommunications")
+	defer span.End()
+
+	return ext.bus.QueryCommunications(ctx, filter, orderBy, page)
+}
+
+// CountCommunications applies otel to admissions communication counts.
+func (ext *Extension) CountCommunications(ctx context.Context, filter admissionsbus.CommunicationQueryFilter) (int, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.countcommunications")
+	defer span.End()
+
+	return ext.bus.CountCommunications(ctx, filter)
+}
+
+// QueryCommunicationByID applies otel to admissions communication ID lookups.
+func (ext *Extension) QueryCommunicationByID(ctx context.Context, communicationID uuid.UUID) (admissionsbus.Communication, error) {
+	ctx, span := otel.AddSpan(ctx, "business.admissionsbus.querycommunicationbyid")
+	defer span.End()
+
+	return ext.bus.QueryCommunicationByID(ctx, communicationID)
 }
