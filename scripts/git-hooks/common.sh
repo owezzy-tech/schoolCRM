@@ -76,7 +76,7 @@ run_frontend_lint() {
 
 run_frontend_test() {
   echo "▶ Frontend changed: running Angular tests"
-  npm --prefix api/frontends/web-admin run test -- --watch=false --browsers=ChromeHeadless
+  npm --prefix api/frontends/web-admin run test -- --watch=false
 }
 
 run_go_lint() {
