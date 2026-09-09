@@ -69,7 +69,7 @@ web-admin-ng/
 ## COMMANDS
 
 ```bash
-npm start          # Dev server (:4200)
+npm start          # Dev server (:4400)
 npm run build      # Production build → dist/fuse/
 npm test           # Angular test runner backed by Vitest specs
 ```
