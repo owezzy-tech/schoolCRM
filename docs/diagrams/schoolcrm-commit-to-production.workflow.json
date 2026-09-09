@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "SchoolCRM Commit-to-Production Workflow",
+    "output": "docs/diagrams/schoolcrm-commit-to-production.workflow.html",
+    "viewBox": [2200, 776],
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Happy path",
+        "focus": ["commit", "pull_request", "ci_run", "gates", "approval", "deploy", "smoke"],
+        "note": "Follow one change from developer commit through approval, production deployment, and smoke verification."
+      },
+      {
+        "id": "blocking-checks",
+        "label": "Blocking checks",
+        "focus": ["ci_run", "gates", "stop"],
+        "note": "CircleCI checks are blocking: tests, vet, Staticcheck, and govulncheck."
+      },
+      {
+        "id": "rollback",
+        "label": "Rollback path",
+        "focus": ["smoke", "rollback", "deploy", "stop"],
+        "note": "A failed production smoke check stops the release and restores the last known-good version."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "developer", "label": "Developer" },
+    { "id": "ci", "label": "CI / CircleCI" },
+    { "id": "approval", "label": "Approval" },
+    { "id": "environment", "label": "Environment" },
+    { "id": "exception", "label": "Exception / Recovery", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "change", "label": "Change", "fromCol": 0, "toCol": 1 },
+    { "id": "verify", "label": "Build + verify", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "release", "label": "Approve + release", "fromCol": 4, "toCol": 5, "variant": "security" }
+  ],
+  "groups": [
+    { "id": "blocking", "label": "Blocking checks", "lane": "ci", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "recovery", "label": "Operator recovery", "lane": "exception", "fromCol": 3, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": ["commit", "pull_request", "ci_run", "gates", "approval", "deploy", "smoke"],
+  "nodes": [
+    { "id": "commit", "lane": "developer", "col": 0, "type": "frontend", "label": "Commit", "sublabel": "focused change", "tag": "developer" },
+    { "id": "pull_request", "lane": "developer", "col": 1, "type": "external", "label": "Pull Request", "sublabel": "GitHub review", "tag": "owner: developer" },
+    { "id": "ci_run", "lane": "ci", "col": 2, "type": "cloud", "label": "CI Run", "sublabel": "CircleCI + Go 1.26.2", "tag": "automated" },
+    { "id": "gates", "lane": "ci", "col": 3, "type": "security", "label": "Blocking Gates", "sublabel": "tests + static analysis", "tag": "must pass" },
+    { "id": "approval", "lane": "approval", "col": 4, "type": "security", "label": "Approve", "sublabel": "release owner", "tag": "human gate" },
+    { "id": "deploy", "lane": "environment", "col": 4, "type": "cloud", "label": "Deploy", "sublabel": "production / operator", "tag": "owner: on-call" },
+    { "id": "smoke", "lane": "environment", "col": 5, "type": "backend", "label": "Smoke Tests", "sublabel": "readiness + liveness", "tag": "blocking" },
+    { "id": "stop", "lane": "exception", "col": 3, "type": "security", "label": "Stop Promotion", "sublabel": "failed check", "tag": "no release" },
+    { "id": "rollback", "lane": "exception", "col": 5, "type": "messagebus", "label": "Rollback", "sublabel": "last known-good", "tag": "owner: on-call" }
+  ],
+  "edges": [
+    { "id": "e_commit_pr", "from": "commit", "to": "pull_request", "role": "main" },
+    { "id": "e_pr_ci", "from": "pull_request", "to": "ci_run", "variant": "emphasis", "role": "main", "route": "drop", "fromSide": "bottom", "toSide": "top" },
+    { "id": "e_ci_gates", "from": "ci_run", "to": "gates", "variant": "emphasis", "role": "main", "route": "drop", "fromSide": "bottom", "toSide": "top" },
+    { "id": "e_gates_approval", "from": "gates", "to": "approval", "variant": "emphasis", "role": "main" },
+    { "id": "e_approval_deploy", "from": "approval", "to": "deploy", "variant": "security", "role": "main" },
+    { "id": "e_deploy_smoke", "from": "deploy", "to": "smoke", "role": "main", "route": "drop", "fromSide": "bottom", "toSide": "top" },
+    { "id": "e_gates_stop", "from": "gates", "to": "stop", "variant": "security", "role": "error" },
+    { "id": "e_smoke_rollback", "from": "smoke", "to": "rollback", "variant": "security", "role": "error" },
+    { "id": "e_rollback_deploy", "from": "rollback", "to": "deploy", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One happy path",
+      "items": [
+        "Developer commits and opens a GitHub pull request",
+        "CircleCI runs the reproducible pipeline and blocking gates",
+        "Approval precedes deployment; smoke verification completes the path"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Blocking evidence",
+      "items": [
+        "CircleCI runs go test ./..., go vet ./..., Staticcheck, and govulncheck",
+        "servicetest PostgreSQL supports integration tests; failures stop promotion",
+        "Local equivalents are make test, lint, vuln-check, and readiness"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Exception ownership",
+      "items": [
+        "CI failures return to the developer for correction",
+        "Production smoke failure transfers recovery to the on-call operator",
+        "Rollback restores the last known-good release before re-verification",
+        "Evidence sources: .circleci/config.yml, makefile, README.md"
+      ]
+    }
+  ]
+}
