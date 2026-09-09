@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SchoolCRM Local Architecture",
+    "output": "docs/diagrams/schoolcrm-local-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "applicant",
+      "type": "external",
+      "label": "Applicant",
+      "sublabel": "browser",
+      "pos": [40, 270],
+      "size": [132, 62]
+    },
+    {
+      "id": "web_admin",
+      "type": "frontend",
+      "label": "Web Admin",
+      "sublabel": "Angular :8080",
+      "pos": [235, 270],
+      "size": [142, 62]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Auth Service",
+      "sublabel": "REST :6000 / gRPC :6001",
+      "pos": [250, 100],
+      "size": [166, 62]
+    },
+    {
+      "id": "schoolcrm",
+      "type": "backend",
+      "label": "SchoolCRM API",
+      "sublabel": "REST :3000",
+      "pos": [450, 390],
+      "size": [150, 62]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "host :5454",
+      "pos": [700, 390],
+      "size": [142, 62]
+    },
+    {
+      "id": "rag",
+      "type": "backend",
+      "label": "RAG Service",
+      "sublabel": "FastAPI :4545",
+      "pos": [700, 100],
+      "size": [142, 62]
+    },
+    {
+      "id": "metrics",
+      "type": "cloud",
+      "label": "Metrics",
+      "sublabel": "debug vars :3010",
+      "pos": [930, 520],
+      "size": [142, 62]
+    },
+    {
+      "id": "compose",
+      "type": "cloud",
+      "label": "Docker Compose",
+      "sublabel": "local network",
+      "pos": [930, 100],
+      "size": [150, 62]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local development stack",
+      "wraps": ["web_admin", "auth", "schoolcrm", "postgres", "rag", "metrics", "compose"]
+    }
+  ],
+  "connections": [
+    { "from": "applicant", "to": "web_admin", "label": "HTTPS" },
+    { "from": "web_admin", "to": "auth", "label": "login / token", "variant": "security", "fromSide": "top", "toSide": "bottom", "route": "orthogonal-v" },
+    { "from": "web_admin", "to": "schoolcrm", "label": "JSON:API", "variant": "emphasis" },
+    { "from": "schoolcrm", "to": "postgres", "label": "SQL" },
+    { "from": "rag", "to": "auth", "label": "access scope", "variant": "security" },
+    { "from": "schoolcrm", "to": "metrics", "label": "telemetry", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "via": [[525, 480], [1001, 480]] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Local entry points",
+      "items": [
+        "Open the Angular admin at http://localhost:8080",
+        "Call the SchoolCRM API at http://localhost:3000",
+        "Authenticate through http://localhost:6000"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data and intelligence",
+      "items": [
+        "PostgreSQL stores application and reference data",
+        "The RAG service handles document ingestion and queries",
+        "Metrics collect telemetry from the API"
+      ]
+    }
+  ]
+}
