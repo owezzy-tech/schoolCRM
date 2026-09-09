@@ -47,7 +47,7 @@ docs/                      Architecture and developer documentation
 - Go 1.26 or newer
 - Docker and Docker Compose
 - Node.js and npm for the Angular admin application
-- Python 3.11 or newer for standalone RAG development
+- Python 3.12 or newer for standalone RAG development
 
 ### Install tooling and run checks
 
@@ -88,10 +88,11 @@ make local-web-admin
 
 The detailed runbook is in [`docs/local-development.md`](docs/local-development.md).
 
-Stop the development stack with:
+Stop the active workflow with one of these commands:
 
 ```bash
-make dev-down
+make compose-down  # Docker Compose
+make dev-down      # KIND/Kubernetes
 ```
 
 ## Service endpoints
