@@ -3,7 +3,19 @@
 set -eu
 
 go_package_scopes() {
-  printf '%s\n' "./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/..."
+  files=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.go$' || true)
+  if [ -z "$files" ]; then
+    files=$(changed_files_between_refs | grep '\.go$' || true)
+  fi
+
+  if [ -z "$files" ]; then
+    printf '%s\n' "./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/..."
+    return
+  fi
+
+  printf '%s\n' "$files" | while IFS= read -r file; do
+    dirname "$file"
+  done | sort -u | sed 's|^|./|'
 }
 
 rag_python() {
