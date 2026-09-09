@@ -58,3 +58,6 @@ api/frontends/web-admin/node_modules/
 .dolt/
 *.db
 .beads-credential-key
+
+# Beads / Dolt files (added by bd init)
+.beads/proxieddb/
