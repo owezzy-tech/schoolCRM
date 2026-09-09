@@ -7,17 +7,17 @@ SHELL = $(if $(wildcard $(SHELL_PATH)),/bin/ash,/bin/bash)
 # ==============================================================================
 # Go Installation
 #
-#	You need to have Go version 1.25 to run this code.
+#	You need to have Go version 1.26 to run this code.
 #
 #	https://go.dev/dl/
 #
 #	If you are not allowed to update your Go frontend, you can install
-#	and use a 1.25 frontend.
+#	and use a 1.26 frontend.
 #
-#	$ go install golang.org/dl/go1.25@latest
-#	$ go1.25 download
+#	$ go install golang.org/dl/go1.26@latest
+#	$ go1.26 download
 #
-#	This means you need to use `go1.25` instead of `go` for any command
+#	This means you need to use `go1.26` instead of `go` for any command
 #	using the Go frontend tooling from the makefile.
 
 # ==============================================================================
@@ -90,8 +90,8 @@ SHELL = $(if $(wildcard $(SHELL_PATH)),/bin/ash,/bin/bash)
 # 	$ ./admin genkey
 #
 # Testing Coverage
-# 	$ go test -coverprofile p.out
-# 	$ go tool cover -html p.out
+# 	$ go test -coverprofile=coverage.out ./...
+# 	$ go tool cover -html=coverage.out
 #
 # Module Call Examples
 # 	$ curl https://proxy.golang.org/github.com/ardanlabs/conf/@v/list
@@ -467,7 +467,7 @@ local-run-help:
 	@echo "  make local-schoolcrm    # SchoolCRM API on :3000"
 	@echo "  make local-rag          # RAG API on :4545 using auth service"
 	@echo "  make local-rag-dev      # RAG API on :4545 with anonymous auth"
-	@echo "  make local-web-admin    # Angular admin app on :4200"
+	@echo "  make local-web-admin    # Angular admin app on :4400"
 
 # ==============================================================================
 # Administration
@@ -692,32 +692,6 @@ talk-describe-min:
 
 talk-metrics:
 	expvarmon -ports="localhost:4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.HeapAlloc,mem:memstats.HeapSys,mem:memstats.Sys"
-
-# ==============================================================================
-# Admin Frontend
-
-ADMIN_FRONTEND_PREFIX := ./api/frontends/admin
-
-write-token-to-env:
-	echo "VITE_SERVICE_API=http://localhost:3000/v1" > ${ADMIN_FRONTEND_PREFIX}/.env
-	make token | grep -o '"ey.*"' | awk '{print "VITE_SERVICE_TOKEN="$$1}' >> ${ADMIN_FRONTEND_PREFIX}/.env
-
-admin-gui-install:
-	pnpm -C ${ADMIN_FRONTEND_PREFIX} install
-
-admin-gui-update:
-	pnpm -C ${ADMIN_FRONTEND_PREFIX} update
-
-admin-gui-dev: admin-gui-install
-	pnpm -C ${ADMIN_FRONTEND_PREFIX} run dev
-
-admin-gui-build: admin-gui-install
-	pnpm -C ${ADMIN_FRONTEND_PREFIX} run build
-
-admin-gui-start-build: admin-gui-build
-	pnpm -C ${ADMIN_FRONTEND_PREFIX} run preview
-
-admin-gui-run: write-token-to-env admin-gui-start-build
 
 # ==============================================================================
 # Help command
