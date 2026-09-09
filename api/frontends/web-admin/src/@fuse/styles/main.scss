@@ -7,3 +7,26 @@
 @use 'overrides/highlightjs';
 @use 'overrides/perfect-scrollbar';
 @use 'overrides/quill';
+
+/* -------------------------------------------------------------------------- */
+/*  @ Elimu brand — scheme-aware primary (dark mode)                          */
+/*  The light-mode brand indigo (#2f5fa8) is too dark to read on dark          */
+/*  surfaces, so dark mode remaps the Fuse primary tokens to a lighter,        */
+/*  readable indigo. Keeps light and dark consistent with the design.          */
+/* -------------------------------------------------------------------------- */
+body.dark {
+    --fuse-primary: #82aef0;
+    --fuse-primary-rgb: 130, 174, 240;
+    --fuse-primary-50: #f0f5fd;
+    --fuse-primary-100: #dfeafb;
+    --fuse-primary-200: #cbddf9;
+    --fuse-primary-300: #b4cef6;
+    --fuse-primary-400: #9ec0f3;
+    --fuse-primary-500: #82aef0;
+    --fuse-primary-600: #6a8fc6;
+    --fuse-primary-700: #526f9c;
+    --fuse-primary-800: #384d6e;
+    --fuse-primary-900: #1c293e;
+    --fuse-on-primary: #0c1420;
+    --fuse-on-primary-rgb: 12, 20, 32;
+}

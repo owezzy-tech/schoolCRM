@@ -75,6 +75,12 @@ function shouldEndSession(
     req: HttpRequest<unknown>,
     authService: AuthService
 ): boolean {
+    // A failed login is an expected result surfaced to the user, not a
+    // session-expiry signal. Never sign out and reload on it.
+    if (req.url.startsWith('/v1/auth/login')) {
+        return false;
+    }
+
     if (!authService.accessToken || AuthUtils.isTokenExpired(authService.accessToken)) {
         return true;
     }

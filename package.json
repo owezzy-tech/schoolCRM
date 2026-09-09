@@ -6,7 +6,7 @@
     "prepare": "husky",
     "commit": "git-cz",
     "lint:frontend": "npm --prefix api/frontends/web-admin run lint",
-    "test:frontend": "npm --prefix api/frontends/web-admin run test -- --watch=false --browsers=ChromeHeadless",
+    "test:frontend": "npm --prefix api/frontends/web-admin run test -- --watch=false",
     "lint:go": "CGO_ENABLED=0 go vet ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/... && go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "test:go": "CGO_ENABLED=0 go test -count=1 ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "test:go:vuln": "go run golang.org/x/vuln/cmd/govulncheck@latest ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",

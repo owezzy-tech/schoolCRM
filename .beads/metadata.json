@@ -2,6 +2,9 @@
   "database": "dolt",
   "backend": "dolt",
   "dolt_mode": "server",
+  "dolt_server_host": "127.0.0.1",
+  "dolt_server_port": 54272,
+  "dolt_server_user": "root",
   "dolt_database": "schoolCRM",
   "project_id": "fecd3122-e265-434c-ac15-a62944254a24"
 }

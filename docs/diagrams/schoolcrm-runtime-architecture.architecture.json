@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SchoolCRM Runtime Architecture",
+    "output": "docs/diagrams/schoolcrm-runtime-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/owezzy-tech/schoolCRM",
+      "revision": "651b7774dcf3f1d9343e422a4c51e56a03bc9a21"
+    },
+    "views": [
+      {
+        "id": "primary-request",
+        "label": "Primary request path",
+        "focus": ["browser", "web_admin", "schoolcrm_api", "postgres"],
+        "note": "Follow a staff request from the Angular admin to durable SchoolCRM state."
+      },
+      {
+        "id": "identity-and-ai",
+        "label": "Identity and RAG",
+        "focus": ["web_admin", "auth", "rag"],
+        "note": "See the authentication boundary and the separate document intelligence service."
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "focus": ["migration_seed", "metrics", "monitoring"],
+        "note": "See database initialization and the metrics collection path."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Staff browser",
+      "sublabel": "Angular admin user",
+      "pos": [40, 300],
+      "size": [150, 64],
+      "sources": [
+        { "path": "README.md", "line": 26, "label": "platform entrypoint" }
+      ]
+    },
+    {
+      "id": "web_admin",
+      "type": "frontend",
+      "label": "Web Admin",
+      "sublabel": "Angular :8080 / dev :4400",
+      "pos": [270, 300],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 136, "end_line": 157, "label": "Compose service" },
+        { "path": "api/frontends/web-admin/package.json", "line": 7, "label": "dev server" }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Auth Service",
+      "sublabel": "REST :6000 / gRPC :6001",
+      "tag": "identity + policy",
+      "pos": [270, 105],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 44, "end_line": 75, "label": "Compose service" },
+        { "path": "docs/auth-v1-prd.md", "line": 59, "label": "identity provider" }
+      ]
+    },
+    {
+      "id": "schoolcrm_api",
+      "type": "backend",
+      "label": "SchoolCRM API",
+      "sublabel": "Go REST :3000",
+      "tag": "JSON:API",
+      "pos": [520, 300],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 77, "end_line": 109, "label": "Compose service" },
+        { "path": "api/services/schoolcrm/main.go", "label": "service entrypoint" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "shared state :5454",
+      "tag": "system of record",
+      "pos": [790, 300],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 2, "end_line": 23, "label": "database service" }
+      ]
+    },
+    {
+      "id": "rag",
+      "type": "backend",
+      "label": "RAG Service",
+      "sublabel": "FastAPI :4545",
+      "tag": "document intelligence",
+      "pos": [790, 105],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 111, "end_line": 134, "label": "Compose service" },
+        { "path": "api/services/RAG/README.md", "line": 5, "end_line": 9, "label": "bounded context" }
+      ]
+    },
+    {
+      "id": "migration_seed",
+      "type": "backend",
+      "label": "Migration + Seed",
+      "sublabel": "one-shot database init",
+      "pos": [520, 470],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 24, "end_line": 43, "label": "init job" }
+      ]
+    },
+    {
+      "id": "metrics",
+      "type": "cloud",
+      "label": "Metrics Service",
+      "sublabel": "debug vars + exporters",
+      "pos": [790, 470],
+      "size": [174, 64],
+      "sources": [
+        { "path": "zarf/compose/docker_compose.yaml", "line": 159, "end_line": 176, "label": "Compose service" },
+        { "path": "api/services/metrics/main.go", "line": 65, "label": "metrics routes" }
+      ]
+    },
+    {
+      "id": "monitoring",
+      "type": "external",
+      "label": "Monitoring client",
+      "sublabel": "operator / metrics consumer",
+      "pos": [1045, 470],
+      "size": [174, 64],
+      "sources": [
+        { "path": "api/services/metrics/main.go", "line": 15, "label": "metrics service" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker Compose local runtime",
+      "wraps": ["web_admin", "auth", "schoolcrm_api", "postgres", "rag", "migration_seed", "metrics"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Application trust boundary",
+      "wraps": ["auth", "schoolcrm_api", "rag"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Persistence boundary",
+      "wraps": ["postgres"]
+    }
+  ],
+  "connections": [
+    { "id": "browser-to-admin", "from": "browser", "to": "web_admin", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "admin-to-api", "from": "web_admin", "to": "schoolcrm_api", "label": "JSON:API request", "variant": "emphasis", "labelDy": 56 },
+    { "id": "api-to-postgres", "from": "schoolcrm_api", "to": "postgres", "label": "SQL" },
+    { "id": "admin-to-auth", "from": "web_admin", "to": "auth", "variant": "security", "fromSide": "top", "toSide": "bottom" },
+    { "id": "admin-to-rag", "from": "web_admin", "to": "rag", "fromSide": "top", "toSide": "bottom" },
+    { "id": "metrics-to-monitoring", "from": "metrics", "to": "monitoring", "label": "metrics scrape", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Primary request path",
+      "items": [
+        "Staff browser → Angular Web Admin → Go SchoolCRM API → PostgreSQL",
+        "The Web Admin also calls Auth Service for login and token lifecycle"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust boundaries",
+      "items": [
+        "Auth Service owns identity and authorization policy decisions",
+        "SchoolCRM API handlers return JSON:API documents",
+        "PostgreSQL remains behind the application persistence boundary"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Supporting runtime detail",
+      "items": [
+        "Migration + Seed runs before the API against the same database",
+        "RAG is a separate FastAPI bounded context with document and query endpoints",
+        "Metrics consumes the SchoolCRM debug-vars endpoint for operational visibility"
+      ]
+    }
+  ]
+}

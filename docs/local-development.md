@@ -11,7 +11,7 @@ Use Docker Compose when you want the complete stack with reproducible service im
 - Go 1.26 or newer
 - Docker with Compose support
 - Node.js and npm for `web-admin`
-- Python 3.11 or newer for standalone RAG development
+- Python 3.12 or newer for standalone RAG development
 
 Install the repository tooling once:
 
@@ -19,6 +19,14 @@ Install the repository tooling once:
 make dev-gotooling
 make dev-brew
 make dev-docker
+```
+
+Run the checks for each toolchain from the repository root:
+
+```bash
+make test             # Go tests, vet, staticcheck, and vulnerability checks
+npm run test:frontend # Angular unit tests
+npm run test:rag      # RAG pytest suite
 ```
 
 ## Docker Compose
@@ -39,7 +47,13 @@ curl http://localhost:6000/v1/liveness
 curl http://localhost:4545/v1/liveness
 ```
 
-Stop the stack:
+Stop the Compose stack:
+
+```bash
+make compose-down
+```
+
+For the Kubernetes-oriented workflow, remove the KIND cluster with:
 
 ```bash
 make dev-down
