@@ -1,1 +1,2 @@
 {"id":"int-04590dda856614d50f59b6932c5d1c34","kind":"field_change","created_at":"2026-09-09T21:32:44.370585Z","actor":"Owen Adirah","issue_id":"schoolCRM-q6b","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
+{"id":"int-39dc752d29bf0259108cfc33a26abf31","kind":"field_change","created_at":"2026-09-09T21:50:38.998015Z","actor":"Owen Adirah","issue_id":"schoolCRM-2dg","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Closed"}}
