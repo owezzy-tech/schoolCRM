@@ -144,6 +144,12 @@ uv run pytest tests
 
 ## Local service endpoints
 
+![SchoolCRM runtime architecture](docs/diagrams/schoolcrm-runtime-architecture.gif)
+
+The short animation below previews the interactive runtime architecture. Open the
+[interactive runtime diagram](docs/diagrams/schoolcrm-runtime-architecture.html) for guided views,
+search, and the full service map.
+
 ![SchoolCRM local service endpoints](docs/diagrams/schoolcrm-local-endpoints.png)
 
 The diagram shows every published endpoint, the primary request path from the client to PostgreSQL, the application trust boundary, and the host-to-container port mapping. Open the [interactive diagram](docs/diagrams/schoolcrm-local-endpoints.html) for guided views of the request path, identity, and operations.
