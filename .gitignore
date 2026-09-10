@@ -61,3 +61,6 @@ api/frontends/web-admin/node_modules/
 
 # Beads / Dolt files (added by bd init)
 .beads/proxieddb/
+
+# AI
+*.omo
