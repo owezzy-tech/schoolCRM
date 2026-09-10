@@ -144,7 +144,7 @@ uv run pytest tests
 
 ## Local service endpoints
 
-![SchoolCRM runtime architecture](docs/diagrams/schoolcrm-runtime-architecture.gif)
+[//]: # (![SchoolCRM runtime architecture]&#40;docs/diagrams/schoolcrm-runtime-architecture.gif&#41;)
 
 The short animation below previews the interactive runtime architecture. Open the
 [interactive runtime diagram](docs/diagrams/schoolcrm-runtime-architecture.html) for guided views,
