@@ -14,8 +14,14 @@ SchoolCRM is a service-oriented school operations platform with Go APIs, an Angu
 - [About the project](#about-the-project)
 - [Repository layout](#repository-layout)
 - [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [First-time setup](#first-time-setup)
+  - [Run the complete local stack](#run-the-complete-local-stack)
 - [Local development](#local-development)
-- [Service endpoints](#service-endpoints)
+  - [KIND/Kubernetes workflow](#kindkubernetes-workflow)
+  - [Host-process workflow](#host-process-workflow)
+  - [Run checks before a pull request](#run-checks-before-a-pull-request)
+- [Local service endpoints](#local-service-endpoints)
 - [Default users](#default-users)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -87,7 +93,7 @@ make compose-down
 
 Choose one workflow at a time. Stop Compose before using host-process or KIND targets.
 
-#### KIND/Kubernetes workflow
+### KIND/Kubernetes workflow
 
 ```bash
 make dev-up
@@ -95,7 +101,7 @@ make dev-update-apply
 make dev-status
 ```
 
-#### Host-process workflow
+### Host-process workflow
 
 Inspect available targets, then run each long-lived service in its own terminal:
 
@@ -136,20 +142,11 @@ uv run ruff check .
 uv run pytest tests
 ```
 
-## Service endpoints
+## Local service endpoints
 
-┌──────────────────────┬────────────────────────────────────────────┐
-│ Service              │ Host endpoint                              │
-├──────────────────────┼────────────────────────────────────────────┤
-│ Web admin            │ http://localhost:8080                      │
-│ SchoolCRM API        │ http://localhost:3000                      │
-│ SchoolCRM debug vars │ http://localhost:3010/debug/vars           │
-│ Auth REST API        │ http://localhost:6000                      │
-│ Auth gRPC            │ localhost:6001                             │
-│ RAG API              │ http://localhost:4545                      │
-│ PostgreSQL           │ localhost:5454                             │
-│ Metrics              │ localhost:4000, :4010, :4020               │
-└──────────────────────┴────────────────────────────────────────────┘
+![SchoolCRM local service endpoints](docs/diagrams/schoolcrm-local-endpoints.png)
+
+The diagram shows every published endpoint, the primary request path from the client to PostgreSQL, the application trust boundary, and the host-to-container port mapping. Open the [interactive diagram](docs/diagrams/schoolcrm-local-endpoints.html) for guided views of the request path, identity, and operations.
 
 The Compose RAG container listens on port `7000` internally and is published as `4545` on the host. PostgreSQL uses `postgres` as the local development password unless overridden.
 
@@ -157,14 +154,12 @@ The Compose RAG container listens on port `7000` internally and is published as 
 
 Seed data creates these local development accounts. All use the password `gophers`.
 
-┌────────────────────────────┬──────────────┐
-│ Email                      │ Role         │
-├────────────────────────────┼──────────────┤
-│ superadmin@example.com     │ SUPER_ADMIN  │
-│ admin@example.com          │ SCHOOL_ADMIN │
-│ teacher@example.com        │ TEACHER      │
-│ user@example.com           │ STUDENT      │
-└────────────────────────────┴──────────────┘
+| Email | Role |
+| --- | --- |
+| `superadmin@example.com` | `SUPER_ADMIN` |
+| `admin@example.com` | `SCHOOL_ADMIN` |
+| `teacher@example.com` | `TEACHER` |
+| `user@example.com` | `STUDENT` |
 
 Example login:
 
@@ -177,6 +172,7 @@ curl -i -X POST http://localhost:6000/v1/auth/login \
 ## Documentation
 
 - [`docs/local-development.md`](docs/local-development.md) — local setup and service runbook
+- [`docs/diagrams/schoolcrm-local-endpoints.html`](docs/diagrams/schoolcrm-local-endpoints.html) — local service endpoint and port map
 - [`docs/diagrams/schoolcrm-runtime-architecture.html`](docs/diagrams/schoolcrm-runtime-architecture.html) — runtime service architecture visualization
 - [`docs/diagrams/schoolcrm-commit-to-production.workflow.html`](docs/diagrams/schoolcrm-commit-to-production.workflow.html) — commit-to-production workflow and gates
 - [`docs/diagrams/schoolcrm-local-architecture.html`](docs/diagrams/schoolcrm-local-architecture.html) — legacy local topology reference
