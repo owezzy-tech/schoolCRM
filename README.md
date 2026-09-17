@@ -147,7 +147,7 @@ uv run pytest tests
 [//]: # (![SchoolCRM runtime architecture]&#40;docs/diagrams/schoolcrm-runtime-architecture.gif&#41;)
 
 The short animation below previews the interactive runtime architecture. Open the
-[interactive runtime diagram](docs/diagrams/schoolcrm-runtime-architecture.html) for guided views,
+[interactive runtime diagram](https://api.owenadirah.com/architecture) for guided views,
 search, and the full service map.
 
 ![SchoolCRM local service endpoints](docs/diagrams/schoolcrm-local-endpoints.png)
