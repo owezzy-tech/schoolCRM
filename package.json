@@ -11,7 +11,9 @@
     "test:go": "CGO_ENABLED=0 go test -count=1 ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "test:go:vuln": "go run golang.org/x/vuln/cmd/govulncheck@latest ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "lint:rag": "python3 -m ruff check api/services/RAG && python3 -m compileall api/services/RAG",
-    "test:rag": "python3 -m pytest api/services/RAG/tests -v"
+    "test:rag": "python3 -m pytest api/services/RAG/tests -v",
+    "storybook": "npm --prefix api/frontends/web-admin run storybook",
+    "build:storybook": "npm --prefix api/frontends/web-admin run build-storybook"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

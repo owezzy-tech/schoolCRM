@@ -13,7 +13,9 @@
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
         "test:watch": "ng test --watch",
-        "test:coverage": "ng test --coverage"
+        "test:coverage": "ng test --coverage",
+        "storybook": "ng run fuse:storybook",
+        "build-storybook": "ng run fuse:build-storybook"
     },
     "dependencies": {
         "@angular/animations": "^21.2.15",
@@ -58,9 +60,13 @@
         "zone.js": "0.15.0"
     },
     "devDependencies": {
+        "@angular-devkit/build-angular": "21.2.13",
         "@angular/build": "^21.2.13",
         "@angular/cli": "^21.2.13",
         "@angular/compiler-cli": "^21.2.15",
+        "@storybook/addon-docs": "10.6.1",
+        "@storybook/addon-themes": "10.6.1",
+        "@storybook/angular": "10.6.1",
         "@tailwindcss/typography": "0.5.15",
         "@types/chroma-js": "2.4.5",
         "@types/crypto-js": "4.2.2",
@@ -76,6 +82,7 @@
         "prettier": "3.4.2",
         "prettier-plugin-organize-imports": "4.1.0",
         "prettier-plugin-tailwindcss": "0.6.9",
+        "storybook": "10.6.1",
         "tailwindcss": "3.4.17",
         "typescript": "^5.9.3",
         "vitest": "^4.1.7"
