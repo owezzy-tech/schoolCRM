@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/candidate.json",
+    "sha256": "94d1177bf89a58b230151ac8e4315c47d5b16e6db03d455511bb1324ea677ee8",
+    "bytes": 8432
+  },
+  "artifact": {
+    "path": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/school-ai-v1.html",
+    "sha256": "a5b78c9f01a1a5fe11e55780054a1e76c14e81a2ca3b4399138e00a95f0f0428",
+    "bytes": 772056
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/review-2/school-ai-v1.finalize.json",
+    "summaryReceipt": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/review-2/school-ai-v1.finalize-summary.json",
+    "browserCheckReceipt": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/review-2/school-ai-v1.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-01T17:39:13.499Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1981,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "chat",
+            "from": "ui",
+            "to": "agent",
+            "label": "Authenticated chat",
+            "collectionIndex": 1,
+            "artifactIndex": 2
+          },
+          "right": {
+            "id": "retrieve",
+            "from": "agent",
+            "to": "retrieval",
+            "label": "Evidence request",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "point": [
+            137.5,
+            321
+          ],
+          "sharedNode": "agent"
+        },
+        {
+          "left": {
+            "id": "scope",
+            "from": "agent",
+            "to": "auth",
+            "label": "Validate identity",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "right": {
+            "id": "retrieve",
+            "from": "agent",
+            "to": "retrieval",
+            "label": "Evidence request",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "point": [
+            326,
+            321.00000000000006
+          ],
+          "sharedNode": "agent"
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "retrieve",
+            "from": "agent",
+            "to": "retrieval",
+            "label": "Evidence request",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 3,
+          "stretch": 1.149
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "ui → agent and agent → retrieval cross next to agent: move node ui or retrieval so the two reach agent from different sides (for example one level with it, one directly above or below it).",
+      "agent → auth and agent → retrieval cross next to agent: move node auth or retrieval so the two reach agent from different sides (for example one level with it, one directly above or below it).",
+      "agent → retrieval needs 3 bends: move node agent or retrieval so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}
