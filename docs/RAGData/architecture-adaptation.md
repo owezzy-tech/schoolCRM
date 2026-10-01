@@ -1,6 +1,6 @@
 # EduPlan features in SchoolCRM
 
-The user selected adaptation to the existing SchoolCRM stack and requested LlamaIndex.
+The user selected the existing SchoolCRM stack, LangGraph orchestration and LlamaIndex retrieval.
 The EduPlan blueprint is a feature and architecture reference, not a requirement to
 migrate to React, LangChainGo, a new HTTP router or a separate repository.
 
@@ -9,8 +9,9 @@ migrate to React, LangChainGo, a new HTTP router or a separate repository.
 | Educator and admin workflows | Extend the existing Angular application | Page 1, frontend and core platform vision |
 | Operational APIs and lesson persistence | Extend existing Go application/domain/storage layers and JSON:API response contract | Pages 1–2, API and schema |
 | Curriculum ingestion, retrieval and AI generation | Use LlamaIndex within Python RAG adapters | Pages 1–2, discovery and generation |
+| Agent workflows | Use LangGraph in Python with durable checkpoints and approvals | User decision |
 | Lesson history | Store complete immutable version snapshots with a change summary and an atomic current-version pointer | Page 2, version history |
-| Publishing | Model DRAFT, REVIEW, APPROVED and PUBLISHED with explicit permitted transitions | Page 2, lesson status |
+| Publishing | Teacher drafts; HOD reviews; dean approves every version; teacher publishes | Confirmed user decisions |
 | School and department access | Reuse existing identity; enforce scoped authorisation before retrieval and state changes | Page 3, security |
 | PDF export | Export an authorised, selected lesson version | Page 1, PDF export |
 | Workflow and deployment tooling | Evaluate existing infrastructure against demonstrated durability and performance needs | Pages 1 and 3 |
@@ -52,8 +53,9 @@ history, and make creation of a version plus the current-version pointer transac
 The blueprint calls this delta storage but supplies full `snapshot_json`; use snapshots
 until an explicit requirement establishes a need for diffs.
 
-The free-form status column does not enforce workflow transitions. Define who can submit,
-review, approve and publish, including whether authors may approve their own work.
+The free-form status column does not enforce workflow transitions. The teacher submits,
+the Head of Department reviews, the dean approves every version including the initial
+plan, and the teacher publishes that exact approved version.
 Published content should reference an immutable version, not mutable draft content.
 
 Vector dimensions must follow the selected embedding model. Do not assume the example's
@@ -66,6 +68,11 @@ properties guaranteed by SQLC, Go or a queue package. Temporal, Asynq, Casbin, S
 Maroto remain candidate tools; select them only when existing repository components do
 not meet the required behaviour.
 
-Beads epic `schoolCRM-o58` owns delivery. Curriculum source/education level, lesson output
-structure, approval permissions, embedding/model provider and retention rules still need
-decisions before those implementation slices can be completed.
+The confirmed curriculum scope is Kenya CBC/CBE and 8-4-4 from Playgroup through
+secondary, plus Cambridge Early Years through Year 9. Keep framework, stage, subject,
+revision and access filters explicit. Higher Cambridge years are future expansion.
+Google Calendar is the initial provider; Nextcloud is a separately assessed alternative.
+
+Beads epic `schoolCRM-o58` owns delivery. Actual curriculum resources, lesson output
+details, embedding/model provider and retention rules remain open. The current proposed
+design and exact approval lifecycle are in [the diagram specification](../diagrams/school-ai-v1-design.md).
