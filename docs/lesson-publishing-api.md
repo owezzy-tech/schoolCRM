@@ -34,7 +34,7 @@ All endpoints require a bearer token and return JSON:API v1.1 through `foundatio
 
 `decision` is `approve` or `request_changes`; requesting changes requires `feedback` of at most 2000 characters. Titles contain 1 to 200 characters, change summaries at most 1000. Until `schoolCRM-o58.3` confirms the lesson schema, `content` is any JSON object of at most 256 KiB.
 
-Reads require `teach`, `review_lessons` or `approve_lessons` in the plan's department. Failures return 401 without a token, 400 for invalid input, 403 without current authority, 404 for unknown plans, versions or departments, and 409 for a stale version or a command that does not match the version's state.
+Reads require `teach`, `review_lessons` or `approve_lessons` in the plan's department. An unsubmitted draft is visible only to its author. Other readers see a plan's newest submitted or published version as its `currentVersion` and title, draft versions are left out of its history, and a plan that has only drafts returns 404 and is left out of department lists. Failures return 401 without a token, 400 for invalid input, 403 without current authority, 404 for unknown plans, versions or departments, and 409 for a stale version or a command that does not match the version's state.
 
 ## Consistency and audit
 

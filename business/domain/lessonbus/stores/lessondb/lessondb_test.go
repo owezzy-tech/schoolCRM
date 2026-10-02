@@ -204,7 +204,7 @@ func TestLessonPublishing(t *testing.T) {
 		expect(t, err, lessonbus.ErrConflict)
 		_, err = bus.Revise(ctx, allRoles, plan.ID, 2, revision("Not the author"))
 		expect(t, err, lessonbus.ErrForbidden)
-		got, err := bus.Plan(ctx, hod, plan.ID)
+		got, err := bus.Plan(ctx, teacher, plan.ID)
 		if err != nil || *got.PublishedVersion != 1 || got.CurrentVersion != 2 || got.Title != "Cells v2" {
 			t.Fatalf("got %+v, %v", got, err)
 		}
@@ -226,6 +226,52 @@ func TestLessonPublishing(t *testing.T) {
 		got, err = bus.Plan(ctx, teacher, plan.ID)
 		if err != nil || *got.PublishedVersion != 3 {
 			t.Fatalf("got %+v, %v", got, err)
+		}
+	})
+
+	t.Run("unsubmitted drafts are visible only to their author", func(t *testing.T) {
+		hidden, err := bus.Create(ctx, teacher, school.ID, sciences, revision("Private draft"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = bus.Plan(ctx, hod, hidden.ID)
+		expect(t, err, lessonbus.ErrNotFound)
+		_, err = bus.Versions(ctx, dean, hidden.ID)
+		expect(t, err, lessonbus.ErrNotFound)
+		for _, user := range []uuid.UUID{hod, allRoles} {
+			plans, err := bus.Plans(ctx, user, school.ID, sciences)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, p := range plans {
+				if p.ID == hidden.ID {
+					t.Fatal("another author's draft-only plan is listed")
+				}
+			}
+		}
+
+		plan, err := bus.Create(ctx, teacher, school.ID, sciences, revision("Live v1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		approve(t, plan.ID, 1)
+		must(t)(bus.Publish(ctx, teacher, plan.ID, 1))
+		must(t)(bus.Revise(ctx, teacher, plan.ID, 1, revision("Secret v2")))
+		seen, err := bus.Plan(ctx, hod, plan.ID)
+		if err != nil || seen.CurrentVersion != 1 || seen.Title != "Live v1" || seen.Status != lessonbus.Published {
+			t.Fatalf("reviewer saw the draft: %+v, %v", seen, err)
+		}
+		versions, err := bus.Versions(ctx, hod, plan.ID)
+		if err != nil || len(versions) != 1 || versions[0].Number != 1 {
+			t.Fatalf("reviewer saw draft versions: %+v, %v", versions, err)
+		}
+		own, err := bus.Versions(ctx, teacher, plan.ID)
+		if err != nil || len(own) != 2 {
+			t.Fatalf("author lost own draft: %d, %v", len(own), err)
+		}
+		must(t)(bus.Submit(ctx, teacher, plan.ID, 2))
+		if seen, err = bus.Plan(ctx, hod, plan.ID); err != nil || seen.CurrentVersion != 2 || seen.Status != lessonbus.HODReview {
+			t.Fatalf("submitted version hidden: %+v, %v", seen, err)
 		}
 	})
 
