@@ -3,12 +3,11 @@ package schoolapp
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/owezzy/schoolCRM/app/sdk/errs"
+	"github.com/owezzy/schoolCRM/app/sdk/jsonbody"
 	"github.com/owezzy/schoolCRM/app/sdk/mid"
 	"github.com/owezzy/schoolCRM/app/sdk/query"
 	"github.com/owezzy/schoolCRM/business/domain/schoolbus"
@@ -128,15 +127,8 @@ func requestScope(ctx context.Context, r *http.Request) (uuid.UUID, uuid.UUID, *
 	return actorID, schoolID, nil
 }
 
-func decodeRequest(r *http.Request, v web.Decoder) error {
-	data, err := io.ReadAll(io.LimitReader(r.Body, 16*1024+1))
-	if err != nil {
-		return err
-	}
-	if len(data) > 16*1024 {
-		return fmt.Errorf("request exceeds 16 KiB")
-	}
-	return v.Decode(data)
+func decodeRequest(r *http.Request, v any) error {
+	return jsonbody.Decode(r, v, 16*1024)
 }
 
 func appError(err error) *errs.Error {

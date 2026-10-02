@@ -1147,3 +1147,63 @@ CREATE TABLE school_memberships (
 );
 
 CREATE INDEX idx_school_memberships_user ON school_memberships(user_id, school_id) WHERE active;
+
+-- Version: 1.31
+-- Description: Versioned lesson plans with HOD review, dean approval and publication
+CREATE TABLE lesson_plans (
+    plan_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    department_id UUID NOT NULL,
+    author_id UUID NOT NULL REFERENCES users(user_id),
+    current_version INT NOT NULL CHECK (current_version >= 1),
+    published_version INT CHECK (published_version BETWEEN 1 AND current_version),
+    date_created TIMESTAMPTZ NOT NULL,
+    date_updated TIMESTAMPTZ NOT NULL,
+    FOREIGN KEY (school_id, department_id) REFERENCES school_departments(school_id, department_id)
+);
+
+CREATE INDEX idx_lesson_plans_department ON lesson_plans(school_id, department_id);
+
+CREATE TABLE lesson_plan_versions (
+    plan_id UUID NOT NULL REFERENCES lesson_plans(plan_id),
+    version_number INT NOT NULL CHECK (version_number >= 1),
+    title TEXT NOT NULL CHECK (char_length(trim(title)) BETWEEN 1 AND 200),
+    content JSONB NOT NULL CHECK (jsonb_typeof(content) = 'object'),
+    change_summary TEXT NOT NULL CHECK (char_length(change_summary) <= 1000),
+    author_id UUID NOT NULL REFERENCES users(user_id),
+    status TEXT NOT NULL CHECK (status IN ('draft', 'hod_review', 'dean_approval', 'changes_requested', 'approved', 'published')),
+    reviewer_id UUID REFERENCES users(user_id),
+    reviewed_at TIMESTAMPTZ,
+    approver_id UUID REFERENCES users(user_id),
+    approved_at TIMESTAMPTZ,
+    published_at TIMESTAMPTZ,
+    review_feedback TEXT NOT NULL CHECK (char_length(review_feedback) <= 2000),
+    approval_feedback TEXT NOT NULL CHECK (char_length(approval_feedback) <= 2000),
+    date_created TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (plan_id, version_number),
+    -- Author, HOD reviewer and dean approver are three different people.
+    CHECK (reviewer_id IS NULL OR reviewer_id <> author_id),
+    CHECK (approver_id IS NULL OR (approver_id <> author_id AND approver_id <> reviewer_id)),
+    -- Dean approval and publication require the earlier decisions on this exact version.
+    CHECK (status NOT IN ('dean_approval', 'approved', 'published') OR reviewer_id IS NOT NULL),
+    CHECK (status NOT IN ('approved', 'published') OR approver_id IS NOT NULL),
+    CHECK ((status = 'published') = (published_at IS NOT NULL))
+);
+
+ALTER TABLE lesson_plans
+    ADD FOREIGN KEY (plan_id, current_version) REFERENCES lesson_plan_versions(plan_id, version_number) DEFERRABLE INITIALLY DEFERRED,
+    ADD FOREIGN KEY (plan_id, published_version) REFERENCES lesson_plan_versions(plan_id, version_number) DEFERRABLE INITIALLY DEFERRED;
+
+-- Lesson content and authorship are immutable; only workflow decisions change.
+CREATE FUNCTION lesson_plan_versions_immutable() RETURNS trigger AS $$
+BEGIN
+    IF (NEW.plan_id, NEW.version_number, NEW.title, NEW.content, NEW.change_summary, NEW.author_id, NEW.date_created)
+        IS DISTINCT FROM (OLD.plan_id, OLD.version_number, OLD.title, OLD.content, OLD.change_summary, OLD.author_id, OLD.date_created) THEN
+        RAISE EXCEPTION 'lesson plan versions are immutable';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER lesson_plan_versions_immutable BEFORE UPDATE ON lesson_plan_versions
+    FOR EACH ROW EXECUTE FUNCTION lesson_plan_versions_immutable();

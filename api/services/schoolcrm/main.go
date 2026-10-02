@@ -29,6 +29,8 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/extensions/homeotel"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/stores/homedb"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus/stores/lessondb"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/extensions/productotel"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/stores/productdb"
@@ -181,6 +183,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	delegate := delegate.New(log)
 	schoolBus := schoolbus.NewBusiness(schooldb.NewStore(log, db))
+	lessonBus := lessonbus.NewBusiness(lessondb.NewStore(log, db))
 
 	auditOtelExt := auditotel.NewExtension()
 	auditStorage := auditdb.NewStore(log, db)
@@ -275,6 +278,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Tracer: tracer,
 		BusConfig: mux.BusConfig{
 			SchoolBus:     schoolBus,
+			LessonBus:     lessonBus,
 			AdmissionsBus: admissionsBus,
 			AuditBus:      auditBus,
 			UserBus:       userBus,

@@ -35,7 +35,14 @@ func Migrate(ctx context.Context, db *sqlx.DB) error {
 		return fmt.Errorf("construct darwin driver: %w", err)
 	}
 
-	d := darwin.New(driver, darwin.ParseMigrations(migrateDoc))
+	// ParseMigrations returns nil for any malformed "-- Version"/"-- Description"
+	// line, which would otherwise make Migrate a silent no-op.
+	migrations := darwin.ParseMigrations(migrateDoc)
+	if len(migrations) == 0 {
+		return errors.New("parse migrations: no valid migrations found")
+	}
+
+	d := darwin.New(driver, migrations)
 	return d.Migrate()
 }
 

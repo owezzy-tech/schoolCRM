@@ -12,7 +12,7 @@ Confirmed decisions take precedence over older proposal text. The selected stack
 
 Every lesson version follows teacher submission, Head of Department review, dean approval and teacher publication. This includes the initial version. Changed content requires fresh review and approval. Published snapshots remain immutable and available while a new draft proceeds through the same workflow.
 
-Confirmed on 2 October 2026: the author, HOD reviewer and dean approver must be three different people. `SUPER_ADMIN` delegates school membership management to users with the `SCHOOL_ADMIN` role. A delegated administrator manages only their assigned school; only `SUPER_ADMIN` may grant or revoke that delegation. [School access API](school-access-api.md) defines the prerequisite membership contract under `schoolCRM-o58.4.1`.
+Confirmed on 2 October 2026: the author, HOD reviewer and dean approver must be three different people. `SUPER_ADMIN` delegates school membership management to users with the `SCHOOL_ADMIN` role. A delegated administrator manages only their assigned school; only `SUPER_ADMIN` may grant or revoke that delegation. [School access API](school-access-api.md) defines the prerequisite membership contract under `schoolCRM-o58.4.1`. [Lesson publishing API](lesson-publishing-api.md) defines the `schoolCRM-o58.4` workflow. Each save creates an immutable version, and lesson content is a bounded JSON object until `.3` confirms the schema.
 
 ## Existing implementation and evidence
 

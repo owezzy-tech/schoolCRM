@@ -4,7 +4,25 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ardanlabs/darwin/v3"
 )
+
+// A comment such as "-- Version content ..." is read as a version header;
+// darwin then discards every migration without an error.
+func TestMigrationDocumentParses(t *testing.T) {
+	t.Parallel()
+
+	migrations := darwin.ParseMigrations(migrateDoc)
+	if len(migrations) == 0 {
+		t.Fatal("migration document has a malformed -- Version or -- Description line")
+	}
+	for i := 1; i < len(migrations); i++ {
+		if migrations[i].Version <= migrations[i-1].Version {
+			t.Fatalf("version %v follows %v", migrations[i].Version, migrations[i-1].Version)
+		}
+	}
+}
 
 func TestKenyaIdentityMigrationPreservesExternalSISID(t *testing.T) {
 	t.Parallel()
