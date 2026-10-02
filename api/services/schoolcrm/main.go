@@ -32,6 +32,8 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/extensions/productotel"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/stores/productdb"
+	"github.com/owezzy/schoolCRM/business/domain/schoolbus"
+	"github.com/owezzy/schoolCRM/business/domain/schoolbus/stores/schooldb"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/extensions/useraudit"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/extensions/userotel"
@@ -178,6 +180,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Create Business Packages
 
 	delegate := delegate.New(log)
+	schoolBus := schoolbus.NewBusiness(schooldb.NewStore(log, db))
 
 	auditOtelExt := auditotel.NewExtension()
 	auditStorage := auditdb.NewStore(log, db)
@@ -271,6 +274,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		DB:     db,
 		Tracer: tracer,
 		BusConfig: mux.BusConfig{
+			SchoolBus:     schoolBus,
 			AdmissionsBus: admissionsBus,
 			AuditBus:      auditBus,
 			UserBus:       userBus,

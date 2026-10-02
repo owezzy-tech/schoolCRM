@@ -9,6 +9,7 @@ var (
 	Product    = newDomain("PRODUCT")
 	Home       = newDomain("HOME")
 	Admissions = newDomain("ADMISSIONS")
+	School     = newDomain("SCHOOL")
 )
 
 // =============================================================================
