@@ -13,6 +13,7 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/admissionsbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
 	"github.com/owezzy/schoolCRM/business/domain/schoolbus"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
@@ -68,6 +69,7 @@ type AuthConfig struct {
 
 type BusConfig struct {
 	SchoolBus     *schoolbus.Business
+	LessonBus     *lessonbus.Business
 	AdmissionsBus admissionsbus.ExtBusiness
 	AuditBus      auditbus.ExtBusiness
 	UserBus       userbus.ExtBusiness

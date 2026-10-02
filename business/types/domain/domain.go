@@ -10,6 +10,7 @@ var (
 	Home       = newDomain("HOME")
 	Admissions = newDomain("ADMISSIONS")
 	School     = newDomain("SCHOOL")
+	Lesson     = newDomain("LESSON")
 )
 
 // =============================================================================

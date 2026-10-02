@@ -10,6 +10,8 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/extensions/homeotel"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/stores/homedb"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus/stores/lessondb"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/extensions/productotel"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/stores/productdb"
@@ -30,6 +32,7 @@ import (
 // BusDomain represents all the business domain apis needed for testing.
 type BusDomain struct {
 	School   *schoolbus.Business
+	Lesson   *lessonbus.Business
 	Delegate *delegate.Delegate
 	Audit    auditbus.ExtBusiness
 	Home     homebus.ExtBusiness
@@ -64,6 +67,7 @@ func newBusDomains(log *logger.Logger, db *sqlx.DB) BusDomain {
 
 	return BusDomain{
 		School:   schoolbus.NewBusiness(schooldb.NewStore(log, db)),
+		Lesson:   lessonbus.NewBusiness(lessondb.NewStore(log, db)),
 		Delegate: delegate,
 		Audit:    auditBus,
 		Home:     homeBus,
