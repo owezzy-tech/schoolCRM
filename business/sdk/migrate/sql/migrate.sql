@@ -1115,3 +1115,35 @@ CREATE INDEX idx_admissions_communications_occurred ON admissions_communications
 ALTER TABLE admissions_sync_events
     DROP CONSTRAINT sync_events_event_type,
     ADD CONSTRAINT sync_events_event_type CHECK (event_type IN ('BATCH_TERMS_PULL', 'BATCH_PROGRAMS_PULL', 'BATCH_PERSON_MATCHES_PULL', 'BATCH_ENROLLMENT_PULL', 'APPLICATION_SUBMISSION', 'APPLICATION_DECISION', 'DOCUMENT_STATUS', 'ENROLLMENT_INTENT', 'KUCCPS_PLACEMENT_PULL', 'KUCCPS_PLACEMENT_CONFIRM', 'KNEC_RESULT_VERIFICATION', 'IPRS_IDENTITY_VERIFICATION', 'MPESA_STK_PUSH', 'MPESA_C2B_CALLBACK', 'MPESA_TRANSACTION_QUERY', 'SMS_OUTBOUND', 'SMS_DELIVERY_REPORT', 'WHATSAPP_MESSAGE_SEND', 'WHATSAPP_WEBHOOK_INBOUND'));
+
+-- Version: 1.30
+-- Description: School-scoped membership and delegated administration
+CREATE TABLE schools (
+    school_id UUID PRIMARY KEY,
+    name TEXT NOT NULL CHECK (char_length(trim(name)) BETWEEN 1 AND 200),
+    date_created TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE school_departments (
+    department_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL REFERENCES schools(school_id),
+    name TEXT NOT NULL CHECK (char_length(trim(name)) BETWEEN 1 AND 200),
+    date_created TIMESTAMPTZ NOT NULL,
+    UNIQUE (school_id, department_id)
+);
+
+CREATE TABLE school_memberships (
+    membership_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL REFERENCES schools(school_id),
+    department_id UUID,
+    user_id UUID NOT NULL REFERENCES users(user_id),
+    capability TEXT NOT NULL CHECK (capability IN ('manage_members', 'teach', 'review_lessons', 'approve_lessons')),
+    active BOOLEAN NOT NULL,
+    date_updated TIMESTAMPTZ NOT NULL,
+    FOREIGN KEY (school_id, department_id) REFERENCES school_departments(school_id, department_id),
+    CHECK ((capability = 'manage_members' AND department_id IS NULL)
+        OR (capability <> 'manage_members' AND department_id IS NOT NULL)),
+    UNIQUE NULLS NOT DISTINCT (school_id, department_id, user_id, capability)
+);
+
+CREATE INDEX idx_school_memberships_user ON school_memberships(user_id, school_id) WHERE active;

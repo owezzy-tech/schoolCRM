@@ -12,6 +12,8 @@ Confirmed decisions take precedence over older proposal text. The selected stack
 
 Every lesson version follows teacher submission, Head of Department review, dean approval and teacher publication. This includes the initial version. Changed content requires fresh review and approval. Published snapshots remain immutable and available while a new draft proceeds through the same workflow.
 
+Confirmed on 2 October 2026: the author, HOD reviewer and dean approver must be three different people. `SUPER_ADMIN` delegates school membership management to users with the `SCHOOL_ADMIN` role. A delegated administrator manages only their assigned school; only `SUPER_ADMIN` may grant or revoke that delegation. [School access API](school-access-api.md) defines the prerequisite membership contract under `schoolCRM-o58.4.1`.
+
 ## Existing implementation and evidence
 
 The implementation baseline is `origin/develop` at commit `1bc93eb` when this ARD was written. Earlier School AI design work on `feature/architecture-docs` and the confirmed Beads notes inform requirements, but are not evidence that the proposed features exist on `develop`.
@@ -130,7 +132,7 @@ stateDiagram-v2
 
 Submission fixes the reviewed version's content. Revising content creates a new version with no inherited approvals. HOD and dean decisions bind the exact version. Publication checks the teacher's current authority and both approvals in the same business operation. Store actor, decision, version, time and feedback in audit history.
 
-Acceptance: direct teacher publication without HOD/dean decisions fails, including the initial version; another school/department cannot review or publish it; editing invalidates the revised version's approval eligibility; duplicate publication is harmless; previous published content stays live. Scoped membership and version persistence are prerequisites. Self-review and self-approval policy remains a decision to resolve before enabling overlapping reviewer assignments.
+Acceptance: direct teacher publication without HOD/dean decisions fails, including the initial version; another school/department cannot review or publish it; editing invalidates the revised version's approval eligibility; duplicate publication is harmless; previous published content stays live. Scoped membership and version persistence are prerequisites. The author, HOD reviewer and dean approver must be three different people, even if one user holds multiple capabilities.
 
 ### `schoolCRM-o58.5`: Admissions graph evidence and programme mappings
 
@@ -184,7 +186,7 @@ The release needs real student, teacher, HOD, dean and admin browser journeys ag
 | --- | --- | --- |
 | Authorised curriculum files and revision metadata | `.2`, generation in `.3` | Source owner supplies usable authorised resources |
 | Final lesson schema and duration rules | `.3`, `.1`, `.8` | Confirm fields and validation per curriculum |
-| School/department/class membership administration and overlapping reviewer policy | `.4`, `.1`, `.7` | Confirm assignment authority and self-review/self-approval policy |
+| Class assignment administration | `.1`, `.7` | Confirm how teaching assignments bind class access; school management delegation and three-person lesson approval are confirmed |
 | Model/embedding provider and permitted student-data handling | `.2`, `.3`, `.6`, assistant runtime | Select provider, credentials, data policy and model/index metadata |
 | Admissions authority, applicable cycles, programme mappings and cluster rules | `.5`, `.6` | Reviewed evidence supports deterministic evaluation |
 | Report semantics, including "cut", and attendance/exam inputs | `.7` | Agree definitions, periods and record/import rules |

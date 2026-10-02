@@ -6,12 +6,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/sdk/order"
 	"github.com/owezzy/schoolCRM/business/sdk/page"
 	"github.com/owezzy/schoolCRM/business/sdk/sqldb"
 	"github.com/owezzy/schoolCRM/foundation/logger"
-	"github.com/jmoiron/sqlx"
 )
 
 // Store manages the set of APIs for audit database access.
@@ -26,6 +26,15 @@ func NewStore(log *logger.Logger, db *sqlx.DB) *Store {
 		log: log,
 		db:  db,
 	}
+}
+
+// NewWithTx binds audit writes to the transaction that owns the business change.
+func (s *Store) NewWithTx(tx sqldb.CommitRollbacker) (*Store, error) {
+	db, err := sqldb.GetExtContext(tx)
+	if err != nil {
+		return nil, err
+	}
+	return &Store{log: s.log, db: db}, nil
 }
 
 // Create inserts a new audit record into the database.
