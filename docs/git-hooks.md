@@ -54,6 +54,46 @@ Without those, the RAG hooks will fail when `api/services/RAG` files are changed
 
 ## Hook Behavior
 
+### Beads and Git
+
+Beads already uses this repository's Git-backed Dolt remote. Issue data syncs separately
+from the application branch; committing `.beads/config.yaml` alone does not upload tasks.
+The local Dolt database and runtime files remain ignored by Git.
+
+The active hooks are managed by Husky at `core.hooksPath=.husky/_`. Tracked `.husky/`
+scripts call `scripts/git-hooks/beads.sh` after the existing quality gates:
+
+- `pre-commit` runs the native Beads callback and commits pending task changes locally.
+- `pre-push` commits remaining task changes and runs `bd dolt push`. A sync failure blocks
+  the application push, so code is not pushed while its task data is unsynchronised.
+- `post-merge` and a `post-rewrite` caused by rebase commit local task changes before
+  `bd dolt pull`. A local amend does not trigger a network pull.
+- `post-checkout` and `prepare-commit-msg` delegate to native Beads callbacks.
+- A recursion guard prevents Beads' own Git transport from starting another sync.
+
+Install a compatible `bd` CLI on PATH before working in this repository. The integration
+was verified with Beads 1.1.2. Then run `npm install` at the repository root to activate
+Husky, and verify the configured task remote:
+
+```bash
+bd dolt remote list
+bd dolt commit
+bd dolt pull
+```
+
+The configured origin is `git+https://github.com/owezzy-tech/schoolCRM`. Existing
+`.beads/hooks/` files are inactive while Husky owns `core.hooksPath`; do not switch the
+hook path or replace Husky with `bd hooks install`, which would bypass the quality gates.
+Manual `bd dolt commit`, `bd dolt push` and `bd dolt pull` remain available for recovery.
+A post-merge/rebase sync failure does not undo the completed Git operation; resolve the
+reported Beads error and retry its sync explicitly.
+
+Verify hook coordination without touching real task data or contacting a remote:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/git-hooks/test_beads.py
+```
+
 ### Pre-commit
 
 Runs only for **staged** files.
@@ -111,7 +151,7 @@ api/frontends/
 the hook runs:
 
 ```bash
-npm --prefix api/frontends/web-admin run test -- --watch=false --browsers=ChromeHeadless
+npm --prefix api/frontends/web-admin run test -- --watch=false
 ```
 
 #### RAG changes
