@@ -44,6 +44,14 @@ cp -rf source dest          # NOT: cp -r source dest
 - Do not return ad hoc `{ "error": ... }` or bare domain JSON from normal API handlers. Add new response behavior through the central `foundation/web.Respond` pipeline.
 - Frontends consuming backend APIs must unwrap JSON:API `data.attributes` for single resources, `data` plus `meta` for collections, and `errors[0].detail` for failed requests.
 
+## Architecture and delivery
+
+- Before implementing School AI features, read `docs/school-ai-ard.md` for ownership, contracts, invariants, acceptance conditions and unresolved decisions. Update the ARD when an authorised decision changes those requirements.
+- Use Git Flow: `main` holds releases; `develop` integrates work. Create one `feature/<bead-id>-<slug>` branch from current `origin/develop` for each bead, including documentation and ordinary bug fixes. Use `release/<version>` from `develop` for releases and `hotfix/<bead-id>-<slug>` from `main` for urgent production fixes. Release and hotfix changes return to both `main` and `develop` through PRs. Preserve unrelated local changes, using an isolated worktree when needed.
+- For every bead, run the affected quality gates and the `thermo-nuclear-code-quality-review` skill against the full PR diff. The user's `/thermal-nuclear-review` means this skill. Resolve blocking findings before delivery; if the skill is unavailable, report the missing review and keep the bead open.
+- Commit and push each validated bead, then open its own PR against `develop`, or `main` for a hotfix. Include the bead ID, acceptance evidence, review verdict and material risks in the PR. Record the PR URL in Beads and close the bead only after validation, review and PR creation succeed. PR creation is required; merging remains a separate action.
+- Finish one bead's PR before starting the next. A parent epic stays open until its child features satisfy their acceptance conditions. Documentation delivery does not close implementation beads.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 

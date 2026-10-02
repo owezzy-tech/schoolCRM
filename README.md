@@ -177,6 +177,7 @@ curl -i -X POST http://localhost:6000/v1/auth/login \
 
 ## Documentation
 
+- [School AI architecture requirements](docs/school-ai-ard.md) cover lesson planning, curriculum retrieval, student advice and school operations.
 - [`docs/local-development.md`](docs/local-development.md) — local setup and service runbook
 - [`docs/diagrams/schoolcrm-local-endpoints.html`](docs/diagrams/schoolcrm-local-endpoints.html) — local service endpoint and port map
 - [`docs/diagrams/schoolcrm-runtime-architecture.html`](docs/diagrams/schoolcrm-runtime-architecture.html) — runtime service architecture visualization
