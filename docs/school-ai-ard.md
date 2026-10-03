@@ -57,7 +57,7 @@ flowchart LR
 | PostgreSQL and controlled file storage | Business records, source revisions, original files, retrieval metadata and durable runs | Separate business records from Python indexes/checkpoints; protect credentials and private files |
 | Model provider | Grounded text and schema-validated draft generation | Model output cannot grant permissions, approve writes or establish official qualification rules |
 
-Use the existing Python service rather than creating a service per agent. Reuse existing admission graph adapters where suitable; a new graph database is not required solely for curriculum search. PostgreSQL with pgvector is the selected curriculum retrieval direction, subject to extension provisioning and persistence tests. Model and embedding provider selection remains open.
+Use the existing Python service rather than creating a service per agent. Reuse existing admission graph adapters where suitable; a new graph database is not required solely for curriculum search. PostgreSQL with pgvector is the selected curriculum retrieval direction, subject to extension provisioning and persistence tests. Confirmed on 3 October 2026: BGE embeddings use local Ollama in development and Cloudflare Workers AI in production; DeepSeek generates text. BGE-M3 is the multilingual variant selected for the acquisition record, using `bge-m3` and `@cf/baai/bge-m3`. Pin model identity and validate dimensions and provider compatibility before indexing. The exact DeepSeek model/endpoint and permitted student-data handling remain open. [Curriculum acquisition](CurriculumData/README.md) records downloaded sources and access failures.
 
 Temporal, Asynq, Casbin, SQLC and Maroto are candidates only. Add a dependency when existing components cannot meet a demonstrated requirement. Retain complete lesson snapshots; there is no current requirement for delta storage.
 
@@ -184,10 +184,10 @@ The release needs real student, teacher, HOD, dean and admin browser journeys ag
 
 | Decision or input | Affected work | Completion condition |
 | --- | --- | --- |
-| Authorised curriculum files and revision metadata | `.2`, generation in `.3` | Source owner supplies usable authorised resources |
+| Authorised curriculum files and revision metadata | `.2`, generation in `.3` | Cambridge IGCSE PDFs acquired; KICD downloads unavailable. Review revisions and confirm IGCSE scope; obtain authorised KICD originals |
 | Final lesson schema and duration rules | `.3`, `.1`, `.8` | Confirm fields and validation per curriculum |
 | Class assignment administration | `.1`, `.7` | Confirm how teaching assignments bind class access; school management delegation and three-person lesson approval are confirmed |
-| Model/embedding provider and permitted student-data handling | `.2`, `.3`, `.6`, assistant runtime | Select provider, credentials, data policy and model/index metadata |
+| Model setup and permitted student-data handling | `.2`, `.3`, `.6`, assistant runtime | Ollama BGE for development, Cloudflare Workers AI BGE for production and DeepSeek confirmed. Pin model IDs/digests, credentials and index metadata; confirm private-data policy |
 | Admissions authority, applicable cycles, programme mappings and cluster rules | `.5`, `.6` | Reviewed evidence supports deterministic evaluation |
 | Report semantics, including "cut", and attendance/exam inputs | `.7` | Agree definitions, periods and record/import rules |
 | Retention/deletion, recovery and measurable service targets | `.8` and destructive operations | Define policy, workload and restore objectives |
