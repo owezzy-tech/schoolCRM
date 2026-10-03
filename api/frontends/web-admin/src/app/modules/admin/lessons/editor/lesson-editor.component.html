@@ -1,0 +1,117 @@
+<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <nav class="text-secondary mb-2 text-sm" aria-label="Breadcrumb">
+        <a routerLink="/lessons" class="hover:underline">Lesson plans</a>
+        @if (plan()) {
+            <span aria-hidden="true"> / </span>
+            <a [routerLink]="['/lessons', plan()!.id]" class="hover:underline">{{ plan()!.title }}</a>
+        }
+    </nav>
+    <h1 class="text-3xl font-semibold tracking-tight">{{ plan() ? 'Edit lesson plan' : 'New lesson plan' }}</h1>
+    <p class="text-secondary mt-1">
+        Saving creates <span class="font-mono tabular-nums">version {{ nextVersion }}</span>.
+        @if (plan()) {
+            It starts a new draft with no approvals; the published version stays live until a newer one is published.
+        }
+    </p>
+
+    @if (conflict()) {
+        <div class="mt-4 flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <span>This plan changed since you opened it. Reload to continue from the newest version; your edits here will be replaced.</span>
+            <button mat-stroked-button type="button" (click)="reload()">Reload</button>
+        </div>
+    }
+    @if (errorMessage()) {
+        <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (loading()) {
+        <div class="bg-card mt-6 animate-pulse rounded-xl p-6" aria-busy="true" aria-label="Loading lesson plan">
+            <div class="mb-3 h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="h-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+    } @else {
+        <form class="mt-6 flex flex-col gap-6" [formGroup]="form" (ngSubmit)="save()">
+            <div class="bg-card rounded-xl p-6">
+                <mat-form-field class="w-full">
+                    <mat-label>Title</mat-label>
+                    <input matInput formControlName="title" maxlength="200" required />
+                    @if (form.controls.title.hasError('required')) {
+                        <mat-error>Enter a title.</mat-error>
+                    }
+                </mat-form-field>
+            </div>
+
+            @for (section of [
+                { label: 'Objectives', item: 'Objective', list: objectives },
+                { label: 'Materials', item: 'Material', list: materials }
+            ]; track section.label) {
+                <fieldset class="bg-card rounded-xl p-6">
+                    <legend class="sr-only">{{ section.label }}</legend>
+                    <h2 class="mb-3 text-lg font-medium" aria-hidden="true">{{ section.label }}</h2>
+                    @for (control of section.list.controls; track control; let i = $index) {
+                        <div class="flex items-start gap-2">
+                            <mat-form-field class="flex-auto" subscriptSizing="dynamic">
+                                <mat-label>{{ section.item }} {{ i + 1 }}</mat-label>
+                                <input matInput [formControl]="control" />
+                            </mat-form-field>
+                            <button mat-icon-button type="button" [attr.aria-label]="'Remove ' + section.item.toLowerCase() + ' ' + (i + 1)" (click)="remove(section.list, i)">
+                                <mat-icon svgIcon="heroicons_outline:x-mark"></mat-icon>
+                            </button>
+                        </div>
+                    }
+                    <button mat-button type="button" class="mt-2" (click)="addItem(section.list)">
+                        <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
+                        <span class="ml-1">Add {{ section.item.toLowerCase() }}</span>
+                    </button>
+                </fieldset>
+            }
+
+            <fieldset class="bg-card rounded-xl p-6" formArrayName="activities">
+                <legend class="sr-only">Timed activities</legend>
+                <h2 class="mb-3 text-lg font-medium" aria-hidden="true">Timed activities</h2>
+                @for (activity of activities.controls; track activity; let i = $index) {
+                    <div class="mb-3 grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-[7rem_1fr_auto]" [formGroupName]="i">
+                        <mat-form-field subscriptSizing="dynamic">
+                            <mat-label>Minutes</mat-label>
+                            <input matInput type="number" min="1" formControlName="minutes" class="font-mono tabular-nums" />
+                        </mat-form-field>
+                        <mat-form-field subscriptSizing="dynamic">
+                            <mat-label>Activity {{ i + 1 }} title</mat-label>
+                            <input matInput formControlName="title" />
+                        </mat-form-field>
+                        <button mat-icon-button type="button" class="self-center" [attr.aria-label]="'Remove activity ' + (i + 1)" (click)="remove(activities, i)">
+                            <mat-icon svgIcon="heroicons_outline:x-mark"></mat-icon>
+                        </button>
+                        <mat-form-field class="sm:col-span-3" subscriptSizing="dynamic">
+                            <mat-label>Details</mat-label>
+                            <textarea matInput rows="2" formControlName="detail"></textarea>
+                        </mat-form-field>
+                    </div>
+                }
+                <button mat-button type="button" (click)="addActivity()">
+                    <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
+                    <span class="ml-1">Add activity</span>
+                </button>
+            </fieldset>
+
+            <div class="bg-card flex flex-col gap-2 rounded-xl p-6">
+                <mat-form-field class="w-full">
+                    <mat-label>Assessment</mat-label>
+                    <textarea matInput rows="3" formControlName="assessment"></textarea>
+                </mat-form-field>
+                <mat-form-field class="w-full">
+                    <mat-label>Change summary</mat-label>
+                    <input matInput formControlName="changeSummary" maxlength="1000" />
+                    <mat-hint>What changed in this version, for reviewers.</mat-hint>
+                </mat-form-field>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <a mat-button [routerLink]="plan() ? ['/lessons', plan()!.id] : '/lessons'">Cancel</a>
+                <button mat-flat-button color="primary" type="submit" [disabled]="saving() || conflict()">
+                    {{ saving() ? 'Saving…' : 'Save version ' + nextVersion }}
+                </button>
+            </div>
+        </form>
+    }
+</div>

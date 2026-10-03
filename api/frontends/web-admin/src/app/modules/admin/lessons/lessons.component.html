@@ -1,0 +1,119 @@
+<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Lesson plans</h1>
+            <p class="text-secondary mt-1">
+                Drafts stay private to their author until submitted for HOD review.
+            </p>
+        </div>
+        @if (scope() && can('teach')) {
+            <a
+                mat-flat-button
+                color="primary"
+                routerLink="new"
+                [queryParams]="{ school: scope()!.schoolID, department: scope()!.departmentID }"
+            >
+                <mat-icon svgIcon="heroicons_outline:plus"></mat-icon>
+                <span class="ml-2">New lesson plan</span>
+            </a>
+        }
+    </div>
+
+    @if (errorMessage()) {
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
+            {{ errorMessage() }}
+        </div>
+    }
+
+    @if (scopes() === null) {
+        <div class="bg-card animate-pulse rounded-xl p-6" aria-busy="true" aria-label="Loading departments">
+            <div class="mb-3 h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+    } @else if (!scopes()!.length) {
+        <div class="bg-card rounded-xl p-8 text-center">
+            <h2 class="text-lg font-medium">No lesson responsibilities yet</h2>
+            <p class="text-secondary mt-1">
+                Ask your school administrator to grant you a teaching, HOD review or dean approval role in a department.
+            </p>
+        </div>
+    } @else {
+        <div class="bg-card mb-4 flex flex-col gap-4 rounded-xl p-4 md:flex-row md:items-center md:justify-between">
+            <mat-form-field class="w-full md:w-96" subscriptSizing="dynamic">
+                <mat-label>Department</mat-label>
+                <mat-select [ngModel]="scope()?.key" (ngModelChange)="selectScope($event)">
+                    @for (option of scopes(); track option.key) {
+                        <mat-option [value]="option.key">{{ option.label }}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+            <mat-button-toggle-group
+                aria-label="Filter lesson plans"
+                [ngModel]="filter()"
+                (ngModelChange)="filter.set($event)"
+            >
+                <mat-button-toggle value="all">All</mat-button-toggle>
+                @if (can('teach')) {
+                    <mat-button-toggle value="mine">My plans</mat-button-toggle>
+                }
+                @if (can('review_lessons')) {
+                    <mat-button-toggle value="review">Awaiting HOD review</mat-button-toggle>
+                }
+                @if (can('approve_lessons')) {
+                    <mat-button-toggle value="approval">Awaiting dean approval</mat-button-toggle>
+                }
+            </mat-button-toggle-group>
+        </div>
+
+        <div class="bg-card overflow-x-auto rounded-xl">
+            @if (plans() === null) {
+                <div class="animate-pulse space-y-3 p-6" aria-busy="true" aria-label="Loading lesson plans">
+                    @for (row of [1, 2, 3]; track row) {
+                        <div class="h-4 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    }
+                </div>
+            } @else if (!visiblePlans().length) {
+                <div class="p-8 text-center">
+                    <h2 class="text-lg font-medium">Nothing here</h2>
+                    <p class="text-secondary mt-1">
+                        @switch (filter()) {
+                            @case ('review') { No versions are waiting for HOD review. }
+                            @case ('approval') { No versions are waiting for dean approval. }
+                            @default { No lesson plans in this department yet. }
+                        }
+                    </p>
+                </div>
+            } @else {
+                <table class="w-full min-w-160 text-left">
+                    <thead class="text-secondary border-b font-mono text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-3 font-medium">Title</th>
+                            <th class="px-6 py-3 font-medium">Version</th>
+                            <th class="px-6 py-3 font-medium">Status</th>
+                            <th class="px-6 py-3 font-medium">Live</th>
+                            <th class="px-6 py-3 font-medium">Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (plan of visiblePlans(); track plan.id) {
+                            <tr class="border-b last:border-0 hover:bg-hover">
+                                <td class="px-6 py-3">
+                                    <a class="font-medium text-primary hover:underline" [routerLink]="plan.id">{{ plan.title }}</a>
+                                    @if (plan.authorID === viewer()?.id) {
+                                        <span class="text-secondary ml-2 text-sm">Yours</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-3 font-mono tabular-nums">v{{ plan.currentVersion }}</td>
+                                <td class="px-6 py-3"><app-lesson-status [status]="plan.status" /></td>
+                                <td class="px-6 py-3 font-mono tabular-nums">
+                                    {{ plan.publishedVersion ? 'v' + plan.publishedVersion : '—' }}
+                                </td>
+                                <td class="text-secondary px-6 py-3">{{ plan.dateUpdated | date: 'd MMM y, HH:mm' }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+</div>

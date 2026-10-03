@@ -195,7 +195,19 @@ export const appRoutes: Route[] = [
                     import('app/modules/admin/reports/reports.routes'),
             },
 
+            // Teaching
+            {
+                path: 'lessons',
+                loadChildren: () =>
+                    import('app/modules/admin/lessons/lessons.routes'),
+            },
+
             // Admin
+            {
+                path: 'schools',
+                loadChildren: () =>
+                    import('app/modules/admin/schools/schools.routes'),
+            },
             {
                 path: 'users',
                 loadChildren: () =>

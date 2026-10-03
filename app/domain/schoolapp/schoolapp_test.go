@@ -150,10 +150,33 @@ func TestSchoolAPI(t *testing.T) {
 			t.Fatal("duplicate membership")
 		}
 		request("GET", scopePath+"/departments", teacherToken, "", 200)
+		own := func() []struct {
+			ID         string `json:"id"`
+			Attributes struct {
+				Capability string `json:"capability"`
+			} `json:"attributes"`
+		} {
+			var items []struct {
+				ID         string `json:"id"`
+				Attributes struct {
+					Capability string `json:"capability"`
+				} `json:"attributes"`
+			}
+			if err := json.Unmarshal(request("GET", "/v1/me/school-memberships", teacherToken, "", 200)["data"], &items); err != nil {
+				t.Fatal(err)
+			}
+			return items
+		}
+		if items := own(); len(items) != 1 || items[0].ID != memberID || items[0].Attributes.Capability != "teach" {
+			t.Fatalf("own memberships: %+v", items)
+		}
 		request("DELETE", "/v1/schools/"+otherID+"/memberships/"+memberID, rootToken, "", 404)
 		request("DELETE", scopePath+"/memberships/"+memberID, adminToken, "", 204)
 		request("DELETE", scopePath+"/memberships/"+memberID, adminToken, "", 204)
 		request("GET", scopePath+"/departments", teacherToken, "", 403)
+		if items := own(); len(items) != 0 {
+			t.Fatalf("revoked membership still listed: %+v", items)
+		}
 	})
 	t.Run("boundary validation", func(t *testing.T) {
 		cases := []struct{ name, path, body string }{

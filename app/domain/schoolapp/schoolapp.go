@@ -115,6 +115,18 @@ func (a *appHandlers) memberships(ctx context.Context, r *http.Request) web.Enco
 	return query.Result[schoolbus.Membership]{Items: memberships, Total: len(memberships), Page: 1, RowsPerPage: max(1, len(memberships))}
 }
 
+func (a *appHandlers) ownMemberships(ctx context.Context, r *http.Request) web.Encoder {
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return errs.New(errs.Unauthenticated, err)
+	}
+	memberships, err := a.bus.OwnMemberships(ctx, actorID)
+	if err != nil {
+		return appError(err)
+	}
+	return query.Result[schoolbus.Membership]{Items: memberships, Total: len(memberships), Page: 1, RowsPerPage: max(1, len(memberships))}
+}
+
 func requestScope(ctx context.Context, r *http.Request) (uuid.UUID, uuid.UUID, *errs.Error) {
 	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
