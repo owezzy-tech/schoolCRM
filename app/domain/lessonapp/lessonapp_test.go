@@ -155,14 +155,23 @@ func TestLessonAPI(t *testing.T) {
 	t.Run("revision keeps publication live", func(t *testing.T) {
 		request("POST", "/v1/lessons/"+plan.ID+"/versions", teacher, `{"baseVersion":1,"title":"Forces v2","content":{"objectives":["Newton","Hooke"]}}`, 200)
 		request("POST", "/v1/lessons/"+plan.ID+"/versions", teacher, `{"baseVersion":1,"title":"Stale","content":{}}`, 409)
-		got := single(request("GET", "/v1/lessons/"+plan.ID, dean, "", 200))
+		got := single(request("GET", "/v1/lessons/"+plan.ID, teacher, "", 200))
 		if got.Attributes["publishedVersion"] != float64(1) || got.Attributes["currentVersion"] != float64(2) {
 			t.Fatalf("got %+v", got.Attributes)
 		}
+		// The new draft stays private to its author until submitted.
+		got = single(request("GET", "/v1/lessons/"+plan.ID, dean, "", 200))
+		if got.Attributes["currentVersion"] != float64(1) || got.Attributes["title"] != "Forces" {
+			t.Fatalf("dean saw the draft: %+v", got.Attributes)
+		}
 		doc := request("GET", "/v1/lessons/"+plan.ID+"/versions", hod, "", 200)
 		var versions []resource
-		if err := json.Unmarshal(doc["data"], &versions); err != nil || len(versions) != 2 || doc["meta"] == nil {
+		if err := json.Unmarshal(doc["data"], &versions); err != nil || len(versions) != 1 || doc["meta"] == nil {
 			t.Fatalf("invalid versions collection: %s", doc["data"])
+		}
+		doc = request("GET", "/v1/lessons/"+plan.ID+"/versions", teacher, "", 200)
+		if err := json.Unmarshal(doc["data"], &versions); err != nil || len(versions) != 2 {
+			t.Fatalf("author lost own draft: %s", doc["data"])
 		}
 		doc = request("GET", lessons, teacher, "", 200)
 		var plans []resource

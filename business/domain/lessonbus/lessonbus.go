@@ -33,10 +33,13 @@ type Storer interface {
 	UpdatePlan(context.Context, Plan) error
 	CreateVersion(context.Context, Version) error
 	UpdateVersion(context.Context, Version) error
-	Plan(context.Context, uuid.UUID) (Plan, error)
-	Plans(ctx context.Context, schoolID, departmentID uuid.UUID) ([]Plan, error)
+	// Reads take the viewer: another author's unsubmitted drafts are invisible,
+	// a plan's CurrentVersion is the newest version the viewer may see, and a
+	// plan with nothing visible is ErrNotFound.
+	Plan(ctx context.Context, planID, viewerID uuid.UUID) (Plan, error)
+	Plans(ctx context.Context, schoolID, departmentID, viewerID uuid.UUID) ([]Plan, error)
 	Version(ctx context.Context, planID uuid.UUID, number int) (Version, error)
-	Versions(context.Context, uuid.UUID) ([]Version, error)
+	Versions(ctx context.Context, planID, viewerID uuid.UUID) ([]Version, error)
 	Audit(context.Context, auditbus.Audit) error
 }
 
@@ -186,7 +189,7 @@ func (b *Business) Plan(ctx context.Context, actorID, planID uuid.UUID) (Plan, e
 	var plan Plan
 	err := b.store.WithinTx(ctx, func(s Storer) error {
 		var err error
-		if plan, err = s.Plan(ctx, planID); err != nil {
+		if plan, err = s.Plan(ctx, planID, actorID); err != nil {
 			return err
 		}
 		return authorise(ctx, s, actorID, plan.SchoolID, plan.DepartmentID, lessonRoles...)
@@ -201,7 +204,7 @@ func (b *Business) Plans(ctx context.Context, actorID, schoolID, departmentID uu
 			return err
 		}
 		var err error
-		plans, err = s.Plans(ctx, schoolID, departmentID)
+		plans, err = s.Plans(ctx, schoolID, departmentID, actorID)
 		return err
 	})
 	return plans, err
@@ -210,14 +213,14 @@ func (b *Business) Plans(ctx context.Context, actorID, schoolID, departmentID uu
 func (b *Business) Versions(ctx context.Context, actorID, planID uuid.UUID) ([]Version, error) {
 	var versions []Version
 	err := b.store.WithinTx(ctx, func(s Storer) error {
-		plan, err := s.Plan(ctx, planID)
+		plan, err := s.Plan(ctx, planID, actorID)
 		if err != nil {
 			return err
 		}
 		if err := authorise(ctx, s, actorID, plan.SchoolID, plan.DepartmentID, lessonRoles...); err != nil {
 			return err
 		}
-		versions, err = s.Versions(ctx, planID)
+		versions, err = s.Versions(ctx, planID, actorID)
 		return err
 	})
 	return versions, err

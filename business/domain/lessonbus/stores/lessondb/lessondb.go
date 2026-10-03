@@ -50,6 +50,16 @@ const planColumns = `p.plan_id, p.school_id, p.department_id, p.author_id, v.tit
 	p.current_version, p.published_version, p.date_created, p.date_updated
 	FROM lesson_plans p JOIN lesson_plan_versions v ON v.plan_id = p.plan_id AND v.version_number = p.current_version`
 
+// visiblePlanColumns reads a plan as viewer $1 sees it: its newest version
+// that is not another author's unsubmitted draft. Plans with no such version
+// produce no row.
+const visiblePlanColumns = `p.plan_id, p.school_id, p.department_id, p.author_id, v.title, v.status,
+	v.version_number AS current_version, p.published_version, p.date_created, p.date_updated
+	FROM lesson_plans p CROSS JOIN LATERAL (
+		SELECT title, status, version_number FROM lesson_plan_versions v
+		WHERE v.plan_id = p.plan_id AND (v.status <> 'draft' OR v.author_id = $1)
+		ORDER BY v.version_number DESC LIMIT 1) v`
+
 const versionColumns = `plan_id, version_number, title, content, change_summary, author_id, status, reviewer_id, reviewed_at,
 	approver_id, approved_at, published_at, review_feedback, approval_feedback, date_created`
 
@@ -116,16 +126,16 @@ func (s *Store) UpdateVersion(ctx context.Context, v lessonbus.Version) error {
 	return err
 }
 
-func (s *Store) Plan(ctx context.Context, planID uuid.UUID) (lessonbus.Plan, error) {
+func (s *Store) Plan(ctx context.Context, planID, viewerID uuid.UUID) (lessonbus.Plan, error) {
 	var plan lessonbus.Plan
-	err := s.tx.GetContext(ctx, &plan, `SELECT `+planColumns+` WHERE p.plan_id = $1`, planID)
+	err := s.tx.GetContext(ctx, &plan, `SELECT `+visiblePlanColumns+` WHERE p.plan_id = $2`, viewerID, planID)
 	return plan, translate(err)
 }
 
-func (s *Store) Plans(ctx context.Context, schoolID, departmentID uuid.UUID) ([]lessonbus.Plan, error) {
+func (s *Store) Plans(ctx context.Context, schoolID, departmentID, viewerID uuid.UUID) ([]lessonbus.Plan, error) {
 	plans := []lessonbus.Plan{}
-	err := s.tx.SelectContext(ctx, &plans, `SELECT `+planColumns+`
-	WHERE p.school_id = $1 AND p.department_id = $2 ORDER BY p.date_updated DESC, p.plan_id`, schoolID, departmentID)
+	err := s.tx.SelectContext(ctx, &plans, `SELECT `+visiblePlanColumns+`
+	WHERE p.school_id = $2 AND p.department_id = $3 ORDER BY p.date_updated DESC, p.plan_id`, viewerID, schoolID, departmentID)
 	return plans, err
 }
 
@@ -136,10 +146,10 @@ func (s *Store) Version(ctx context.Context, planID uuid.UUID, number int) (less
 	return version, translate(err)
 }
 
-func (s *Store) Versions(ctx context.Context, planID uuid.UUID) ([]lessonbus.Version, error) {
+func (s *Store) Versions(ctx context.Context, planID, viewerID uuid.UUID) ([]lessonbus.Version, error) {
 	versions := []lessonbus.Version{}
 	err := s.tx.SelectContext(ctx, &versions, `SELECT `+versionColumns+` FROM lesson_plan_versions
-	WHERE plan_id = $1 ORDER BY version_number DESC`, planID)
+	WHERE plan_id = $1 AND (status <> 'draft' OR author_id = $2) ORDER BY version_number DESC`, planID, viewerID)
 	return versions, err
 }
 
