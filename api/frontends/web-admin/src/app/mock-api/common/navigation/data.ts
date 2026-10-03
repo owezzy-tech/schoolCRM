@@ -101,6 +101,20 @@ export const defaultNavigation: FuseNavigationItem[] = [
         ],
     },
     {
+        id: 'teaching',
+        title: 'Teaching',
+        type: 'group',
+        children: [
+            {
+                id: 'teaching.lessons',
+                title: 'Lesson plans',
+                type: 'basic',
+                icon: 'heroicons_outline:book-open',
+                link: '/lessons',
+            },
+        ],
+    },
+    {
         id: 'insights',
         title: 'Insights',
         type: 'group',
@@ -119,6 +133,13 @@ export const defaultNavigation: FuseNavigationItem[] = [
         title: 'Admin',
         type: 'group',
         children: [
+            {
+                id: 'admin.schools',
+                title: 'Schools',
+                type: 'basic',
+                icon: 'heroicons_outline:building-library',
+                link: '/schools',
+            },
             {
                 id: 'admin.users',
                 title: 'Users & Roles',

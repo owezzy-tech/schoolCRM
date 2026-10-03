@@ -29,6 +29,7 @@ type Storer interface {
 	Schools(context.Context, uuid.UUID, bool) ([]School, error)
 	Departments(context.Context, uuid.UUID) ([]Department, error)
 	Memberships(context.Context, uuid.UUID) ([]Membership, error)
+	UserMemberships(context.Context, uuid.UUID) ([]Membership, error)
 	Audit(context.Context, auditbus.Audit) error
 }
 
@@ -179,6 +180,21 @@ func (b *Business) Memberships(ctx context.Context, actorID, schoolID uuid.UUID)
 		}
 		var err error
 		memberships, err = s.Memberships(ctx, schoolID)
+		return err
+	})
+	return memberships, err
+}
+
+// OwnMemberships lists the actor's active memberships so clients can show
+// only the actions the server would permit. It grants nothing by itself.
+func (b *Business) OwnMemberships(ctx context.Context, actorID uuid.UUID) ([]Membership, error) {
+	var memberships []Membership
+	err := b.store.WithinTx(ctx, func(s Storer) error {
+		if _, err := enabledActor(ctx, s, actorID); err != nil {
+			return err
+		}
+		var err error
+		memberships, err = s.UserMemberships(ctx, actorID)
 		return err
 	})
 	return memberships, err

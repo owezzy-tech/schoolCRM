@@ -121,6 +121,12 @@ func (s *Store) Memberships(ctx context.Context, schoolID uuid.UUID) ([]schoolbu
 	return memberships, err
 }
 
+func (s *Store) UserMemberships(ctx context.Context, userID uuid.UUID) ([]schoolbus.Membership, error) {
+	memberships := []schoolbus.Membership{}
+	err := s.tx.SelectContext(ctx, &memberships, `SELECT membership_id, school_id, department_id, user_id, capability, active, date_updated FROM school_memberships WHERE user_id = $1 AND active ORDER BY school_id, department_id, capability`, userID)
+	return memberships, err
+}
+
 func (s *Store) Audit(ctx context.Context, audit auditbus.Audit) error {
 	return s.audit.Create(ctx, audit)
 }

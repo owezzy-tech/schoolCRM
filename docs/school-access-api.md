@@ -23,6 +23,7 @@ All endpoints require a bearer token from the existing authentication service. M
 
 | Method and path | Behaviour |
 | --- | --- |
+| `GET /v1/me/school-memberships` | The caller's active memberships across schools, so clients can offer only permitted actions. Grants nothing; every command is rechecked |
 | `GET /v1/schools` | All schools for SUPER_ADMIN; active membership schools for other users |
 | `POST /v1/schools` | Create a school. Body: `{"name":"Example School"}`. SUPER_ADMIN only |
 | `GET /v1/schools/{school_id}/departments` | List departments for a current member of that school or SUPER_ADMIN |

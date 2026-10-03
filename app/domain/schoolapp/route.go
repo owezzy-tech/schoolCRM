@@ -18,6 +18,7 @@ type Config struct {
 func Routes(app *web.App, cfg Config) {
 	api := &appHandlers{bus: cfg.SchoolBus}
 	authenticate := mid.Authenticate(cfg.AuthClient)
+	app.HandlerFunc(http.MethodGet, "v1", "/me/school-memberships", api.ownMemberships, authenticate)
 	app.HandlerFunc(http.MethodGet, "v1", "/schools", api.schools, authenticate)
 	app.HandlerFunc(http.MethodPost, "v1", "/schools", api.createSchool, authenticate)
 	app.HandlerFunc(http.MethodGet, "v1", "/schools/{school_id}/departments", api.departments, authenticate)

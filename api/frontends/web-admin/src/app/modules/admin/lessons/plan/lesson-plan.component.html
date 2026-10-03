@@ -1,0 +1,136 @@
+<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <nav class="text-secondary mb-2 text-sm" aria-label="Breadcrumb">
+        <a routerLink="/lessons" class="hover:underline">Lesson plans</a>
+    </nav>
+
+    @if (conflict()) {
+        <div class="mb-4 flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <span>This plan changed since you opened it. Reload to see the current version.</span>
+            <button mat-stroked-button type="button" (click)="load()">Reload</button>
+        </div>
+    }
+    @if (errorMessage()) {
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (loading()) {
+        <div class="bg-card animate-pulse rounded-xl p-6" aria-busy="true" aria-label="Loading lesson plan">
+            <div class="mb-3 h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div class="h-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+    } @else if (plan(); as plan) {
+        @let latest = current();
+        <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <h1 class="text-3xl font-semibold tracking-tight">{{ plan.title }}</h1>
+                <dl class="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+                    <div>
+                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">Live</dt>
+                        <dd>
+                            @if (plan.publishedVersion) {
+                                <a class="font-mono tabular-nums text-primary hover:underline" [routerLink]="['versions', plan.publishedVersion]">
+                                    version {{ plan.publishedVersion }}
+                                </a>
+                            } @else {
+                                <span class="text-secondary">Not yet published</span>
+                            }
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">Latest</dt>
+                        <dd class="flex items-center gap-2">
+                            <span class="font-mono tabular-nums">version {{ plan.currentVersion }}</span>
+                            <app-lesson-status [status]="plan.status" />
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                @if (has('edit')) {
+                    <a mat-stroked-button routerLink="edit">Edit plan</a>
+                }
+                @if (has('submit')) {
+                    <button mat-flat-button color="primary" type="button" [disabled]="busy()" (click)="submit()">Submit for HOD review</button>
+                }
+                @if (has('publish')) {
+                    <button mat-flat-button color="primary" type="button" [disabled]="busy()" (click)="publish()">Publish version {{ plan.currentVersion }}</button>
+                }
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem]">
+            <section class="bg-card rounded-xl p-6" aria-labelledby="latest-heading">
+                <h2 id="latest-heading" class="mb-4 text-lg font-medium">
+                    Version {{ plan.currentVersion }}
+                    @if (latest?.changeSummary) {
+                        <span class="text-secondary text-base font-normal">— {{ latest!.changeSummary }}</span>
+                    }
+                </h2>
+                @if (latest) {
+                    <app-lesson-content [value]="latest.content" />
+                }
+            </section>
+
+            <aside class="flex flex-col gap-6">
+                @if (has('review') || has('approve')) {
+                    <section class="bg-card rounded-xl p-6" aria-labelledby="decision-heading">
+                        <h2 id="decision-heading" class="mb-1 text-lg font-medium">{{ has('review') ? 'HOD review' : 'Dean approval' }}</h2>
+                        <p class="text-secondary mb-4 text-sm">Your decision applies to version {{ plan.currentVersion }} only.</p>
+                        @if (has('approve') && latest?.reviewFeedback) {
+                            <div class="mb-4 rounded-lg border p-3 text-sm">
+                                <div class="text-secondary mb-1 font-mono text-xs uppercase tracking-wider">HOD feedback</div>
+                                {{ latest!.reviewFeedback }}
+                            </div>
+                        }
+                        <mat-radio-group class="flex flex-col gap-2" aria-label="Decision" [ngModel]="decision()" (ngModelChange)="decision.set($event)">
+                            <mat-radio-button value="approve">Approve</mat-radio-button>
+                            <mat-radio-button value="request_changes">Request changes</mat-radio-button>
+                        </mat-radio-group>
+                        <mat-form-field class="mt-4 w-full">
+                            <mat-label>Feedback{{ decision() === 'request_changes' ? '' : ' (optional)' }}</mat-label>
+                            <textarea matInput rows="4" maxlength="2000" [ngModel]="feedback()" (ngModelChange)="feedback.set($event)"></textarea>
+                            <mat-hint align="end" class="font-mono tabular-nums">{{ feedback().length }}/2000</mat-hint>
+                        </mat-form-field>
+                        @if (feedbackRequired()) {
+                            <p class="mb-2 text-sm text-red-700" role="status">Explain what needs to change.</p>
+                        }
+                        <button mat-flat-button color="primary" type="button" class="w-full" [disabled]="busy() || feedbackRequired()" (click)="decide()">
+                            Record decision
+                        </button>
+                    </section>
+                } @else if (available().separationOfDuties) {
+                    <section class="bg-card rounded-xl p-6" role="note">
+                        <h2 class="mb-1 text-lg font-medium">Decision unavailable</h2>
+                        <p class="text-secondary">{{ separationMessage }}</p>
+                    </section>
+                }
+
+                <section class="bg-card rounded-xl p-6" aria-labelledby="history-heading">
+                    <h2 id="history-heading" class="mb-4 text-lg font-medium">Version history</h2>
+                    <ol class="flex flex-col gap-4">
+                        @for (version of versions(); track version.version) {
+                            <li class="border-l-2 pl-4" [class.border-primary]="version.version === plan.publishedVersion">
+                                <div class="flex items-center justify-between gap-2">
+                                    <a class="font-mono tabular-nums text-primary hover:underline" [routerLink]="['versions', version.version]">
+                                        View version {{ version.version }}
+                                    </a>
+                                    <app-lesson-status [status]="version.status" />
+                                </div>
+                                <div class="text-secondary mt-1 text-sm">Saved {{ version.dateCreated | date: 'd MMM y, HH:mm' }}</div>
+                                @if (version.reviewedAt) {
+                                    <div class="text-secondary text-sm">HOD decision {{ version.reviewedAt | date: 'd MMM y, HH:mm' }}</div>
+                                }
+                                @if (version.approvedAt) {
+                                    <div class="text-secondary text-sm">Dean decision {{ version.approvedAt | date: 'd MMM y, HH:mm' }}</div>
+                                }
+                                @if (version.reviewFeedback || version.approvalFeedback) {
+                                    <p class="mt-1 text-sm">{{ version.approvalFeedback || version.reviewFeedback }}</p>
+                                }
+                            </li>
+                        }
+                    </ol>
+                </section>
+            </aside>
+        </div>
+    }
+</div>
