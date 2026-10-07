@@ -45,6 +45,41 @@ export interface LessonContent {
     materials: string[];
     activities: LessonActivity[];
     assessment: string;
+    prerequisites?: string[];
+    differentiation?: string;
+}
+
+export interface LessonCitation {
+    sourceID: string;
+    page: number;
+    title: string;
+    sourceURL: string;
+    revision: string;
+}
+
+/** Keep the complete snapshot when editing. Read-only metadata must survive saves. */
+export function lessonContentRecord(value: unknown): Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+}
+
+export function lessonCitations(value: unknown): LessonCitation[] {
+    const entries = lessonContentRecord(value)['citations'];
+    if (!Array.isArray(entries)) return [];
+    return entries.filter((entry): entry is LessonCitation => {
+        const citation = lessonContentRecord(entry);
+        return (
+            typeof citation['sourceID'] === 'string' &&
+            typeof citation['title'] === 'string' &&
+            typeof citation['page'] === 'number' &&
+            Number.isInteger(citation['page']) &&
+            citation['page'] > 0 &&
+            typeof citation['revision'] === 'string' &&
+            typeof citation['sourceURL'] === 'string' &&
+            /^https?:\/\//.test(citation['sourceURL'])
+        );
+    });
 }
 
 export interface LessonPlan {
@@ -122,7 +157,8 @@ export function lessonActions(
         else actions.push('review');
     }
     if (can('approve_lessons') && version.status === 'dean_approval') {
-        if (isAuthor || version.reviewerID === viewerID) separationOfDuties = true;
+        if (isAuthor || version.reviewerID === viewerID)
+            separationOfDuties = true;
         else actions.push('approve');
     }
 
@@ -131,10 +167,7 @@ export function lessonActions(
 
 /** Reads stored content defensively: older or foreign shapes render as empty sections. */
 export function toLessonContent(value: unknown): LessonContent {
-    const source =
-        value !== null && typeof value === 'object'
-            ? (value as Record<string, unknown>)
-            : {};
+    const source = lessonContentRecord(value);
     const strings = (item: unknown): string[] =>
         Array.isArray(item)
             ? item.filter((entry): entry is string => typeof entry === 'string')
@@ -154,10 +187,23 @@ export function toLessonContent(value: unknown): LessonContent {
         : [];
 
     return {
+        ...('prerequisites' in source
+            ? { prerequisites: strings(source['prerequisites']) }
+            : {}),
+        ...('differentiation' in source
+            ? {
+                  differentiation:
+                      typeof source['differentiation'] === 'string'
+                          ? source['differentiation']
+                          : '',
+              }
+            : {}),
         objectives: strings(source['objectives']),
         materials: strings(source['materials']),
         activities,
         assessment:
-            typeof source['assessment'] === 'string' ? source['assessment'] : '',
+            typeof source['assessment'] === 'string'
+                ? source['assessment']
+                : '',
     };
 }

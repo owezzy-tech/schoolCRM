@@ -41,6 +41,8 @@ type Storer interface {
 	Version(ctx context.Context, planID uuid.UUID, number int) (Version, error)
 	Versions(ctx context.Context, planID, viewerID uuid.UUID) ([]Version, error)
 	Audit(context.Context, auditbus.Audit) error
+	Creation(context.Context, uuid.UUID, uuid.UUID) (Creation, error)
+	RecordCreation(context.Context, Creation) error
 }
 
 type Business struct{ store Storer }
@@ -65,14 +67,9 @@ func (b *Business) Create(ctx context.Context, actorID, schoolID, departmentID u
 		if err := authorise(ctx, s, actorID, plan.SchoolID, plan.DepartmentID, schoolbus.Teach); err != nil {
 			return err
 		}
-		if err := s.CreatePlan(ctx, plan); err != nil {
-			return err
-		}
-		version := newVersion(plan, draft, now)
-		if err := s.CreateVersion(ctx, version); err != nil {
-			return err
-		}
-		return record(ctx, s, actorID, "lesson_version_created", version, now)
+		var createErr error
+		plan, createErr = createPlan(ctx, s, plan, draft, uuid.Nil, 0, now)
+		return createErr
 	})
 	return plan, err
 }
@@ -293,6 +290,9 @@ func validateDraft(draft Revision) (Revision, error) {
 		return Revision{}, fmt.Errorf("%w: content must be a JSON object of at most 256 KiB", ErrInvalid)
 	}
 	draft.Content = content
+	if err := validateStructuredContent(content); err != nil {
+		return Revision{}, err
+	}
 	draft.ChangeSummary = strings.TrimSpace(draft.ChangeSummary)
 	if !utf8.ValidString(draft.ChangeSummary) || utf8.RuneCountInString(draft.ChangeSummary) > 1000 {
 		return Revision{}, fmt.Errorf("%w: change summary must be at most 1000 characters", ErrInvalid)

@@ -76,6 +76,15 @@ type Revision struct {
 	Title         string
 	Content       json.RawMessage
 	ChangeSummary string
+	RequestID     uuid.UUID
+}
+
+// Creation retains the original response for one actor-owned creation command.
+type Creation struct {
+	ActorID   uuid.UUID
+	RequestID uuid.UUID
+	InputHash string
+	Result    Plan
 }
 
 // Authority is the actor's current standing in one department, read inside the

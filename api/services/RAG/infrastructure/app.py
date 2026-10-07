@@ -15,6 +15,7 @@ from adapters.controllers.curriculum_controller import (
 )
 from adapters.controllers.health_controller import router as health_router
 from adapters.controllers.ingest_controller import router as ingest_router
+from adapters.controllers.lesson_generation_controller import router as lesson_generation_router
 from adapters.controllers.query_controller import router as query_router
 from domain.entities.curriculum import CurriculumError
 from infrastructure.lifespan import lifespan
@@ -32,6 +33,7 @@ def build_app() -> FastAPI:
     app.include_router(ingest_router)
     app.include_router(query_router)
     app.include_router(curriculum_router)
+    app.include_router(lesson_generation_router)
     app.add_exception_handler(CurriculumError, curriculum_error_handler)
     app.add_exception_handler(psycopg.Error, curriculum_storage_error_handler)
     app.add_exception_handler(HTTPException, curriculum_http_error_handler)

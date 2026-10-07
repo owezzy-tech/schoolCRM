@@ -210,7 +210,7 @@ async def curriculum_storage_error_handler(request: Request, exc: psycopg.Error)
 
 
 async def curriculum_http_error_handler(request: Request, exc: HTTPException) -> Response:
-    if request.url.path.startswith("/v1/rag/curriculum/"):
+    if request.url.path.startswith(("/v1/rag/curriculum/", "/v1/rag/lessons/")):
         return await curriculum_error_handler(
             request, CurriculumError(exc.status_code, str(exc.detail))
         )
@@ -220,7 +220,7 @@ async def curriculum_http_error_handler(request: Request, exc: HTTPException) ->
 async def curriculum_validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> Response:
-    if request.url.path.startswith("/v1/rag/curriculum/"):
+    if request.url.path.startswith(("/v1/rag/curriculum/", "/v1/rag/lessons/")):
         return await curriculum_error_handler(
             request, CurriculumError(422, "Invalid curriculum request")
         )

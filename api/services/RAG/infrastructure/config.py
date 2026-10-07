@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,9 @@ class Settings(BaseSettings):
     curriculum_embedding_provider: str = "ollama"
     cloudflare_account_id: str | None = None
     cloudflare_api_token: str | None = None
+    deepseek_api_key: SecretStr | None = Field(
+        default=None, validation_alias=AliasChoices("RAG_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY")
+    )
     admissions_answer_provider: str = "stub"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "nemotron-3-super:cloud"
@@ -34,6 +38,7 @@ class Settings(BaseSettings):
         env_file=(".env", "api/services/RAG/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
 
