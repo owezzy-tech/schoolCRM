@@ -20,6 +20,10 @@ class RailwayContractTests(unittest.TestCase):
                     "/" if name == "web-admin" else "/v1/readiness",
                 )
                 self.assertEqual(config["deploy"]["restartPolicyMaxRetries"], 5)
+                self.assertNotIn(
+                    "--mount=type=cache",
+                    (ROOT / config["build"]["dockerfilePath"]).read_text(),
+                )
 
     def test_upload_excludes_secrets_and_local_state(self):
         patterns = (ROOT / ".railwayignore").read_text().splitlines()

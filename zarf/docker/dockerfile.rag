@@ -7,8 +7,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 WORKDIR /service/api/services/RAG
 COPY api/services/RAG /service/api/services/RAG
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable
+RUN uv sync --frozen --no-dev --no-editable
 
 
 # Run the Python service in slim runtime.

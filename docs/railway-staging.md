@@ -6,6 +6,8 @@ Deployment scope is Beads epic `schoolCRM-kce`: Railway staging, a new empty dat
 
 Keep the repository root as the build context. Set each service's config-file path to the corresponding file under `zarf/railway`. Build from a reviewed commit on `develop`, not the dirty architecture checkout. Railway terminates public HTTPS; only `web-admin` needs a public domain. Auth, business APIs, RAG and PostgreSQL use private service networking. Do not publish Go debug or gRPC ports.
 
+The deployment Dockerfiles use ordinary layer caching instead of BuildKit cache mounts. Railway requires service-specific cache IDs, so retaining the old mounts would reject builds before compilation. Avoid hardcoding service IDs into portable image definitions.
+
 | Service | Config file | Internal port | Required wiring |
 | --- | --- | --- | --- |
 | auth | `zarf/railway/auth.toml` | 6000 | Database variables, fresh signing key and issuer |

@@ -8,8 +8,7 @@ ARG BUILD_TAG
 # source changes.
 COPY go.mod go.sum /service/
 WORKDIR /service
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 # Copy the source code into the container.
 COPY . /service
@@ -17,9 +16,7 @@ COPY . /service
 # Build the service binary. We are doing this last since this will be different
 # every time we run through this process.
 WORKDIR /service/api/services/auth
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
 # Run the Go Binary in Alpine.

@@ -9,23 +9,18 @@ ARG BUILD_TAG
 # again in future builds.
 COPY go.mod go.sum /service/
 WORKDIR /service
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 # Copy the source code into the container.
 COPY . /service
 
 # Build the admin binary.
 WORKDIR /service/api/tooling/admin
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 # Build the service binary.
 WORKDIR /service/api/services/schoolcrm
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
 # Run the Go Binary in Alpine.
