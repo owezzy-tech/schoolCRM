@@ -5,3 +5,9 @@
 
 @use 'apps/calendar';
 @use 'vendors/filepond';
+
+@media print {
+    body:has(app-lesson-export) ngx-ui-loader {
+        display: none !important;
+    }
+}

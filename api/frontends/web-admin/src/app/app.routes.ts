@@ -14,6 +14,16 @@ export const appRoutes: Route[] = [
     // Post sign-in redirect → Dashboard
     { path: 'signed-in-redirect', pathMatch: 'full', redirectTo: 'dashboard' },
 
+    // Authenticated document view without dashboard chrome.
+    {
+        path: 'lesson-export/:planId/:version',
+        canActivate: [AuthGuard],
+        title: 'Export lesson version',
+        loadComponent: () =>
+            import('app/modules/admin/lessons/export/lesson-export.component')
+                .then((m) => m.LessonExportComponent),
+    },
+
     // Auth routes for guests
     {
         path: '',

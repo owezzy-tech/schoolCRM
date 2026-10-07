@@ -1,6 +1,14 @@
 # Lesson publishing API
 
-Bead `schoolCRM-o58.4` enforces the lesson approval and publication workflow defined in the [School AI ARD](school-ai-ard.md). It builds on the department capabilities from the [school access API](school-access-api.md). Lesson generation, the final lesson schema, reuse and PDF export belong to later beads.
+## Selected-version PDF export
+
+The Angular plan and version pages offer PDF export. The authenticated document route is `/lesson-export/{planID}/{version}`. It loads the exact permitted snapshot from the existing plan and version APIs, including historical versions, and displays its review and publication status. Unpublished versions are explicitly labelled. All stored content fields, including curriculum references and fields outside the editor's current schema, are included.
+
+Choose **Save as PDF**, then choose the same destination in your browser's print dialog. The control refreshes Go-authorised reads before printing. A revoked permission or a version omitted by the API clears the printable document and returns an error. Export does not change lesson content, approvals or publication. Existing author-only draft visibility applies to direct export URLs.
+
+The document uses A4 print styling, excludes dashboard controls and preserves selectable text. PDF creation uses the browser's print facility. It does not add a backend renderer or a server download endpoint. Production recovery and performance validation remain under `schoolCRM-o58.8`; this export feature is tracked separately as `schoolCRM-o58.8.1`.
+
+Bead `schoolCRM-o58.4` enforces the lesson approval and publication workflow defined in the [School AI ARD](school-ai-ard.md). It builds on the department capabilities from the [school access API](school-access-api.md). Lesson generation, the final lesson schema and reuse remain in their own beads. Selected-version PDF export is described above.
 
 ## Workflow
 
