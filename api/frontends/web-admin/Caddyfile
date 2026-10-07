@@ -2,7 +2,7 @@
     auto_https off
 }
 
-:80 {
+:{$PORT:80} {
     root * /srv
     encode gzip zstd
 
@@ -14,6 +14,10 @@
 
     handle /v1/auth/* {
         reverse_proxy {$AUTH_API_UPSTREAM:auth:6000}
+    }
+
+    handle /v1/rag/* {
+        reverse_proxy {$RAG_API_UPSTREAM:rag:7000}
     }
 
     handle /v1/* {

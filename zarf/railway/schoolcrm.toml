@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "zarf/docker/dockerfile.schoolcrm"
+
+[deploy]
+healthcheckPath = "/v1/readiness"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

@@ -33,7 +33,8 @@ FROM alpine:3.23
 ARG BUILD_DATE
 ARG BUILD_TAG
 RUN addgroup -g 1000 -S schoolcrm && \
-    adduser -u 1000 -h /service -G schoolcrm -S schoolcrm
+    adduser -u 1000 -h /service -G schoolcrm -S schoolcrm && \
+    apk add --no-cache ca-certificates
 COPY --from=build_schoolcrm --chown=schoolcrm:schoolcrm /service/api/tooling/admin/admin /service/admin
 COPY --from=build_schoolcrm --chown=schoolcrm:schoolcrm /service/api/services/schoolcrm/schoolcrm /service/schoolcrm
 WORKDIR /service
