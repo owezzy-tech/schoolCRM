@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     lessonActions,
+    lessonCitations,
     LessonPlan,
     LessonVersion,
     toLessonContent,
@@ -44,34 +45,45 @@ function version(overrides: Partial<LessonVersion>): LessonVersion {
 
 describe('lessonActions', () => {
     it('lets the teaching author edit and submit a draft, but not publish it', () => {
-        expect(lessonActions(plan, version({}), 'grace', ['teach']).actions).toEqual([
-            'edit',
-            'submit',
-        ]);
+        expect(
+            lessonActions(plan, version({}), 'grace', ['teach']).actions
+        ).toEqual(['edit', 'submit']);
     });
 
     it('offers publication only for an approved version', () => {
         expect(
-            lessonActions(plan, version({ status: 'approved' }), 'grace', ['teach']).actions
+            lessonActions(plan, version({ status: 'approved' }), 'grace', [
+                'teach',
+            ]).actions
         ).toEqual(['edit', 'publish']);
     });
 
     it('offers no workflow actions to a teacher who is not the author', () => {
-        expect(lessonActions(plan, version({}), 'peter', ['teach']).actions).toEqual([]);
+        expect(
+            lessonActions(plan, version({}), 'peter', ['teach']).actions
+        ).toEqual([]);
     });
 
     it('offers HOD review to a different reviewer', () => {
-        const result = lessonActions(plan, version({ status: 'hod_review' }), 'peter', [
-            'review_lessons',
-        ]);
-        expect(result).toEqual({ actions: ['review'], separationOfDuties: false });
+        const result = lessonActions(
+            plan,
+            version({ status: 'hod_review' }),
+            'peter',
+            ['review_lessons']
+        );
+        expect(result).toEqual({
+            actions: ['review'],
+            separationOfDuties: false,
+        });
     });
 
     it('blocks the author from reviewing their own version', () => {
-        const result = lessonActions(plan, version({ status: 'hod_review' }), 'grace', [
-            'teach',
-            'review_lessons',
-        ]);
+        const result = lessonActions(
+            plan,
+            version({ status: 'hod_review' }),
+            'grace',
+            ['teach', 'review_lessons']
+        );
         expect(result.actions).not.toContain('review');
         expect(result.separationOfDuties).toBe(true);
     });
@@ -99,12 +111,37 @@ describe('lessonActions', () => {
 });
 
 describe('toLessonContent', () => {
+    it('retains the approved prerequisite and differentiation fields', () => {
+        const parsed = toLessonContent({
+            prerequisites: ['Identify objects'],
+            differentiation: 'Use pictures',
+        });
+        expect(parsed.prerequisites).toEqual(['Identify objects']);
+        expect(parsed.differentiation).toBe('Use pictures');
+    });
+    it('does not expose unsafe links as curriculum citations', () => {
+        const citation = {
+            sourceID: 'source-1',
+            title: 'English',
+            page: 17,
+            revision: '2024',
+            sourceURL: 'https://kicd.ac.ke/english.pdf',
+        };
+        expect(lessonCitations({ citations: [citation] })).toEqual([citation]);
+        expect(
+            lessonCitations({
+                citations: [{ ...citation, sourceURL: 'javascript:alert(1)' }],
+            })
+        ).toEqual([]);
+    });
     it('reads the structured shape', () => {
         expect(
             toLessonContent({
                 objectives: ['Define force'],
                 materials: ['Springs'],
-                activities: [{ minutes: 10, title: 'Starter', detail: 'Recall' }],
+                activities: [
+                    { minutes: 10, title: 'Starter', detail: 'Recall' },
+                ],
                 assessment: 'Exit ticket',
             })
         ).toEqual({
@@ -116,7 +153,9 @@ describe('toLessonContent', () => {
     });
 
     it('renders unknown shapes as empty sections', () => {
-        expect(toLessonContent({ objectives: 'not a list', activities: [null] })).toEqual({
+        expect(
+            toLessonContent({ objectives: 'not a list', activities: [null] })
+        ).toEqual({
             objectives: [],
             materials: [],
             activities: [],

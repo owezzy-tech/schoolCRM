@@ -57,7 +57,7 @@ flowchart LR
 | PostgreSQL and controlled file storage | Business records, source revisions, original files, retrieval metadata and durable runs | Separate business records from Python indexes/checkpoints; protect credentials and private files |
 | Model provider | Grounded text and schema-validated draft generation | Model output cannot grant permissions, approve writes or establish official qualification rules |
 
-Use the existing Python service rather than creating a service per agent. Reuse existing admission graph adapters where suitable; a new graph database is not required solely for curriculum search. PostgreSQL with pgvector is the selected curriculum retrieval direction, subject to extension provisioning and persistence tests. Confirmed on 3 October 2026: BGE embeddings use local Ollama in development and Cloudflare Workers AI in production; DeepSeek generates text. BGE-M3 is the multilingual variant selected for the acquisition record, using `bge-m3` and `@cf/baai/bge-m3`. Pin model identity and validate dimensions and provider compatibility before indexing. The exact DeepSeek model/endpoint and permitted student-data handling remain open. [Curriculum acquisition](CurriculumData/README.md) records downloaded sources and access failures.
+Use the existing Python service rather than creating a service per agent. Reuse existing admission graph adapters where suitable; a new graph database is not required solely for curriculum search. PostgreSQL with pgvector is the selected curriculum retrieval direction, subject to extension provisioning and persistence tests. Confirmed on 3 October 2026: BGE embeddings use local Ollama in development and Cloudflare Workers AI in production; DeepSeek generates text. BGE-M3 is the multilingual variant selected for the acquisition record, using `bge-m3` and `@cf/baai/bge-m3`. Pin model identity and validate dimensions and provider compatibility before indexing. Confirmed 7 October 2026: DeepSeek-V4.1-Flash via API key in ignored .env, and model processing of student data is permitted within authorised scopes. [Curriculum acquisition](CurriculumData/README.md) records downloaded sources and access failures.
 
 Temporal, Asynq, Casbin, SQLC and Maroto are candidates only. Add a dependency when existing components cannot meet a demonstrated requirement. Retain complete lesson snapshots; there is no current requirement for delta storage.
 
@@ -109,7 +109,7 @@ The [curriculum retrieval API](curriculum-retrieval-api.md) defines the implemen
 
 ### `schoolCRM-o58.3`: Structured lesson generation and versioned storage
 
-Retrieve approved curriculum evidence and validate generated output against an agreed lesson schema. The proposed schema includes objectives, prerequisites, materials, timed activities, differentiation, assessment and citations. Curriculum-specific required fields and duration constraints need confirmation before the schema becomes final.
+Retrieve approved curriculum evidence and validate generated output against the user-approved schema. Confirmed 7 October 2026: objectives, prerequisites, materials, timed activities, differentiation, assessment and citations; activity times total requested duration. DeepSeek-V4.1-Flash via API key is selected, using the official identifier `deepseek-flash`. The [generation API](lesson-generation-api.md) defines snapshot, checkpoint, retry and citation contracts.
 
 Go stores plans and complete immutable versions with school/department/class ownership, framework/revision, source references, model metadata, author and change summary. Support human editing, retrieval, reuse and duplication. Creating a reused plan preserves provenance but does not copy publication approval.
 
@@ -158,7 +158,7 @@ Acceptance: independent subject/grade fixtures match the deterministic breakdown
 
 Go owns classes/sections, enrolments, teacher assignments, rooms and sessions. Support timetable creation, rescheduling and cancellation with timezones and exceptions. Preview the affected records and obtain required approval. Recheck teacher, room and student-group conflicts transactionally when committing, including simultaneous requests.
 
-Record/import attendance and assessment results through authorised APIs. Go computes class/term/date aggregates; AI narratives may describe returned aggregates but cannot invent totals. Reports show the period, source data and access scope. CSV/PDF outputs preserve these checks. Clarify the user's term "cut" and record/import rules before defining that report.
+Record/import attendance and assessment results through authorised APIs. Go computes class/term/date aggregates; AI narratives may describe returned aggregates but cannot invent totals. Reports show the period, source data and access scope. CSV/PDF outputs preserve these checks. Confirmed 7 October 2026: the requested reports include CAT results, interpreted as continuous assessment tests. Dean assigns teachers to classes; assignments bind class access alongside school/department membership.
 
 Integrate Google Calendar using user OAuth consent. Support availability, recurrence, attendees, timezones and create/update/cancel within granted access. Store internal/provider IDs, command keys and pending/failed/succeeded sync state. An outbox worker retries safely and reconciles uncertain results. Recheck provider quotas, pricing and account licensing before deployment. Nextcloud/CalDAV remains an alternative, not a second v1 provider.
 
@@ -187,11 +187,11 @@ The release needs real student, teacher, HOD, dean and admin browser journeys ag
 | Decision or input | Affected work | Completion condition |
 | --- | --- | --- |
 | Authorised curriculum files and revision metadata | `.2`, generation in `.3` | Cambridge IGCSE PDFs acquired; KICD downloads unavailable. Review revisions and confirm IGCSE scope; obtain authorised KICD originals |
-| Final lesson schema and duration rules | `.3`, `.1`, `.8` | Confirm fields and validation per curriculum |
-| Class assignment administration | `.1`, `.7` | Confirm how teaching assignments bind class access; school management delegation and three-person lesson approval are confirmed |
-| Model setup and permitted student-data handling | `.2`, `.3`, `.6`, assistant runtime | Ollama BGE for development, Cloudflare Workers AI BGE for production and DeepSeek confirmed. Pin model IDs/digests, credentials and index metadata; confirm private-data policy |
+| Final lesson schema and duration rules | `.3`, `.1`, `.8` | Confirmed 7 October 2026: objectives, prerequisites, materials, timed activities, differentiation, assessment and citations; activity times total requested duration |
+| Class assignment administration | `.1`, `.7` | Confirmed 7 October 2026: dean assigns teachers to classes; enforce assigned class access alongside school/department membership |
+| Model setup and permitted student-data handling | `.2`, `.3`, `.6`, assistant runtime | Ollama BGE for development and Workers AI BGE for production. DeepSeek-V4.1-Flash via API key in ignored .env; user permits student-data processing. Preserve access isolation and keep credentials out of prompts, checkpoints and logs |
 | Admissions authority, applicable cycles, programme mappings and cluster rules | `.5`, `.6` | Reviewed evidence supports deterministic evaluation |
-| Report semantics, including "cut", and attendance/exam inputs | `.7` | Agree definitions, periods and record/import rules |
+| Report semantics and attendance/exam inputs | `.7` | Confirmed 7 October 2026: user meant CAT results, interpreted as continuous assessment tests, from authorised class/term assessment records |
 | Retention/deletion, recovery and measurable service targets | `.8` and destructive operations | Define policy, workload and restore objectives |
 
 V1 excludes voice, arbitrary SQL/code tools, autonomous privilege escalation, automatic curriculum equivalence, multiple calendar/model providers and automatic whole-school timetable optimisation. Ordinary timetable changes, appointments and the confirmed approval lifecycle remain in scope.

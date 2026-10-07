@@ -8,8 +8,8 @@ import {
 import {
     FormArray,
     FormBuilder,
-    FormGroup,
     FormControl,
+    FormGroup,
     ReactiveFormsModule,
     Validators,
 } from '@angular/forms';
@@ -18,10 +18,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { jsonApiErrorMessage, JsonApiErrorResponse } from 'app/core/api/json-api';
+import {
+    jsonApiErrorMessage,
+    JsonApiErrorResponse,
+} from 'app/core/api/json-api';
 import { LessonsService } from 'app/core/lessons/lessons.service';
 import {
     LessonContent,
+    lessonContentRecord,
     LessonDraft,
     LessonPlan,
     toLessonContent,
@@ -56,7 +60,8 @@ export class LessonEditorComponent {
 
     readonly planID = this.route.snapshot.paramMap.get('planId');
     private readonly schoolID = this.route.snapshot.queryParamMap.get('school');
-    private readonly departmentID = this.route.snapshot.queryParamMap.get('department');
+    private readonly departmentID =
+        this.route.snapshot.queryParamMap.get('department');
 
     /** The plan being revised; null when creating. */
     readonly plan = signal<LessonPlan | null>(null);
@@ -64,6 +69,7 @@ export class LessonEditorComponent {
     readonly saving = signal(false);
     readonly conflict = signal(false);
     readonly errorMessage = signal<string | null>(null);
+    private snapshotContent: Record<string, unknown> = {};
 
     readonly form = this.fb.group({
         title: ['', [Validators.required, Validators.maxLength(200)]],
@@ -71,6 +77,8 @@ export class LessonEditorComponent {
         materials: this.fb.array<FormControl<string>>([]),
         activities: this.fb.array<ActivityForm>([]),
         assessment: [''],
+        prerequisites: [''],
+        differentiation: [''],
         changeSummary: ['', Validators.maxLength(1000)],
     });
 
@@ -78,7 +86,12 @@ export class LessonEditorComponent {
         if (this.planID) {
             this.load(this.planID);
         } else {
-            this.setContent({ objectives: [''], materials: [''], activities: [], assessment: '' });
+            this.setContent({
+                objectives: [''],
+                materials: [''],
+                activities: [],
+                assessment: '',
+            });
             this.addActivity();
         }
     }
@@ -131,7 +144,9 @@ export class LessonEditorComponent {
         this.errorMessage.set(null);
 
         const savedPlanID: Observable<string> = plan
-            ? this.lessons.revise(plan.id, plan.currentVersion, draft).pipe(map((v) => v.planID))
+            ? this.lessons
+                  .revise(plan.id, plan.currentVersion, draft)
+                  .pipe(map((v) => v.planID))
             : this.lessons
                   .create(this.schoolID ?? '', this.departmentID ?? '', draft)
                   .pipe(map((created) => created.id));
@@ -147,7 +162,10 @@ export class LessonEditorComponent {
                     return;
                 }
                 this.errorMessage.set(
-                    jsonApiErrorMessage(error as JsonApiErrorResponse, 'Unable to save the lesson plan.')
+                    jsonApiErrorMessage(
+                        error as JsonApiErrorResponse,
+                        'Unable to save the lesson plan.'
+                    )
                 );
             },
         });
@@ -155,11 +173,28 @@ export class LessonEditorComponent {
 
     toDraft(): LessonDraft {
         const value = this.form.getRawValue();
-        const filled = (items: string[]) => items.map((i) => i.trim()).filter(Boolean);
+        const filled = (items: string[]) =>
+            items.map((i) => i.trim()).filter(Boolean);
         return {
             title: value.title.trim(),
             changeSummary: value.changeSummary.trim(),
             content: {
+                ...this.snapshotContent,
+                prerequisites: value.prerequisites
+                    .split('\n')
+                    .map((i) => i.trim())
+                    .filter(Boolean),
+                differentiation: value.differentiation.trim(),
+                ...(this.snapshotContent['schemaVersion'] === 1
+                    ? {
+                          durationMinutes: value.activities
+                              .filter((a) => a.title.trim())
+                              .reduce(
+                                  (total, a) => total + Number(a.minutes),
+                                  0
+                              ),
+                      }
+                    : {}),
                 objectives: filled(value.objectives),
                 materials: filled(value.materials),
                 activities: value.activities
@@ -177,9 +212,15 @@ export class LessonEditorComponent {
     private load(planID: string): void {
         this.loading.set(true);
         this.conflict.set(false);
-        forkJoin([this.lessons.plan(planID), this.lessons.versions(planID)]).subscribe({
+        forkJoin([
+            this.lessons.plan(planID),
+            this.lessons.versions(planID),
+        ]).subscribe({
             next: ([plan, versions]) => {
-                const current = versions.find((v) => v.version === plan.currentVersion);
+                const current = versions.find(
+                    (v) => v.version === plan.currentVersion
+                );
+                this.snapshotContent = lessonContentRecord(current?.content);
                 this.plan.set(plan);
                 this.form.controls.title.setValue(current?.title ?? plan.title);
                 this.form.controls.changeSummary.setValue('');
@@ -189,22 +230,41 @@ export class LessonEditorComponent {
             error: (error: HttpErrorResponse) => {
                 this.loading.set(false);
                 this.errorMessage.set(
-                    jsonApiErrorMessage(error as JsonApiErrorResponse, 'Unable to load the lesson plan.')
+                    jsonApiErrorMessage(
+                        error as JsonApiErrorResponse,
+                        'Unable to load the lesson plan.'
+                    )
                 );
             },
         });
     }
 
     private setContent(content: LessonContent): void {
-        const strings = (items: string[]) => items.map((item) => this.fb.control(item));
-        this.form.setControl('objectives', this.fb.array(strings(content.objectives)));
-        this.form.setControl('materials', this.fb.array(strings(content.materials)));
+        this.form.controls.prerequisites.setValue(
+            (content.prerequisites ?? []).join('\n')
+        );
+        this.form.controls.differentiation.setValue(
+            content.differentiation ?? ''
+        );
+        const strings = (items: string[]) =>
+            items.map((item) => this.fb.control(item));
+        this.form.setControl(
+            'objectives',
+            this.fb.array(strings(content.objectives))
+        );
+        this.form.setControl(
+            'materials',
+            this.fb.array(strings(content.materials))
+        );
         this.form.setControl(
             'activities',
             this.fb.array(
                 content.activities.map((activity) =>
                     this.fb.group({
-                        minutes: [activity.minutes, [Validators.required, Validators.min(1)]],
+                        minutes: [
+                            activity.minutes,
+                            [Validators.required, Validators.min(1)],
+                        ],
                         title: [activity.title, Validators.required],
                         detail: [activity.detail],
                     })

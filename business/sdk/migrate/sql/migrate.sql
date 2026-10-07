@@ -1207,3 +1207,13 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER lesson_plan_versions_immutable BEFORE UPDATE ON lesson_plan_versions
     FOR EACH ROW EXECUTE FUNCTION lesson_plan_versions_immutable();
+
+-- Version: 1.32
+-- Description: Actor-owned idempotent lesson creation and reuse receipts
+CREATE TABLE lesson_creation_requests (
+    actor_id UUID NOT NULL REFERENCES users(user_id),
+    request_id UUID NOT NULL CHECK (request_id <> '00000000-0000-0000-0000-000000000000'),
+    input_hash TEXT NOT NULL CHECK (length(input_hash)=64),
+    result JSONB NOT NULL CHECK (jsonb_typeof(result)='object'),
+    PRIMARY KEY (actor_id,request_id)
+);

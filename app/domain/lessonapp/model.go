@@ -3,6 +3,7 @@ package lessonapp
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 
 	"github.com/owezzy/schoolCRM/business/domain/lessonbus"
 )
@@ -12,6 +13,7 @@ type NewPlanRequest struct {
 	Title         string          `json:"title"`
 	Content       json.RawMessage `json:"content"`
 	ChangeSummary string          `json:"changeSummary"`
+	RequestID     uuid.UUID       `json:"requestID,omitempty"`
 }
 
 // RevisionRequest creates a new version from the plan's current BaseVersion.
@@ -21,7 +23,13 @@ type RevisionRequest struct {
 }
 
 func (r NewPlanRequest) toBus() lessonbus.Revision {
-	return lessonbus.Revision{Title: r.Title, Content: r.Content, ChangeSummary: r.ChangeSummary}
+	return lessonbus.Revision{Title: r.Title, Content: r.Content, ChangeSummary: r.ChangeSummary, RequestID: r.RequestID}
+}
+
+type ReuseRequest struct {
+	Version   int       `json:"version"`
+	Title     string    `json:"title"`
+	RequestID uuid.UUID `json:"requestID"`
 }
 
 // DecisionRequest records an HOD review or dean approval.

@@ -7,9 +7,11 @@ from adapters.application_ownership.stub_application_ownership_checker import (
     StubApplicationOwnershipChecker,
 )
 from adapters.audit.logging_query_audit_adapter import LoggingQueryAuditAdapter
+from adapters.clients.lesson_client import GoLessonClient
 from adapters.embeddings.bge_m3 import BGEM3Embeddings
 from adapters.embeddings.noop_embedding_provider import NoopEmbeddingProvider
 from adapters.graph.in_memory_graph_retriever import InMemoryGraphRetriever
+from adapters.llm.deepseek_lesson_generator import DeepSeekLessonGenerator
 from adapters.llm.echo_llm_provider import EchoLLMProvider
 from adapters.llm.graph_context_answer_provider import GraphContextAnswerProvider
 from adapters.llm.ollama_answer_provider import OllamaAnswerProvider
@@ -22,6 +24,7 @@ from adapters.vector_stores.in_memory_vector_store import InMemoryVectorStore
 from domain.ports.application_ownership import IApplicationOwnershipChecker
 from infrastructure.auth_client import AuthServiceClient
 from infrastructure.config import Settings
+from infrastructure.lesson_workflow import LessonWorkflow
 from infrastructure.school_access import SchoolAccessClient
 from infrastructure.tracing import trace_container
 from use_cases.admissions_query import AdmissionsQueryUseCase
@@ -40,6 +43,7 @@ class Container:
     delete_document: DeleteDocumentUseCase
     auth_service: AuthServiceClient
     curriculum: CurriculumService | None = None
+    lesson_workflow: LessonWorkflow | None = None
     neo4j_driver: Any | None = None
     ollama_answer_provider: OllamaAnswerProvider | None = None
 
@@ -47,6 +51,8 @@ class Container:
         await self.auth_service.close()
         if self.curriculum is not None:
             await self.curriculum.close()
+        if self.lesson_workflow is not None:
+            await self.lesson_workflow.close()
         if self.neo4j_driver is not None:
             await self.neo4j_driver.close()
         if self.ollama_answer_provider is not None:
@@ -130,7 +136,7 @@ def build_container(settings: Settings) -> Container:
         document_repository=document_repository,
     )
 
-    return Container(
+    container = Container(
         ingest_document=ingest_document,
         query_documents=query_documents,
         admissions_query=admissions_query,
@@ -160,6 +166,14 @@ def build_container(settings: Settings) -> Container:
         neo4j_driver=neo4j_driver,
         ollama_answer_provider=ollama_answer_provider,
     )
+    if container.curriculum is not None:
+        container.lesson_workflow = LessonWorkflow(
+            settings.curriculum_database_url,
+            container.curriculum,
+            DeepSeekLessonGenerator(settings.deepseek_api_key),
+            GoLessonClient(settings.school_service_url),
+        )
+    return container
 
 
 def get_ingest_document_use_case(request: Request) -> IngestDocumentUseCase:

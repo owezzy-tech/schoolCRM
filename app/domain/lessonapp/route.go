@@ -24,6 +24,7 @@ func Routes(app *web.App, cfg Config) {
 	app.HandlerFunc(http.MethodGet, "v1", department, api.plans, authenticate)
 	app.HandlerFunc(http.MethodPost, "v1", department, api.create, authenticate)
 	app.HandlerFunc(http.MethodGet, "v1", "/lessons/{plan_id}", api.plan, authenticate)
+	app.HandlerFunc(http.MethodPost, "v1", "/lessons/{plan_id}/reuse", api.reuse, authenticate)
 	app.HandlerFunc(http.MethodGet, "v1", "/lessons/{plan_id}/versions", api.versions, authenticate)
 	app.HandlerFunc(http.MethodPost, "v1", "/lessons/{plan_id}/versions", api.revise, authenticate)
 	app.HandlerFunc(http.MethodPost, "v1", version+"/submit", api.submit, authenticate)
