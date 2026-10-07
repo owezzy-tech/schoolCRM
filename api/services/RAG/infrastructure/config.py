@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     auth_service_url: str = "http://auth-service:6000"
     auth_request_timeout_seconds: float = 5.0
     file_storage_dir: str = "./var/files"
+    school_service_url: str = "http://schoolcrm:3000"
+    curriculum_database_url: str | None = None
+    curriculum_embedding_provider: str = "ollama"
+    cloudflare_account_id: str | None = None
+    cloudflare_api_token: str | None = None
     admissions_answer_provider: str = "stub"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "nemotron-3-super:cloud"

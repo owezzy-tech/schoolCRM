@@ -105,6 +105,8 @@ Use LlamaIndex adapters and a durable scoped index. Enforce school/access/framew
 
 Acceptance: authorised queries retrieve known curriculum evidence with correct citations; cross-school, wrong-framework and withdrawn content never reaches the model; unsupported questions abstain; restart preserves approved sources and indexes. Actual authorised curriculum files and embedding/provider decisions are prerequisites for end-to-end validation.
 
+The [curriculum retrieval API](curriculum-retrieval-api.md) defines the implemented PDF upload, review, withdrawal and pgvector contracts. It records the tested Grade 1 English source, exact scope filters and separate Ollama/Workers embedding identities. Wider original acquisition and live production-provider validation remain outstanding.
+
 ### `schoolCRM-o58.3`: Structured lesson generation and versioned storage
 
 Retrieve approved curriculum evidence and validate generated output against an agreed lesson schema. The proposed schema includes objectives, prerequisites, materials, timed activities, differentiation, assessment and citations. Curriculum-specific required fields and duration constraints need confirmation before the schema becomes final.

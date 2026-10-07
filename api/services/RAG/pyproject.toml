@@ -12,10 +12,13 @@ dependencies = [
   "fastapi>=0.115.0,<1.0.0",
   "httpx>=0.28.0,<1.0.0",
   "langsmith>=0.1.0,<1.0.0",
+  "llama-index-core>=0.14,<0.15",
   "neo4j>=5.17.0,<7.0.0",
+  "psycopg[binary]>=3.2,<4",
   "pydantic-settings>=2.6.0,<3.0.0",
+  "pypdf>=6,<7",
   "python-multipart>=0.0.12,<1.0.0",
-  "uvicorn[standard]>=0.32.0,<1.0.0"
+  "uvicorn[standard]>=0.32.0,<1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +30,9 @@ dev = [
 
 [tool.setuptools]
 py-modules = ["main"]
+
+[tool.setuptools.package-data]
+"adapters.repositories" = ["*.sql"]
 
 [tool.setuptools.packages.find]
 include = ["domain*", "use_cases*", "adapters*", "infrastructure*"]
