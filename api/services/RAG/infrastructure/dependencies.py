@@ -7,20 +7,25 @@ from adapters.application_ownership.stub_application_ownership_checker import (
     StubApplicationOwnershipChecker,
 )
 from adapters.audit.logging_query_audit_adapter import LoggingQueryAuditAdapter
+from adapters.embeddings.bge_m3 import BGEM3Embeddings
 from adapters.embeddings.noop_embedding_provider import NoopEmbeddingProvider
 from adapters.graph.in_memory_graph_retriever import InMemoryGraphRetriever
 from adapters.llm.echo_llm_provider import EchoLLMProvider
 from adapters.llm.graph_context_answer_provider import GraphContextAnswerProvider
 from adapters.llm.ollama_answer_provider import OllamaAnswerProvider
+from adapters.parsers.curriculum_pdf import parse_curriculum_pdf
 from adapters.parsers.noop_document_parser import NoopDocumentParser
+from adapters.repositories.curriculum_postgres import CurriculumPostgres
 from adapters.repositories.in_memory_document_repository import InMemoryDocumentRepository
 from adapters.storage.local_file_store import LocalFileStore
 from adapters.vector_stores.in_memory_vector_store import InMemoryVectorStore
 from domain.ports.application_ownership import IApplicationOwnershipChecker
 from infrastructure.auth_client import AuthServiceClient
 from infrastructure.config import Settings
+from infrastructure.school_access import SchoolAccessClient
 from infrastructure.tracing import trace_container
 from use_cases.admissions_query import AdmissionsQueryUseCase
+from use_cases.curriculum import CurriculumService
 from use_cases.delete_document import DeleteDocumentUseCase
 from use_cases.ingest_document import IngestDocumentUseCase
 from use_cases.query_documents import QueryDocumentsUseCase
@@ -34,11 +39,14 @@ class Container:
     application_ownership_checker: IApplicationOwnershipChecker
     delete_document: DeleteDocumentUseCase
     auth_service: AuthServiceClient
+    curriculum: CurriculumService | None = None
     neo4j_driver: Any | None = None
     ollama_answer_provider: OllamaAnswerProvider | None = None
 
     async def close(self) -> None:
         await self.auth_service.close()
+        if self.curriculum is not None:
+            await self.curriculum.close()
         if self.neo4j_driver is not None:
             await self.neo4j_driver.close()
         if self.ollama_answer_provider is not None:
@@ -136,6 +144,19 @@ def build_container(settings: Settings) -> Container:
             base_url=settings.auth_service_url,
             timeout_seconds=settings.auth_request_timeout_seconds,
         ),
+        curriculum=CurriculumService(
+            CurriculumPostgres(settings.curriculum_database_url),
+            BGEM3Embeddings(
+                settings.curriculum_embedding_provider,
+                settings.ollama_base_url,
+                settings.cloudflare_account_id,
+                settings.cloudflare_api_token,
+            ),
+            SchoolAccessClient(settings.school_service_url),
+            parse_curriculum_pdf,
+        )
+        if settings.curriculum_database_url
+        else None,
         neo4j_driver=neo4j_driver,
         ollama_answer_provider=ollama_answer_provider,
     )
