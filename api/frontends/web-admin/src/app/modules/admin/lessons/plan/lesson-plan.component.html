@@ -46,6 +46,7 @@
                 </dl>
             </div>
             <div class="flex flex-wrap gap-3">
+                <a mat-stroked-button [routerLink]="['/lesson-export', plan.id, plan.currentVersion]">Export version {{ plan.currentVersion }} to PDF</a>
                 @if (has('edit')) {
                     <a mat-stroked-button routerLink="edit">Edit plan</a>
                 }

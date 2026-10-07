@@ -1,0 +1,130 @@
+<div class="export-toolbar" aria-label="Lesson export controls">
+    <a mat-stroked-button [routerLink]="['/lessons', routePlanID]"
+        >Back to plan</a
+    >
+    <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="loading() || !version()"
+        (click)="print()"
+    >
+        Save as PDF
+    </button>
+    <p>Choose Save as PDF in your browser's print dialog.</p>
+</div>
+
+@if (loading()) {
+    <p class="export-message" role="status" aria-busy="true">
+        Checking access and loading the selected version…
+    </p>
+} @else if (errorMessage()) {
+    <p class="export-message" role="alert">{{ errorMessage() }}</p>
+} @else if (version(); as shown) {
+    <article class="lesson-document" aria-labelledby="export-title">
+        <header class="document-header">
+            <p class="eyebrow">SchoolCRM · Lesson plan</p>
+            <h1 id="export-title">{{ shown.title }}</h1>
+            <p class="version-status">
+                Version {{ shown.version }} · {{ statusLabels[shown.status] }} ·
+                {{ publication() }}
+            </p>
+            @if (!shown.publishedAt) {
+                <p class="unpublished">This version has not been published.</p>
+            }
+            <p>Saved {{ shown.dateCreated | date: 'd MMM y, HH:mm' }}</p>
+            @if (shown.changeSummary) {
+                <p>{{ shown.changeSummary }}</p>
+            }
+        </header>
+
+        <div class="lesson-snapshot">
+            <ng-container
+                *ngTemplateOutlet="
+                    snapshot;
+                    context: { $implicit: shown.content }
+                "
+            />
+        </div>
+
+        <section class="decision-record" aria-labelledby="decisions-heading">
+            <h2 id="decisions-heading">Review and publication</h2>
+            <p>
+                HOD review:
+                {{
+                    shown.reviewedAt
+                        ? (shown.reviewedAt | date: 'd MMM y, HH:mm')
+                        : 'Not yet reviewed'
+                }}
+            </p>
+            @if (shown.reviewFeedback) {
+                <p class="feedback">{{ shown.reviewFeedback }}</p>
+            }
+            <p>
+                Dean approval:
+                {{
+                    shown.approvedAt
+                        ? (shown.approvedAt | date: 'd MMM y, HH:mm')
+                        : 'Not yet approved'
+                }}
+            </p>
+            @if (shown.approvalFeedback) {
+                <p class="feedback">{{ shown.approvalFeedback }}</p>
+            }
+            <p>
+                Published:
+                {{
+                    shown.publishedAt
+                        ? (shown.publishedAt | date: 'd MMM y, HH:mm')
+                        : 'Not published'
+                }}
+            </p>
+        </section>
+
+        <footer>
+            Plan {{ shown.planID }} · Version {{ shown.version }} · Author
+            {{ shown.authorID }}
+        </footer>
+    </article>
+}
+
+<ng-template #snapshot let-value>
+    @if (entries(value); as fields) {
+        <dl class="snapshot-fields">
+            @for (field of fields; track field[0]) {
+                <div class="snapshot-field">
+                    <dt>{{ label(field[0]) }}</dt>
+                    <dd>
+                        <ng-container
+                            *ngTemplateOutlet="
+                                snapshot;
+                                context: { $implicit: field[1] }
+                            "
+                        />
+                    </dd>
+                </div>
+            } @empty {
+                <p>No fields recorded.</p>
+            }
+        </dl>
+    } @else if (items(value); as list) {
+        <ol class="snapshot-items">
+            @for (item of list; track $index) {
+                <li>
+                    <ng-container
+                        *ngTemplateOutlet="
+                            snapshot;
+                            context: { $implicit: item }
+                        "
+                    />
+                </li>
+            } @empty {
+                <li>No entries recorded.</li>
+            }
+        </ol>
+    } @else {
+        <span class="snapshot-value">{{
+            value === null ? 'No value recorded.' : value
+        }}</span>
+    }
+</ng-template>
