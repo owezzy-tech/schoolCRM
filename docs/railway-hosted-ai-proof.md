@@ -25,6 +25,8 @@ The hosted sequence passed:
 4. Real `DeepSeek-V4.1-Flash` generated a 30-minute lesson. The Go version endpoint returned the persisted content with two citations to that source and the same Cloudflare embedding identity. Activity minutes totalled 30.
 5. Repeating the same request returned the same plan. The Go store contained one version, and the durable generation receipt reported `completed`.
 
+The strengthened replay verifier checks all six source/evidence scope fields, approved source status, original checksum/page range, and every persisted citation's curriculum scope and provider identity. A wrong-school search must return 403 or 404 without data; a valid same-department search for a missing revision must return no evidence and abstain. Both negative probes passed on staging. After the separate human edit, replay preserved both existing version IDs and still verified the original generated version 1.
+
 This proves hosted ingestion, reviewed indexing, retrieval, generation, persistence and request replay. It does not prove separate HOD/dean approval, publication, PDF export or post-restart recovery. Those checks remain in `schoolCRM-kce.5`.
 
 ## Repeating the proof

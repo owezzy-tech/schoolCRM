@@ -190,8 +190,41 @@ def verify():
         if (
             source["status"] != "approved"
             or source["model_identity"] != "cloudflare:@cf/baai/bge-m3:1024"
+            or source["scope"] != scope
+            or source["sha256"] != SOURCE_SHA
+            or source["first_page"] != 17
+            or source["last_page"] != 17
         ):
-            raise RuntimeError("Approved Cloudflare index identity mismatch")
+            raise RuntimeError(
+                "Approved source scope, original or Cloudflare identity mismatch"
+            )
+        wrong_school = {**scope, "school_id": "65fbcaec-18e9-44e2-a240-864bb1c3364a"}
+        denied = call(
+            "POST",
+            "/v1/rag/curriculum/search",
+            teacher_token,
+            expected=(403, 404),
+            json={
+                **wrong_school,
+                "question": "school classroom vocabulary",
+                "limit": 5,
+            },
+        )
+        if not denied.get("errors") or denied.get("data"):
+            raise RuntimeError("Wrong-school search exposed curriculum data")
+        wrong_revision = call(
+            "POST",
+            "/v1/rag/curriculum/search",
+            teacher_token,
+            json={
+                **scope,
+                "revision": "unavailable-staging-revision",
+                "question": "school classroom vocabulary",
+                "limit": 5,
+            },
+        )
+        if wrong_revision["data"] or not wrong_revision["meta"]["abstained"]:
+            raise RuntimeError("Wrong-revision search returned curriculum evidence")
         evidence = call(
             "POST",
             "/v1/rag/curriculum/search",
@@ -204,6 +237,16 @@ def verify():
         )
         if evidence["meta"]["abstained"] or not evidence["data"]:
             raise RuntimeError("Approved source retrieval abstained")
+        for row in evidence["data"]:
+            item = row["attributes"]
+            if (
+                item["source"]["scope"] != scope
+                or item["source"]["id"] != source_id
+                or item["source"]["status"] != "approved"
+                or item["model_identity"] != "cloudflare:@cf/baai/bge-m3:1024"
+                or item["passage"]["page"] != 17
+            ):
+                raise RuntimeError("Retrieved passage escaped approved source scope")
         print(
             json.dumps({"phase": "retrieval", "evidence_count": len(evidence["data"])}),
             flush=True,
@@ -218,7 +261,17 @@ def verify():
             "data"
         ]["attributes"]
         plan_id = result["planID"]
-        before_retry = call("GET", f"/v1/lessons/{plan_id}/versions", teacher_token)["data"]
+        persisted_plan = call("GET", f"/v1/lessons/{plan_id}", teacher_token)["data"][
+            "attributes"
+        ]
+        if (
+            persisted_plan["schoolID"] != scope["school_id"]
+            or persisted_plan["departmentID"] != scope["department_id"]
+        ):
+            raise RuntimeError("Persisted lesson escaped requested school scope")
+        before_retry = call("GET", f"/v1/lessons/{plan_id}/versions", teacher_token)[
+            "data"
+        ]
         repeat = call("POST", "/v1/rag/lessons/generate", teacher_token, json=request)[
             "data"
         ]["attributes"]
@@ -243,6 +296,11 @@ def verify():
         if not saved["citations"] or not all(
             c["sourceID"] == source_id
             and c["embeddingModel"] == "cloudflare:@cf/baai/bge-m3:1024"
+            and c["sourceSHA256"] == SOURCE_SHA
+            and all(
+                c[key] == scope[key]
+                for key in ("framework", "stage", "subject", "revision")
+            )
             for c in saved["citations"]
         ):
             raise RuntimeError("Persisted citations do not identify approved evidence")
@@ -262,6 +320,9 @@ def verify():
                     "citations": len(saved["citations"]),
                     "versions": len(versions),
                     "replay": "same plan",
+                    "wrong_school": "denied",
+                    "wrong_revision": "abstained",
+                    "source_evidence_citation_scope": "verified",
                 }
             ),
             flush=True,
