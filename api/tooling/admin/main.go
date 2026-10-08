@@ -88,6 +88,11 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 	}
 
 	switch args.Num(0) {
+	case "admissions-admin":
+		if err := commands.AdmissionsAdmin(log, dbConfig, args.Num(1)); err != nil {
+			return fmt.Errorf("provisioning admissions administrator: %w", err)
+		}
+
 	case "migrate":
 		if err := commands.Migrate(dbConfig); err != nil {
 			return fmt.Errorf("migrating database: %w", err)
@@ -140,6 +145,7 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 		}
 
 	default:
+		fmt.Println("admissions-admin <email>: provision initial admissions context for a platform administrator")
 		fmt.Println("migrate:    create the schema in the database")
 		fmt.Println("seed:       add data to the database")
 		fmt.Println("useradd:    add a new user to the database")
