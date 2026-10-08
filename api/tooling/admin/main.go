@@ -33,6 +33,11 @@ type config struct {
 		KeysFolder string `conf:"default:zarf/keys/"`
 		DefaultKID string `conf:"default:54bb2165-71e1-41a6-af3e-7da4a0e1e2c1"`
 	}
+	Bootstrap struct {
+		Name     string
+		Email    string
+		Password string `conf:"mask"`
+	}
 }
 
 func main() {
@@ -88,6 +93,11 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 	}
 
 	switch args.Num(0) {
+	case "bootstrap-admin":
+		if err := commands.BootstrapAdmin(log, dbConfig, cfg.Bootstrap.Name, cfg.Bootstrap.Email, cfg.Bootstrap.Password); err != nil {
+			return fmt.Errorf("bootstrapping administrator: %w", err)
+		}
+
 	case "migrate":
 		if err := commands.Migrate(dbConfig); err != nil {
 			return fmt.Errorf("migrating database: %w", err)
@@ -140,6 +150,7 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 		}
 
 	default:
+		fmt.Println("bootstrap-admin: create the first administrator from SCHOOLCRM_BOOTSTRAP_* environment values")
 		fmt.Println("migrate:    create the schema in the database")
 		fmt.Println("seed:       add data to the database")
 		fmt.Println("useradd:    add a new user to the database")
