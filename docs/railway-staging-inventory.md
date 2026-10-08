@@ -43,9 +43,11 @@ Private database traffic explicitly disables PostgreSQL TLS within Railway's pri
 - The user selected `owezzy@owenadirah.com` for the initial staging administrator. That account has not yet been created.
 - The RAG runtime database URL remains unset until Python curriculum/checkpoint tables are migrated. Its successful readiness check alone does not prove retrieval or generation readiness.
 - pgvector is available in the PostgreSQL image, but extension creation and the explicit Python migrations still require their separate gate. The Railway skill reserves extension installation for a user-run operation.
-- A restart-persistence probe through `railway volume files` was attempted, but SSH authentication failed because the account has no registered key. No remote probe was uploaded and no volume data was deleted. Permission to register a dedicated account SSH key is pending; that permission has not been assumed.
+- With explicit user approval, a dedicated Ed25519 key named `schoolcrm-staging-deployment` was registered on the Railway account. Its private file is local, mode0600, separate from existing personal keys and never committed. It permits SSH to services the account can access, although verification operations target only these staging service IDs.
+- A probe created exclusively as UID1000 in the RAG volume retained its contents and UID1000 ownership after a confirmed restart. Only that owned temporary probe was removed. The real Uvicorn process reports real/effective/saved UID1000, while its startup module is root-owned and `/service` is mode0755.
+- PostgreSQL restart completion and its new ready timestamp were observed. Database `schoolcrm` retained 45 public tables and zero users after the restart. Existing local PostgreSQL17 and proof data were not copied or altered.
 
-Keep `schoolCRM-kce.2` open until private-network and persistence verification is complete. Authenticated browser/API journeys belong to the remaining `kce.1`, `kce.3`, `kce.4` and `kce.5` acceptance gates. Existing local PostgreSQL 17 and proof data remain untouched.
+Infrastructure/private-network and restart-persistence checks are complete. Authenticated browser/API journeys and initial administrator bootstrap remain under `kce.1`, `kce.3`, `kce.4` and `kce.5`. This does not close the deployment epic or promote the staging verification branches to production.
 
 ## Rollback boundary
 
