@@ -22,8 +22,9 @@ COPY --from=build_rag /opt/venv /opt/venv
 COPY --from=build_rag --chown=rag:rag /service/api/services/RAG /service
 RUN mkdir -p /service/var/files && chown -R rag:rag /service/var
 WORKDIR /service
-USER rag
+USER root
 EXPOSE 7000
+ENTRYPOINT ["python", "-m", "infrastructure.container_entrypoint"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7000"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
