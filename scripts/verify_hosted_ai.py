@@ -184,6 +184,14 @@ def verify():
                     "note": "Staging proof: reviewed official KICD English page 17",
                 },
             )
+        source = call("GET", f"/v1/rag/curriculum/sources/{source_id}", teacher_token)[
+            "data"
+        ]["attributes"]
+        if (
+            source["status"] != "approved"
+            or source["model_identity"] != "cloudflare:@cf/baai/bge-m3:1024"
+        ):
+            raise RuntimeError("Approved Cloudflare index identity mismatch")
         evidence = call(
             "POST",
             "/v1/rag/curriculum/search",
@@ -230,7 +238,9 @@ def verify():
         ):
             raise RuntimeError("Generated lesson duration invariant failed")
         if not saved["citations"] or not all(
-            c["sourceID"] == source_id for c in saved["citations"]
+            c["sourceID"] == source_id
+            and c["embeddingModel"] == "cloudflare:@cf/baai/bge-m3:1024"
+            for c in saved["citations"]
         ):
             raise RuntimeError("Persisted citations do not identify approved evidence")
         status = call(
