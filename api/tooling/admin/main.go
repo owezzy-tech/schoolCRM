@@ -93,6 +93,11 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 	}
 
 	switch args.Num(0) {
+	case "admissions-admin":
+		if err := commands.AdmissionsAdmin(log, dbConfig, args.Num(1)); err != nil {
+			return fmt.Errorf("provisioning admissions administrator: %w", err)
+		}
+
 	case "bootstrap-admin":
 		if err := commands.BootstrapAdmin(log, dbConfig, cfg.Bootstrap.Name, cfg.Bootstrap.Email, cfg.Bootstrap.Password); err != nil {
 			return fmt.Errorf("bootstrapping administrator: %w", err)
@@ -150,6 +155,7 @@ func processCommands(args conf.Args, log *logger.Logger, cfg config) error {
 		}
 
 	default:
+		fmt.Println("admissions-admin <email>: provision initial admissions context for a platform administrator")
 		fmt.Println("bootstrap-admin: create the first administrator from SCHOOLCRM_BOOTSTRAP_* environment values")
 		fmt.Println("migrate:    create the schema in the database")
 		fmt.Println("seed:       add data to the database")
