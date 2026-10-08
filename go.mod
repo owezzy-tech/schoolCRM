@@ -5,6 +5,7 @@ go 1.26.0
 toolchain go1.26.3
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/ardanlabs/conf/v3 v3.11.0
 	github.com/ardanlabs/darwin/v3 v3.3.1
 	github.com/arl/statsviz v0.8.0

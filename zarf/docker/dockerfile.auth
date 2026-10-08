@@ -8,8 +8,7 @@ ARG BUILD_TAG
 # source changes.
 COPY go.mod go.sum /service/
 WORKDIR /service
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 # Copy the source code into the container.
 COPY . /service
@@ -17,18 +16,17 @@ COPY . /service
 # Build the service binary. We are doing this last since this will be different
 # every time we run through this process.
 WORKDIR /service/api/services/auth
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build -ldflags "-X main.tag=${BUILD_TAG}"
+RUN go build -ldflags "-X main.tag=${BUILD_TAG}"
 
 
 # Run the Go Binary in Alpine.
-FROM alpine:3.23
+FROM alpine:3.23 AS auth_runtime
 ARG BUILD_DATE
 ARG BUILD_TAG
 RUN addgroup -g 1000 -S auth && \
-    adduser -u 1000 -h /service -G auth -S auth
-COPY --from=build_auth --chown=auth:auth /service/zarf/keys/. /service/zarf/keys/.
+    adduser -u 1000 -h /service -G auth -S auth && \
+    apk add --no-cache ca-certificates && \
+    mkdir -p /service/zarf/keys && chown auth:auth /service/zarf/keys
 COPY --from=build_auth --chown=auth:auth /service/api/services/auth/auth /service/auth
 WORKDIR /service
 USER auth
@@ -40,3 +38,10 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.source="https://github.com/ardanlabs/service/tree/master/a/services/auth" \
       org.opencontainers.image.revision="${BUILD_TAG}" \
       org.opencontainers.image.vendor="Ardan Labs"
+
+# Local development only. The makefile explicitly selects this target.
+FROM auth_runtime AS auth_development
+COPY --from=build_auth --chown=auth:auth /service/zarf/keys/. /service/zarf/keys/.
+
+# The default image never contains repository keys. Inject AUTH_AUTH_KEYS_JSON.
+FROM auth_runtime AS production
