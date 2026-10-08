@@ -5,12 +5,12 @@ import pytest
 from infrastructure import container_entrypoint as entrypoint
 
 
-def test_root_prepares_storage_then_drops_privileges_before_exec(monkeypatch):
+def test_root_prepares_storage_then_drops_privileges_before_exec(monkeypatch, capsys):
     operations = []
     monkeypatch.setenv("RAG_FILE_STORAGE_DIR", "/service/var/files")
     monkeypatch.setenv("HOME", "/root")
     monkeypatch.setattr(entrypoint.Path, "mkdir", Mock())
-    monkeypatch.setattr(entrypoint.os, "getuid", lambda: 0)
+    monkeypatch.setattr(entrypoint.os, "getuid", Mock(side_effect=[0, 1000]))
     monkeypatch.setattr(entrypoint.os, "chown", lambda *args: operations.append("chown"))
     monkeypatch.setattr(entrypoint.os, "setgroups", lambda *args: operations.append("groups"))
     monkeypatch.setattr(entrypoint.os, "setgid", lambda *args: operations.append("gid"))
@@ -20,6 +20,7 @@ def test_root_prepares_storage_then_drops_privileges_before_exec(monkeypatch):
     entrypoint.run(["uvicorn", "main:app"])
     assert operations == ["chown", "groups", "gid", "uid", "exec"]
     assert entrypoint.os.environ["HOME"] == "/service"
+    assert capsys.readouterr().out == "rag-container uid=1000 storage=writable\n"
 
 
 def test_nonroot_requires_writable_storage_and_does_not_chown(monkeypatch):

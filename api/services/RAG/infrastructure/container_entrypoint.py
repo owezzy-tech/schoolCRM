@@ -20,6 +20,7 @@ def run(command: list[str]) -> None:
         os.environ["HOME"] = "/service"
     if not os.access(directory, os.W_OK):
         raise SystemExit("Container file storage is not writable")
+    print(f"rag-container uid={os.getuid()} storage=writable", flush=True)
     os.execvp(command[0], command)
 
 
