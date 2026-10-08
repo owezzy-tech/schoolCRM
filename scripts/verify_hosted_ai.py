@@ -218,17 +218,20 @@ def verify():
             "data"
         ]["attributes"]
         plan_id = result["planID"]
+        before_retry = call("GET", f"/v1/lessons/{plan_id}/versions", teacher_token)["data"]
         repeat = call("POST", "/v1/rag/lessons/generate", teacher_token, json=request)[
             "data"
         ]["attributes"]
         if repeat["planID"] != plan_id:
             raise RuntimeError("Generation retry changed persisted plan")
         versions = call("GET", f"/v1/lessons/{plan_id}/versions", teacher_token)["data"]
-        saved = versions[0]["attributes"]["content"]
-        if (
-            len(versions) != 1
-            or saved["generation"]["modelVersion"] != "DeepSeek-V4.1-Flash"
-        ):
+        if [v["id"] for v in before_retry] != [v["id"] for v in versions]:
+            raise RuntimeError("Generation retry changed immutable version history")
+        generated = next((v for v in versions if v["attributes"]["version"] == 1), None)
+        if generated is None:
+            raise RuntimeError("Original generated version missing")
+        saved = generated["attributes"]["content"]
+        if saved["generation"]["modelVersion"] != "DeepSeek-V4.1-Flash":
             raise RuntimeError(
                 "Persisted generation identity or version count mismatch"
             )
