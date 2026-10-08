@@ -25,3 +25,17 @@ Verify administrator login and permissions, audit count and safe same-identity r
 ## Proof
 
 Unit tests cover secret-safe validation, new-account commit, receipt replay, refusal to upgrade existing accounts, lock failure, user/audit rollback and uncertain commit. Opt-in PostgreSQL integration tests create only fresh UUID-named isolated schemas, run eight concurrent bootstrap attempts and prove one user/one audit, then test rollback when audit storage is unavailable. Test schemas are removed after proof; application tables are not touched.
+
+### Hosted proof, 8 October 2026
+
+The reviewed operator tool created administrator `15953eb5-2b0a-490b-b193-cbb2f3d90bc4` for the selected email. A second call returned the same ID. The database contained one user and one bootstrap audit. No bootstrap audit payload contained password or hash fields.
+
+HTTPS authentication returned status 200 and the `SUPER_ADMIN` role. Browser sign-in opened the authenticated application and showed Owen Adirah's identity. The dashboard then displayed a data-load error. That failure remains a final hosted QA gate in `schoolCRM-kce.5`; sign-in does not prove the dashboard works.
+
+The temporary credential is in the staging `schoolcrm` service variable `SCHOOLCRM_BOOTSTRAP_PASSWORD`. Retrieve it privately in Railway. Do not copy it into documentation, command arguments or logs.
+
+PostgreSQL's `pg_basebackup` created `/var/lib/postgresql/schoolcrm-backup-proof-20261008`, owned by `postgres` with mode 0700. `pg_verifybackup` reported `backup successfully verified`. A separate copy started on port 5543 with TCP listening disabled and a private Unix socket under `/tmp/schoolcrm-restore-proof.U4WYek`.
+
+A query against the restored cluster returned `1|1|0.8.7|8`: one user, one bootstrap audit, vector version 0.8.7 and all eight required curriculum, lesson and checkpoint tables. The restored cluster then stopped cleanly. The live database was not replaced or stopped. The protected backup and stopped proof copy remain available to the operator.
+
+This is a recovery rehearsal, not an independent disaster-recovery backup. The backup shares the live database volume. Before production, choose an independent backup destination, retention and schedule. Restore into an isolated cluster first, verify the administrator and schemas, then approve any application connection switch. Never restore over the live database merely to repeat this proof.
