@@ -20,7 +20,7 @@ RUN addgroup --gid 1000 rag && \
     adduser --uid 1000 --home /service --ingroup rag --disabled-password --gecos "" rag
 COPY --from=build_rag /opt/venv /opt/venv
 COPY --from=build_rag /service/api/services/RAG /service
-RUN chown root:root /service && \
+RUN chown root:root /service && chmod 0755 /service && \
     mkdir -p /service/var/files && chown -R rag:rag /service/var
 WORKDIR /service
 USER root

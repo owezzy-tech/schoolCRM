@@ -71,6 +71,7 @@ class RailwayContractTests(unittest.TestCase):
         self.assertIn("COPY --from=build_rag /service/api/services/RAG /service", dockerfile)
         self.assertNotIn("COPY --from=build_rag --chown=rag:rag", dockerfile)
         self.assertIn("chown root:root /service", dockerfile)
+        self.assertIn("chmod 0755 /service", dockerfile)
         self.assertIn('ENTRYPOINT ["python", "-m", "infrastructure.container_entrypoint"]', dockerfile)
 
     def test_frontend_routes_rag_before_general_api(self):
