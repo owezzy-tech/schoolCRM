@@ -1,6 +1,6 @@
 // Opt-in public-HTTPS acceptance using separate synthetic principals.
 // Credentials are injected through environment variables and never printed.
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 
 const base = 'https://web-admin-staging-c78a.up.railway.app';
@@ -71,39 +71,46 @@ async function verify() {
     assert.equal(original.status, 200);
     assert.equal(createHash('sha256').update(Buffer.from(await original.arrayBuffer())).digest('hex'),
         'eeea001277e1d952f4a6ebd4e42a21072cbb1e261d2e7228e50fe699ef041d0d');
-    const versionsPath = `/v1/lessons/${plan}/versions`;
-    let versions = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource);
-    let first = versions.find(v => v.version === 1);
-    if (first.status === 'draft') {
-        await request('GET', `/v1/lessons/${plan}`, hod.accessToken, null, [404]);
-        await request('POST', `/v1/lessons/${plan}/reuse`, hod.accessToken, { version: 1, requestID: reuseRequest }, [404]);
-        await request('POST', versionsPath + '/1/submit', teacher.accessToken);
-        first = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource).find(v => v.version === 1);
+    // Every run gets a new probe copied from the real published model output.
+    // No model call is needed; all denial checks and transitions execute afresh.
+    const probe = resource((await request('POST', `/v1/lessons/${plan}/reuse`, teacher.accessToken, {
+        version: 1, requestID: randomUUID(),
+    })).data);
+    assert.equal(probe.status, 'draft');
+    console.log(JSON.stringify({ phase: 'fresh_workflow_probe', probe: probe.id }));
+    const versionsPath = `/v1/lessons/${probe.id}/versions`;
+    const denials = [];
+    async function denied(name, method, path, actor, body, statuses) {
+        await request(method, path, actor.accessToken, body, statuses);
+        denials.push(name);
     }
-    if (first.status === 'hod_review') {
-        await request('POST', versionsPath + '/1/review', teacher.accessToken, { decision: 'approve', feedback: 'Not authorised' }, [403]);
-        await request('POST', versionsPath + '/1/review', hod.accessToken, { decision: 'approve', feedback: 'Hosted reviewed evidence and lesson' });
-        first = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource).find(v => v.version === 1);
-    }
-    if (first.status === 'dean_approval') {
-        await request('POST', versionsPath + '/1/approval', hod.accessToken, { decision: 'approve', feedback: 'Not authorised' }, [403]);
-        await request('POST', versionsPath + '/1/approval', dean.accessToken, { decision: 'approve', feedback: 'Hosted approval by distinct dean' });
-        first = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource).find(v => v.version === 1);
-    }
-    if (first.status === 'approved') await request('POST', versionsPath + '/1/publish', teacher.accessToken);
+    await denied('private_read', 'GET', `/v1/lessons/${probe.id}`, hod, null, [404]);
+    await denied('private_reuse', 'POST', `/v1/lessons/${probe.id}/reuse`, hod,
+        { version: 1, requestID: randomUUID() }, [404]);
+    await denied('premature_publication', 'POST', versionsPath + '/1/publish', teacher, null, [409]);
+    await request('POST', versionsPath + '/1/submit', teacher.accessToken);
+    await denied('teacher_review', 'POST', versionsPath + '/1/review', teacher,
+        { decision: 'approve', feedback: 'Not authorised' }, [403]);
+    await request('POST', versionsPath + '/1/review', hod.accessToken,
+        { decision: 'approve', feedback: 'Hosted reviewed evidence and lesson' });
+    await denied('hod_dean_approval', 'POST', versionsPath + '/1/approval', hod,
+        { decision: 'approve', feedback: 'Not authorised' }, [403]);
+    await request('POST', versionsPath + '/1/approval', dean.accessToken,
+        { decision: 'approve', feedback: 'Hosted approval by distinct dean' });
+    await request('POST', versionsPath + '/1/publish', teacher.accessToken);
     const reused = resource((await request('POST', `/v1/lessons/${plan}/reuse`, hod.accessToken, {
         version: 1, requestID: reuseRequest,
     })).data);
     assert.equal(reused.status, 'draft');
     assert.equal(reused.publishedVersion, null);
     await request('GET', `/v1/lessons/${reused.id}`, teacher.accessToken, null, [404]);
-    versions = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource);
-    if (versions.length === 1) {
-        await request('POST', versionsPath, teacher.accessToken, {
-            baseVersion: 1, title: 'Teacher-edited staging lesson', changeSummary: 'Hosted human edit',
-            content: { ...first.content, objectives: ['Teacher-edited staging objective'] },
-        });
-    }
+    let versions = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource);
+    const publishedSnapshot = versions.find(v => v.version === 1);
+    assert.equal(versions.length, 1);
+    await request('POST', versionsPath, teacher.accessToken, {
+        baseVersion: 1, title: 'Teacher-edited staging lesson', changeSummary: 'Hosted human edit',
+        content: { ...publishedSnapshot.content, objectives: ['Teacher-edited staging objective'] },
+    });
     versions = (await request('GET', versionsPath, teacher.accessToken)).data.map(resource);
     const old = versions.find(v => v.version === 1);
     assert.equal(old.status, 'published');
@@ -112,12 +119,13 @@ async function verify() {
     assert.equal(old.authorID, teacher.user.id);
     assert.equal(versions.find(v => v.version === 2).status, 'draft');
     assert.notDeepEqual(old.content.objectives, versions.find(v => v.version === 2).content.objectives);
-    const updated = resource((await request('GET', `/v1/lessons/${plan}`, teacher.accessToken)).data);
+    const updated = resource((await request('GET', `/v1/lessons/${probe.id}`, teacher.accessToken)).data);
     assert.equal(updated.currentVersion, 2);
     assert.equal(updated.publishedVersion, 1);
-    console.log(JSON.stringify({ phase: 'workflow_complete', plan, reused: reused.id, teacher: teacher.user.id,
+    assert.equal(denials.length, 5);
+    console.log(JSON.stringify({ phase: 'workflow_complete', plan, probe: probe.id, reused: reused.id, teacher: teacher.user.id,
         hod: hod.user.id, dean: dean.user.id, currentVersion: 2, publishedVersion: 1,
-        scopeDenials: 'passed', privateDraftDenials: 'passed', sourceChecksum: 'verified' }));
+        scopeDenials: 'passed', observedWorkflowDenials: denials, sourceChecksum: 'verified' }));
 }
 
 verify().catch(error => {

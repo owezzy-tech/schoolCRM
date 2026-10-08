@@ -21,6 +21,8 @@ The browser's native PDF renderer produced `/private/tmp/schoolcrm-staging-versi
 
 The source and generation IDs, provider identities and initial real-model proof are recorded in PR #77 and `docs/railway-hosted-ai-proof.md` on its branch. Replaying the completed request after the human edit preserved both version IDs and returned the same plan. The original generated version still has two matching Cloudflare citations.
 
+Independent specification review found that the initial script could skip denial checks when replaying an already-published fixture. The corrected script creates a fresh teacher-owned probe from the real published output on every run, without a model call. It must observe five denials before reporting completion: private read, private reuse, premature publication, teacher review and HOD dean approval. The first corrected hosted run used probe `95d31f5c-45e2-41cd-a8b7-7af9cb1c1be9` and observed all five, then completed distinct-principal approval/publication and preserved published version 1 beside human draft version 2. The original generated plan remains unchanged.
+
 ## Restart and restore
 
 RAG deployment `c3e22a03-b2c3-401e-8ab3-9f72c4283f76` restarted through the native Railway command. SSH inspection found a fresh runtime process, age 77 seconds, running as UID 1000. Hosted approved-source retrieval and completed-request replay then passed with the same plan/source/request IDs and both lesson versions retained.
