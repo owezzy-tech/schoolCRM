@@ -20,6 +20,8 @@ class RailwayContractTests(unittest.TestCase):
                     "/" if name == "web-admin" else "/v1/readiness",
                 )
                 self.assertEqual(config["deploy"]["restartPolicyMaxRetries"], 5)
+                if name == "schoolcrm":
+                    self.assertEqual(config["deploy"]["preDeployCommand"], ["./admin migrate"])
                 self.assertNotIn(
                     "--mount=type=cache",
                     (ROOT / config["build"]["dockerfilePath"]).read_text(),
