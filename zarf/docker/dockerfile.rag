@@ -19,8 +19,9 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 RUN addgroup --gid 1000 rag && \
     adduser --uid 1000 --home /service --ingroup rag --disabled-password --gecos "" rag
 COPY --from=build_rag /opt/venv /opt/venv
-COPY --from=build_rag --chown=rag:rag /service/api/services/RAG /service
-RUN mkdir -p /service/var/files && chown -R rag:rag /service/var
+COPY --from=build_rag /service/api/services/RAG /service
+RUN chown root:root /service && \
+    mkdir -p /service/var/files && chown -R rag:rag /service/var
 WORKDIR /service
 USER root
 EXPOSE 7000

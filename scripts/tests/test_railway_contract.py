@@ -66,6 +66,13 @@ class RailwayContractTests(unittest.TestCase):
         self.assertNotIn("pip install -e", dockerfile)
         self.assertIn("UV_PROJECT_ENVIRONMENT=/opt/venv", dockerfile)
 
+    def test_rag_startup_code_is_not_writable_by_application_user(self):
+        dockerfile = (ROOT / "zarf/docker/dockerfile.rag").read_text()
+        self.assertIn("COPY --from=build_rag /service/api/services/RAG /service", dockerfile)
+        self.assertNotIn("COPY --from=build_rag --chown=rag:rag", dockerfile)
+        self.assertIn("chown root:root /service", dockerfile)
+        self.assertIn('ENTRYPOINT ["python", "-m", "infrastructure.container_entrypoint"]', dockerfile)
+
     def test_frontend_routes_rag_before_general_api(self):
         caddy = (ROOT / "api/frontends/web-admin/Caddyfile").read_text()
         self.assertLess(caddy.index("handle /v1/rag/*"), caddy.index("handle /v1/*"))
