@@ -14,10 +14,10 @@ Only the frontend has a public domain. PostgreSQL has no TCP proxy; Go debug and
 | Postgres | `da09d1cf-b68e-4fd3-82fb-44fbecde0136` | `8b5695c5-a730-4f4b-a584-4bc22cc0ab77` |
 | auth | `2a0f7cac-8d37-4b93-89a4-f15d259f52d6` | `b89b9e41-25ae-46ad-84c9-7d7e47d61432` |
 | schoolcrm | `e332dc5d-ea3c-41a5-ae01-b415fccd80aa` | `74c51663-701f-4992-b84b-8bb90e57d05b` |
-| rag | `7acac89f-84e3-4418-8963-71e9a7657ef7` | `c74ce8cf-4afe-4eaf-82bb-8c9917c844c5` |
-| web-admin | `cdbe91fd-b0ea-43fb-b6aa-a0501426da23` | `cf3f58b7-197f-434c-b1c0-d027e040f1ac` |
+| rag | `7acac89f-84e3-4418-8963-71e9a7657ef7` | `3ad2d49f-8000-4722-93d8-a9087ac590ec` |
+| web-admin | `cdbe91fd-b0ea-43fb-b6aa-a0501426da23` | `60e78418-3742-46f5-ba33-1b6afb3fcf78` |
 
-Application images use staging verification commits from [PR #73](https://github.com/owezzy-tech/schoolCRM/pull/73), still draft pending authenticated image-based proof. Auth/API/frontend builds used `4d89c83`; the RAG storage-evidence build used `a057236`. No feature was merged or promoted to production by these operations.
+Application images use staging verification commits from [PR #73](https://github.com/owezzy-tech/schoolCRM/pull/73), still draft pending authenticated image-based proof. Auth/API builds used `4d89c83`; frontend used `9baaccc` and RAG used `e1251c2`. No feature was merged or promoted to production by these operations.
 
 ## Storage and credentials
 
@@ -27,6 +27,8 @@ RAG volume `75e59aae-6e77-4f76-a513-4e0dc07c3829` is mounted at `/service/var/fi
 
 The RAG entrypoint in PR #73 prepares the root-owned mount, then starts the server as UID/GID 1000. The live startup log confirms `rag-container uid=1000 storage=writable`. It changes only the storage directory's ownership, not historical files recursively.
 
+RAG application/startup code and its parent directory remain root-owned and non-writable by the server user. The parent is explicitly mode0755 to permit non-root traversal. A hardening image initially failed closed because the root-owned home retained a restrictive mode; the explicit traversal mode corrected startup without granting write access to application code.
+
 Auth uses a newly generated RSA-3072 signing key and staging-specific issuer, injected through Railway variables. The repository development keys are not used. Database credentials and private upstreams use Railway variable references. Cloudflare BGE-M3 and DeepSeek credentials were transferred through CLI stdin and verified without displaying values. Anonymous RAG access and external workflow tracing are disabled.
 
 Private database traffic explicitly disables PostgreSQL TLS within Railway's private network; public traffic uses HTTPS at the Railway edge. No public database endpoint was created.
@@ -34,6 +36,7 @@ Private database traffic explicitly disables PostgreSQL TLS within Railway's pri
 ## Verified behaviour and remaining gates
 
 - HTTPS `/` and `/sign-in` return 200, and the Angular sign-in form renders in a real browser.
+- The live form starts with empty email/password fields and no demo-credential banner; 58 frontend tests and the production build pass. The existing initial bundle warning is 3.11 MB against a 3 MB warning threshold.
 - Proxied Go `/v1/readiness` returns 204. Unknown-user auth login returns 401.
 - Protected Go user and RAG generation requests without credentials return JSON:API 401 responses.
 - The initial scalar pre-deploy setting was omitted from the deployed manifest. A browser login caught the resulting undefined-table error despite healthy readiness. Configuring the native command list `preDeployCommand: ["./admin migrate"]` corrected that omission, and deployment `74c51663-701f-4992-b84b-8bb90e57d05b` records the command and reached `SUCCESS`. It never runs `seed` or `migrate-seed`. A readiness response alone is not schema proof.
