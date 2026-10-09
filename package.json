@@ -7,7 +7,7 @@
     "commit": "git-cz",
     "lint:frontend": "npm --prefix api/frontends/web-admin run lint",
     "test:frontend": "npm --prefix api/frontends/web-admin run test -- --watch=false",
-    "lint:go": "CGO_ENABLED=0 go vet ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/... && go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
+    "lint:go": "CGO_ENABLED=0 go vet ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/... && GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "test:go": "CGO_ENABLED=0 go test -count=1 ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "test:go:vuln": "go run golang.org/x/vuln/cmd/govulncheck@latest ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...",
     "lint:rag": "cd api/services/RAG && uv sync --extra dev --locked && uv run ruff check . && uv run python -m compileall -q adapters domain infrastructure use_cases main.py",
