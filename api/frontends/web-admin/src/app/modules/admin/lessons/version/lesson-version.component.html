@@ -3,58 +3,139 @@
         <a routerLink="/lessons" class="hover:underline">Lesson plans</a>
         @if (plan()) {
             <span aria-hidden="true"> / </span>
-            <a [routerLink]="['/lessons', planID]" class="hover:underline">{{ plan()!.title }}</a>
+            <a [routerLink]="['/lessons', planID]" class="hover:underline">{{
+                plan()!.title
+            }}</a>
         }
     </nav>
 
     @if (errorMessage()) {
-        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{{ errorMessage() }}</div>
+        <div
+            class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800"
+            role="alert"
+        >
+            {{ errorMessage() }}
+        </div>
     } @else if (loading()) {
-        <div class="bg-card animate-pulse rounded-xl p-6" aria-busy="true" aria-label="Loading version">
-            <div class="mb-3 h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+        <div
+            class="bg-card animate-pulse rounded-xl p-6"
+            aria-busy="true"
+            aria-label="Loading version"
+        >
+            <div
+                class="mb-3 h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-700"
+            ></div>
             <div class="h-32 rounded bg-gray-200 dark:bg-gray-700"></div>
         </div>
     } @else if (!version()) {
         <div class="bg-card rounded-xl p-8 text-center">
             <h1 class="text-lg font-medium">Version not available</h1>
-            <p class="text-secondary mt-1">It does not exist, or it is a draft that only its author can see.</p>
-            <a mat-stroked-button class="mt-4" [routerLink]="['/lessons', planID]">Back to plan</a>
+            <p class="text-secondary mt-1">
+                It does not exist, or it is a draft that only its author can
+                see.
+            </p>
+            <a
+                mat-stroked-button
+                class="mt-4"
+                [routerLink]="['/lessons', planID]"
+                >Back to plan</a
+            >
         </div>
     } @else {
         @let shown = version()!;
         @let lesson = plan()!;
-        <div class="mb-6 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
-             [class.border-green-300]="relation() !== 'superseded'"
-             [class.border-amber-300]="relation() === 'superseded'"
-             role="status">
+        <div
+            class="mb-6 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+            [class.border-green-300]="relation() !== 'superseded'"
+            [class.border-amber-300]="relation() === 'superseded'"
+            role="status"
+        >
             <span>
                 @switch (relation()) {
-                    @case ('live-and-latest') { This is the live published version and the latest version. }
-                    @case ('live') { This is the live published version. }
-                    @case ('latest') { This is the latest version. }
-                    @default { Superseded by version {{ lesson.currentVersion }} — read only. Decisions can only be made on the latest version. }
+                    @case ('live-and-latest') {
+                        This is the live published version and the latest
+                        version.
+                    }
+                    @case ('live') {
+                        This is the live published version.
+                    }
+                    @case ('latest') {
+                        This is the latest version.
+                    }
+                    @default {
+                        Superseded by version {{ lesson.currentVersion }} — read
+                        only. Decisions can only be made on the latest version.
+                    }
                 }
             </span>
             <div class="flex flex-wrap gap-2">
-                <a mat-stroked-button [routerLink]="['/lesson-export', planID, shown.version]">Export version {{ shown.version }} to PDF</a>
-                @if (lesson.publishedVersion && lesson.publishedVersion !== lesson.currentVersion) {
-                    <nav class="flex overflow-hidden rounded-lg border" aria-label="Switch between live and latest">
-                        <a class="px-3 py-1 font-mono text-sm tabular-nums"
-                           [class.bg-primary]="shown.version === lesson.publishedVersion"
-                           [class.text-on-primary]="shown.version === lesson.publishedVersion"
-                           [attr.aria-current]="shown.version === lesson.publishedVersion ? 'page' : null"
-                           [routerLink]="['/lessons', planID, 'versions', lesson.publishedVersion]">Live (v{{ lesson.publishedVersion }})</a>
-                        <a class="border-l px-3 py-1 font-mono text-sm tabular-nums"
-                           [class.bg-primary]="shown.version === lesson.currentVersion"
-                           [class.text-on-primary]="shown.version === lesson.currentVersion"
-                           [attr.aria-current]="shown.version === lesson.currentVersion ? 'page' : null"
-                           [routerLink]="['/lessons', planID, 'versions', lesson.currentVersion]">Latest (v{{ lesson.currentVersion }})</a>
+                <a
+                    mat-stroked-button
+                    [routerLink]="['/lesson-export', planID, shown.version]"
+                    >Export version {{ shown.version }} to PDF</a
+                >
+                @if (
+                    lesson.publishedVersion &&
+                    lesson.publishedVersion !== lesson.currentVersion
+                ) {
+                    <nav
+                        class="flex overflow-hidden rounded-lg border"
+                        aria-label="Switch between live and latest"
+                    >
+                        <a
+                            class="px-3 py-1 font-mono text-sm tabular-nums"
+                            [class.bg-primary]="
+                                shown.version === lesson.publishedVersion
+                            "
+                            [class.text-on-primary]="
+                                shown.version === lesson.publishedVersion
+                            "
+                            [attr.aria-current]="
+                                shown.version === lesson.publishedVersion
+                                    ? 'page'
+                                    : null
+                            "
+                            [routerLink]="[
+                                '/lessons',
+                                planID,
+                                'versions',
+                                lesson.publishedVersion,
+                            ]"
+                            >Live (v{{ lesson.publishedVersion }})</a
+                        >
+                        <a
+                            class="border-l px-3 py-1 font-mono text-sm tabular-nums"
+                            [class.bg-primary]="
+                                shown.version === lesson.currentVersion
+                            "
+                            [class.text-on-primary]="
+                                shown.version === lesson.currentVersion
+                            "
+                            [attr.aria-current]="
+                                shown.version === lesson.currentVersion
+                                    ? 'page'
+                                    : null
+                            "
+                            [routerLink]="[
+                                '/lessons',
+                                planID,
+                                'versions',
+                                lesson.currentVersion,
+                            ]"
+                            >Latest (v{{ lesson.currentVersion }})</a
+                        >
                     </nav>
                 }
-                @if (relation() === 'latest' || relation() === 'live-and-latest') {
-                    <a mat-stroked-button [routerLink]="['/lessons', planID]">Open plan for actions</a>
+                @if (
+                    relation() === 'latest' || relation() === 'live-and-latest'
+                ) {
+                    <a mat-stroked-button [routerLink]="['/lessons', planID]"
+                        >Open plan for actions</a
+                    >
                 } @else {
-                    <a mat-button [routerLink]="['/lessons', planID]">Back to plan</a>
+                    <a mat-button [routerLink]="['/lessons', planID]"
+                        >Back to plan</a
+                    >
                 }
             </div>
         </div>
@@ -62,35 +143,89 @@
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
             <section class="bg-card rounded-xl p-6">
                 <div class="mb-4 flex items-center gap-3">
-                    <h1 class="text-2xl font-semibold tracking-tight">{{ shown.title }}</h1>
+                    <h1 class="text-2xl font-semibold tracking-tight">
+                        {{ shown.title }}
+                    </h1>
                     <app-lesson-status [status]="shown.status" />
                 </div>
                 <p class="text-secondary mb-6">
-                    <span class="font-mono tabular-nums">Version {{ shown.version }}</span>
-                    @if (shown.changeSummary) { — {{ shown.changeSummary }} }
+                    <span class="font-mono tabular-nums"
+                        >Version {{ shown.version }}</span
+                    >
+                    @if (shown.changeSummary) {
+                        — {{ shown.changeSummary }}
+                    }
                 </p>
                 <app-lesson-content [value]="shown.content" />
             </section>
             <aside class="bg-card h-fit rounded-xl p-6">
-                <h2 class="mb-4 text-lg font-medium">Decisions</h2>
+                <app-lesson-reuse
+                    [planID]="planID"
+                    [version]="shown.version"
+                    [allowed]="canReuse()"
+                />
+                <h2 class="mb-4 mt-6 text-lg font-medium">Decisions</h2>
                 <dl class="flex flex-col gap-4 text-sm">
                     <div>
-                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">Saved</dt>
-                        <dd>{{ shown.dateCreated | date: 'd MMM y, HH:mm' }}</dd>
+                        <dt
+                            class="text-secondary font-mono text-xs uppercase tracking-wider"
+                        >
+                            Saved
+                        </dt>
+                        <dd>
+                            {{ shown.dateCreated | date: 'd MMM y, HH:mm' }}
+                        </dd>
                     </div>
                     <div>
-                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">HOD review</dt>
-                        <dd>{{ shown.reviewedAt ? (shown.reviewedAt | date: 'd MMM y, HH:mm') : 'Not yet reviewed' }}</dd>
-                        @if (shown.reviewFeedback) { <dd class="mt-1">{{ shown.reviewFeedback }}</dd> }
+                        <dt
+                            class="text-secondary font-mono text-xs uppercase tracking-wider"
+                        >
+                            HOD review
+                        </dt>
+                        <dd>
+                            {{
+                                shown.reviewedAt
+                                    ? (shown.reviewedAt
+                                      | date: 'd MMM y, HH:mm')
+                                    : 'Not yet reviewed'
+                            }}
+                        </dd>
+                        @if (shown.reviewFeedback) {
+                            <dd class="mt-1">{{ shown.reviewFeedback }}</dd>
+                        }
                     </div>
                     <div>
-                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">Dean approval</dt>
-                        <dd>{{ shown.approvedAt ? (shown.approvedAt | date: 'd MMM y, HH:mm') : 'Not yet decided' }}</dd>
-                        @if (shown.approvalFeedback) { <dd class="mt-1">{{ shown.approvalFeedback }}</dd> }
+                        <dt
+                            class="text-secondary font-mono text-xs uppercase tracking-wider"
+                        >
+                            Dean approval
+                        </dt>
+                        <dd>
+                            {{
+                                shown.approvedAt
+                                    ? (shown.approvedAt
+                                      | date: 'd MMM y, HH:mm')
+                                    : 'Not yet decided'
+                            }}
+                        </dd>
+                        @if (shown.approvalFeedback) {
+                            <dd class="mt-1">{{ shown.approvalFeedback }}</dd>
+                        }
                     </div>
                     <div>
-                        <dt class="text-secondary font-mono text-xs uppercase tracking-wider">Published</dt>
-                        <dd>{{ shown.publishedAt ? (shown.publishedAt | date: 'd MMM y, HH:mm') : 'Not published' }}</dd>
+                        <dt
+                            class="text-secondary font-mono text-xs uppercase tracking-wider"
+                        >
+                            Published
+                        </dt>
+                        <dd>
+                            {{
+                                shown.publishedAt
+                                    ? (shown.publishedAt
+                                      | date: 'd MMM y, HH:mm')
+                                    : 'Not published'
+                            }}
+                        </dd>
                     </div>
                 </dl>
             </aside>

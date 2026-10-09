@@ -37,8 +37,7 @@ export interface LessonActivity {
 }
 
 /**
- * Lesson content shape used by this UI until schoolCRM-o58.3 confirms the
- * curriculum schema; the API currently accepts any JSON object.
+ * Structured lesson fields confirmed in schoolCRM-o58.3; metadata remains in the immutable snapshot.
  */
 export interface LessonContent {
     objectives: string[];
@@ -50,6 +49,11 @@ export interface LessonContent {
 }
 
 export interface LessonCitation {
+    passage?: string;
+    authority?: string;
+    sourceSHA256?: string;
+    indexRevision?: string;
+    embeddingModel?: string;
     sourceID: string;
     page: number;
     title: string;
@@ -67,18 +71,36 @@ export function lessonContentRecord(value: unknown): Record<string, unknown> {
 export function lessonCitations(value: unknown): LessonCitation[] {
     const entries = lessonContentRecord(value)['citations'];
     if (!Array.isArray(entries)) return [];
-    return entries.filter((entry): entry is LessonCitation => {
-        const citation = lessonContentRecord(entry);
-        return (
-            typeof citation['sourceID'] === 'string' &&
-            typeof citation['title'] === 'string' &&
-            typeof citation['page'] === 'number' &&
-            Number.isInteger(citation['page']) &&
-            citation['page'] > 0 &&
-            typeof citation['revision'] === 'string' &&
-            typeof citation['sourceURL'] === 'string' &&
-            /^https?:\/\//.test(citation['sourceURL'])
-        );
+    return entries.flatMap((entry): LessonCitation[] => {
+        const c = lessonContentRecord(entry);
+        if (
+            typeof c['sourceID'] !== 'string' ||
+            typeof c['title'] !== 'string' ||
+            typeof c['page'] !== 'number' ||
+            !Number.isInteger(c['page']) ||
+            c['page'] < 1 ||
+            typeof c['revision'] !== 'string' ||
+            typeof c['sourceURL'] !== 'string' ||
+            !/^https?:\/\//.test(c['sourceURL'])
+        )
+            return [];
+        const citation: LessonCitation = {
+            sourceID: c['sourceID'],
+            title: c['title'],
+            page: c['page'],
+            revision: c['revision'],
+            sourceURL: c['sourceURL'],
+        };
+        for (const field of [
+            'passage',
+            'authority',
+            'sourceSHA256',
+            'indexRevision',
+            'embeddingModel',
+        ] as const) {
+            if (typeof c[field] === 'string') citation[field] = c[field];
+        }
+        return [citation];
     });
 }
 

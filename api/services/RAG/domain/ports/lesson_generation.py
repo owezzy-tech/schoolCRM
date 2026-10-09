@@ -14,7 +14,7 @@ class LessonGenerator(Protocol):
 
 
 class LessonWriter(Protocol):
-    async def authorize(self, token: str, scope: CurriculumScope) -> None: ...
+    async def authorize(self, token: str, school_id: UUID, department_id: UUID) -> None: ...
 
     async def create(
         self, token: str, scope: CurriculumScope, request_id: UUID, draft: GeneratedLesson

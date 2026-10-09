@@ -4,15 +4,15 @@ import {
     computed,
     input,
 } from '@angular/core';
-import {
-    lessonCitations,
-    toLessonContent,
-} from 'app/core/lessons/lessons.types';
+import { toLessonContent } from 'app/core/lessons/lessons.types';
+
+import { LessonEvidenceComponent } from './lesson-evidence.component';
 
 /** Read-only rendering of one version's lesson content. */
 @Component({
     selector: 'app-lesson-content',
     standalone: true,
+    imports: [LessonEvidenceComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @let lesson = content();
@@ -117,37 +117,13 @@ import {
                     {{ lesson.differentiation || 'None recorded.' }}
                 </p>
             </section>
-            <section>
-                <h3
-                    class="text-secondary mb-2 text-sm font-semibold uppercase tracking-wider"
-                >
-                    Curriculum references
-                </h3>
-                <ul class="space-y-2">
-                    @for (citation of citations(); track $index) {
-                        <li>
-                            <a
-                                [href]="citation.sourceURL"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="text-primary underline"
-                                >{{ citation.title }}</a
-                            >
-                            · PDF page {{ citation.page }} · revision
-                            {{ citation.revision }}
-                        </li>
-                    } @empty {
-                        <li class="text-secondary">No references recorded.</li>
-                    }
-                </ul>
-            </section>
+            <app-lesson-evidence [value]="value()" />
         </div>
     `,
 })
 export class LessonContentComponent {
     readonly value = input.required<unknown>();
     readonly content = computed(() => toLessonContent(this.value()));
-    readonly citations = computed(() => lessonCitations(this.value()));
     readonly totalMinutes = computed(() =>
         this.content().activities.reduce((sum, a) => sum + a.minutes, 0)
     );

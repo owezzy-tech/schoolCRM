@@ -14,7 +14,7 @@ class GoLessonClient:
             base_url=base_url.rstrip("/"), timeout=30, transport=transport
         )
 
-    async def authorize(self, token: str, scope: CurriculumScope) -> None:
+    async def authorize(self, token: str, school_id: UUID, department_id: UUID) -> None:
         response = await self._request("GET", "/v1/me/school-memberships", token)
         try:
             rows = response.json()["data"]
@@ -22,8 +22,8 @@ class GoLessonClient:
                 raise TypeError("Invalid membership collection")
             allowed = any(
                 row["attributes"].get("active") is True
-                and row["attributes"].get("schoolID") == str(scope.school_id)
-                and row["attributes"].get("departmentID") == str(scope.department_id)
+                and row["attributes"].get("schoolID") == str(school_id)
+                and row["attributes"].get("departmentID") == str(department_id)
                 and row["attributes"].get("capability") == "teach"
                 for row in rows
             )

@@ -33,6 +33,30 @@ def evidence_id(evidence: CurriculumEvidence) -> str:
     return f"{evidence.source.id}:{evidence.passage.ordinal}"
 
 
+def citation(item: CurriculumEvidence) -> dict:
+    source = item.source
+    return {
+        "sourceID": str(source.id),
+        "indexRevision": str(item.index_revision),
+        "chunkOrdinal": item.passage.ordinal,
+        "page": item.passage.page,
+        "title": source.title,
+        "authority": source.authority,
+        "sourceURL": source.source_url,
+        "sourceSHA256": source.sha256,
+        "framework": source.scope.framework,
+        "stage": source.scope.stage,
+        "subject": source.scope.subject,
+        "revision": source.scope.revision,
+        "embeddingModel": item.model_identity,
+    }
+
+
+def evidence_citation(item: CurriculumEvidence) -> dict:
+    """Retrieved evidence for display, keyed by the ID the model may cite."""
+    return {"id": evidence_id(item), **citation(item), "passage": item.passage.text}
+
+
 def assemble_lesson(
     raw_json: str,
     request: LessonGenerationRequest,
@@ -50,27 +74,7 @@ def assemble_lesson(
         raise CurriculumError(
             422, "Generated lesson refers to evidence outside the retrieved scope"
         )
-    citations = []
-    for identifier in dict.fromkeys(parsed.citation_ids):
-        item = available[identifier]
-        source = item.source
-        citations.append(
-            {
-                "sourceID": str(source.id),
-                "indexRevision": str(item.index_revision),
-                "chunkOrdinal": item.passage.ordinal,
-                "page": item.passage.page,
-                "title": source.title,
-                "authority": source.authority,
-                "sourceURL": source.source_url,
-                "sourceSHA256": source.sha256,
-                "framework": source.scope.framework,
-                "stage": source.scope.stage,
-                "subject": source.scope.subject,
-                "revision": source.scope.revision,
-                "embeddingModel": item.model_identity,
-            }
-        )
+    citations = [citation(available[i]) for i in dict.fromkeys(parsed.citation_ids)]
     content = parsed.model_dump(exclude={"title", "citation_ids"})
     content.update(
         {
