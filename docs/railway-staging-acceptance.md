@@ -6,7 +6,9 @@ Bead `schoolCRM-kce.5`. The deployment is staging-only. Production promotion and
 
 `scripts/verify_staging_acceptance.mjs` exercised real public HTTPS endpoints with separate synthetic teacher, HOD, dean and outsider identities. Inject `SCHOOLCRM_HOSTED_PROOF=staging`, `SCHOOLCRM_STAGING_ADMIN_PASSWORD` and `SCHOOLCRM_STAGING_QA_PASSWORD` privately. Do not pass credentials as arguments.
 
-| Requirement | Direct result |
+The table below is recorded evidence from the original run against plan `495b0af4-b207-4cf9-b321-382e9ca5cc00`. The current script does not re-read or re-verify that plan; fresh probe verification is described after the PDF evidence.
+
+| Requirement | Recorded original-run result |
 | --- | --- |
 | Distinct author, reviewer and approver | Teacher `701bd8ad-cc6c-4062-a8ca-08e4986ba0df`, HOD `bf0c78cd-6933-43c9-8fab-cb6bc5f0d1ef`, dean `a9ed588d-5066-46b2-b2fe-6c725cf8123e`; stored version 1 contains their matching author/reviewer/approver IDs |
 | Scoped access | Unassigned outsider denied source and generation-receipt reads; anonymous original download denied |
@@ -21,7 +23,18 @@ The browser's native PDF renderer produced `/private/tmp/schoolcrm-staging-versi
 
 The source and generation IDs, provider identities and initial real-model proof are recorded in PR #77 and `docs/railway-hosted-ai-proof.md` on its branch. Replaying the completed request after the human edit preserved both version IDs and returned the same plan. The original generated version still has two matching Cloudflare citations.
 
-Independent specification review found that the initial script could skip denial checks when replaying an already-published fixture. The corrected script creates a fresh teacher-owned probe from the real published output on every run, without a model call. It must observe five denials before reporting completion: private read, private reuse, premature publication, teacher review and HOD dean approval. The first corrected hosted run used probe `95d31f5c-45e2-41cd-a8b7-7af9cb1c1be9` and observed all five, then completed distinct-principal approval/publication and preserved published version 1 beside human draft version 2. The original generated plan remains unchanged.
+### Fresh probe verification
+
+Independent specification review found that the initial script could skip denial checks when replaying an already-published fixture. The corrected script creates a fresh teacher-owned probe by reusing published version 1 of the original plan, without a model call, and runs every check below on that probe only. Each of the five denials must return its exact status and a JSON:API `errors` document with no `data`: private read (404), private reuse (404), premature publication (409), teacher review (403) and HOD dean approval (403). The script then completes distinct-principal review, approval and publication, and asserts that published version 1 keeps its author, reviewer and approver IDs beside human draft version 2.
+
+| Run | Probe | Result |
+| --- | --- | --- |
+| First corrected run | `95d31f5c-45e2-41cd-a8b7-7af9cb1c1be9` | All five denials observed; distinct approval and human edit completed |
+| Status-only rerun | `bb1c0951-8451-46b0-94e9-fa3e4daf5b91` | All five denial statuses passed; distinct approval and human edit completed |
+
+| After Claude fixes | `46cdcfca-5b68-44f0-ac2d-218970ebdfff` | All five denial statuses and JSON:API error bodies passed; distinct approval and human edit completed |
+
+The first two runs predate the `errors`/no-`data` body assertion; they checked denial statuses only. Each rerun leaves a new published synthetic probe, with its newer version 2 draft, in the staging department.
 
 ## Restart and restore
 
@@ -45,6 +58,6 @@ Keep additive schema tables, immutable versions, source originals, audit records
 
 ## Review and remaining findings
 
-Independent standards/specification and architecture review is a final gate. GitHub has no configured check results for these PRs; do not describe absent checks as passing CI.
+Claude independently reviewed both full PR diffs for correctness, specification coverage, security, architecture and thermo-nuclear maintainability, finding no blockers. Its recommended JSON:API denial checks and historical-evidence labels were applied and the hosted workflow rerun passed. Current hosted AI replay also passed exact scope, wrong-school denial and missing-revision abstention; all five service deployment IDs above still report `SUCCESS`. Auth and HTTP auth-client race tests, seven Railway contract tests, Ruff and script syntax checks passed. GitHub has no configured check results for these PRs; absent checks are not passing CI.
 
 The separate follow-ups `schoolCRM-31e` and `schoolCRM-buq` cover template dashboard content and a shared admissions test-fixture race. They are not hidden as passing tests. Earlier token-bearing failure logs, if any, are historical records; PR #77 stops future token logging but does not erase log history.

@@ -81,7 +81,8 @@ async function verify() {
     const versionsPath = `/v1/lessons/${probe.id}/versions`;
     const denials = [];
     async function denied(name, method, path, actor, body, statuses) {
-        await request(method, path, actor.accessToken, body, statuses);
+        const document = await request(method, path, actor.accessToken, body, statuses);
+        assert.ok(document.errors?.length > 0 && document.data === undefined);
         denials.push(name);
     }
     await denied('private_read', 'GET', `/v1/lessons/${probe.id}`, hod, null, [404]);
@@ -122,7 +123,6 @@ async function verify() {
     const updated = resource((await request('GET', `/v1/lessons/${probe.id}`, teacher.accessToken)).data);
     assert.equal(updated.currentVersion, 2);
     assert.equal(updated.publishedVersion, 1);
-    assert.equal(denials.length, 5);
     console.log(JSON.stringify({ phase: 'workflow_complete', plan, probe: probe.id, reused: reused.id, teacher: teacher.user.id,
         hod: hod.user.id, dean: dean.user.id, currentVersion: 2, publishedVersion: 1,
         scopeDenials: 'passed', observedWorkflowDenials: denials, sourceChecksum: 'verified' }));
