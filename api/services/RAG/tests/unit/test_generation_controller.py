@@ -15,9 +15,6 @@ class WorkflowFixture:
         self.calls.append((request, context))
         return {"planID": str(uuid4()), "version": 1, "creationStatus": "draft"}
 
-    async def status(self, request_id, context):
-        return {"status": "completed", "result": {"planID": str(uuid4()), "version": 1}}
-
 
 def test_generation_uses_authenticated_actor_and_strict_scope_contract():
     app = build_app()

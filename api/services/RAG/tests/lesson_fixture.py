@@ -1,6 +1,10 @@
+import json
+from dataclasses import replace
 from uuid import uuid4
 
+from adapters.llm.lesson_schema import assemble_lesson
 from domain.entities.curriculum import (
+    CurriculumError,
     CurriculumEvidence,
     CurriculumPassage,
     CurriculumScope,
@@ -46,3 +50,59 @@ def generation_fixture():
         "citation_ids": [f"{source.id}:0"],
     }
     return request, evidence, output
+
+
+class CurriculumFixture:
+    def __init__(self, evidence):
+        self.evidence = evidence
+        self.withdrawn = False
+
+    async def search(self, token, scope, question, limit):
+        return [self.evidence] if scope == self.evidence.source.scope else []
+
+    async def source(self, token, source_id):
+        return (
+            replace(self.evidence.source, status="withdrawn")
+            if self.withdrawn
+            else self.evidence.source
+        )
+
+
+class ModelFixture:
+    def __init__(self, output):
+        self.output = output
+        self.calls = 0
+
+    async def generate(self, request, evidence):
+        self.calls += 1
+        return assemble_lesson(json.dumps(self.output), request, evidence, "fixture-completion")
+
+    async def close(self):
+        pass
+
+
+class GoFixture:
+    def __init__(self):
+        self.receipts = {}
+        self.calls = 0
+        self.fail_once = False
+        self.revoked = False
+        self.tokens = []
+
+    async def authorize(self, token, school_id, department_id):
+        self.tokens.append(token)
+        if self.revoked:
+            raise CurriculumError(403, "Teaching permission revoked")
+
+    async def create(self, token, scope, request_id, draft):
+        await self.authorize(token, scope.school_id, scope.department_id)
+        self.calls += 1
+        if request_id not in self.receipts:
+            self.receipts[request_id] = {"planID": str(uuid4()), "version": 1, "title": draft.title}
+        if self.fail_once:
+            self.fail_once = False
+            raise CurriculumError(503, "Ambiguous Go response after commit")
+        return self.receipts[request_id]
+
+    async def close(self):
+        pass

@@ -1,79 +1,26 @@
 import asyncio
-import json
 import os
 from dataclasses import replace
 from uuid import uuid4
 
 import psycopg
 import pytest
+from fastapi.testclient import TestClient
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from adapters.llm.lesson_schema import assemble_lesson
+from adapters.controllers.lesson_generation_controller import get_workflow
 from domain.entities.curriculum import CurriculumError
 from domain.entities.lesson_generation import GenerationContext
+from infrastructure.app import build_app
+from infrastructure.auth import AuthContext, get_auth_context
 from infrastructure.lesson_workflow import LessonWorkflow
+from tests.lesson_fixture import CurriculumFixture, GoFixture, ModelFixture
 from tests.lesson_fixture import generation_fixture as fixture
 
 DSN = os.environ.get("CURRICULUM_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(
     not DSN, reason="Set CURRICULUM_TEST_DATABASE_URL for workflow proof"
 )
-
-
-class CurriculumFixture:
-    def __init__(self, evidence):
-        self.evidence = evidence
-        self.withdrawn = False
-
-    async def search(self, token, scope, question, limit):
-        return [self.evidence] if scope == self.evidence.source.scope else []
-
-    async def source(self, token, source_id):
-        return (
-            replace(self.evidence.source, status="withdrawn")
-            if self.withdrawn
-            else self.evidence.source
-        )
-
-
-class ModelFixture:
-    def __init__(self, output):
-        self.output = output
-        self.calls = 0
-
-    async def generate(self, request, evidence):
-        self.calls += 1
-        return assemble_lesson(json.dumps(self.output), request, evidence, "fixture-completion")
-
-    async def close(self):
-        pass
-
-
-class GoFixture:
-    def __init__(self):
-        self.receipts = {}
-        self.calls = 0
-        self.fail_once = False
-        self.revoked = False
-        self.tokens = []
-
-    async def authorize(self, token, scope):
-        self.tokens.append(token)
-        if self.revoked:
-            raise CurriculumError(403, "Teaching permission revoked")
-
-    async def create(self, token, scope, request_id, draft):
-        await self.authorize(token, scope)
-        self.calls += 1
-        if request_id not in self.receipts:
-            self.receipts[request_id] = {"planID": str(uuid4()), "version": 1, "title": draft.title}
-        if self.fail_once:
-            self.fail_once = False
-            raise CurriculumError(503, "Ambiguous Go response after commit")
-        return self.receipts[request_id]
-
-    async def close(self):
-        pass
 
 
 async def prepare(workflow):
@@ -108,12 +55,12 @@ def test_resume_after_ambiguous_write_uses_checkpoint_and_fresh_token_without_du
             assert len(go.receipts) == 1 and go.calls == 2
             assert result["planID"] == go.receipts[request.request_id]["planID"]
             assert "private-fresh-token" in go.tokens
-            status = await restarted.status(
+            status = await restarted.thread(
                 request.request_id, GenerationContext(actor, "private-fresh-token")
             )
             assert status["status"] == "completed"
             with pytest.raises(CurriculumError) as unauthorized:
-                await restarted.status(
+                await restarted.thread(
                     request.request_id, GenerationContext(uuid4(), "other-token")
                 )
             assert unauthorized.value.status_code == 404
@@ -198,8 +145,8 @@ def test_cached_reply_rechecks_permission_after_waiting_for_request_lock():
             checked = asyncio.Event()
             initial_authorize = go.authorize
 
-            async def observed_authorize(token, scope):
-                await initial_authorize(token, scope)
+            async def observed_authorize(token, school_id, department_id):
+                await initial_authorize(token, school_id, department_id)
                 checked.set()
 
             go.authorize = observed_authorize
@@ -217,3 +164,145 @@ def test_cached_reply_rechecks_permission_after_waiting_for_request_lock():
             await workflow.close()
 
     asyncio.run(run())
+
+
+def test_cancelled_stream_releases_lock_and_reconnect_resumes_checkpoint():
+    async def run():
+        request, evidence, output = fixture()
+        actor = uuid4()
+        model_started, release_model = asyncio.Event(), asyncio.Event()
+
+        class BlockingModel(ModelFixture):
+            async def generate(self, request, evidence):
+                model_started.set()
+                await release_model.wait()
+                return await super().generate(request, evidence)
+
+        model, go = BlockingModel(output), GoFixture()
+        workflow = LessonWorkflow(DSN, CurriculumFixture(evidence), model, go)
+        await prepare(workflow)
+        try:
+            seen = []
+
+            async def consume(token):
+                async for event in await workflow.stream(request, GenerationContext(actor, token)):
+                    seen.append(event)
+
+            disconnected = asyncio.create_task(consume("private-first-token"))
+            await model_started.wait()
+            assert [name for name, _ in seen][:2] == ["progress", "citation"]
+            disconnected.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await disconnected
+            key = f"rag-lesson-generation:{actor}:{request.request_id}"
+            async with await psycopg.AsyncConnection.connect(DSN, autocommit=True) as conn:
+                for _ in range(50):
+                    cursor = await conn.execute(
+                        "SELECT pg_try_advisory_lock(hashtextextended(%s,0))", (key,)
+                    )
+                    if (await cursor.fetchone())[0]:
+                        break
+                    await asyncio.sleep(0.1)
+                else:
+                    pytest.fail("Cancelled stream kept the request lock")
+                await conn.execute("SELECT pg_advisory_unlock(hashtextextended(%s,0))", (key,))
+            pending = await workflow.thread(request.request_id, GenerationContext(actor, "t"))
+            assert pending["status"] == "pending" and pending["result"] is None
+
+            release_model.set()
+            seen.clear()
+            await consume("private-fresh-token")
+            # Retrieval was checkpointed: resume starts with saved citations, not a new search.
+            assert [name for name, _ in seen] == [
+                "citation",
+                "progress",
+                "progress",
+                "structured-result",
+            ]
+            assert model.calls == 1 and go.calls == 1
+            seen.clear()
+            await consume("private-replay-token")
+            assert [name for name, _ in seen] == ["citation", "structured-result"]
+            assert go.calls == 1
+        finally:
+            await workflow.close()
+
+    asyncio.run(run())
+
+
+def test_thread_history_is_actor_private_department_scoped_and_rechecks_authority():
+    async def run():
+        request, evidence, output = fixture()
+        actor = uuid4()
+        go = GoFixture()
+        workflow = LessonWorkflow(DSN, CurriculumFixture(evidence), ModelFixture(output), go)
+        await prepare(workflow)
+        try:
+            context = GenerationContext(actor, "private-token")
+            await workflow.execute(request, context)
+            scope = request.scope
+            threads = await workflow.threads(scope.school_id, scope.department_id, context)
+            assert [t["request"]["request_id"] for t in threads] == [str(request.request_id)]
+            assert threads[0]["status"] == "completed"
+            assert threads[0]["request"]["department_id"] == str(scope.department_id)
+            other = GenerationContext(uuid4(), "other-token")
+            assert await workflow.threads(scope.school_id, scope.department_id, other) == []
+            with pytest.raises(CurriculumError) as hidden:
+                await workflow.thread(request.request_id, other)
+            assert hidden.value.status_code == 404
+            assert await workflow.threads(scope.school_id, uuid4(), context) == []
+            go.revoked = True
+            with pytest.raises(CurriculumError) as revoked:
+                await workflow.threads(scope.school_id, scope.department_id, context)
+            assert revoked.value.status_code == 403
+        finally:
+            await workflow.close()
+
+    asyncio.run(run())
+
+
+def test_http_stream_runs_workflow_to_completion_and_replays_receipt():
+    request, evidence, output = fixture()
+    actor = uuid4()
+    model, go = ModelFixture(output), GoFixture()
+    workflow = LessonWorkflow(DSN, CurriculumFixture(evidence), model, go)
+    app = build_app()
+    app.dependency_overrides[get_auth_context] = lambda: AuthContext(str(actor), "token", [])
+    app.dependency_overrides[get_workflow] = lambda: workflow
+    scope = request.scope
+    body = {
+        "request_id": str(request.request_id),
+        "school_id": str(scope.school_id),
+        "department_id": str(scope.department_id),
+        "framework": scope.framework,
+        "stage": scope.stage,
+        "subject": scope.subject,
+        "revision": scope.revision,
+        "topic": request.topic,
+        "duration_minutes": request.duration_minutes,
+    }
+    with TestClient(app) as client:
+        client.portal.call(prepare, workflow)
+        try:
+            names = []
+            for _ in range(2):
+                response = client.post("/v1/rag/lessons/generate/stream", json=body)
+                assert response.status_code == 200
+                names.append(
+                    [line[7:] for line in response.text.splitlines() if line.startswith("event:")]
+                )
+            assert names[0] == [
+                "progress",
+                "citation",
+                "progress",
+                "progress",
+                "structured-result",
+                "approval-request",
+                "completed",
+            ]
+            assert names[1] == ["citation", "structured-result", "approval-request", "completed"]
+            assert model.calls == 1 and go.calls == 1
+            thread = client.get(f"/v1/rag/lessons/threads/{request.request_id}").json()
+            assert thread["data"]["attributes"]["status"] == "completed"
+        finally:
+            client.portal.call(workflow.close)

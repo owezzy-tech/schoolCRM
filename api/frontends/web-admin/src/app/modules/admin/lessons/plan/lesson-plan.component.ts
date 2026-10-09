@@ -15,11 +15,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { jsonApiErrorMessage, JsonApiErrorResponse } from 'app/core/api/json-api';
+import {
+    jsonApiErrorMessage,
+    JsonApiErrorResponse,
+} from 'app/core/api/json-api';
 import { LessonsService } from 'app/core/lessons/lessons.service';
 import {
-    LessonDecision,
     lessonActions,
+    LessonDecision,
     LessonPlan,
     LessonVersion,
     SEPARATION_OF_DUTIES_MESSAGE,
@@ -31,6 +34,7 @@ import {
 } from 'app/core/school-access/school-access.types';
 import { UserService } from 'app/core/user/user.service';
 import { forkJoin, Observable } from 'rxjs';
+import { LessonReuseComponent } from '../shared/lesson-reuse/lesson-reuse.component';
 
 import { LessonContentComponent } from '../shared/lesson-content.component';
 import { LessonStatusComponent } from '../shared/lesson-status.component';
@@ -48,6 +52,7 @@ import { LessonStatusComponent } from '../shared/lesson-status.component';
         MatSnackBarModule,
         RouterLink,
         LessonContentComponent,
+        LessonReuseComponent,
         LessonStatusComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,7 +62,8 @@ export class LessonPlanComponent {
     private readonly lessons = inject(LessonsService);
     private readonly schoolAccess = inject(SchoolAccessService);
     private readonly snackBar = inject(MatSnackBar);
-    readonly planID = inject(ActivatedRoute).snapshot.paramMap.get('planId') ?? '';
+    readonly planID =
+        inject(ActivatedRoute).snapshot.paramMap.get('planId') ?? '';
 
     readonly separationMessage = SEPARATION_OF_DUTIES_MESSAGE;
     readonly viewer = toSignal(inject(UserService).user$);
@@ -73,18 +79,37 @@ export class LessonPlanComponent {
 
     readonly current = computed(() => {
         const plan = this.plan();
-        return this.versions().find((v) => v.version === plan?.currentVersion) ?? null;
+        return (
+            this.versions().find((v) => v.version === plan?.currentVersion) ??
+            null
+        );
     });
     readonly available = computed(() => {
         const plan = this.plan();
         const current = this.current();
         const viewer = this.viewer();
-        if (!plan || !current || !viewer) return { actions: [], separationOfDuties: false };
+        if (!plan || !current || !viewer)
+            return { actions: [], separationOfDuties: false };
         return lessonActions(
             plan,
             current,
             viewer.id,
-            capabilitiesFor(this.memberships(), plan.schoolID, plan.departmentID)
+            capabilitiesFor(
+                this.memberships(),
+                plan.schoolID,
+                plan.departmentID
+            )
+        );
+    });
+    readonly canReuse = computed(() => {
+        const plan = this.plan();
+        return (
+            !!plan &&
+            capabilitiesFor(
+                this.memberships(),
+                plan.schoolID,
+                plan.departmentID
+            ).includes('teach')
         );
     });
     readonly has = (action: string) =>
@@ -117,18 +142,27 @@ export class LessonPlanComponent {
                 this.errorMessage.set(
                     error.status === 404
                         ? 'This lesson plan does not exist or is not visible to you.'
-                        : jsonApiErrorMessage(error as JsonApiErrorResponse, 'Unable to load the lesson plan.')
+                        : jsonApiErrorMessage(
+                              error as JsonApiErrorResponse,
+                              'Unable to load the lesson plan.'
+                          )
                 );
             },
         });
     }
 
     submit(): void {
-        this.run((plan, version) => this.lessons.submit(plan, version), 'Submitted for HOD review.');
+        this.run(
+            (plan, version) => this.lessons.submit(plan, version),
+            'Submitted for HOD review.'
+        );
     }
 
     publish(): void {
-        this.run((plan, version) => this.lessons.publish(plan, version), 'Published. This version is now live.');
+        this.run(
+            (plan, version) => this.lessons.publish(plan, version),
+            'Published. This version is now live.'
+        );
     }
 
     decide(): void {
@@ -163,11 +197,18 @@ export class LessonPlanComponent {
                 this.busy.set(false);
                 if (error.status === 409) {
                     this.conflict.set(true);
-                    this.snackBar.open('That version is no longer current.', undefined, { duration: 5000 });
+                    this.snackBar.open(
+                        'That version is no longer current.',
+                        undefined,
+                        { duration: 5000 }
+                    );
                     return;
                 }
                 this.errorMessage.set(
-                    jsonApiErrorMessage(error as JsonApiErrorResponse, 'The action could not be completed.')
+                    jsonApiErrorMessage(
+                        error as JsonApiErrorResponse,
+                        'The action could not be completed.'
+                    )
                 );
             },
         });

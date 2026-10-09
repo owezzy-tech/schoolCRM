@@ -22,9 +22,9 @@ export class LessonsService {
 
     plans(schoolID: string, departmentID: string): Observable<LessonPlan[]> {
         return this.httpClient
-            .get<JsonApiCollectionDocument<LessonPlan>>(
-                this.departmentPath(schoolID, departmentID)
-            )
+            .get<
+                JsonApiCollectionDocument<LessonPlan>
+            >(this.departmentPath(schoolID, departmentID))
             .pipe(map((document) => unwrapJsonApiCollection(document).items));
     }
 
@@ -34,10 +34,9 @@ export class LessonsService {
         draft: LessonDraft
     ): Observable<LessonPlan> {
         return this.httpClient
-            .post<JsonApiDocument<LessonPlan>>(
-                this.departmentPath(schoolID, departmentID),
-                draft
-            )
+            .post<
+                JsonApiDocument<LessonPlan>
+            >(this.departmentPath(schoolID, departmentID), draft)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -50,9 +49,9 @@ export class LessonsService {
     /** Versions newest first. */
     versions(planID: string): Observable<LessonVersion[]> {
         return this.httpClient
-            .get<JsonApiCollectionDocument<LessonVersion>>(
-                `/v1/lessons/${planID}/versions`
-            )
+            .get<
+                JsonApiCollectionDocument<LessonVersion>
+            >(`/v1/lessons/${planID}/versions`)
             .pipe(map((document) => unwrapJsonApiCollection(document).items));
     }
 
@@ -63,10 +62,23 @@ export class LessonsService {
         draft: LessonDraft
     ): Observable<LessonVersion> {
         return this.httpClient
-            .post<JsonApiDocument<LessonVersion>>(
-                `/v1/lessons/${planID}/versions`,
-                { baseVersion, ...draft }
-            )
+            .post<
+                JsonApiDocument<LessonVersion>
+            >(`/v1/lessons/${planID}/versions`, { baseVersion, ...draft })
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    /** Stable request ID makes an ambiguous creation reply safe to retry. */
+    reuse(
+        planID: string,
+        version: number,
+        requestID: string,
+        title: string
+    ): Observable<LessonPlan> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<LessonPlan>
+            >(`/v1/lessons/${planID}/reuse`, { version, requestID, title })
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -89,7 +101,10 @@ export class LessonsService {
         decision: LessonDecision,
         feedback: string
     ): Observable<LessonVersion> {
-        return this.command(planID, version, 'approval', { decision, feedback });
+        return this.command(planID, version, 'approval', {
+            decision,
+            feedback,
+        });
     }
 
     publish(planID: string, version: number): Observable<LessonVersion> {
@@ -103,10 +118,9 @@ export class LessonsService {
         body: { decision: LessonDecision; feedback: string } | null = null
     ): Observable<LessonVersion> {
         return this.httpClient
-            .post<JsonApiDocument<LessonVersion>>(
-                `/v1/lessons/${planID}/versions/${version}/${step}`,
-                body
-            )
+            .post<
+                JsonApiDocument<LessonVersion>
+            >(`/v1/lessons/${planID}/versions/${version}/${step}`, body)
             .pipe(map(unwrapJsonApiResource));
     }
 
