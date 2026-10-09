@@ -2302,34 +2302,6 @@ func (app SyncJob) Encode() ([]byte, string, error) {
 	return data, "application/json", err
 }
 
-func toAppSyncJob(job admissionsbus.SyncJob) SyncJob {
-	return SyncJob{
-		ID:             job.ID.String(),
-		Name:           job.Name,
-		Status:         job.Status.String(),
-		Direction:      job.Direction.String(),
-		StartedAt:      formatTimePtr(job.StartedAt),
-		CompletedAt:    formatTimePtr(job.CompletedAt),
-		RecordsPulled:  job.RecordsPulled,
-		RecordsPushed:  job.RecordsPushed,
-		EventsRequeued: job.EventsRequeued,
-		FailureReason:  job.FailureReason,
-		Retryable:      job.Retryable,
-		CreatedByID:    uuidStringPtr(job.CreatedByID),
-		DateCreated:    job.DateCreated.Format(time.RFC3339),
-		DateUpdated:    job.DateUpdated.Format(time.RFC3339),
-	}
-}
-
-func toAppSyncJobs(jobs []admissionsbus.SyncJob) []SyncJob {
-	app := make([]SyncJob, len(jobs))
-	for i, job := range jobs {
-		app[i] = toAppSyncJob(job)
-	}
-
-	return app
-}
-
 // NewSyncJob defines the data needed to create a SIS batch reconciliation run.
 type NewSyncJob struct {
 	Name        string  `json:"name"`
@@ -2342,32 +2314,6 @@ type NewSyncJob struct {
 // Decode implements the decoder interface.
 func (app *NewSyncJob) Decode(data []byte) error {
 	return json.Unmarshal(data, app)
-}
-
-func toBusNewSyncJob(app NewSyncJob) (admissionsbus.NewSyncJob, error) {
-	var fieldErrors errs.FieldErrors
-
-	startedAt, err := parseTimePtr(app.StartedAt)
-	if err != nil {
-		fieldErrors.Add("startedAt", err)
-	}
-
-	createdByID, err := parseUUIDPtr(app.CreatedByID)
-	if err != nil {
-		fieldErrors.Add("createdByID", err)
-	}
-
-	if len(fieldErrors) > 0 {
-		return admissionsbus.NewSyncJob{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
-	}
-
-	return admissionsbus.NewSyncJob{
-		Name:        app.Name,
-		Direction:   admissionsbus.SyncDirection(app.Direction),
-		Status:      admissionsbus.SyncJobStatus(app.Status),
-		StartedAt:   startedAt,
-		CreatedByID: createdByID,
-	}, nil
 }
 
 // SyncEvent represents a selected real-time SIS sync event.
@@ -2394,34 +2340,6 @@ func (app SyncEvent) Encode() ([]byte, string, error) {
 	return data, "application/json", err
 }
 
-func toAppSyncEvent(event admissionsbus.SyncEvent) SyncEvent {
-	return SyncEvent{
-		ID:            event.ID.String(),
-		JobID:         uuidStringPtr(event.JobID),
-		EventType:     event.EventType.String(),
-		Status:        event.Status.String(),
-		Direction:     event.Direction.String(),
-		ResourceType:  event.ResourceType,
-		ResourceID:    event.ResourceID.String(),
-		PayloadHash:   event.PayloadHash,
-		Attempts:      event.Attempts,
-		NextRetryAt:   formatTimePtr(event.NextRetryAt),
-		FailureReason: event.FailureReason,
-		AuditMessage:  event.AuditMessage,
-		DateCreated:   event.DateCreated.Format(time.RFC3339),
-		DateUpdated:   event.DateUpdated.Format(time.RFC3339),
-	}
-}
-
-func toAppSyncEvents(events []admissionsbus.SyncEvent) []SyncEvent {
-	app := make([]SyncEvent, len(events))
-	for i, event := range events {
-		app[i] = toAppSyncEvent(event)
-	}
-
-	return app
-}
-
 // NewSyncEvent defines the data needed to enqueue a selected real-time SIS sync event.
 type NewSyncEvent struct {
 	JobID        *string `json:"jobID"`
@@ -2436,34 +2354,6 @@ type NewSyncEvent struct {
 // Decode implements the decoder interface.
 func (app *NewSyncEvent) Decode(data []byte) error {
 	return json.Unmarshal(data, app)
-}
-
-func toBusNewSyncEvent(app NewSyncEvent) (admissionsbus.NewSyncEvent, error) {
-	var fieldErrors errs.FieldErrors
-
-	jobID, err := parseUUIDPtr(app.JobID)
-	if err != nil {
-		fieldErrors.Add("jobID", err)
-	}
-
-	resourceID, err := uuid.Parse(app.ResourceID)
-	if err != nil {
-		fieldErrors.Add("resourceID", err)
-	}
-
-	if len(fieldErrors) > 0 {
-		return admissionsbus.NewSyncEvent{}, fmt.Errorf("validate: %w", fieldErrors.ToError())
-	}
-
-	return admissionsbus.NewSyncEvent{
-		JobID:        jobID,
-		EventType:    admissionsbus.SyncEventType(app.EventType),
-		Direction:    admissionsbus.SyncDirection(app.Direction),
-		ResourceType: app.ResourceType,
-		ResourceID:   resourceID,
-		PayloadHash:  app.PayloadHash,
-		AuditMessage: app.AuditMessage,
-	}, nil
 }
 
 // CampaignAuditEvent represents one lifecycle action for an admissions campaign.
