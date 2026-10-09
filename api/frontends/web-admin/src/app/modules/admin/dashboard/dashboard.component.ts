@@ -1,3 +1,4 @@
+import { AsyncPipe, DatePipe, SlicePipe } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -6,15 +7,16 @@ import {
     OnInit,
     signal,
 } from '@angular/core';
-import { SlicePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RouterLink } from '@angular/router';
 import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
+    AdmissionsEvent,
     Application,
 } from 'app/core/admissions/admissions.types';
+import { UserService } from 'app/core/user/user.service';
 import { forkJoin } from 'rxjs';
 
 interface KpiCard {
@@ -22,16 +24,12 @@ interface KpiCard {
     value: number;
 }
 
-interface UpcomingEvent {
-    title: string;
-    date: string;
-    location: string;
-}
-
 @Component({
     selector: 'app-dashboard',
     standalone: true,
     imports: [
+        AsyncPipe,
+        DatePipe,
         SlicePipe,
         RouterLink,
         MatButtonModule,
@@ -44,7 +42,7 @@ interface UpcomingEvent {
 export class DashboardComponent implements OnInit {
     private readonly admissionsService = inject(AdmissionsService);
 
-    readonly userName = 'Avery';
+    readonly user$ = inject(UserService).user$;
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
 
@@ -61,19 +59,34 @@ export class DashboardComponent implements OnInit {
         ];
     });
 
-    readonly upcomingEvents: readonly UpcomingEvent[] = [
-        { title: 'Fall Open House', date: 'Sat, Jun 6 · 10:00 AM', location: 'Main Quad' },
-        { title: 'Virtual Info Session — Engineering', date: 'Tue, Jun 9 · 6:00 PM', location: 'Online' },
-        { title: 'Counselor Meetup', date: 'Thu, Jun 11 · 2:00 PM', location: 'Admissions Hall' },
-    ];
+    readonly upcomingEvents = signal<AdmissionsEvent[]>([]);
 
     ngOnInit(): void {
+        this.loading.set(true);
+        this.error.set(null);
         forkJoin({
             all: this.admissionsService.queryApplications({ rows: 1 }),
-            submitted: this.admissionsService.queryApplications({ rows: 1, status: 'SUBMITTED' }),
-            admitted: this.admissionsService.queryApplications({ rows: 1, status: 'ADMITTED' }),
-            enrolled: this.admissionsService.queryApplications({ rows: 1, status: 'ENROLLED' }),
-            recent: this.admissionsService.queryApplications({ rows: 5, orderBy: 'date_created,DESC' }),
+            submitted: this.admissionsService.queryApplications({
+                rows: 1,
+                status: 'SUBMITTED',
+            }),
+            admitted: this.admissionsService.queryApplications({
+                rows: 1,
+                status: 'ADMITTED',
+            }),
+            enrolled: this.admissionsService.queryApplications({
+                rows: 1,
+                status: 'ENROLLED',
+            }),
+            recent: this.admissionsService.queryApplications({
+                rows: 5,
+                orderBy: 'date_created,DESC',
+            }),
+            events: this.admissionsService.queryEvents({
+                rows: 3,
+                status: 'upcoming',
+                orderBy: 'start_time,ASC',
+            }),
         }).subscribe({
             next: (results) => {
                 this.kpiCounts.set({
@@ -83,10 +96,13 @@ export class DashboardComponent implements OnInit {
                     ENROLLED: results.enrolled.total,
                 });
                 this.recentApplications.set(results.recent.items);
+                this.upcomingEvents.set(results.events.items);
                 this.loading.set(false);
             },
             error: () => {
-                this.error.set('Unable to load dashboard data. Please try again.');
+                this.error.set(
+                    'Unable to load dashboard data. Please try again.'
+                );
                 this.loading.set(false);
             },
         });
