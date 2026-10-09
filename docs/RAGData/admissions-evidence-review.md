@@ -59,3 +59,11 @@ Maseno's [official programme catalogue](https://maseno.ac.ke/all-programmes), ch
 - CSV record 12 presents a standalone C-minus route for Diploma in Business Administration with subject conditions. The catalogue gives a C-plain route or C-minus with a recognised certificate.
 
 These checks establish reasons to withhold CSV rule approval. They do not validate the other records, date the CSV, or approve programme equivalence. A complete row-by-row source review and authoritative cycle remain required.
+
+## Calculation authority check
+
+The [official KUCCPS FAQ](https://www.kuccps.net/node/139), checked 9 October 2026, explains that exact weighted points depend on KNEC performance indices unavailable to individual graduates. It directs applicants to their computed portal points. Minimum requirements permit an application; placement also depends on competing applicants and programme capacity. The FAQ does not publish a reproducible calculation rule for this graph.
+
+The existing Go `KCSEResult.ClusterWeight` in `business/domain/admissionsbus/values_ke.go` already labels its grade-based result as an approximation and includes an `ApproximationNote`. It must retain that distinction. This evidence review does not authorise using that estimate as exact KUCCPS points or approving the supplied CSV thresholds. Prerequisites for `.6` include reviewed admissions sources, authoritative programme requirements and applicable cycle, approved cross-source mappings, and authoritative cluster calculation rules with a recorded revision. Labelled estimates do not satisfy those prerequisites.
+
+KUCCPS programme-detail pages could not be retrieved (requests timed out on 9 October 2026); no content from them was used in this review. The supplied CSV's publisher, revision and cycle remain unverified.
