@@ -93,8 +93,10 @@ If any staged file ends with `.go`, the hook runs:
 
 ```bash
 CGO_ENABLED=0 go vet ./...
-staticcheck -checks=all ./...
+GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all ./...
 ```
+
+`staticcheck` is pinned as a `tool` directive in `go.mod`, so `go tool` runs the version the repo selects. The lint command uses patched Go 1.26.9 because this staticcheck release cannot decode Go 1.27.2 export data. This compiler supports the module's Go 1.26 language minimum; application builds, tests and vet continue using the recommended Go 1.27.2. You do not need to install it separately.
 
 ### Pre-push
 
@@ -247,12 +249,20 @@ Install the RAG dev dependencies:
 python3 -m pip install -e api/services/RAG[dev]
 ```
 
-### `staticcheck` or `govulncheck` not found
+### `govulncheck` not found
 
 Install the Go tooling already referenced by the repo:
 
 ```bash
 make dev-gotooling
+```
+
+### `staticcheck` fails to load packages
+
+`staticcheck` runs through `go tool`, using the version pinned in `go.mod` and the explicit supported Go 1.26.9 lint compiler. Do not replace the invocation with `staticcheck@latest` or a global binary. Go downloads the patched lint compiler automatically if needed. Remove the compiler override from the hook, npm, Makefile and CircleCI together once the pinned staticcheck supports Go 1.27 export data. Confirm the pinned tool builds:
+
+```bash
+GOTOOLCHAIN=go1.26.9 go tool staticcheck -version
 ```
 
 ### Frontend test fails because Chrome is unavailable

@@ -157,7 +157,7 @@ endif
 dev-gotooling:
 	go install github.com/divan/expvarmon@latest
 	go install github.com/rakyll/hey@latest
-	go install honnef.co/go/tools/cmd/staticcheck@latest
+	GOTOOLCHAIN=go1.26.9 go tool staticcheck -version
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -553,7 +553,7 @@ test-only:
 
 lint:
 	CGO_ENABLED=0 go vet ./...
-	staticcheck -checks=all ./...
+	GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all ./...
 
 vuln-check:
 	govulncheck ./...
