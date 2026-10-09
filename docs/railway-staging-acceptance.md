@@ -46,11 +46,11 @@ The restored database query returned `5|2|2|1|1|5`: five synthetic/operator iden
 
 Both physical backups share the live database volume. They prove recovery mechanics, not independent disaster recovery. Choose an independent destination, retention and schedule before production; that choice is outside this staging rollout.
 
-## Current release and rollback boundaries
+## Release and rollback boundaries
 
 The public entry point is `https://web-admin-staging-c78a.up.railway.app`. Auth, business API, RAG and PostgreSQL remain private. The database has no public TCP proxy. Signing keys, provider keys and passwords are Railway secret variables.
 
-Current successful application deployments are auth `2d682d2a-dfae-4ffc-877a-e2783361c36d`, business API `9a750f32-a902-4c21-abe2-6c7c0ef7d37c`, RAG `c3e22a03-b2c3-401e-8ab3-9f72c4283f76` and frontend `60e78418-3742-46f5-ba33-1b6afb3fcf78`. Auth and business API contain the credential-safe source from PR #77. Runtime success is not a claim that this PR has been merged.
+At the original acceptance run, successful application deployments were auth `2d682d2a-dfae-4ffc-877a-e2783361c36d`, business API `9a750f32-a902-4c21-abe2-6c7c0ef7d37c`, RAG `c3e22a03-b2c3-401e-8ab3-9f72c4283f76` and frontend `60e78418-3742-46f5-ba33-1b6afb3fcf78`. Auth and business API contained the credential-safe source from PR #77. The subsequent [9 October Go security refresh](railway-staging-security-refresh.md) records their replacement deployments and fresh hosted verification.
 
 For recovery, inspect the exact affected service and deployment in staging first. Restart the existing successful release for a process-only failure. For a bad application release, select a recorded, previously validated deployment through Railway's deployment history and verify its status and protected HTTPS behaviour before accepting rollback. Do not restore an old auth image that logs bearer values or an old RAG image with writable privileged startup code.
 
@@ -58,6 +58,6 @@ Keep additive schema tables, immutable versions, source originals, audit records
 
 ## Review and remaining findings
 
-Claude independently reviewed both full PR diffs for correctness, specification coverage, security, architecture and thermo-nuclear maintainability, finding no blockers. Its recommended JSON:API denial checks and historical-evidence labels were applied and the hosted workflow rerun passed. Current hosted AI replay also passed exact scope, wrong-school denial and missing-revision abstention; all five service deployment IDs above still report `SUCCESS`. Auth and HTTP auth-client race tests, seven Railway contract tests, Ruff and script syntax checks passed. GitHub has no configured check results for these PRs; absent checks are not passing CI.
+Claude independently reviewed both full PR diffs for correctness, specification coverage, security, architecture and thermo-nuclear maintainability, finding no blockers. Its recommended JSON:API denial checks and historical-evidence labels were applied and the hosted workflow rerun passed. At that run, hosted AI replay also passed exact scope, wrong-school denial and missing-revision abstention, and all five service deployment IDs then reported `SUCCESS`. Auth and HTTP auth-client race tests, seven Railway contract tests, Ruff and script syntax checks passed. GitHub has no configured check results for these PRs; absent checks are not passing CI.
 
-The separate follow-ups `schoolCRM-31e` and `schoolCRM-buq` cover template dashboard content and a shared admissions test-fixture race. They are not hidden as passing tests. Earlier token-bearing failure logs, if any, are historical records; PR #77 stops future token logging but does not erase log history.
+The separate follow-up `schoolCRM-31e` covers template dashboard content. The shared admissions test-fixture race tracked by `schoolCRM-buq` was subsequently fixed in PR #81. Earlier token-bearing failure logs, if any, are historical records; PR #77 stops future token logging but does not erase log history.
