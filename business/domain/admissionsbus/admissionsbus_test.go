@@ -2289,7 +2289,6 @@ func TestTransitionApplicationStatusRejectsInvalidTransition(t *testing.T) {
 func TestTransitionApplicationStatusAllowsWithdrawalFromReviewStates(t *testing.T) {
 	t.Parallel()
 
-	bus := newTestBusiness()
 	allowed := []ApplicationStatus{
 		ApplicationStatusDraft,
 		ApplicationStatusSubmitted,
@@ -2302,6 +2301,7 @@ func TestTransitionApplicationStatusAllowsWithdrawalFromReviewStates(t *testing.
 		t.Run(from.String(), func(t *testing.T) {
 			t.Parallel()
 
+			bus := newTestBusiness()
 			_, _, err := bus.TransitionApplicationStatus(context.Background(), Application{ID: uuid.New(), Status: from}, NewApplicationTransition{
 				ToStatus: ApplicationStatusWithdrawn,
 				ActorID:  uuid.New(),
