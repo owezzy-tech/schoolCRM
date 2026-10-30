@@ -381,9 +381,11 @@ def write_outputs(graph, output):
     for review in graph["transcription_reviews"].values():
         report.extend(
             [
-                f"Revision `{review['review_revision']}` ({review['reviewed_on']}) covers "
-                f"{review['rows_reviewed']} of 87 printed rows: code, name, school, cluster and "
-                "both cohort cut-offs.",
+                (
+                    f"Revision `{review['review_revision']}` ({review['reviewed_on']}) covers "
+                    f"{review['rows_reviewed']} of 87 printed rows: code, name, school, "
+                    "cluster and both cohort cut-offs."
+                ),
                 "Reviewers: " + "; ".join(r["reviewer"] for r in review["reviewers"]) + ".",
                 review["scope"],
             ]
