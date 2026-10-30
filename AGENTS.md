@@ -52,6 +52,21 @@ cp -rf source dest          # NOT: cp -r source dest
 - Commit and push each validated bead, then open its own PR against `develop`, or `main` for a hotfix. Include the bead ID, acceptance evidence, review verdict and material risks in the PR. Record the PR URL in Beads and close the bead only after validation, review and PR creation succeed. PR creation is required; merging remains a separate action.
 - Finish one bead's PR before starting the next. A parent epic stays open until its child features satisfy their acceptance conditions. Documentation delivery does not close implementation beads.
 
+## Code Review Rules
+
+### Authorization
+
+- Check every school and lesson command against the caller's active membership on the server. Hiding a button in the frontend or reading `/v1/me/school-memberships` grants nothing.
+- Only the author may read an unsubmitted lesson draft. Other members see the newest submitted version.
+
+### API contract
+
+- Flag any handler that bypasses `foundation/web.Respond` or returns a body that is not JSON:API v1.1, as defined in "API Response Contract" above.
+
+### Migrations
+
+- Add schema changes as a new `-- Version:` block at the end of `business/sdk/migrate/sql/migrate.sql`. Flag any edit to a block that already exists on `develop`.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 
