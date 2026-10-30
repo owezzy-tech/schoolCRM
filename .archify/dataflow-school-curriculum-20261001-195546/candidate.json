@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Proposed v1 curriculum and admissions evidence flow",
+    "locale": "en",
+    "output": ".archify/dataflow-school-curriculum-20261001-195546/school-curriculum.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/owezzy-tech/schoolCRM",
+      "revision": "bea454bdb4f420cac2074c91adbd89a6c0e9cc74",
+      "provider": "github"
+    },
+    "viewBox": [
+      1068,
+      640
+    ]
+  },
+  "stages": [
+    {
+      "label": "Source families"
+    },
+    {
+      "label": "Capture evidence"
+    },
+    {
+      "label": "Review and approve"
+    },
+    {
+      "label": "Persist projections"
+    },
+    {
+      "label": "Scoped consumption"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "kenya",
+      "type": "external",
+      "label": "Kenya curriculum",
+      "sublabel": "Playgroup through secondary",
+      "tag": "CBC/CBE and 8-4-4",
+      "stage": 0,
+      "row": 0,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 31,
+          "end_line": 33
+        }
+      ]
+    },
+    {
+      "id": "cambridge",
+      "type": "external",
+      "label": "Cambridge curriculum",
+      "sublabel": "Early Years through Year 9",
+      "tag": "Inquiry + projects",
+      "stage": 0,
+      "row": 1,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 34,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "admissions",
+      "type": "external",
+      "label": "Admissions evidence",
+      "sublabel": "Maseno CSV + cut-off scan",
+      "tag": "Historical / review needed",
+      "stage": 0,
+      "row": 3,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/RAGData/knowledge-graph/REPORT.md",
+          "line": 16,
+          "end_line": 42
+        }
+      ]
+    },
+    {
+      "id": "parse",
+      "type": "backend",
+      "label": "Upload + parse/OCR",
+      "sublabel": "Original file / page / hash",
+      "tag": "Authorised staff",
+      "stage": 1,
+      "row": 1,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 39,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "rulesparse",
+      "type": "backend",
+      "label": "Extract admissions",
+      "sublabel": "Preserve raw requirements",
+      "tag": "No inferred equivalence",
+      "stage": 1,
+      "row": 3,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 45,
+          "end_line": 48
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "type": "security",
+      "label": "Source review",
+      "sublabel": "Active revision / provenance",
+      "tag": "Approved content only",
+      "stage": 2,
+      "row": 1,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 36,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "rulereview",
+      "type": "security",
+      "label": "Rule review",
+      "sublabel": "Requirements / cohorts / mapping",
+      "tag": "Resolve uncertain cells",
+      "stage": 2,
+      "row": 3,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 45,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "vectors",
+      "type": "database",
+      "label": "Curriculum index",
+      "sublabel": "LlamaIndex + pgvector",
+      "tag": "Framework and revision metadata",
+      "stage": 3,
+      "row": 1,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 36,
+          "end_line": 44
+        }
+      ]
+    },
+    {
+      "id": "rules",
+      "type": "database",
+      "label": "Reviewed rule graph",
+      "sublabel": "Typed facts / cohort citations",
+      "tag": "Admissions collection",
+      "stage": 3,
+      "row": 3,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 45,
+          "end_line": 48
+        }
+      ]
+    },
+    {
+      "id": "retrieve",
+      "type": "security",
+      "label": "Curriculum retrieval",
+      "sublabel": "School / framework / level filter",
+      "tag": "Before model exposure",
+      "stage": 4,
+      "row": 1,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 43,
+          "end_line": 44
+        }
+      ]
+    },
+    {
+      "id": "lesson",
+      "type": "backend",
+      "label": "Lesson draft",
+      "sublabel": "Validated structure + citations",
+      "tag": "LangGraph teaching workflow",
+      "stage": 4,
+      "row": 2,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 44
+        },
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 66,
+          "end_line": 72
+        }
+      ]
+    },
+    {
+      "id": "evaluate",
+      "type": "backend",
+      "label": "Go qualification check",
+      "sublabel": "Deterministic result + evidence",
+      "tag": "Approximation labelled",
+      "stage": 4,
+      "row": 3,
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 45,
+          "end_line": 47
+        },
+        {
+          "path": "business/domain/admissionsbus/values_ke.go",
+          "line": 282,
+          "end_line": 285
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "kenya",
+      "to": "parse",
+      "label": "Curriculum files",
+      "classification": "User-provided authorised resources",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          230,
+          157
+        ],
+        [
+          230,
+          215
+        ],
+        [
+          315,
+          215
+        ]
+      ],
+      "labelAt": [
+        244,
+        108
+      ]
+    },
+    {
+      "from": "cambridge",
+      "to": "parse",
+      "label": "Curriculum files",
+      "classification": "User-provided authorised resources",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelAt": [
+        208,
+        315
+      ]
+    },
+    {
+      "from": "parse",
+      "to": "review",
+      "label": "Text + source metadata",
+      "labelDy": -35
+    },
+    {
+      "from": "review",
+      "to": "vectors",
+      "label": "Approved chunks",
+      "variant": "security",
+      "labelDy": -35
+    },
+    {
+      "from": "vectors",
+      "to": "retrieve",
+      "label": "Filtered evidence",
+      "variant": "security",
+      "labelDy": -35
+    },
+    {
+      "from": "retrieve",
+      "to": "lesson",
+      "label": "Cited context",
+      "variant": "emphasis",
+      "labelAt": [
+        860,
+        315
+      ]
+    },
+    {
+      "from": "admissions",
+      "to": "rulesparse",
+      "label": "Records + OCR",
+      "labelDy": -35
+    },
+    {
+      "from": "rulesparse",
+      "to": "rulereview",
+      "label": "Candidate claims",
+      "labelDy": -35
+    },
+    {
+      "from": "rulereview",
+      "to": "rules",
+      "label": "Reviewed facts",
+      "variant": "security",
+      "labelDy": -35
+    },
+    {
+      "from": "rules",
+      "to": "evaluate",
+      "label": "Applicable rules",
+      "variant": "security",
+      "labelDy": -35
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Curriculum scope",
+      "items": [
+        "Kenya CBC/CBE uses competency-based, student-centred lesson design; keep legacy 8-4-4 separate.",
+        "Cambridge supports inquiry/project-based learning through Year 9; no automatic Kenyan grade/year equivalence.",
+        "Actual curriculum files are still needed; a target curriculum description is not teaching content."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust and source identity",
+      "items": [
+        "Framework, stage/year, subject, topic, revision and access metadata travel with each source chunk.",
+        "Unreviewed or withdrawn content never enters the active retrieval set.",
+        "Blueprint/architecture proposals are excluded from both teaching and student evidence collections."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Qualification boundary",
+      "items": [
+        "Existing admissions source graphs are historical and require evidence review.",
+        "Go owns numerical evaluation; the current public KCSE cluster calculation is an estimate.",
+        "Cambridge/CBC/8-4-4 qualification equivalence needs authoritative mapping, not model inference."
+      ]
+    }
+  ]
+}

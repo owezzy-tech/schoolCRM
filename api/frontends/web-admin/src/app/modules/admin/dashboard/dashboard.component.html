@@ -1,69 +1,132 @@
 @if (loading()) {
-    <div class="flex items-center justify-center min-h-[400px]">
+    <div class="flex min-h-[400px] items-center justify-center">
         <mat-spinner diameter="48"></mat-spinner>
     </div>
 } @else if (error()) {
-    <div class="flex flex-col items-center justify-center min-h-[400px] text-center px-6">
-        <mat-icon class="icon-size-12 text-warn mb-4" svgIcon="heroicons_outline:exclamation-triangle"></mat-icon>
+    <div
+        class="flex min-h-[400px] flex-col items-center justify-center px-6 text-center"
+    >
+        <mat-icon
+            class="mb-4 text-warn icon-size-12"
+            svgIcon="heroicons_outline:exclamation-triangle"
+        ></mat-icon>
         <p class="text-lg font-medium">{{ error() }}</p>
-        <button mat-flat-button color="primary" class="mt-4" (click)="ngOnInit()">Retry</button>
+        <button
+            mat-flat-button
+            color="primary"
+            class="mt-4"
+            (click)="ngOnInit()"
+        >
+            Retry
+        </button>
     </div>
 } @else {
-    <div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+    <div class="bg-card flex min-w-0 flex-auto flex-col dark:bg-transparent">
         <div class="flex-auto p-6 sm:p-10">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div
+                class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
                 <div>
-                    <h1 class="text-3xl font-semibold tracking-tight">Welcome back, {{ userName }}</h1>
-                    <p class="text-secondary mt-1">Here's what's happening across admissions today.</p>
+                    @let user = user$ | async;
+                    <h1 class="text-3xl font-semibold tracking-tight">
+                        Welcome back{{ user?.name ? ', ' + user.name : '' }}
+                    </h1>
+                    <p class="text-secondary mt-1">
+                        Here's what's happening across admissions today.
+                    </p>
                 </div>
                 <div class="flex gap-3">
                     <button mat-stroked-button [routerLink]="['/campaigns']">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:megaphone"></mat-icon>
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:megaphone"
+                        ></mat-icon>
                         <span class="ml-2">New campaign</span>
                     </button>
-                    <button mat-flat-button color="primary" [routerLink]="['/constituents']">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                    <button
+                        mat-flat-button
+                        color="primary"
+                        [routerLink]="['/constituents']"
+                    >
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:plus"
+                        ></mat-icon>
                         <span class="ml-2">Add constituent</span>
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div
+                class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
                 @for (kpi of kpis(); track kpi.label) {
-                    <div class="bg-card border rounded-2xl p-5 shadow-sm">
-                        <div class="text-sm font-medium text-secondary">{{ kpi.label }}</div>
-                        <div class="text-3xl font-semibold mt-2">{{ kpi.value }}</div>
+                    <div class="bg-card rounded-2xl border p-5 shadow-sm">
+                        <div class="text-secondary text-sm font-medium">
+                            {{ kpi.label }}
+                        </div>
+                        <div class="mt-2 text-3xl font-semibold">
+                            {{ kpi.value }}
+                        </div>
                     </div>
                 }
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div class="xl:col-span-2 bg-card border rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold">Recent applications</h2>
-                        <a [routerLink]="['/applications']" class="text-primary text-sm font-medium">View all</a>
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                <div
+                    class="bg-card rounded-2xl border p-6 shadow-sm xl:col-span-2"
+                >
+                    <div class="mb-4 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">
+                            Recent applications
+                        </h2>
+                        <a
+                            [routerLink]="['/applications']"
+                            class="text-sm font-medium text-primary"
+                            >View all</a
+                        >
                     </div>
                     @if (recentApplications().length === 0) {
-                        <p class="text-secondary py-8 text-center">No applications yet.</p>
+                        <p class="text-secondary py-8 text-center">
+                            No applications yet.
+                        </p>
                     } @else {
                         <table class="w-full text-sm">
-                            <thead class="text-left text-secondary border-b">
+                            <thead class="text-secondary border-b text-left">
                                 <tr>
                                     <th class="py-2 font-medium">ID</th>
                                     <th class="py-2 font-medium">Status</th>
                                     <th class="py-2 font-medium">Type</th>
-                                    <th class="py-2 font-medium text-right">Created</th>
+                                    <th class="py-2 text-right font-medium">
+                                        Created
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @for (app of recentApplications(); track app.id) {
+                                @for (
+                                    app of recentApplications();
+                                    track app.id
+                                ) {
                                     <tr class="border-b last:border-0">
-                                        <td class="py-3 font-mono text-xs">{{ app.id | slice:0:8 }}</td>
-                                        <td class="py-3">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800">{{ app.status }}</span>
+                                        <td class="py-3 font-mono text-xs">
+                                            {{ app.id | slice: 0 : 8 }}
                                         </td>
-                                        <td class="py-3">{{ app.applicationType }}</td>
-                                        <td class="py-3 text-right text-secondary">{{ app.dateCreated | slice:0:10 }}</td>
+                                        <td class="py-3">
+                                            <span
+                                                class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-800"
+                                                >{{ app.status }}</span
+                                            >
+                                        </td>
+                                        <td class="py-3">
+                                            {{ app.applicationType }}
+                                        </td>
+                                        <td
+                                            class="text-secondary py-3 text-right"
+                                        >
+                                            {{
+                                                app.dateCreated | slice: 0 : 10
+                                            }}
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -71,25 +134,50 @@
                     }
                 </div>
 
-                <div class="bg-card border rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
+                <div class="bg-card rounded-2xl border p-6 shadow-sm">
+                    <div class="mb-4 flex items-center justify-between">
                         <h2 class="text-lg font-semibold">Upcoming events</h2>
-                        <a [routerLink]="['/events']" class="text-primary text-sm font-medium">View all</a>
+                        <a
+                            [routerLink]="['/events']"
+                            class="text-sm font-medium text-primary"
+                            >View all</a
+                        >
                     </div>
-                    <ul class="space-y-4">
-                        @for (event of upcomingEvents; track event.title) {
-                            <li class="flex gap-3">
-                                <div class="flex-none w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
-                                    <mat-icon class="icon-size-5 text-primary" svgIcon="heroicons_outline:calendar-days"></mat-icon>
-                                </div>
-                                <div class="flex-auto">
-                                    <div class="font-medium">{{ event.title }}</div>
-                                    <div class="text-sm text-secondary">{{ event.date }}</div>
-                                    <div class="text-sm text-secondary">{{ event.location }}</div>
-                                </div>
-                            </li>
-                        }
-                    </ul>
+                    @if (upcomingEvents().length === 0) {
+                        <p class="text-secondary py-8 text-center">
+                            No upcoming events.
+                        </p>
+                    } @else {
+                        <ul class="space-y-4">
+                            @for (event of upcomingEvents(); track event.id) {
+                                <li class="flex gap-3">
+                                    <div
+                                        class="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900"
+                                    >
+                                        <mat-icon
+                                            class="text-primary icon-size-5"
+                                            svgIcon="heroicons_outline:calendar-days"
+                                        ></mat-icon>
+                                    </div>
+                                    <div class="flex-auto">
+                                        <div class="font-medium">
+                                            {{ event.title }}
+                                        </div>
+                                        <div class="text-secondary text-sm">
+                                            {{
+                                                event.start
+                                                    | date
+                                                        : 'EEE, MMM d · h:mm a'
+                                            }}
+                                        </div>
+                                        <div class="text-secondary text-sm">
+                                            {{ event.location }}
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
                 </div>
             </div>
         </div>

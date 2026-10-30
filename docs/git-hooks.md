@@ -54,6 +54,46 @@ Without those, the RAG hooks will fail when `api/services/RAG` files are changed
 
 ## Hook Behavior
 
+### Beads and Git
+
+Beads already uses this repository's Git-backed Dolt remote. Issue data syncs separately
+from the application branch; committing `.beads/config.yaml` alone does not upload tasks.
+The local Dolt database and runtime files remain ignored by Git.
+
+The active hooks are managed by Husky at `core.hooksPath=.husky/_`. Tracked `.husky/`
+scripts call `scripts/git-hooks/beads.sh` after the existing quality gates:
+
+- `pre-commit` runs the native Beads callback and commits pending task changes locally.
+- `pre-push` commits remaining task changes and runs `bd dolt push`. A sync failure blocks
+  the application push, so code is not pushed while its task data is unsynchronised.
+- `post-merge` and a `post-rewrite` caused by rebase commit local task changes before
+  `bd dolt pull`. A local amend does not trigger a network pull.
+- `post-checkout` and `prepare-commit-msg` delegate to native Beads callbacks.
+- A recursion guard prevents Beads' own Git transport from starting another sync.
+
+Install a compatible `bd` CLI on PATH before working in this repository. The integration
+was verified with Beads 1.1.2. Then run `npm install` at the repository root to activate
+Husky, and verify the configured task remote:
+
+```bash
+bd dolt remote list
+bd dolt commit
+bd dolt pull
+```
+
+The configured origin is `git+https://github.com/owezzy-tech/schoolCRM`. Existing
+`.beads/hooks/` files are inactive while Husky owns `core.hooksPath`; do not switch the
+hook path or replace Husky with `bd hooks install`, which would bypass the quality gates.
+Manual `bd dolt commit`, `bd dolt push` and `bd dolt pull` remain available for recovery.
+A post-merge/rebase sync failure does not undo the completed Git operation; resolve the
+reported Beads error and retry its sync explicitly.
+
+Verify hook coordination without touching real task data or contacting a remote:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/git-hooks/test_beads.py
+```
+
 ### Pre-commit
 
 Runs only for **staged** files.
@@ -93,8 +133,10 @@ If any staged file ends with `.go`, the hook runs:
 
 ```bash
 CGO_ENABLED=0 go vet ./...
-staticcheck -checks=all ./...
+GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all ./...
 ```
+
+`staticcheck` is pinned as a `tool` directive in `go.mod`, so `go tool` runs the version the repo selects. The lint command uses patched Go 1.26.9 because this staticcheck release cannot decode Go 1.27.2 export data. This compiler supports the module's Go 1.26 language minimum; application builds, tests and vet continue using the recommended Go 1.27.2. You do not need to install it separately.
 
 ### Pre-push
 
@@ -111,7 +153,7 @@ api/frontends/
 the hook runs:
 
 ```bash
-npm --prefix api/frontends/web-admin run test -- --watch=false --browsers=ChromeHeadless
+npm --prefix api/frontends/web-admin run test -- --watch=false
 ```
 
 #### RAG changes
@@ -247,12 +289,20 @@ Install the RAG dev dependencies:
 python3 -m pip install -e api/services/RAG[dev]
 ```
 
-### `staticcheck` or `govulncheck` not found
+### `govulncheck` not found
 
 Install the Go tooling already referenced by the repo:
 
 ```bash
 make dev-gotooling
+```
+
+### `staticcheck` fails to load packages
+
+`staticcheck` runs through `go tool`, using the version pinned in `go.mod` and the explicit supported Go 1.26.9 lint compiler. Do not replace the invocation with `staticcheck@latest` or a global binary. Go downloads the patched lint compiler automatically if needed. Remove the compiler override from the hook, npm, Makefile and CircleCI together once the pinned staticcheck supports Go 1.27 export data. Confirm the pinned tool builds:
+
+```bash
+GOTOOLCHAIN=go1.26.9 go tool staticcheck -version
 ```
 
 ### Frontend test fails because Chrome is unavailable

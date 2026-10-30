@@ -1,0 +1,362 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Proposed v1 role-aware agent and action workflow",
+    "locale": "en",
+    "output": ".archify/workflow-school-agent-actions-20261001-195546/school-agent-actions.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/owezzy-tech/schoolCRM",
+      "revision": "bea454bdb4f420cac2074c91adbd89a6c0e9cc74",
+      "provider": "github"
+    },
+    "viewBox": [
+      1230,
+      786
+    ]
+  },
+  "lanes": [
+    {
+      "id": "user",
+      "label": "Angular user workspace"
+    },
+    {
+      "id": "runtime",
+      "label": "FastAPI / LangGraph"
+    },
+    {
+      "id": "evidence",
+      "label": "Read-only evidence tools"
+    },
+    {
+      "id": "policy",
+      "label": "Approval and policy",
+      "variant": "exception"
+    },
+    {
+      "id": "commands",
+      "label": "Go business execution"
+    }
+  ],
+  "mainPath": [
+    "request",
+    "authenticate",
+    "router",
+    "agent",
+    "read",
+    "answer"
+  ],
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "user",
+      "col": 0,
+      "type": "frontend",
+      "label": "User request",
+      "sublabel": "Private thread + files",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": "authenticate",
+      "lane": "runtime",
+      "col": 1,
+      "type": "security",
+      "label": "Identity + scope",
+      "sublabel": "Auth + memberships",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 52
+        },
+        {
+          "path": "api/services/RAG/infrastructure/auth.py",
+          "line": 18,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "lane": "runtime",
+      "col": 2,
+      "type": "backend",
+      "label": "Allowed workflow",
+      "sublabel": "Role-aware routing",
+      "tag": "LangGraph",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "lane": "runtime",
+      "col": 3,
+      "type": "backend",
+      "label": "Bounded agent",
+      "sublabel": "Student / teacher / ops",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 11,
+          "end_line": 13
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "lane": "evidence",
+      "col": 4,
+      "type": "backend",
+      "label": "Read-only tools",
+      "sublabel": "LlamaIndex + Go math",
+      "tag": "Scoped evidence",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 54,
+          "end_line": 55
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "user",
+      "col": 5,
+      "type": "frontend",
+      "label": "Cited result",
+      "sublabel": "Answer / draft / report",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "id": "blocked",
+      "lane": "policy",
+      "col": 1,
+      "type": "security",
+      "label": "Access denied",
+      "sublabel": "No tools or private data",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 15,
+          "end_line": 16
+        },
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "id": "proposal",
+      "lane": "commands",
+      "col": 3,
+      "type": "backend",
+      "label": "Change proposal",
+      "sublabel": "Payload + IDs + versions",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "id": "approval",
+      "lane": "policy",
+      "col": 4,
+      "type": "security",
+      "label": "Human approval",
+      "sublabel": "Checkpoint before pause",
+      "tag": "Required approver",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 57,
+          "end_line": 58
+        }
+      ]
+    },
+    {
+      "id": "cancel",
+      "lane": "policy",
+      "col": 5,
+      "type": "security",
+      "label": "Rejected / failed",
+      "sublabel": "No unapproved write",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 58,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "execute",
+      "lane": "commands",
+      "col": 5,
+      "type": "backend",
+      "label": "Go command",
+      "sublabel": "Recheck + idempotency",
+      "tag": "Authorised payload only",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 59,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "lane": "evidence",
+      "col": 5,
+      "type": "database",
+      "label": "Audit receipt",
+      "sublabel": "Persist outcome + IDs",
+      "width": 145,
+      "sources": [
+        {
+          "path": "docs/diagrams/school-ai-v1-design.md",
+          "line": 60
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "request",
+      "to": "authenticate",
+      "label": "Request",
+      "variant": "emphasis"
+    },
+    {
+      "from": "authenticate",
+      "to": "router",
+      "label": "Allowed",
+      "variant": "security"
+    },
+    {
+      "from": "authenticate",
+      "to": "blocked",
+      "label": "Denied",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "router",
+      "to": "agent",
+      "label": "Route"
+    },
+    {
+      "from": "agent",
+      "to": "read",
+      "label": "Read",
+      "role": "branch"
+    },
+    {
+      "from": "read",
+      "to": "answer",
+      "label": "Evidence",
+      "variant": "emphasis"
+    },
+    {
+      "from": "agent",
+      "to": "proposal",
+      "label": "Write request",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "from": "proposal",
+      "to": "approval",
+      "label": "Preview",
+      "variant": "security"
+    },
+    {
+      "from": "approval",
+      "to": "execute",
+      "label": "Approved",
+      "variant": "security"
+    },
+    {
+      "from": "approval",
+      "to": "cancel",
+      "label": "Rejected",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "execute",
+      "to": "receipt",
+      "label": "Executed"
+    },
+    {
+      "from": "execute",
+      "to": "cancel",
+      "label": "Conflict / error",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "receipt",
+      "to": "answer",
+      "label": "Outcome",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Three workflows",
+      "items": [
+        "Student adviser: transcript/qualification explanation and school Q&A.",
+        "Teaching assistant: curriculum retrieval, lesson drafts and submission.",
+        "Operations assistant: classes, timetable, attendance/exam reports and Google Calendar appointments."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Approval and execution",
+      "items": [
+        "Lesson publication follows HOD review, dean approval of every version, then teacher publication.",
+        "Other changes require the operation's authorised approver; agent text never grants permission.",
+        "Go rechecks current roles, resource scope, expected versions and conflicts after an approval resumes."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Recovery and evidence",
+      "items": [
+        "LangGraph persists state before a human pause; restart resumes without repeating completed writes.",
+        "Exact command keys and provider event IDs prevent duplicate calendar writes on retry.",
+        "Untrusted document text cannot register tools, choose an approver or bypass a gate."
+      ]
+    }
+  ]
+}

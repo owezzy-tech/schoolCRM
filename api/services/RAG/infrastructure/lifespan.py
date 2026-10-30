@@ -14,7 +14,11 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.service_name)
     configure_langsmith(settings)
     app.state.settings = settings
-    app.state.container = build_container(settings)
-    yield
-    container: Container = app.state.container
-    await container.close()
+    container: Container = build_container(settings)
+    app.state.container = container
+    try:
+        if container.lesson_workflow is not None:
+            await container.lesson_workflow.start()
+        yield
+    finally:
+        await container.close()

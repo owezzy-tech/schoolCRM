@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "cd0082a6-a76b-4bda-9dbe-68f8fd692321",
+  "status": "current",
+  "command": "deliver",
+  "type": "dataflow",
+  "input": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/dataflow-school-curriculum-20261001-195546/candidate.json",
+  "output": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/dataflow-school-curriculum-20261001-195546/school-curriculum.html",
+  "specification": {
+    "sha256": "c23c683c5a3b53cca61982be80050bc397b20ede8248c40088f91dd0fae530e3",
+    "bytes": 8842
+  },
+  "artifact": {
+    "sha256": "7f0a5b4c33b0cee77da8449569274de0528c7179579970c561b2f0370d175555",
+    "bytes": 770187
+  }
+}

@@ -1,0 +1,290 @@
+<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <a routerLink="/lessons" class="mb-2 text-primary underline"
+        >Lesson plans and review queues</a
+    >
+    <h1 class="text-3xl font-semibold">Lesson assistant</h1>
+    <p class="text-secondary mb-6">
+        Generate a draft from approved curriculum evidence. Your requests stay
+        private; HOD review and dean approval happen on the saved lesson
+        version.
+    </p>
+    @if (errorMessage()) {
+        <div
+            class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800"
+            role="alert"
+        >
+            {{ errorMessage() }}
+        </div>
+    }
+    @if (loading()) {
+        <p role="status">Loading your lesson responsibilities…</p>
+    } @else if (!scopes().length) {
+        <section class="bg-card rounded-xl p-6">
+            <h2 class="text-lg font-medium">Teaching access required</h2>
+            <p>
+                Assistant generation and private history require a department
+                teaching membership. Reviewers and approvers can inspect
+                evidence through their lesson review queues.
+            </p>
+            <button mat-stroked-button type="button" (click)="loadScopes()">
+                Reload responsibilities
+            </button>
+        </section>
+    } @else {
+        <mat-form-field class="w-full sm:w-96">
+            <mat-label>Teaching department</mat-label>
+            <mat-select
+                [disabled]="busy()"
+                [ngModel]="scopeKey()"
+                (ngModelChange)="selectScope($event)"
+            >
+                @for (option of scopes(); track option.key) {
+                    <mat-option [value]="option.key">{{
+                        option.label
+                    }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+        <div class="grid gap-6 lg:grid-cols-[18rem_1fr]">
+            <aside
+                class="bg-card h-fit rounded-xl p-4"
+                aria-label="Private request history"
+            >
+                <h2 class="mb-2 font-medium">Your private requests</h2>
+                <p class="text-secondary mb-3 text-sm">
+                    Latest 50 requests in this department.
+                </p>
+                <button
+                    mat-stroked-button
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="refreshHistory()"
+                >
+                    Refresh history
+                </button>
+                <ul class="mt-4 space-y-2">
+                    @for (thread of threads(); track thread.id) {
+                        <li>
+                            <button
+                                class="w-full rounded-lg border p-3 text-left hover:bg-hover"
+                                type="button"
+                                [disabled]="busy()"
+                                [attr.aria-current]="
+                                    request()?.request_id === thread.id
+                                        ? 'true'
+                                        : null
+                                "
+                                (click)="openRequest(thread.id)"
+                            >
+                                {{ thread.request.topic
+                                }}<span class="text-secondary block text-sm">{{
+                                    thread.status === 'completed'
+                                        ? 'Draft saved'
+                                        : 'Not finished'
+                                }}</span>
+                            </button>
+                        </li>
+                    } @empty {
+                        <li class="text-secondary">
+                            No requests in this department yet.
+                        </li>
+                    }
+                </ul>
+            </aside>
+            <div class="min-w-0 space-y-6">
+                @if (!request()) {
+                    <form class="bg-card rounded-xl p-6" (ngSubmit)="start()">
+                        <h2 class="mb-4 text-lg font-medium">
+                            New lesson request
+                        </h2>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <mat-form-field
+                                ><mat-label>Framework</mat-label
+                                ><input
+                                    matInput
+                                    name="framework"
+                                    required
+                                    maxlength="100"
+                                    [ngModel]="framework()"
+                                    (ngModelChange)="framework.set($event)"
+                            /></mat-form-field>
+                            <mat-form-field
+                                ><mat-label>Stage</mat-label
+                                ><input
+                                    matInput
+                                    name="stage"
+                                    required
+                                    maxlength="100"
+                                    [ngModel]="stage()"
+                                    (ngModelChange)="stage.set($event)"
+                            /></mat-form-field>
+                            <mat-form-field
+                                ><mat-label>Subject</mat-label
+                                ><input
+                                    matInput
+                                    name="subject"
+                                    required
+                                    maxlength="100"
+                                    [ngModel]="subject()"
+                                    (ngModelChange)="subject.set($event)"
+                            /></mat-form-field>
+                            <mat-form-field
+                                ><mat-label>Curriculum revision</mat-label
+                                ><input
+                                    matInput
+                                    name="revision"
+                                    required
+                                    maxlength="100"
+                                    [ngModel]="revision()"
+                                    (ngModelChange)="revision.set($event)"
+                            /></mat-form-field>
+                        </div>
+                        <mat-form-field class="w-full"
+                            ><mat-label>Lesson topic and objectives</mat-label
+                            ><textarea
+                                matInput
+                                name="topic"
+                                rows="3"
+                                required
+                                maxlength="1000"
+                                [ngModel]="topic()"
+                                (ngModelChange)="topic.set($event)"
+                            ></textarea>
+                        </mat-form-field>
+                        <mat-form-field
+                            ><mat-label>Duration in minutes</mat-label
+                            ><input
+                                matInput
+                                name="duration"
+                                type="number"
+                                min="1"
+                                max="180"
+                                step="1"
+                                required
+                                [ngModel]="duration()"
+                                (ngModelChange)="duration.set($event)"
+                        /></mat-form-field>
+                        <p class="text-secondary mb-4 text-sm">
+                            Use the framework, stage, subject and revision of an
+                            approved source. Without matching evidence, no draft
+                            is generated.
+                        </p>
+                        <button
+                            mat-flat-button
+                            color="primary"
+                            type="submit"
+                            [disabled]="!valid() || busy()"
+                        >
+                            Generate my draft
+                        </button>
+                    </form>
+                } @else {
+                    <section
+                        class="bg-card rounded-xl p-6"
+                        aria-label="Lesson request"
+                    >
+                        <h2 class="text-lg font-medium">
+                            {{ request()!.topic }}
+                        </h2>
+                        <p class="text-secondary">
+                            {{ request()!.framework }} ·
+                            {{ request()!.stage }} · {{ request()!.subject }} ·
+                            revision {{ request()!.revision }} ·
+                            {{ request()!.duration_minutes }} minutes
+                        </p>
+                        <p class="mt-3" role="status" aria-live="polite">
+                            {{
+                                progress() ||
+                                    (completed()
+                                        ? 'Draft saved.'
+                                        : 'This request can be recovered.')
+                            }}
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            @if (!completed()) {
+                                <button
+                                    mat-flat-button
+                                    type="button"
+                                    [disabled]="busy()"
+                                    (click)="reconnect()"
+                                >
+                                    Reconnect this request
+                                </button>
+                            }
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                [disabled]="busy()"
+                                (click)="newRequest()"
+                            >
+                                Start a new request
+                            </button>
+                        </div>
+                    </section>
+                }
+                @if (citations().length && !version()) {
+                    <section class="bg-card rounded-xl p-6">
+                        <h2 class="mb-3 text-lg font-medium">
+                            Evidence retrieved for this request
+                        </h2>
+                        <app-lesson-evidence
+                            [value]="evidence()"
+                            heading="Retrieved passages (not all may be cited)"
+                        />
+                    </section>
+                }
+                @if (receipt(); as result) {
+                    <section
+                        class="bg-card rounded-xl p-6"
+                        aria-label="Saved lesson result"
+                    >
+                        <h2 class="text-xl font-medium">{{ result.title }}</h2>
+                        <p class="text-secondary mb-4">
+                            Saved version {{ result.version }}. This card shows
+                            that exact version, whose current review status may
+                            have changed.
+                        </p>
+                        @if (resultError()) {
+                            <p role="alert">{{ resultError() }}</p>
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                (click)="loadResult()"
+                            >
+                                Reload saved version
+                            </button>
+                        } @else if (version(); as saved) {
+                            <app-lesson-content [value]="saved.content" />
+                        } @else {
+                            <p role="status">Loading the saved version…</p>
+                        }
+                        @if (approvalPrompt()) {
+                            <p class="mt-4">
+                                Review the draft before submitting it for HOD
+                                review. The assistant cannot approve or publish
+                                it.
+                            </p>
+                        }
+                        <a
+                            mat-flat-button
+                            class="mt-4"
+                            [routerLink]="['/lessons', result.planID]"
+                            >Open plan for human actions</a
+                        >
+                        <a
+                            mat-stroked-button
+                            class="ml-3 mt-4"
+                            [routerLink]="[
+                                '/lessons',
+                                result.planID,
+                                'versions',
+                                result.version,
+                            ]"
+                            >View exact version</a
+                        >
+                    </section>
+                }
+            </div>
+        </div>
+    }
+</div>

@@ -223,29 +223,6 @@ type importInvalidRowQueryParams struct {
 	BatchID string
 }
 
-type syncJobQueryParams struct {
-	Page      string
-	Rows      string
-	OrderBy   string
-	ID        string
-	Status    string
-	Direction string
-	Retryable string
-}
-
-type syncEventQueryParams struct {
-	Page         string
-	Rows         string
-	OrderBy      string
-	ID           string
-	JobID        string
-	EventType    string
-	Status       string
-	Direction    string
-	ResourceType string
-	ResourceID   string
-}
-
 type campaignQueryParams struct {
 	Page        string
 	Rows        string
@@ -568,37 +545,6 @@ func parseImportInvalidRowQueryParams(r *http.Request) importInvalidRowQueryPara
 		OrderBy: values.Get("orderBy"),
 		ID:      values.Get("import_invalid_row_id"),
 		BatchID: values.Get("import_batch_id"),
-	}
-}
-
-func parseSyncJobQueryParams(r *http.Request) syncJobQueryParams {
-	values := r.URL.Query()
-
-	return syncJobQueryParams{
-		Page:      values.Get("page"),
-		Rows:      values.Get("rows"),
-		OrderBy:   values.Get("orderBy"),
-		ID:        values.Get("sync_job_id"),
-		Status:    values.Get("status"),
-		Direction: values.Get("direction"),
-		Retryable: values.Get("retryable"),
-	}
-}
-
-func parseSyncEventQueryParams(r *http.Request) syncEventQueryParams {
-	values := r.URL.Query()
-
-	return syncEventQueryParams{
-		Page:         values.Get("page"),
-		Rows:         values.Get("rows"),
-		OrderBy:      values.Get("orderBy"),
-		ID:           values.Get("sync_event_id"),
-		JobID:        values.Get("sync_job_id"),
-		EventType:    values.Get("event_type"),
-		Status:       values.Get("status"),
-		Direction:    values.Get("direction"),
-		ResourceType: values.Get("resource_type"),
-		ResourceID:   values.Get("resource_id"),
 	}
 }
 
@@ -1571,102 +1517,6 @@ func parseImportInvalidRowFilter(qp importInvalidRowQueryParams) (admissionsbus.
 
 	if fieldErrors != nil {
 		return admissionsbus.ImportInvalidRowQueryFilter{}, fieldErrors.ToError()
-	}
-
-	return filter, nil
-}
-
-func parseSyncJobFilter(qp syncJobQueryParams) (admissionsbus.SyncJobQueryFilter, error) {
-	var fieldErrors errs.FieldErrors
-	var filter admissionsbus.SyncJobQueryFilter
-
-	if qp.ID != "" {
-		id, err := uuid.Parse(qp.ID)
-		if err != nil {
-			fieldErrors.Add("sync_job_id", err)
-		} else {
-			filter.ID = &id
-		}
-	}
-
-	if qp.Status != "" {
-		status := admissionsbus.SyncJobStatus(qp.Status)
-		filter.Status = &status
-	}
-
-	if qp.Direction != "" {
-		direction := admissionsbus.SyncDirection(qp.Direction)
-		filter.Direction = &direction
-	}
-
-	if qp.Retryable != "" {
-		retryable, err := strconv.ParseBool(qp.Retryable)
-		if err != nil {
-			fieldErrors.Add("retryable", err)
-		} else {
-			filter.Retryable = &retryable
-		}
-	}
-
-	if fieldErrors != nil {
-		return admissionsbus.SyncJobQueryFilter{}, fieldErrors.ToError()
-	}
-
-	return filter, nil
-}
-
-func parseSyncEventFilter(qp syncEventQueryParams) (admissionsbus.SyncEventQueryFilter, error) {
-	var fieldErrors errs.FieldErrors
-	var filter admissionsbus.SyncEventQueryFilter
-
-	if qp.ID != "" {
-		id, err := uuid.Parse(qp.ID)
-		if err != nil {
-			fieldErrors.Add("sync_event_id", err)
-		} else {
-			filter.ID = &id
-		}
-	}
-
-	if qp.JobID != "" {
-		id, err := uuid.Parse(qp.JobID)
-		if err != nil {
-			fieldErrors.Add("sync_job_id", err)
-		} else {
-			filter.JobID = &id
-		}
-	}
-
-	if qp.EventType != "" {
-		eventType := admissionsbus.SyncEventType(qp.EventType)
-		filter.EventType = &eventType
-	}
-
-	if qp.Status != "" {
-		status := admissionsbus.SyncEventStatus(qp.Status)
-		filter.Status = &status
-	}
-
-	if qp.Direction != "" {
-		direction := admissionsbus.SyncDirection(qp.Direction)
-		filter.Direction = &direction
-	}
-
-	if qp.ResourceType != "" {
-		filter.ResourceType = &qp.ResourceType
-	}
-
-	if qp.ResourceID != "" {
-		id, err := uuid.Parse(qp.ResourceID)
-		if err != nil {
-			fieldErrors.Add("resource_id", err)
-		} else {
-			filter.ResourceID = &id
-		}
-	}
-
-	if fieldErrors != nil {
-		return admissionsbus.SyncEventQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

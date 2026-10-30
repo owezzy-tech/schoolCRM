@@ -7,17 +7,17 @@ SHELL = $(if $(wildcard $(SHELL_PATH)),/bin/ash,/bin/bash)
 # ==============================================================================
 # Go Installation
 #
-#	You need to have Go version 1.26 to run this code.
+#	You need to have Go version 1.27.2 to run this code.
 #
 #	https://go.dev/dl/
 #
 #	If you are not allowed to update your Go frontend, you can install
-#	and use a 1.26 frontend.
+#	and use a 1.27.2 frontend.
 #
-#	$ go install golang.org/dl/go1.26@latest
-#	$ go1.26 download
+#	$ go install golang.org/dl/go1.27.2@latest
+#	$ go1.27.2 download
 #
-#	This means you need to use `go1.26` instead of `go` for any command
+#	This means you need to use `go1.27.2` instead of `go` for any command
 #	using the Go frontend tooling from the makefile.
 
 # ==============================================================================
@@ -109,7 +109,7 @@ SHELL = $(if $(wildcard $(SHELL_PATH)),/bin/ash,/bin/bash)
 # ==============================================================================
 # Define dependencies
 
-GOLANG          := golang:1.26
+GOLANG          := golang:1.27.2
 ALPINE          := alpine:3.23
 KIND            := kindest/node:v1.35.0
 POSTGRES        := postgres:18.3
@@ -157,7 +157,7 @@ endif
 dev-gotooling:
 	go install github.com/divan/expvarmon@latest
 	go install github.com/rakyll/hey@latest
-	go install honnef.co/go/tools/cmd/staticcheck@latest
+	GOTOOLCHAIN=go1.26.9 go tool staticcheck -version
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -209,6 +209,7 @@ metrics:
 auth:
 	docker build \
 		-f zarf/docker/dockerfile.auth \
+		--target auth_development \
 		-t $(AUTH_IMAGE) \
 		--build-arg BUILD_TAG=$(VERSION) \
 		--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
@@ -552,7 +553,7 @@ test-only:
 
 lint:
 	CGO_ENABLED=0 go vet ./...
-	staticcheck -checks=all ./...
+	GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all ./...
 
 vuln-check:
 	govulncheck ./...

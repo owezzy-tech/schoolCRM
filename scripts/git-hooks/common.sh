@@ -96,8 +96,8 @@ run_go_lint() {
   scopes=$(go_package_scopes)
   CGO_ENABLED=0 go vet $scopes
 
-  if ! go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all $scopes; then
-    echo "⚠️ staticcheck failed. If this is a tooling issue, verify your local Go installation supports the repo's Go version."
+  if ! GOTOOLCHAIN=go1.26.9 go tool staticcheck -checks=all $scopes; then
+    echo "⚠️ staticcheck failed. Resolve the findings above; for toolchain errors, see docs/git-hooks.md."
     exit 1
   fi
 }

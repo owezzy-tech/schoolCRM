@@ -6,7 +6,9 @@ import (
 	"github.com/owezzy/schoolCRM/app/domain/auditapp"
 	"github.com/owezzy/schoolCRM/app/domain/checkapp"
 	"github.com/owezzy/schoolCRM/app/domain/homeapp"
+	"github.com/owezzy/schoolCRM/app/domain/lessonapp"
 	"github.com/owezzy/schoolCRM/app/domain/productapp"
+	"github.com/owezzy/schoolCRM/app/domain/schoolapp"
 	"github.com/owezzy/schoolCRM/app/domain/tranapp"
 	"github.com/owezzy/schoolCRM/app/domain/userapp"
 	"github.com/owezzy/schoolCRM/app/sdk/mux"
@@ -22,6 +24,8 @@ type crud struct{}
 
 // Add implements the RouterAdder interface.
 func (crud) Add(app *web.App, cfg mux.Config) {
+	schoolapp.Routes(app, schoolapp.Config{SchoolBus: cfg.BusConfig.SchoolBus, AuthClient: cfg.SchoolCRMConfig.AuthClient})
+	lessonapp.Routes(app, lessonapp.Config{LessonBus: cfg.BusConfig.LessonBus, AuthClient: cfg.SchoolCRMConfig.AuthClient})
 	checkapp.Routes(app, checkapp.Config{
 		Build: cfg.Build,
 		Log:   cfg.Log,

@@ -190,8 +190,11 @@ func (adapter *ExternalAdapter) Execute(ctx context.Context, operation string, f
 	policy := adapter.cfg.RetryPolicy.Normalize()
 	start := time.Now()
 	var lastErr error
+	var executed int
 
+retry:
 	for attempt := 1; attempt <= policy.MaxAttempts; attempt++ {
+		executed = attempt
 		opCtx, cancel := context.WithTimeout(ctx, adapter.cfg.Timeout)
 		adapter.observe(opCtx, OperationEvent{
 			Adapter: adapter.name,
@@ -236,7 +239,7 @@ func (adapter *ExternalAdapter) Execute(ctx context.Context, operation string, f
 		select {
 		case <-ctx.Done():
 			lastErr = ctx.Err()
-			break
+			break retry
 		case <-time.After(wait):
 		}
 	}
@@ -247,7 +250,7 @@ func (adapter *ExternalAdapter) Execute(ctx context.Context, operation string, f
 		Adapter:  adapter.name,
 		Name:     operation,
 		Status:   OperationFailure,
-		Attempt:  policy.MaxAttempts,
+		Attempt:  executed,
 		Duration: time.Since(start),
 		Err:      wrapped,
 		Time:     time.Now(),

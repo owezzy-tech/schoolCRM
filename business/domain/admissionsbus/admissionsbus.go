@@ -2740,17 +2740,6 @@ func validateEventStatus(status EventStatus) error {
 	}
 }
 
-func validateEventRegistrationStatus(status EventRegistrationStatus) error {
-	switch status {
-	case EventRegistrationStatusRegistered,
-		EventRegistrationStatusCheckedIn,
-		EventRegistrationStatusCancelled:
-		return nil
-	default:
-		return ErrInvalidEventRegistrationStatus
-	}
-}
-
 func validateEventRegistrationMatchStatus(status EventRegistrationMatchStatus) error {
 	switch status {
 	case EventRegistrationMatchStatusMatched,
@@ -2843,18 +2832,6 @@ func validateNewEventCheckIn(nc NewEventCheckIn) error {
 	}
 
 	return nil
-}
-
-func validateInquiryStatus(status InquiryStatus) error {
-	switch status {
-	case InquiryStatusNew,
-		InquiryStatusContacted,
-		InquiryStatusConverted,
-		InquiryStatusClosed:
-		return nil
-	default:
-		return ErrInvalidInquiryStatus
-	}
 }
 
 func validateNewApplicationFormTemplate(nt NewApplicationFormTemplate) error {
@@ -3555,18 +3532,6 @@ func LeadScoreBandForTotal(total int) LeadScoreBand {
 	}
 }
 
-func validateLeadScoreBand(band LeadScoreBand) error {
-	switch band {
-	case LeadScoreBandCold,
-		LeadScoreBandWarm,
-		LeadScoreBandHot,
-		LeadScoreBandReadyToApply:
-		return nil
-	default:
-		return ErrInvalidLeadScoreBand
-	}
-}
-
 func evaluateLeadScoreRule(rule LeadScoreRule, constituent Constituent, applications []Application) LeadScoreRuleResult {
 	result := LeadScoreRuleResult{
 		RuleID: rule.ID,
@@ -3729,19 +3694,6 @@ func validateDuplicateReviewMatchType(matchType DuplicateReviewMatchType) error 
 	}
 }
 
-func validateDuplicateReviewStatus(status DuplicateReviewStatus) error {
-	switch status {
-	case DuplicateReviewStatusPending,
-		DuplicateReviewStatusLinked,
-		DuplicateReviewStatusMerged,
-		DuplicateReviewStatusRejected,
-		DuplicateReviewStatusDeferred:
-		return nil
-	default:
-		return ErrInvalidReviewStatus
-	}
-}
-
 func statusForResolution(resolution DuplicateReviewResolution) (DuplicateReviewStatus, error) {
 	switch resolution {
 	case DuplicateReviewResolutionLink:
@@ -3856,21 +3808,6 @@ func validateApplicationStatus(status ApplicationStatus) error {
 		return nil
 	default:
 		return ErrInvalidApplicationStatus
-	}
-}
-
-func validateDocumentStatus(status DocumentStatus) error {
-	switch status {
-	case DocumentStatusUploaded,
-		DocumentStatusPendingReview,
-		DocumentStatusAccepted,
-		DocumentStatusRejected,
-		DocumentStatusWaived,
-		DocumentStatusExpired,
-		DocumentStatusSyncedToSIS:
-		return nil
-	default:
-		return ErrInvalidDocumentStatus
 	}
 }
 
