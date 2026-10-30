@@ -1,0 +1,13 @@
+# Include with /opt/postgres/compose.yml during planned PostgreSQL maintenance.
+# Network attachment was applied live without recreating the shared container.
+services:
+  postgres:
+    networks:
+      default: {}
+      schoolcrm:
+        aliases: [postgres]
+
+networks:
+  schoolcrm:
+    external: true
+    name: schoolcrm-database
