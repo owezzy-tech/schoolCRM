@@ -5,6 +5,13 @@ The target frontend is Cloudflare Pages; the existing application still runs on
 Railway. This configuration does not deploy the frontend or RAG service,
 transfer data, change DNS, or stop Railway.
 
+The agreed destination removes Railway completely. The migration epic stays
+open until RAG, database/checkpoint state, uploaded/generated files, scheduled
+jobs and backups work independently of Railway as well as the frontend and Go
+services. `schoolCRM-5ho.6` covers RAG and durable files; `schoolCRM-5ho.7` covers
+source retirement after verified cutover. Retaining Railway during the rollback
+window is temporary, not the final topology.
+
 ## Host and isolation
 
 The 30 October 2026 capacity check found four vCPUs, 7,936 MiB RAM and 88 GiB free
