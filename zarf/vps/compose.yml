@@ -1,0 +1,108 @@
+name: schoolcrm
+
+x-runtime: &runtime
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  stop_grace_period: 30s
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: "3"
+  networks: [database]
+
+x-api-environment: &api-environment
+  GOMAXPROCS: "1"
+  GOMEMLIMIT: 384MiB
+  SCHOOLCRM_DB_HOST: postgres:5432
+  SCHOOLCRM_DB_NAME: schoolcrm
+  SCHOOLCRM_DB_USER: schoolcrm
+  SCHOOLCRM_DB_DISABLE_TLS: "false"
+  SCHOOLCRM_DB_MAX_OPEN_CONNS: "10"
+  SCHOOLCRM_DB_MAX_IDLE_CONNS: "2"
+  SCHOOLCRM_AUTH_HOST: http://auth:6000
+  SCHOOLCRM_AUTH_MECHANISM: http
+  SCHOOLCRM_WEB_API_HOST: 0.0.0.0:3000
+  SCHOOLCRM_WEB_DEBUG_HOST: 127.0.0.1:3010
+  SCHOOLCRM_WEB_CORS_ALLOWED_ORIGINS: https://schoolcrm.owenadirah.com
+
+services:
+  auth:
+    <<: *runtime
+    image: ${SCHOOLCRM_AUTH_IMAGE:?Set an immutable auth image reference}
+    user: "1000:1000"
+    cpus: 0.5
+    mem_limit: 256m
+    env_file: ./secrets/auth.env
+    environment:
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 192MiB
+      AUTH_DB_HOST: postgres:5432
+      AUTH_DB_NAME: schoolcrm
+      AUTH_DB_USER: schoolcrm
+      AUTH_DB_DISABLE_TLS: "false"
+      AUTH_DB_MAX_OPEN_CONNS: "10"
+      AUTH_DB_MAX_IDLE_CONNS: "2"
+      AUTH_AUTH_KEYS_FOLDER: /run/schoolcrm-keys
+      AUTH_WEB_API_HOST: 0.0.0.0:6000
+      AUTH_WEB_DEBUG_HOST: 127.0.0.1:6010
+      AUTH_WEB_GRPC_HOST: 127.0.0.1:6001
+      AUTH_WEB_CORS_ALLOWED_ORIGINS: https://schoolcrm.owenadirah.com
+    volumes:
+      - type: bind
+        source: ./secrets/auth-keys
+        target: /run/schoolcrm-keys
+        read_only: true
+        bind:
+          create_host_path: false
+    ports: ["127.0.0.1:6600:6000"]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:6000/v1/readiness]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  api:
+    <<: *runtime
+    image: ${SCHOOLCRM_API_IMAGE:?Set an immutable API image reference}
+    user: "1000:1000"
+    cpus: 1
+    mem_limit: 512m
+    env_file: ./secrets/api.env
+    environment: *api-environment
+    ports: ["127.0.0.1:6300:3000"]
+    depends_on:
+      auth:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/v1/readiness]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  migrate:
+    <<: *runtime
+    image: ${SCHOOLCRM_API_IMAGE:?Set an immutable API image reference}
+    user: "1000:1000"
+    profiles: [maintenance]
+    restart: "no"
+    cpus: 0.5
+    mem_limit: 256m
+    env_file: ./secrets/api.env
+    environment:
+      <<: *api-environment
+      GOMEMLIMIT: 192MiB
+    entrypoint: [./admin]
+    command: [migrate]
+
+networks:
+  database:
+    external: true
+    name: schoolcrm-database
