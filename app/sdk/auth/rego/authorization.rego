@@ -34,6 +34,8 @@ role_admissions_manage_constituents := {role_admissions_admin, role_recruiter}
 
 role_admissions_manage_applications := {role_admissions_admin, role_recruiter}
 
+role_admissions_manage_events := {role_admissions_admin, role_recruiter, role_marketing_manager, role_event_manager}
+
 role_admissions_review_applications := {role_admissions_admin, role_application_reviewer}
 
 role_admissions_resolve_duplicates := {role_admissions_admin, role_application_reviewer}
@@ -172,6 +174,14 @@ default rule_admissions_manage_applications := false
 rule_admissions_manage_applications if {
 	claim_roles := {role | some role in input.Roles}
 	input_allowed := role_admissions_manage_applications & claim_roles
+	count(input_allowed) > 0
+}
+
+default rule_admissions_manage_events := false
+
+rule_admissions_manage_events if {
+	claim_roles := {role | some role in input.Roles}
+	input_allowed := role_admissions_manage_events & claim_roles
 	count(input_allowed) > 0
 }
 

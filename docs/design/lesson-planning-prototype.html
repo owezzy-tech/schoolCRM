@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SchoolCRM — lesson planning &amp; school access</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5fa8'/%3E%3Cpath d='M16 6 9 10.5v11L16 26l7-4.5v-11Z' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='16' r='2.8' fill='white'/%3E%3C/svg%3E">
+<style>
+:root{
+  --font-display:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,'Times New Roman',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+
+  --primary:oklch(0.47 0.12 262);
+  --primary-hover:oklch(0.41 0.125 262);
+  --primary-weak:oklch(0.95 0.03 262);
+  --primary-weak-fg:oklch(0.38 0.11 262);
+  --on-primary:oklch(0.99 0 0);
+
+  --accent:oklch(0.56 0.10 195);
+  --accent-hover:oklch(0.49 0.10 195);
+  --accent-weak:oklch(0.95 0.04 195);
+  --accent-weak-fg:oklch(0.39 0.09 195);
+
+  --bg:oklch(0.972 0.005 255);
+  --surface:oklch(1 0 0);
+  --surface-2:oklch(0.982 0.004 255);
+  --nav-bg:oklch(1 0 0);
+  --fg:oklch(0.27 0.02 262);
+  --fg-strong:oklch(0.21 0.02 262);
+  --muted:oklch(0.53 0.02 262);
+  --faint:oklch(0.66 0.015 262);
+  --border:oklch(0.918 0.008 262);
+  --border-strong:oklch(0.85 0.012 262);
+
+  --danger:oklch(0.55 0.17 25);
+  --danger-hover:oklch(0.48 0.17 25);
+  --danger-weak:oklch(0.96 0.03 25);
+  --danger-weak-fg:oklch(0.44 0.16 25);
+
+  --warn:oklch(0.62 0.13 75);
+  --warn-weak:oklch(0.96 0.05 85);
+  --warn-weak-fg:oklch(0.44 0.11 70);
+
+  --success:oklch(0.58 0.10 165);
+  --success-weak:oklch(0.95 0.04 165);
+  --success-weak-fg:oklch(0.41 0.09 165);
+
+  --radius:10px;--radius-lg:14px;--radius-sm:7px;
+  --shadow-sm:0 1px 2px rgba(16,24,40,.05);
+  --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.04);
+  --shadow-md:0 4px 14px rgba(16,24,40,.09),0 2px 4px rgba(16,24,40,.04);
+  --shadow-lg:0 16px 40px rgba(16,24,40,.16),0 4px 10px rgba(16,24,40,.06);
+  --nav-w:264px;--topbar-h:64px;
+  --ring:0 0 0 3px oklch(0.47 0.12 262 / .28);
+}
+.dark{
+  --primary:oklch(0.76 0.10 255);
+  --primary-hover:oklch(0.82 0.09 255);
+  --primary-weak:oklch(0.33 0.06 262);
+  --primary-weak-fg:oklch(0.87 0.06 255);
+  --on-primary:oklch(0.19 0.04 262);
+  --accent:oklch(0.74 0.09 195);
+  --accent-hover:oklch(0.80 0.08 195);
+  --accent-weak:oklch(0.33 0.05 205);
+  --accent-weak-fg:oklch(0.85 0.07 195);
+  --bg:oklch(0.19 0.014 262);
+  --surface:oklch(0.235 0.015 262);
+  --surface-2:oklch(0.27 0.015 262);
+  --nav-bg:oklch(0.215 0.015 262);
+  --fg:oklch(0.93 0.008 262);
+  --fg-strong:oklch(0.98 0.004 262);
+  --muted:oklch(0.73 0.012 262);
+  --faint:oklch(0.62 0.012 262);
+  --border:oklch(0.315 0.015 262);
+  --border-strong:oklch(0.40 0.016 262);
+  --danger:oklch(0.68 0.16 25);
+  --danger-hover:oklch(0.74 0.15 25);
+  --danger-weak:oklch(0.32 0.07 25);
+  --danger-weak-fg:oklch(0.86 0.08 25);
+  --warn:oklch(0.78 0.12 80);
+  --warn-weak:oklch(0.33 0.06 75);
+  --warn-weak-fg:oklch(0.89 0.09 85);
+  --success:oklch(0.74 0.10 165);
+  --success-weak:oklch(0.32 0.05 165);
+  --success-weak-fg:oklch(0.87 0.08 165);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:0 4px 14px rgba(0,0,0,.45);
+  --shadow-lg:0 16px 40px rgba(0,0,0,.55);
+  --ring:0 0 0 3px oklch(0.76 0.10 255 / .35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font-body);font-size:14px;line-height:1.55;background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:600;color:var(--fg-strong)}
+p{margin:0 0 10px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+b,strong{font-weight:650}
+.muted{color:var(--muted)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:9px 14px;font-weight:600;transition:top .15s}
+.skip-link:focus{top:12px}
+.ico{width:18px;height:18px;flex:none;display:inline-block;vertical-align:middle}
+
+.shell{display:grid;grid-template-columns:var(--nav-w) 1fr;min-height:100vh}
+.nav{background:var(--nav-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:16px 12px;gap:2px;z-index:60}
+.nav-brand{display:flex;align-items:center;gap:11px;padding:8px 8px 18px}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;flex:none;box-shadow:var(--shadow-sm)}
+.brand-mark svg{width:24px;height:24px}
+.nav-brand-text b{font-family:var(--font-display);font-size:17.5px;letter-spacing:.01em;display:block;line-height:1.1;color:var(--fg-strong)}
+.nav-brand-text small{color:var(--faint);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.nav-section-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);padding:16px 12px 6px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9.5px 11px;border-radius:9px;color:var(--muted);font-weight:550;transition:background .15s,color .15s}
+.nav-item .ico{width:19px;height:19px}
+.nav-item.active{background:var(--primary-weak);color:var(--primary-weak-fg);font-weight:650}
+.nav-foot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px}
+.nav-user{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:9px}
+.nav-user small{display:block;color:var(--faint);font-size:11.5px}
+.nav-backdrop{display:none}
+
+.content{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:50;min-height:var(--topbar-h);display:flex;align-items:center;gap:14px;padding:10px 24px;background:color-mix(in oklch,var(--surface) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--fg-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.icon-btn[aria-expanded="true"],.icon-btn.active{background:var(--surface-2);color:var(--fg);border-color:var(--border)}
+.nav-toggle{display:none}
+.role-switch{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:4px 6px 4px 12px;height:40px}
+.role-switch-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:700}
+.role-switch select{border:0;background:transparent;font:inherit;font-weight:650;color:var(--fg);padding:3px 4px;border-radius:6px;cursor:pointer;max-width:150px}
+.avatar-btn{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 10px 3px 3px;cursor:pointer;height:40px;transition:border-color .15s,background .15s}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--primary-weak);color:var(--primary-weak-fg);display:grid;place-items:center;font-weight:700;font-size:12.5px;flex:none}
+.avatar-meta{display:flex;flex-direction:column;line-height:1.15;text-align:left}
+.avatar-meta b{font-size:12.5px}
+.avatar-meta small{color:var(--faint);font-size:10.5px}
+.avatar-btn .ico{color:var(--faint);width:16px;height:16px}
+.menu-pop{position:fixed;top:66px;right:24px;z-index:70;width:250px;background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow-lg);padding:7px;animation:pop .16s ease}
+.menu-pop .menu-head{padding:10px 11px 11px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.menu-pop .menu-head b{display:block}
+.menu-pop .menu-head small{color:var(--muted)}
+.menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:9px 11px;border-radius:8px;cursor:pointer;font-weight:550;color:var(--fg);transition:background .15s}
+.menu-item.danger{color:var(--danger)}
+
+.main{padding:26px 30px 70px;max-width:1380px;margin:0 auto;width:100%}
+.page-head{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-family:var(--font-display);font-size:27px;letter-spacing:-.01em;line-height:1.15}
+.page-sub{color:var(--muted);margin-top:4px;max-width:62ch}
+.page-actions{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.crumb{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;margin-bottom:10px;font-weight:550}
+.crumb .ico{width:15px;height:15px}
+.crumb a:hover{color:var(--fg)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 14px;border-radius:9px;border:1px solid transparent;font-weight:650;cursor:pointer;transition:background .16s,border-color .16s,color .16s,transform .08s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn .ico{width:17px;height:17px}
+.btn-primary{background:var(--primary);color:var(--on-primary)}
+.btn-secondary{background:var(--surface);border-color:var(--border-strong);color:var(--fg)}
+.btn-ghost{background:transparent;color:var(--muted)}
+.btn-danger{background:var(--danger);color:oklch(0.99 0 0)}
+.btn-outline-danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn-sm{height:32px;padding:0 11px;font-size:13px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.btn-block{width:100%}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+.card-pad{padding:22px}
+.card-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.card-head h2{font-family:var(--font-display);font-size:18px}
+.card-head .page-actions{margin-left:auto}
+.grid{display:grid;gap:16px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm)}
+.metric .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.metric .v{font-family:var(--font-display);font-size:32px;line-height:1.1;margin-top:8px;color:var(--fg-strong)}
+.metric .d{color:var(--muted);font-size:12.5px;margin-top:2px}
+.metric.accent .v{color:var(--accent-weak-fg)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:25px;padding:0 11px;border-radius:999px;font-size:12px;font-weight:650;border:1px solid transparent;white-space:nowrap;line-height:1}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip--plain::before{display:none}
+.chip-neutral{background:var(--surface-2);color:var(--muted);border-color:var(--border)}
+.dark .chip-neutral{color:var(--muted)}
+.chip-primary{background:var(--primary-weak);color:var(--primary-weak-fg)}
+.chip-warn{background:var(--warn-weak);color:var(--warn-weak-fg)}
+.chip-danger{background:var(--danger-weak);color:var(--danger-weak-fg)}
+.chip-success{background:var(--success-weak);color:var(--success-weak-fg)}
+.chip-accent{background:var(--accent-weak);color:var(--accent-weak-fg)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);box-shadow:var(--shadow-sm)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);white-space:nowrap}
+td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+.row-link{cursor:pointer}
+td .who{display:flex;align-items:center;gap:10px}
+td .who small{display:block;color:var(--faint);font-size:11.5px}
+.ta-right{text-align:right}
+.cell-strong{font-weight:600;color:var(--fg-strong)}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.toolbar .grow{flex:1;min-width:200px}
+.search{position:relative;flex:1;min-width:200px}
+.search .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint);width:17px;height:17px}
+.search .input{padding-left:38px}
+.filter-select{height:40px;border:1px solid var(--border-strong);background:var(--surface);border-radius:9px;padding:0 12px;color:var(--fg);font:inherit;font-weight:550;cursor:pointer}
+.toolbar .page-actions{margin-left:auto}
+
+.field{margin-bottom:16px}
+.field>label{display:block;font-weight:650;font-size:13px;margin-bottom:6px;color:var(--fg-strong)}
+.field .hint{color:var(--muted);font-size:12px;margin-top:5px}
+.req{color:var(--danger)}
+.input,.select,.textarea{width:100%;border:1px solid var(--border-strong);background:var(--surface);border-radius:9px;padding:9px 12px;font:inherit;color:var(--fg);transition:border-color .16s,box-shadow .16s}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--primary);box-shadow:var(--ring)}
+.input[aria-invalid="true"],.textarea[aria-invalid="true"]{border-color:var(--danger)}
+.input[disabled],.select[disabled]{background:var(--surface-2);color:var(--faint);cursor:not-allowed}
+.textarea{min-height:100px;resize:vertical;line-height:1.6}
+.char-count{float:right;color:var(--faint);font-size:11.5px;font-weight:550}
+.field-error{color:var(--danger-weak-fg);font-size:12.5px;margin-top:6px;font-weight:600;display:flex;gap:6px;align-items:center}
+.field-error .ico{width:15px;height:15px}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;overflow-x:auto}
+.tab{padding:11px 15px;border:0;background:none;color:var(--muted);font-weight:650;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab.active{color:var(--primary-weak-fg);border-bottom-color:var(--primary)}
+
+.banner{display:flex;gap:12px;padding:13px 15px;border-radius:11px;border:1px solid;margin-bottom:18px;font-size:13.5px}
+.banner .ico{width:19px;height:19px;margin-top:1px}
+.banner b{display:block;margin-bottom:1px}
+.banner-info{background:var(--accent-weak);border-color:color-mix(in oklch,var(--accent) 28%,transparent);color:var(--accent-weak-fg)}
+.banner-warn{background:var(--warn-weak);border-color:color-mix(in oklch,var(--warn) 32%,transparent);color:var(--warn-weak-fg)}
+.banner-danger{background:var(--danger-weak);border-color:color-mix(in oklch,var(--danger) 30%,transparent);color:var(--danger-weak-fg)}
+.banner .banner-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+.empty{text-align:center;padding:52px 24px;color:var(--muted)}
+.empty .ico{width:34px;height:34px;color:var(--faint);margin-bottom:10px}
+.empty h3{font-family:var(--font-display);font-size:17px;color:var(--fg);margin-bottom:4px}
+.empty p{max-width:44ch;margin:0 auto 16px}
+
+.vcards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.vcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow-sm)}
+.vcard.live{border-color:color-mix(in oklch,var(--primary) 40%,var(--border))}
+.vcard .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.vcard .v{font-family:var(--font-display);font-size:24px;margin-top:6px;color:var(--fg-strong);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vcard .s{margin-top:8px}
+.vcard-link{color:inherit;display:inline-flex;align-items:center;gap:8px;border-bottom:2px solid transparent;padding-bottom:1px}
+.vcard-link .ico{width:17px;height:17px;color:var(--muted)}
+.vlink{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:650;color:var(--primary-weak-fg)}
+.vlink .ico{width:14px;height:14px}
+.vswitch{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:4px;margin:0 0 18px}
+.vswitch-btn{padding:8px 14px;border-radius:7px;font-weight:650;font-size:13px;color:var(--muted);transition:background .15s,color .15s}
+.vswitch-btn.active{background:var(--surface);color:var(--primary-weak-fg);box-shadow:var(--shadow-sm)}
+
+.section{margin-bottom:22px}
+.section h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:11px;font-weight:700}
+.section ul,.section ol{margin:0;padding-left:20px}
+.section li{margin-bottom:7px}
+.activities{border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.act-row{display:grid;grid-template-columns:104px 1fr;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:0}
+.act-time{padding:12px 14px;background:var(--surface-2);font-family:var(--font-mono);font-size:12px;color:var(--muted);font-weight:600}
+
+.tl{position:relative;padding-left:28px;margin-top:6px}
+.tl-item{position:relative;padding-bottom:22px}
+.tl-item::before{content:"";position:absolute;left:-24px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2.5px solid var(--primary)}
+.tl-item.current::before{background:var(--primary)}
+.tl-item::after{content:"";position:absolute;left:-18.5px;top:20px;bottom:2px;width:2px;background:var(--border)}
+.tl-item:last-child::after{display:none}
+.vmeta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:9px;font-size:12.5px;color:var(--muted)}
+.vmeta b{color:var(--fg)}
+.decision{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-top:11px;font-size:13px}
+.decision .dhead{display:flex;align-items:center;gap:8px;font-weight:650;color:var(--fg);margin-bottom:3px}
+.decision .dhead .ico{width:16px;height:16px}
+
+.split{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:24px;align-items:start}
+.side{position:sticky;top:calc(var(--topbar-h) + 20px)}
+.decision-panel{padding:20px}
+.role-locked{text-align:center;padding:26px 18px;color:var(--muted)}
+.role-locked .ico{width:30px;height:30px;color:var(--faint);margin-bottom:10px}
+.role-locked b{display:block;color:var(--fg);margin-bottom:5px;font-size:14px}
+
+.repeat-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.repeat-row .input{flex:1}
+.repeat-row .grow{flex:1}
+.icon-btn.sm{width:38px;height:38px}
+.act-edit{display:grid;grid-template-columns:96px 1fr auto;gap:10px;margin-bottom:10px;align-items:start}
+
+.forbidden{display:grid;place-items:center;min-height:58vh}
+.forbidden .card{max-width:460px;text-align:center;padding:40px 32px}
+.forbidden .lock{width:56px;height:56px;border-radius:16px;background:var(--danger-weak);color:var(--danger-weak-fg);display:grid;place-items:center;margin:0 auto 18px}
+.forbidden .lock .ico{width:28px;height:28px}
+.forbidden h1{font-family:var(--font-display);font-size:23px;margin-bottom:8px}
+
+.sk{background:linear-gradient(90deg,var(--surface-2) 25%,color-mix(in oklch,var(--fg) 8%,var(--surface-2)) 37%,var(--surface-2) 63%);background-size:400% 100%;animation:shimmer 1.3s ease-in-out infinite;border-radius:8px}
+.sk-row{height:16px;margin-bottom:12px}
+.skspace{display:grid;gap:16px;margin-top:20px}
+
+.modal-root{position:fixed;inset:0;z-index:100;display:none}
+.modal-root.has-modal{display:block}
+.modal-backdrop{position:absolute;inset:0;background:oklch(0.2 0.02 262 / .5);backdrop-filter:blur(2px);animation:fade .18s ease}
+.modal{position:relative;margin:6vh auto 0;width:min(560px,calc(100% - 32px));max-height:88vh;overflow:auto;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:pop .2s ease}
+.modal-head{padding:22px 24px 0;display:flex;gap:14px;align-items:flex-start}
+.modal-head h2{font-family:var(--font-display);font-size:20px}
+.modal-head p{color:var(--muted);margin-top:4px;font-size:13.5px}
+.modal-head .icon-btn{margin-left:auto;margin-top:-4px}
+.modal-body{padding:18px 24px 4px}
+.modal-foot{padding:16px 24px 22px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+.toast-root{position:fixed;right:22px;bottom:22px;z-index:120;display:flex;flex-direction:column;gap:11px;max-width:390px}
+.toast{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-left:3.5px solid var(--accent);border-radius:12px;box-shadow:var(--shadow-md);padding:14px 15px;animation:slidein .24s ease}
+.toast .ico{width:19px;height:19px;margin-top:1px}
+.toast.success{border-left-color:var(--success)}
+.toast.success .ico{color:var(--success-weak-fg)}
+.toast.error{border-left-color:var(--danger)}
+.toast.error .ico{color:var(--danger-weak-fg)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.warn .ico{color:var(--warn-weak-fg)}
+.toast.info .ico{color:var(--accent-weak-fg)}
+.toast b{display:block;font-size:13.5px}
+.toast p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.toast .icon-btn{margin-left:auto;width:28px;height:28px;flex:none}
+
+.callout-note{display:grid;gap:2px}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;box-shadow:0 0 0 3px var(--success-weak)}
+.dot-draft{width:8px;height:8px;border-radius:50%;background:var(--faint);display:inline-block}
+.sep{color:var(--faint)}
+
+@media (hover:hover){
+  .nav-item:hover{background:color-mix(in oklch,var(--fg) 6%,transparent);color:var(--fg)}
+  .icon-btn:hover{background:var(--surface-2);color:var(--fg)}
+  .btn-primary:hover{background:var(--primary-hover)}
+  .btn-secondary:hover{background:var(--surface-2);border-color:var(--faint)}
+  .btn-ghost:hover{background:color-mix(in oklch,var(--fg) 7%,transparent);color:var(--fg)}
+  .btn-danger:hover{background:var(--danger-hover)}
+  .btn-outline-danger:hover{background:var(--danger-weak)}
+  .tab:hover{color:var(--fg)}
+  .menu-item:hover{background:var(--surface-2)}
+  .menu-item.danger:hover{background:var(--danger-weak)}
+  tbody tr:hover{background:color-mix(in oklch,var(--primary) 4%,transparent)}
+  .avatar-btn:hover{border-color:var(--border-strong)}
+  .row-link:hover .cell-strong{color:var(--primary-weak-fg)}
+  .vcard-link:hover{border-bottom-color:var(--primary)}
+  .vlink:hover{text-decoration:underline}
+  .vswitch-btn:hover{color:var(--fg)}
+}
+@media (max-width:1024px){
+  .shell{grid-template-columns:1fr}
+  .nav{position:fixed;left:0;top:0;bottom:0;width:282px;transform:translateX(-100%);transition:transform .24s cubic-bezier(.2,.7,.2,1);box-shadow:var(--shadow-lg);height:100dvh}
+  .nav.open{transform:none}
+  .nav-backdrop{display:block;position:fixed;inset:0;background:oklch(0.2 0.02 262 / .45);z-index:55;opacity:0;pointer-events:none;transition:opacity .24s}
+  .nav-backdrop.show{opacity:1;pointer-events:auto}
+  .nav-toggle{display:grid}
+  .split{grid-template-columns:1fr}
+  .side{position:static}
+}
+@media (max-width:720px){
+  .main{padding:20px 16px 70px}
+  .topbar{padding:10px 14px;gap:10px}
+  .avatar-meta{display:none}
+  .role-switch-label{display:none}
+  .role-switch{padding:4px 6px}
+  .page-head h1{font-size:23px}
+  .vcards{grid-template-columns:1fr}
+  .modal{margin-top:3vh}
+  .toast-root{left:14px;right:14px;bottom:14px;max-width:none}
+  .act-edit{grid-template-columns:1fr}
+  .act-row{grid-template-columns:84px 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes slidein{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+var app=document.getElementById('app');
+
+var ROLES=['Super admin','School admin','Teacher','HOD','Dean'];
+var CAPS=['Manages members','Teaches','Reviews lessons (HOD)','Approves lessons (Dean)'];
+var CAP_SHORT={'Manages members':'Manages members','Teaches':'Teaches','Reviews lessons (HOD)':'Reviews (HOD)','Approves lessons (Dean)':'Approves (Dean)'};
+var STATUS={
+  'Draft':{tone:'neutral'},
+  'In HOD review':{tone:'warn',label:'In HOD review'},
+  'In dean approval':{tone:'warn',label:'In dean approval'},
+  'Changes requested':{tone:'danger'},
+  'Approved':{tone:'success'},
+  'Published':{tone:'primary'}
+};
+function dec(by,at,decision,feedback){return {by:by,at:at,decision:decision,feedback:feedback||''};}
+var C_PHOTO={
+  objectives:['Explain the process of photosynthesis and why it is important to plants.','Identify the raw materials and the products of photosynthesis.','Describe the factors that affect the rate of photosynthesis.'],
+  materials:['Potted green leafy plant','Beaker, test tubes and a tripod stand','Iodine solution and a white tile','Bunsen burner','Course textbook, pages 42–47'],
+  activities:[
+    {time:'5 min',title:'Recap and hook',detail:'Review the previous lesson on plant nutrition and pose the question: how do plants make their own food?'},
+    {time:'15 min',title:'Guided instruction',detail:'Introduce the word equation for photosynthesis and label the parts of a chloroplast.'},
+    {time:'15 min',title:'Practical demonstration',detail:'Test a variegated leaf for starch and record observations in the science journal.'},
+    {time:'5 min',title:'Wrap-up',detail:'Quick-fire oral questions, then assign the revision exercise.'}
+  ],
+  assessment:'Short written exercise: label a diagram of a leaf and write the word equation for photosynthesis. Marked out of 10.'
+};
+var C_CELL={
+  objectives:['Name the main parts of an animal and a plant cell.','State the function of each cell organelle.','Prepare and observe a wet mount under a light microscope.'],
+  materials:['Light microscope and prepared slides','Onion, forceps and a mounted needle','Glass slide and cover slip','Iodine solution'],
+  activities:[
+    {time:'10 min',title:'Cell tour',detail:'Use a labelled diagram to walk through organelles and their functions.'},
+    {time:'20 min',title:'Microscope practical',detail:'In pairs, prepare an onion-skin wet mount and draw the cells observed.'},
+    {time:'10 min',title:'Consolidation',detail:'Compare plant and animal cells using a Venn diagram.'}
+  ],
+  assessment:'Draw and label an onion cell as seen under the microscope; answer five short questions on organelle function.'
+};
+var C_DIGEST={
+  objectives:['Trace the path of food through the alimentary canal.','Describe mechanical and chemical digestion.','State the role of enzymes in digestion.'],
+  materials:['Model of the digestive system','Chart of the alimentary canal','Visking tubing and starch solution'],
+  activities:[
+    {time:'10 min',title:'Starter quiz',detail:'Name the organs of the digestive system shown on the chart.'},
+    {time:'20 min',title:'Enzyme demonstration',detail:'Show the action of amylase on starch using Visking tubing.'},
+    {time:'10 min',title:'Summary',detail:'Sequence cards to order the stages of digestion.'}
+  ],
+  assessment:'Label the alimentary canal and explain the role of three named enzymes, out of 10.'
+};
+var C_FORCES={
+  objectives:['Define force and state its SI unit.','Describe the effects of balanced and unbalanced forces.','Measure force using a spring balance.'],
+  materials:['Spring balances (0–10 N)','Masses and a trolley','Ramp and metre rule'],
+  activities:[
+    {time:'10 min',title:'Concept introduction',detail:'Define force and demonstrate push and pull examples.'},
+    {time:'20 min',title:'Investigation',detail:'Use a spring balance to measure forces acting on a trolley on a ramp.'},
+    {time:'10 min',title:'Discussion',detail:'Interpret the results and link to balanced and unbalanced forces.'}
+  ],
+  assessment:'Practical write-up of the ramp investigation, including a results table and a conclusion.'
+};
+var C_BOND={
+  objectives:['Distinguish between ionic and covalent bonding.','Draw dot-and-cross diagrams.','Relate bonding to properties of substances.'],
+  materials:['Periodic table booklets','Molymod model kit'],
+  activities:[
+    {time:'15 min',title:'Modelling ionic bonding',detail:'Build sodium chloride using the model kit and draw the dot-and-cross diagram.'},
+    {time:'15 min',title:'Modelling covalent bonding',detail:'Build methane and water molecules, then draw their structures.'},
+    {time:'10 min',title:'Compare and contrast',detail:'Discuss melting points and conductivity in terms of bonding.'}
+  ],
+  assessment:'Draw dot-and-cross diagrams for three named compounds, out of 12.'
+};
+var C_ECO={
+  objectives:['Describe how energy flows through an ecosystem.','Construct and interpret food chains and food webs.','Explain the role of decomposers.'],
+  materials:['Food web posters','Field notebooks','Local ecosystem photographs'],
+  activities:[
+    {time:'10 min',title:'Recap',detail:'Review producers, consumers and decomposers.'},
+    {time:'20 min',title:'Food web task',detail:'Build a food web for a local habitat using the organism cards.'},
+    {time:'10 min',title:'Field link',detail:'Discuss what pupils observed on the school grounds.'}
+  ],
+  assessment:'Construct a food web from a given food chain set and answer three interpretation questions.'
+};
+var C_MATTER={
+  objectives:['Describe the three states of matter.','Explain changes of state in terms of particle arrangement.','Investigate melting and boiling points.'],
+  materials:['Ice, beaker and thermometer','Bunsen burner and tripod','Particle diagram worksheets'],
+  activities:[
+    {time:'10 min',title:'Particle recap',detail:'Sort particle diagrams into solids, liquids and gases.'},
+    {time:'20 min',title:'Melting and boiling investigation',detail:'Heat ice and record the temperature at regular intervals.'},
+    {time:'10 min',title:'Graph and conclude',detail:'Plot the heating curve and identify the plateaus.'}
+  ],
+  assessment:'Plot and interpret a heating curve, identifying the melting and boiling points, out of 10.'
+};
+
+function seed(){
+  return {
+    users:[
+      {id:'u1',name:'Brian Omondi',email:'brian@schoolcrm.co.ke',role:'Super admin',initials:'BO'},
+      {id:'u2',name:'Esther Wambui',email:'esther@nairobihill.ac.ke',role:'School admin',initials:'EW'},
+      {id:'u3',name:'Grace Wanjiku',email:'grace@nairobihill.ac.ke',role:'Teacher',initials:'GW',departmentId:'sci'},
+      {id:'u4',name:'Peter Otieno',email:'peter@nairobihill.ac.ke',role:'HOD',initials:'PO',departmentId:'sci'},
+      {id:'u5',name:'Mary Kamau',email:'mary@nairobihill.ac.ke',role:'Dean',initials:'MK'},
+      {id:'u6',name:'Faith Njeri',email:'faith@nairobihill.ac.ke',role:'Teacher',initials:'FN',departmentId:'sci'},
+      {id:'u7',name:'David Kiprop',email:'david@nairobihill.ac.ke',role:'HOD',initials:'DK',departmentId:'hum'},
+      {id:'u8',name:'Aisha Hassan',email:'aisha@nairobihill.ac.ke',role:'Teacher',initials:'AH',departmentId:'lang'},
+      {id:'u9',name:'Samuel Ochieng',email:'samuel@nairobihill.ac.ke',role:'HOD',initials:'SO',departmentId:'lang'},
+      {id:'u10',name:'John Mwangi',email:'john@nairobihill.ac.ke',role:'Teacher',initials:'JM',departmentId:'hum'}
+    ],
+    schools:[
+      {id:'nhs',name:'Nairobi Hill School',county:'Nairobi',status:'Active',created:'12 Jan 2026',
+       departments:[{id:'sci',name:'Sciences',hod:'Peter Otieno'},{id:'hum',name:'Humanities',hod:'David Kiprop'},{id:'lang',name:'Languages',hod:'Samuel Ochieng'}]},
+      {id:'mba',name:'Mombasa Bay Academy',county:'Mombasa',status:'Active',created:'04 Feb 2026',
+       departments:[{id:'mba-sci',name:'Sciences',hod:'Halima Yusuf'},{id:'mba-art',name:'Creative Arts',hod:'Joy Mbeki'}]},
+      {id:'kla',name:'Kisumu Lakeside School',county:'Kisumu',status:'Active',created:'21 Feb 2026',
+       departments:[{id:'kla-hum',name:'Humanities',hod:'Wycliffe Odongo'}]},
+      {id:'nkr',name:'Nakuru Rift High',county:'Nakuru',status:'Onboarding',created:'02 Mar 2026',departments:[]}
+    ],
+    memberships:[
+      {id:'m1',userId:'u2',capability:'Manages members',department:'',status:'Active',updated:'02 Mar 2026'},
+      {id:'m2',userId:'u3',capability:'Teaches',department:'sci',status:'Active',updated:'18 Feb 2026'},
+      {id:'m3',userId:'u4',capability:'Reviews lessons (HOD)',department:'sci',status:'Active',updated:'20 Feb 2026'},
+      {id:'m10',userId:'u6',capability:'Teaches',department:'sci',status:'Active',updated:'18 Feb 2026'},
+      {id:'m4',userId:'u5',capability:'Approves lessons (Dean)',department:'sci',status:'Active',updated:'05 Mar 2026'},
+      {id:'m11',userId:'u5',capability:'Approves lessons (Dean)',department:'hum',status:'Active',updated:'05 Mar 2026'},
+      {id:'m12',userId:'u5',capability:'Approves lessons (Dean)',department:'lang',status:'Active',updated:'05 Mar 2026'},
+      {id:'m5',userId:'u7',capability:'Reviews lessons (HOD)',department:'hum',status:'Active',updated:'21 Feb 2026'},
+      {id:'m7',userId:'u10',capability:'Teaches',department:'hum',status:'Active',updated:'22 Feb 2026'},
+      {id:'m8',userId:'u9',capability:'Reviews lessons (HOD)',department:'lang',status:'Active',updated:'20 Feb 2026'},
+      {id:'m6',userId:'u8',capability:'Teaches',department:'lang',status:'Revoked',updated:'28 Jan 2026'}
+    ],
+    plans:[
+      {id:'lp-photo',title:'Photosynthesis and Plant Nutrition',departmentId:'sci',authorId:'u3',author:'Grace Wanjiku',updated:'02 Mar 2026',liveVersion:2,
+        conflict:{serverVersion:4,at:'03 Mar 2026',summary:'Updated the assessment rubric and added a mark scheme.'},
+        versions:[
+          mkVer({n:1,status:'Published',savedAt:'09 Feb 2026',summary:'Initial plan created.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','12 Feb 2026','Approved','Good structure — add a hands-on practical.'),dean:dec('Mary Kamau','13 Feb 2026','Approved','Approved for publication.'),content:C_PHOTO}),
+          mkVer({n:2,status:'Published',savedAt:'20 Feb 2026',summary:'Added the starch-test practical and clarified safety notes.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','21 Feb 2026','Approved','Practical is well integrated.'),dean:dec('Mary Kamau','22 Feb 2026','Approved',''),content:C_PHOTO}),
+          mkVer({n:3,status:'Draft',savedAt:'02 Mar 2026',summary:'Reworked the timed activities to fit a single 40-minute lesson.',authorId:'u3',author:'Grace Wanjiku',content:C_PHOTO})
+        ]},
+      {id:'lp-cell',title:'Cell Structure and Function',departmentId:'sci',authorId:'u3',author:'Grace Wanjiku',updated:'26 Feb 2026',liveVersion:1,
+        versions:[
+          mkVer({n:1,status:'Published',savedAt:'01 Feb 2026',summary:'Initial plan created.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','03 Feb 2026','Approved',''),dean:dec('Mary Kamau','04 Feb 2026','Approved',''),content:C_CELL}),
+          mkVer({n:2,status:'In HOD review',submittedAt:'26 Feb 2026',savedAt:'26 Feb 2026',summary:'Added a microscope practical and a plant-versus-animal comparison.',authorId:'u3',author:'Grace Wanjiku',content:C_CELL})
+        ]},
+      {id:'lp-digest',title:'Human Digestive System',departmentId:'sci',authorId:'u6',author:'Faith Njeri',updated:'27 Feb 2026',liveVersion:1,
+        versions:[
+          mkVer({n:1,status:'Published',savedAt:'30 Jan 2026',summary:'Initial plan created.',authorId:'u6',author:'Faith Njeri',hod:dec('Peter Otieno','02 Feb 2026','Approved',''),dean:dec('Mary Kamau','03 Feb 2026','Approved',''),content:C_DIGEST}),
+          mkVer({n:2,status:'In dean approval',submittedAt:'28 Feb 2026',savedAt:'27 Feb 2026',summary:'Reworked the starter and added a Visking-tubing demonstration.',authorId:'u6',author:'Faith Njeri',hod:dec('Peter Otieno','27 Feb 2026','Approved','Clear improvement to the practical. Ready for dean review.'),content:C_DIGEST})
+        ]},
+      {id:'lp-forces',title:'Forces and Motion',departmentId:'sci',authorId:'u3',author:'Grace Wanjiku',updated:'24 Feb 2026',liveVersion:null,
+        versions:[
+          mkVer({n:1,status:'Approved',savedAt:'22 Feb 2026',summary:'Initial plan created.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','23 Feb 2026','Approved',''),dean:dec('Mary Kamau','24 Feb 2026','Approved','Ready to publish.'),content:C_FORCES})
+        ]},
+      {id:'lp-bond',title:'Chemical Bonding',departmentId:'sci',authorId:'u4',author:'Peter Otieno',updated:'27 Feb 2026',liveVersion:null,
+        versions:[
+          mkVer({n:1,status:'In HOD review',submittedAt:'27 Feb 2026',savedAt:'27 Feb 2026',summary:'Initial plan created.',authorId:'u4',author:'Peter Otieno',content:C_BOND})
+        ]},
+      {id:'lp-eco',title:'Ecosystems and Food Webs',departmentId:'sci',authorId:'u6',author:'Faith Njeri',updated:'26 Feb 2026',liveVersion:1,
+        versions:[
+          mkVer({n:1,status:'Published',savedAt:'29 Jan 2026',summary:'Initial plan created.',authorId:'u6',author:'Faith Njeri',hod:dec('Peter Otieno','31 Jan 2026','Approved',''),dean:dec('Mary Kamau','02 Feb 2026','Approved',''),content:C_ECO}),
+          mkVer({n:2,status:'In dean approval',submittedAt:'26 Feb 2026',savedAt:'25 Feb 2026',summary:'Added a field observation task on the school grounds.',authorId:'u6',author:'Faith Njeri',hod:dec('Mary Kamau','26 Feb 2026','Approved','Good local relevance — I covered this review.'),content:C_ECO})
+        ]},
+      {id:'lp-matter',title:'States of Matter',departmentId:'sci',authorId:'u3',author:'Grace Wanjiku',updated:'25 Feb 2026',liveVersion:1,
+        versions:[
+          mkVer({n:1,status:'Published',savedAt:'28 Jan 2026',summary:'Initial plan created.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','30 Jan 2026','Approved',''),dean:dec('Mary Kamau','31 Jan 2026','Approved',''),content:C_MATTER}),
+          mkVer({n:2,status:'Changes requested',submittedAt:'24 Feb 2026',savedAt:'24 Feb 2026',summary:'Added a heating-curve graph task.',authorId:'u3',author:'Grace Wanjiku',hod:dec('Peter Otieno','25 Feb 2026','Changes requested','Please add the mark scheme for the graph task and specify the safety equipment needed for the burner work.'),content:C_MATTER})
+        ]}
+    ]
+  };
+}
+function mkVer(o){
+  return {n:o.n,status:o.status,savedAt:o.savedAt||null,submittedAt:o.submittedAt||null,summary:o.summary||'',
+    authorId:o.authorId,author:o.author,hod:o.hod||null,dean:o.dean||null,content:o.content||C_PHOTO};
+}
+
+var DB=seed();
+var state={role:'Super admin',theme:'light',navOpen:false,menuOpen:false,loading:false,modal:null,resolved:null,
+  toasts:[],toastSeq:0,focusId:null,schoolTab:'departments',
+  filters:{q:'',schoolStatus:'all',cap:'all',dept:'all',status:'all'},
+  editor:null,grant:null,decision:null};
+var loadTimer=null;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function today(){return new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+function todayTime(){return new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+', '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+
+var ICONS={
+  grid:'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+  school:'<path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M6 10.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.5"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2V5Z"/><path d="M6 19h12"/>',
+  review:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  approve:'<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  chevron:'<path d="M6 9l6 6 6-6"/>',
+  chevronRight:'<path d="M9 6l6 6-6 6"/>',
+  lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  send:'<path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4Z"/>',
+  upload:'<path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+  building:'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/>',
+  arrowLeft:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
+  shield:'<path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6l-8-3Z"/>',
+  graduation:'<path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  filter:'<path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/>',
+  key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10.5 12.5 20 3M18 5l2 2M15 8l2 2"/>',
+  file:'<path d="M14 3v5h5"/><path d="M6 3h8l5 5v13H6z"/>',
+  alertTri:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>'
+};
+function icon(n,cls){return '<svg class="ico '+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[n]||'')+'</svg>';}
+function brandMark(){return '<span class="brand-mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round" aria-hidden="true"><path d="M16 5.5 8 10.5v11L16 26.5l8-5v-11Z"/><circle cx="16" cy="16" r="3" fill="currentColor" stroke="none"/></svg></span>';}
+
+function currentUser(){return DB.users.filter(function(u){return u.role===state.role;})[0]||DB.users[0];}
+function userById(id){return DB.users.filter(function(u){return u.id===id;})[0];}
+function findPlan(id){return DB.plans.filter(function(p){return p.id===id;})[0];}
+function curVer(p){return p.versions[p.versions.length-1];}
+function deptName(id){for(var i=0;i<DB.schools.length;i++){for(var j=0;j<DB.schools[i].departments.length;j++){if(DB.schools[i].departments[j].id===id)return DB.schools[i].departments[j].name;}}return '—';}
+function deptOptions(school){return school?school.departments:DB.schools[0].departments;}
+function statusChip(s){var m=STATUS[s]||{tone:'neutral'};return '<span class="chip chip-'+m.tone+'">'+esc(s)+'</span>';}
+function capChip(c){var tone=c==='Manages members'?'primary':c==='Teaches'?'neutral':c==='Reviews lessons (HOD)'?'warn':'success';return '<span class="chip chip--plain chip-'+tone+'">'+esc(CAP_SHORT[c]||c)+'</span>';}
+function avatar(u,cls){return '<span class="avatar '+(cls||'')+'">'+esc(u?u.initials:'??')+'</span>';}
+function pageTitle(r){return r&&r.title?r.title:'SchoolCRM';}
+function initialsOf(name){return name.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();}
+
+var NAV={};
+NAV['Super admin']=[{label:'Overview',icon:'grid',route:'/',id:'nav-overview'},{label:'Schools',icon:'school',route:'/schools',id:'nav-schools'}];
+NAV['School admin']=[{label:'Overview',icon:'grid',route:'/',id:'nav-overview'},{label:'My school',icon:'school',route:'/schools/nhs',id:'nav-school'}];
+NAV['Teacher']=[{label:'Overview',icon:'grid',route:'/',id:'nav-overview'},{label:'My lesson plans',icon:'book',route:'/lesson-plans',id:'nav-lesson-plans'}];
+NAV['HOD']=[{label:'Overview',icon:'grid',route:'/',id:'nav-overview'},{label:'My lesson plans',icon:'book',route:'/lesson-plans',id:'nav-lesson-plans'},{label:'Review queue',icon:'review',route:'/review',id:'nav-review'}];
+NAV['Dean']=[{label:'Overview',icon:'grid',route:'/',id:'nav-overview'},{label:'Approval queue',icon:'approve',route:'/approval',id:'nav-approval'}];
+
+function segs(){return (location.hash||'#/').replace(/^#\/?/,'').split('/').filter(Boolean);}
+function resolveRoute(){
+  var s=segs(),u=currentUser(),r;
+  if(!s.length){r={name:'overview',params:{},title:'Overview'};}
+  else if(s[0]==='schools'){ if(!s[1]){r={name:'schools',params:{},title:'Schools'};} else {var sc=DB.schools.filter(function(x){return x.id===s[1];})[0];r={name:'school',params:{id:s[1]},title:sc?sc.name:'School'};} }
+  else if(s[0]==='lesson-plans'){
+    if(s[1]==='new'){r={name:'editor',params:{mode:'new'},title:'New lesson plan'};}
+    else if(s[2]==='edit'){var p=findPlan(s[1]);r={name:'editor',params:{id:s[1]},title:'Edit lesson plan'};}
+    else if(s[2]==='versions'&&s[3]){var pv=findPlan(s[1]);r={name:'version',params:{id:s[1],v:+s[3]},title:(pv?pv.title:'Lesson plan')+' — version '+s[3]};}
+    else if(s[1]){var p2=findPlan(s[1]);r={name:'plan',params:{id:s[1]},title:p2?p2.title:'Lesson plan'};}
+    else {r={name:'plans',params:{},title:'My lesson plans'};}
+    r.dept=u.departmentId;
+  }
+  else if(s[0]==='review'){ if(s[1]){r={name:'decision',params:{id:s[1],v:+s[2],kind:'hod'},title:'Review lesson plan'};} else {r={name:'reviewQueue',params:{},title:'Review queue'};} }
+  else if(s[0]==='approval'){ if(s[1]){r={name:'decision',params:{id:s[1],v:+s[2],kind:'dean'},title:'Approval decision'};} else {r={name:'approvalQueue',params:{},title:'Approval queue'};} }
+  else {r={name:'notfound',params:{},title:'Not found'};}
+  r.allowed=isAllowed(r,u);
+  return r;
+}
+function isAllowed(r,u){
+  switch(r.name){
+    case 'overview':return true;
+    case 'schools':return u.role==='Super admin';
+    case 'school':return u.role==='Super admin'||(u.role==='School admin'&&r.params.id==='nhs');
+    case 'plans':return u.role==='Teacher'||u.role==='HOD';
+    case 'editor':return u.role==='Teacher'||u.role==='HOD';
+    case 'plan':return true;
+    case 'version':return true;
+    case 'reviewQueue':case 'decision':return r.params&&r.params.kind==='dean'?(u.role==='Dean'):(u.role==='HOD');
+    case 'approvalQueue':return u.role==='Dean';
+    default:return true;
+  }
+}
+function deptPlans(deptId){return DB.plans.filter(function(p){return p.departmentId===deptId;});}
+function myPlans(u){return DB.plans.filter(function(p){return p.authorId===u.id;});}
+
+function navHTML(u){
+  var items=NAV[u.role]||[],cur=(location.hash||'#/').replace(/^#/,'')||'/';
+  var html='<a class="skip-link" href="#main" data-act="skip">Skip to content</a>'+
+  '<nav class="nav'+(state.navOpen?' open':'')+'" aria-label="Primary">'+
+  '<div class="nav-brand">'+brandMark()+'<span class="nav-brand-text"><b>SchoolCRM</b><small>Admin console</small></span></div>'+
+  '<div class="nav-section-label">Workspace</div>';
+  items.forEach(function(it){
+    var active=(it.route==='/'&&(cur==='/'||cur===''))||(it.route!=='/'&&cur.indexOf(it.route)===0);
+    html+='<a class="nav-item'+(active?' active':'')+'" data-od-id="'+it.id+'" href="#'+it.route+'"'+(active?' aria-current="page"':'')+'>'+icon(it.icon)+'<span class="nav-label">'+esc(it.label)+'</span></a>';
+  });
+  html+='<div class="nav-foot"><div class="nav-user">'+avatar(u)+'<span><b>'+esc(u.name)+'</b><small>'+esc(u.role)+'</small></span></div></div></nav>';
+  return html;
+}
+function topbarHTML(u,r){
+  var opts=ROLES.map(function(x){return '<option value="'+x+'"'+(x===u.role?' selected':'')+'>'+x+'</option>';}).join('');
+  return '<header class="topbar">'+
+    '<button class="icon-btn nav-toggle" data-act="toggle-nav" aria-label="Open navigation" aria-expanded="'+state.navOpen+'">'+icon('menu')+'</button>'+
+    '<div class="topbar-title" data-od-id="page-title">'+esc(pageTitle(r))+'</div>'+
+    '<div class="topbar-actions">'+
+      '<label class="role-switch"><span class="role-switch-label">Viewing as</span><select data-act="set-role" aria-label="Switch role">'+opts+'</select></label>'+
+      '<button class="icon-btn" data-act="toggle-theme" aria-label="'+(state.theme==='dark'?'Switch to light theme':'Switch to dark theme')+'">'+icon(state.theme==='dark'?'sun':'moon')+'</button>'+
+      '<button class="avatar-btn" data-act="toggle-menu" aria-haspopup="true" aria-expanded="'+state.menuOpen+'">'+avatar(u)+'<span class="avatar-meta"><b>'+esc(u.name)+'</b><small>'+esc(u.role)+'</small></span>'+icon('chevron')+'</button>'+
+    '</div></header>';
+}
+function menuHTML(u){
+  if(!state.menuOpen)return '';
+  return '<div class="menu-pop" role="menu">'+
+    '<div class="menu-head"><b>'+esc(u.name)+'</b><small>'+esc(u.email)+'</small></div>'+
+    '<button class="menu-item" role="menuitem" data-act="toggle-theme">'+icon(state.theme==='dark'?'sun':'moon')+'<span>'+(state.theme==='dark'?'Light theme':'Dark theme')+'</span></button>'+
+    '<button class="menu-item" role="menuitem" data-act="reset">'+icon('refresh')+'<span>Reset sample data</span></button>'+
+    '<button class="menu-item danger" role="menuitem" data-act="signout">'+icon('logout')+'<span>Sign out</span></button>'+
+  '</div>';
+}
+
+function shell(){
+  var u=currentUser(),r=state.resolved;
+  return '<div class="shell">'+
+  navHTML(u)+
+  '<div class="nav-backdrop'+(state.navOpen?' show':'')+'" data-act="close-nav"></div>'+
+  '<div class="content">'+topbarHTML(u,r)+'<main id="main" class="main" tabindex="-1">'+viewHTML()+'</main></div>'+
+  '</div>'+
+  menuHTML(u)+
+  '<div class="modal-root'+(state.modal?' has-modal':'')+'" id="modal-root">'+modalHTML()+'</div>'+
+  '<div class="toast-root" role="region" aria-live="polite" aria-label="Notifications">'+toastsHTML()+'</div>';
+}
+function viewHTML(){
+  var r=state.resolved;
+  if(state.loading)return skeletonHTML();
+  if(!r.allowed)return forbiddenHTML();
+  switch(r.name){
+    case 'overview':return overviewHTML();
+    case 'schools':return schoolsHTML();
+    case 'school':return schoolHTML(r.params.id);
+    case 'plans':return plansHTML();
+    case 'editor':return editorHTML(r);
+    case 'plan':return planHTML(r.params.id);
+    case 'version':return versionHTML(r.params);
+    case 'reviewQueue':return queueHTML('hod');
+    case 'approvalQueue':return queueHTML('dean');
+    case 'decision':return decisionHTML(r.params);
+    default:return notFoundHTML();
+  }
+}
+function pageHead(title,sub,actions,crumb){
+  return (crumb?'<div class="crumb">'+crumb+'</div>':'')+
+  '<div class="page-head" data-od-id="page-head"><div><h1>'+esc(title)+'</h1>'+(sub?'<p class="page-sub">'+sub+'</p>':'')+'</div>'+(actions?'<div class="page-actions">'+actions+'</div>':'')+'</div>';
+}
+function skeletonHTML(){
+  var rows='';for(var i=0;i<6;i++){rows+='<div class="sk sk-row" style="width:'+(60+((i*13)%35))+'%"></div>';}
+  return '<div class="page-head"><div><div class="sk" style="width:220px;height:30px;margin-bottom:12px"></div><div class="sk" style="width:340px;height:15px"></div></div></div>'+
+  '<div class="metrics">'+Array(4).join().split(',').map(function(){return '<div class="metric"><div class="sk" style="width:90px;height:12px;margin-bottom:14px"></div><div class="sk" style="width:60px;height:30px"></div></div>';}).join('')+'</div>'+
+  '<div class="card card-pad">'+rows+'</div>';
+}
+function forbiddenHTML(){
+  return '<div class="forbidden" data-od-id="forbidden-403"><div class="card"><div class="lock">'+icon('lock')+'</div><h1>403 — Access denied</h1>'+
+  '<p class="muted">You do not have permission to view this page with the '+esc(currentUser().role)+' role. If you believe this is a mistake, contact your school administrator.</p>'+
+  '<a class="btn btn-primary" href="#/" data-act="go-overview">'+icon('grid')+'Back to overview</a></div></div>';
+}
+function notFoundHTML(){
+  return '<div class="forbidden"><div class="card"><div class="lock">'+icon('alert')+'</div><h1>Page not found</h1><p class="muted">The page you were looking for does not exist.</p><a class="btn btn-primary" href="#/">Back to overview</a></div></div>';
+}
+
+function metric(k,v,d,accent){return '<div class="metric'+(accent?' accent':'')+'"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div>'+(d?'<div class="d">'+esc(d)+'</div>':'')+'</div>';}
+function overviewHTML(){
+  var u=currentUser(),h='';
+  if(u.role==='Super admin'){
+    var active=DB.memberships.filter(function(m){return m.status==='Active';}).length;
+    h+=pageHead('Good to see you, '+u.name.split(' ')[0],'Platform overview across every school on SchoolCRM.');
+    h+='<div class="metrics">'+metric('Schools',DB.schools.length,'Active tenants')+metric('Active memberships',active,'Across all schools')+metric('Departments',DB.schools.reduce(function(a,s){return a+s.departments.length;},0),'Teaching units')+metric('Lesson plans',DB.plans.length,'In the sample tenant',true)+'</div>';
+    h+='<div class="card"><div class="card-head"><h2>Recently added schools</h2><a class="btn btn-secondary btn-sm" href="#/schools">'+icon('school')+'View all</a></div>'+
+    '<div class="table-wrap" style="border:0;border-radius:0;box-shadow:none"><table><thead><tr><th>School</th><th>County</th><th>Departments</th><th>Status</th><th>Created</th></tr></thead><tbody>'+
+    DB.schools.slice(0,4).map(function(s){return '<tr class="row-link" data-act="open-school" data-id="'+s.id+'"><td class="cell-strong">'+esc(s.name)+'</td><td class="muted">'+esc(s.county)+'</td><td class="mono">'+s.departments.length+'</td><td>'+statusChipSimple(s.status)+'</td><td class="muted">'+esc(s.created)+'</td></tr>';}).join('')+
+    '</tbody></table></div></div>';
+  } else if(u.role==='School admin'){
+    var sc=DB.schools[0],mem=DB.memberships.filter(function(m){return m.status==='Active';}).length;
+    h+=pageHead('Good to see you, '+u.name.split(' ')[0],'Administration for '+esc(sc.name)+'.');
+    h+='<div class="metrics">'+metric('Departments',sc.departments.length,'Teaching units')+metric('Active memberships',mem,'Capabilities in force')+metric('Revoked',DB.memberships.filter(function(m){return m.status==='Revoked';}).length,'Kept as history')+metric('Lesson plans',DB.plans.length,'Across departments',true)+'</div>';
+    h+='<div class="card card-pad"><div class="callout-note"><h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:6px">Manage access</h2><p class="muted" style="margin-bottom:16px">Grant teaching, HOD and dean capabilities from the school membership table. Only a super admin can grant or revoke “Manages members”.</p><a class="btn btn-primary" href="#/schools/nhs" data-act="open-school" data-id="nhs">'+icon('key')+'Open school access</a></div></div>';
+  } else if(u.role==='Teacher'||u.role==='HOD'){
+    var mine=myPlans(u),drafts=mine.filter(function(p){return curVer(p).status==='Draft';}).length;
+    var review=mine.filter(function(p){return curVer(p).status==='In HOD review'||curVer(p).status==='In dean approval';}).length;
+    var live=mine.filter(function(p){return p.liveVersion;}).length;
+    h+=pageHead('Good to see you, '+u.name.split(' ')[0],'Your lesson planning workspace for the '+esc(deptName(u.departmentId))+' department.');
+    h+='<div class="metrics">'+metric('My lesson plans',mine.length)+metric('Drafts',drafts,'Private to you')+metric('Awaiting review',review)+metric('With a live version',live,'Published',true)+'</div>';
+    if(u.role==='HOD'){var q=hodQueue().length;h+='<div class="card card-pad" style="margin-bottom:0"><div class="callout-note"><h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:6px">'+q+' version'+(q===1?'':'s')+' awaiting your review</h2><p class="muted" style="margin-bottom:16px">Review submitted versions from teachers in the '+esc(deptName(u.departmentId))+' department.</p><a class="btn btn-primary" href="#/review">'+icon('review')+'Open review queue</a></div></div>';}
+    else {h+='<div class="card"><div class="card-head"><h2>Recent plans</h2><a class="btn btn-secondary btn-sm" href="#/lesson-plans">'+icon('book')+'View all</a></div>'+plansTable(mine.slice(0,3),false)+'</div>';}
+  } else if(u.role==='Dean'){
+    var q2=deanQueue().length;
+    h+=pageHead('Good to see you, '+u.name.split(' ')[0],'Approval oversight across the school.');
+    h+='<div class="metrics">'+metric('Awaiting approval',q2)+metric('Approved this month',3)+metric('Departments',deanDepts().length,'You approve for these')+metric('Published plans',DB.plans.filter(function(p){return p.liveVersion;}).length,'',true)+'</div>';
+    h+='<div class="card card-pad"><div class="callout-note"><h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:6px">'+q2+' version'+(q2===1?'':'s')+' awaiting your approval</h2><p class="muted" style="margin-bottom:16px">These versions have already been reviewed by the relevant HOD and are ready for your decision.</p><a class="btn btn-primary" href="#/approval">'+icon('approve')+'Open approval queue</a></div></div>';
+  }
+  return h;
+}
+function statusChipSimple(s){
+  var tone=s==='Active'?'success':s==='Onboarding'?'warn':'neutral';
+  return '<span class="chip chip-'+tone+'">'+esc(s)+'</span>';
+}
+
+function schoolsHTML(){
+  var q=state.filters.q.toLowerCase(),st=state.filters.schoolStatus;
+  var list=DB.schools.filter(function(s){return (st==='all'||s.status===st)&&(s.name.toLowerCase().indexOf(q)>-1||s.county.toLowerCase().indexOf(q)>-1);});
+  var body=list.length?list.map(function(s){
+    var members=DB.memberships.filter(function(m){return m.status==='Active';}).length;
+    return '<tr class="row-link" data-act="open-school" data-id="'+s.id+'"><td><div class="cell-strong">'+esc(s.name)+'</div><div class="muted" style="font-size:12px">'+esc(s.county)+' County</div></td><td class="mono">'+s.departments.length+'</td><td class="mono">'+members+'</td><td>'+statusChipSimple(s.status)+'</td><td class="muted">'+esc(s.created)+'</td><td class="ta-right"><span class="btn btn-secondary btn-sm">'+icon('chevronRight')+'Open</span></td></tr>';
+  }).join(''):'';
+  return pageHead('Schools','Create schools and manage the departments and memberships within each one.',
+    '<button class="btn btn-primary" data-act="open-modal" data-modal="createSchool" data-od-id="cta-create-school">'+icon('plus')+'Create school</button>')+
+  '<div class="toolbar"><div class="search">'+icon('search')+'<input class="input" type="search" placeholder="Search schools or counties" value="'+esc(state.filters.q)+'" data-filter="q" data-focusid="f-schools-q" id="f-schools-q" aria-label="Search schools"></div>'+
+  '<select class="filter-select" data-filter="schoolStatus" aria-label="Filter by status"><option value="all"'+(st==='all'?' selected':'')+'>All statuses</option><option value="Active"'+(st==='Active'?' selected':'')+'>Active</option><option value="Onboarding"'+(st==='Onboarding'?' selected':'')+'>Onboarding</option></select></div>'+
+  (list.length?'<div class="table-wrap" data-od-id="schools-table"><table><thead><tr><th>School</th><th>Departments</th><th>Members</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>'
+   :'<div class="card empty"><div class="ico">'+icon('building')+'</div><h3>No schools match</h3><p>Try a different search term or clear the status filter.</p></div>');
+}
+
+function schoolHTML(id){
+  var s=DB.schools.filter(function(x){return x.id===id;})[0];
+  if(!s)return notFoundHTML();
+  var u=currentUser();
+  var crumb='<a href="'+(u.role==='Super admin'?'#/schools':'#/')+'">'+(u.role==='Super admin'?'Schools':'Overview')+'</a>'+icon('chevronRight')+'<span>'+esc(s.name)+'</span>';
+  var head=pageHead(s.name,'<span class="muted">'+esc(s.county)+' County</span> '+statusChipSimple(s.status),'',crumb);
+  var tabs='<div class="tabs" role="tablist"><button class="tab'+(state.schoolTab==='departments'?' active':'')+'" role="tab" aria-selected="'+(state.schoolTab==='departments')+'" data-act="tab" data-tab="departments">Departments ('+s.departments.length+')</button><button class="tab'+(state.schoolTab==='memberships'?' active':'')+'" role="tab" aria-selected="'+(state.schoolTab==='memberships')+'" data-act="tab" data-tab="memberships">Memberships ('+DB.memberships.length+')</button></div>';
+  return head+tabs+(state.schoolTab==='departments'?departmentsTab(s):membershipsTab(s));
+}
+function departmentsTab(s){
+  var addBtn='<button class="btn btn-primary" data-act="open-modal" data-modal="addDept" data-od-id="cta-add-department">'+icon('plus')+'Add department</button>';
+  if(!s.departments.length)return '<div class="card empty"><div class="ico">'+icon('building')+'</div><h3>No departments yet</h3><p>Departments group teaching staff and hold their lesson plans. Add the first one to get started.</p>'+addBtn+'</div>';
+  return '<div class="toolbar"><span class="muted">'+s.departments.length+' department'+(s.departments.length===1?'':'s')+'</span><span class="page-actions">'+addBtn+'</span></div>'+
+  '<div class="table-wrap"><table><thead><tr><th>Department</th><th>HOD</th><th>Teachers</th><th>Lesson plans</th><th></th></tr></thead><tbody>'+
+  s.departments.map(function(d){
+    var teachers=DB.users.filter(function(u){return u.departmentId===d.id;}).length;
+    var plans=DB.plans.filter(function(p){return p.departmentId===d.id;}).length;
+    return '<tr><td class="cell-strong">'+esc(d.name)+'</td><td>'+esc(d.hod||'—')+'</td><td class="mono">'+teachers+'</td><td class="mono">'+plans+'</td><td class="ta-right"><button class="btn btn-ghost btn-sm" data-act="toast" data-kind="info" data-msg="Renaming departments is not part of this prototype.">Manage</button></td></tr>';
+  }).join('')+'</tbody></table></div>';
+}
+function membershipsTab(s){
+  var capF=state.filters.cap,deptF=state.filters.dept;
+  var list=DB.memberships.filter(function(m){
+    var mu=userById(m.userId);
+    return (capF==='all'||m.capability===capF)&&(deptF==='all'||m.department===deptF);
+  });
+  var toolbar='<div class="toolbar"><select class="filter-select" data-filter="cap" aria-label="Filter by capability"><option value="all"'+(capF==='all'?' selected':'')+'>All capabilities</option>'+CAPS.map(function(c){return '<option value="'+esc(c)+'"'+(capF===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select>'+
+  '<select class="filter-select" data-filter="dept" aria-label="Filter by department"><option value="all"'+(deptF==='all'?' selected':'')+'>All departments</option>'+s.departments.map(function(d){return '<option value="'+d.id+'"'+(deptF===d.id?' selected':'')+'>'+esc(d.name)+'</option>';}).join('')+'</select>'+
+  '<button class="btn btn-primary page-actions" data-act="open-modal" data-modal="grant" data-od-id="cta-grant-capability">'+icon('key')+'Grant capability</button></div>';
+  if(!list.length)return toolbar+'<div class="card empty"><div class="ico">'+icon('users')+'</div><h3>No memberships match</h3><p>Adjust the capability or department filters to see more rows.</p></div>';
+  var rows=list.map(function(m){
+    var mu=userById(m.userId)||{name:'Unknown',email:'',initials:'??'};
+    var revoked=m.status==='Revoked';
+    var canManage=(m.capability!=='Manages members')||currentUser().role==='Super admin';
+    var action=revoked?'<span class="muted" style="font-size:12.5px">Revoked</span>'
+      :(canManage?'<button class="btn btn-outline-danger btn-sm" data-act="open-modal" data-modal="revoke" data-id="'+m.id+'">Revoke</button>'
+        :'<button class="btn btn-secondary btn-sm" disabled title="Only a super admin can revoke this capability">Revoke</button>');
+    return '<tr'+(revoked?' style="opacity:.72"':'')+'><td><div class="who">'+avatar(mu)+'<span><b>'+esc(mu.name)+'</b><small>'+esc(mu.email)+'</small></span></div></td>'+
+    '<td>'+capChip(m.capability)+'</td><td>'+(m.department?'<span class="muted">'+esc(deptName(m.department))+'</span>':'<span class="muted">—</span>')+'</td>'+
+    '<td><span class="chip chip-'+(revoked?'neutral':'success')+'">'+esc(m.status)+'</span></td><td class="muted">'+esc(m.updated)+'</td><td class="ta-right">'+action+'</td></tr>';
+  }).join('');
+  return toolbar+'<div class="table-wrap" data-od-id="memberships-table"><table><thead><tr><th>User</th><th>Capability</th><th>Department</th><th>Status</th><th>Last updated</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function plansHTML(){
+  var u=currentUser(),mine=myPlans(u),st=state.filters.status,q=state.filters.q.toLowerCase();
+  var list=mine.filter(function(p){return (st==='all'||curVer(p).status===st)&&p.title.toLowerCase().indexOf(q)>-1;});
+  var statuses=['Draft','In HOD review','In dean approval','Changes requested','Approved','Published'];
+  return pageHead('My lesson plans','Plans you author in the '+esc(deptName(u.departmentId))+' department. Drafts stay private to you until you submit them.',
+    '<a class="btn btn-primary" href="#/lesson-plans/new" data-od-id="cta-new-plan">'+icon('plus')+'New lesson plan</a>')+
+  '<div class="banner banner-info">'+icon('lock')+'<div><b>Drafts are private</b>Only you can see a draft until you submit it for HOD review.</div></div>'+
+  '<div class="toolbar"><div class="search">'+icon('search')+'<input class="input" type="search" placeholder="Search your plans" value="'+esc(state.filters.q)+'" data-filter="q" data-focusid="f-plans-q" id="f-plans-q" aria-label="Search lesson plans"></div>'+
+  '<select class="filter-select" data-filter="status" aria-label="Filter by status"><option value="all"'+(st==='all'?' selected':'')+'>All statuses</option>'+statuses.map(function(x){return '<option value="'+esc(x)+'"'+(st===x?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select></div>'+
+  (list.length?plansTable(list,true):'<div class="card empty"><div class="ico">'+icon('book')+'</div><h3>No plans match</h3><p>Adjust the search or status filter, or create a new lesson plan.</p><a class="btn btn-primary" href="#/lesson-plans/new">'+icon('plus')+'New lesson plan</a></div>');
+}
+function plansTable(list,withAction){
+  var rows=list.map(function(p){
+    var v=curVer(p),live=p.liveVersion?('v'+p.liveVersion):null;
+    return '<tr class="row-link" data-act="open-plan" data-id="'+p.id+'"><td class="cell-strong">'+esc(p.title)+'<div class="muted" style="font-size:12px">'+esc(deptName(p.departmentId))+' · '+esc(p.author)+'</div></td>'+
+    '<td><span class="mono" style="font-weight:600">v'+v.n+'</span> '+statusChip(v.status)+'</td>'+
+    '<td>'+(live?'<span class="mono" style="color:var(--success-weak-fg);font-weight:600">'+live+'</span>':'<span class="muted">Not published</span>')+'</td>'+
+    '<td class="muted">'+esc(p.updated)+'</td>'+(withAction?'<td class="ta-right"><span class="btn btn-secondary btn-sm">'+icon('chevronRight')+'Open</span></td>':'')+'</tr>';
+  }).join('');
+  return '<div class="table-wrap"><table><thead><tr><th>Lesson plan</th><th>Current version</th><th>Live published</th><th>Last updated</th>'+(withAction?'<th></th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function planHTML(id){
+  var p=findPlan(id);if(!p)return notFoundHTML();
+  var u=currentUser(),v=curVer(p);
+  var crumb='<a href="#/lesson-plans">My lesson plans</a>'+icon('chevronRight')+'<span>'+esc(p.title)+'</span>';
+  var h=pageHead(p.title,'<span class="muted">'+esc(deptName(p.departmentId))+' · '+esc(p.author)+'</span>',''+
+    (u.id===p.authorId?'<a class="btn btn-secondary" href="#/lesson-plans/'+p.id+'/edit" data-od-id="cta-edit-plan">'+icon('edit')+'Edit plan</a>':'')+
+    (actionable(v,u,p)?'':'<a class="btn btn-ghost" href="#/">'+icon('grid')+'Overview</a>'),crumb);
+  if(p.conflict){
+    h+='<div class="banner banner-danger" data-od-id="conflict-banner">'+icon('alertTri')+'<div><b>This plan changed since you opened it.</b>Version '+p.conflict.serverVersion+' is now current. Reload to continue.</div><div class="banner-actions"><button class="btn btn-danger btn-sm" data-act="reload-conflict" data-id="'+p.id+'">'+icon('refresh')+'Reload</button></div></div>';
+  }
+  h+='<div class="vcards"><div class="vcard live"><div class="k">Live published</div><div class="v">'+(p.liveVersion?'<a class="vcard-link" data-od-id="link-live-version" href="#/lesson-plans/'+p.id+'/versions/'+p.liveVersion+'" aria-label="View live version '+p.liveVersion+'"><span class="dot-live"></span>Version '+p.liveVersion+icon('chevron')+'</a>':'<span class="muted" style="font-size:18px">Not published</span>')+'</div><div class="s">'+(p.liveVersion?'<span class="chip chip-success">Live</span>':'<span class="muted" style="font-size:12.5px">No live version yet</span>')+'</div></div>'+
+  '<div class="vcard"><div class="k">Latest version</div><div class="v"><span class="mono">v'+v.n+'</span>'+statusChip(v.status)+'</div><div class="s"><span class="muted" style="font-size:12.5px">Saved '+esc(v.savedAt||p.updated)+'</span></div></div></div>';
+  var acts=planActions(v,u,p);
+  if(acts)h+='<div class="card card-pad" style="margin-bottom:20px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><b style="margin-right:auto">Actions for the current version</b>'+acts+'</div></div>';
+  h+='<div class="card card-pad" data-od-id="plan-content"><h2 style="font-family:var(--font-display);font-size:19px;margin-bottom:16px">Version '+v.n+' content</h2>'+contentHTML(v.content)+'</div>';
+  h+='<div class="card card-pad" style="margin-top:20px" data-od-id="version-history"><h2 style="font-family:var(--font-display);font-size:19px;margin-bottom:16px">Version history</h2>'+timelineHTML(p)+'</div>';
+  return h;
+}
+function actionable(v,u,p){return (u.id===p.authorId&&(p.liveVersion!==v.n))||v.status==='Draft';}
+function planActions(v,u,p){
+  var a='';
+  if(u.id===p.authorId){
+    if(v.status==='Draft'||v.status==='Changes requested')a+='<button class="btn btn-primary" data-act="submit-plan" data-id="'+p.id+'" data-od-id="cta-submit">'+icon('send')+'Submit for HOD review</button>';
+    if(v.status==='Approved')a+='<button class="btn btn-primary" data-act="publish-plan" data-id="'+p.id+'" data-od-id="cta-publish">'+icon('upload')+'Publish</button>';
+    if(v.status==='Published')a+='<span class="chip chip-primary">Live version — '+v.n+'</span>';
+    if(v.status==='In HOD review'||v.status==='In dean approval')a+='<span class="muted">Submitted — waiting for a decision. Editing will start a new draft.</span>';
+  }
+  return a;
+}
+function contentHTML(c){
+  return '<div class="section"><h3>Learning objectives</h3><ul>'+c.objectives.map(function(o){return '<li>'+esc(o)+'</li>';}).join('')+'</ul></div>'+
+  '<div class="section"><h3>Materials</h3><ul>'+c.materials.map(function(m){return '<li>'+esc(m)+'</li>';}).join('')+'</ul></div>'+
+  '<div class="section"><h3>Timed activities</h3><div class="activities">'+c.activities.map(function(x){return '<div class="act-row"><div class="act-time">'+esc(x.time)+'</div><div style="padding:12px 14px"><b>'+esc(x.title)+'</b><div class="muted" style="font-size:13px">'+esc(x.detail)+'</div></div></div>';}).join('')+'</div></div>'+
+  '<div class="section" style="margin-bottom:0"><h3>Assessment</h3><p>'+esc(c.assessment)+'</p></div>';
+}
+function decisionLine(label,d){
+  if(!d)return '<div class="vmeta"><span>'+label+': <b>Not yet</b></span></div>';
+  return '<div class="decision"><div class="dhead">'+icon(d.decision==='Approved'?'check':'edit')+'<span>'+label+' — '+esc(d.decision)+'</span></div><div class="muted" style="font-size:12.5px">'+esc(d.by)+' · '+esc(d.at)+'</div>'+(d.feedback?'<div style="margin-top:6px">“'+esc(d.feedback)+'”</div>':'')+'</div>';
+}
+function timelineHTML(p){
+  var u=currentUser();
+  return '<div class="tl">'+p.versions.slice().reverse().map(function(v){
+    var isLive=p.liveVersion===v.n,isCur=v===curVer(p);
+    var canView=!(v.status==='Draft'&&u.id!==p.authorId);
+    var viewLink=canView?'<a class="vlink" style="margin-left:auto" href="#/lesson-plans/'+p.id+'/versions/'+v.n+'" aria-label="View version '+v.n+'">View version '+v.n+icon('chevronRight')+'</a>':'<span class="muted" style="margin-left:auto;font-size:12px">Private draft</span>';
+    return '<div class="tl-item'+(isCur?' current':'')+'"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-family:var(--font-mono)">v'+v.n+'</b>'+statusChip(v.status)+(isLive?'<span class="chip chip-primary chip--plain">'+icon('check')+'Live</span>':'')+(isCur?'<span class="muted" style="font-size:12px">current</span>':'')+viewLink+'</div>'+
+    '<div class="muted" style="font-size:12.5px;margin-top:4px">'+esc(v.author)+' · saved '+esc(v.savedAt||'—')+(v.submittedAt?' · submitted '+esc(v.submittedAt):'')+'</div>'+
+    (v.summary?'<div style="margin-top:7px"><b style="font-size:13px">Change summary:</b> '+esc(v.summary)+'</div>':'')+
+    decisionLine('HOD review',v.hod)+decisionLine('Dean approval',v.dean)+'</div>';
+  }).join('')+'</div>';
+}
+
+function versionHTML(params){
+  var p=findPlan(params.id);if(!p)return notFoundHTML();
+  var u=currentUser();
+  var v=p.versions.filter(function(x){return x.n===params.v;})[0];
+  if(!v)return notFoundHTML();
+  if(v.status==='Draft'&&u.id!==p.authorId)return forbiddenHTML();
+  var latest=curVer(p),isLive=p.liveVersion===v.n,isLatest=v.n===latest.n;
+  var crumb='<a href="#/lesson-plans">My lesson plans</a>'+icon('chevronRight')+'<a href="#/lesson-plans/'+p.id+'">'+esc(p.title)+'</a>'+icon('chevronRight')+'<span>Version '+v.n+'</span>';
+  var actions=isLatest?'<a class="btn btn-secondary" href="#/lesson-plans/'+p.id+'" data-od-id="cta-back-to-plan">'+icon('chevronRight')+'Open plan for actions</a>':'<a class="btn btn-ghost" href="#/lesson-plans/'+p.id+'">'+icon('arrowLeft')+'Back to plan</a>';
+  var h=pageHead(p.title,'Version '+v.n+' · '+esc(deptName(p.departmentId))+' · '+esc(p.author),actions,crumb);
+  if(isLive){h+='<div class="banner banner-info" data-od-id="version-banner">'+icon('check')+'<div><b>This is the live published version</b>This is the version students and staff see.</div></div>';}
+  else if(isLatest){h+='<div class="banner banner-info" data-od-id="version-banner">'+icon('info')+'<div><b>This is the latest version</b>Submit, review and publish actions are made from the plan page.</div></div>';}
+  else {h+='<div class="banner banner-warn" data-od-id="version-banner">'+icon('lock')+'<div><b>Superseded by version '+latest.n+' — read only.</b>Decisions can only be made on the latest version.</div></div>';}
+  if(p.liveVersion&&p.liveVersion!==latest.n){
+    var lv=p.liveVersion,av=latest.n;
+    h+='<div class="vswitch" role="group" aria-label="Switch between the live and latest versions">'+
+      '<a class="vswitch-btn'+(v.n===lv?' active':'')+'" href="#/lesson-plans/'+p.id+'/versions/'+lv+'"'+(v.n===lv?' aria-current="true"':'')+'>Live (v'+lv+')</a>'+
+      '<a class="vswitch-btn'+(v.n===av?' active':'')+'" href="#/lesson-plans/'+p.id+'/versions/'+av+'"'+(v.n===av?' aria-current="true"':'')+'>Latest (v'+av+')</a>'+
+    '</div>';
+  }
+  h+='<div class="card card-pad" style="margin-bottom:20px" data-od-id="version-meta">'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><b class="mono" style="font-size:16px">v'+v.n+'</b>'+statusChip(v.status)+(isLive?'<span class="chip chip-primary chip--plain">'+icon('check')+'Live</span>':'')+(isLatest?'<span class="chip chip-neutral chip--plain">Latest</span>':'')+'</div>'+
+    '<div class="vmeta" style="margin-top:0"><span>Author: <b>'+esc(v.author)+'</b></span><span>Saved: <b>'+esc(v.savedAt||'—')+'</b></span>'+(v.submittedAt?'<span>Submitted: <b>'+esc(v.submittedAt)+'</b></span>':'')+'</div>'+
+    decisionLine('HOD review',v.hod)+decisionLine('Dean approval',v.dean)+
+  '</div>';
+  h+='<div class="card card-pad" data-od-id="version-content"><h2 style="font-family:var(--font-display);font-size:19px;margin-bottom:16px">Version '+v.n+' content</h2>'+contentHTML(v.content)+
+    (v.summary?'<div class="section" style="margin-top:22px;margin-bottom:0"><h3>Change summary</h3><p>'+esc(v.summary)+'</p></div>':'')+'</div>';
+  return h;
+}
+
+function editorHTML(r){
+  var isNew=r.params.mode==='new',p=isNew?null:findPlan(r.params.id);
+  if(!isNew&&!p)return notFoundHTML();
+  var u=currentUser();
+  if(!isNew&&p.authorId!==u.id)return '<div class="forbidden"><div class="card"><div class="lock">'+icon('lock')+'</div><h1>Read-only</h1><p class="muted">Only '+esc(p.author)+' can edit this plan. You can view it from the plan page instead.</p><a class="btn btn-primary" href="#/lesson-plans/'+p.id+'">'+icon('chevronRight')+'View plan</a></div></div>';
+  if(!state.editor||state.editor.planId!==(isNew?'__new':p.id))initEditor(p,isNew);
+  var e=state.editor;
+  var crumb=(isNew?'<a href="#/lesson-plans">My lesson plans</a>'+icon('chevronRight')+'<span>New plan</span>':('<a href="#/lesson-plans">My lesson plans</a>'+icon('chevronRight')+'<a href="#/lesson-plans/'+p.id+'">'+esc(p.title)+'</a>'+icon('chevronRight')+'<span>Editing</span>'));
+  var h='<div class="crumb">'+crumb+'</div><div class="page-head"><div><h1>'+(isNew?'New lesson plan':'Edit lesson plan')+'</h1><p class="page-sub">'+esc(deptName(u.departmentId))+' department · '+esc(u.name)+'</p></div><div class="page-actions"><button class="btn btn-secondary" data-act="cancel-editor">Cancel</button><button class="btn btn-primary" data-act="save-plan" data-od-id="cta-save-plan">'+icon('check')+'Save version '+e.nextN+'</button></div></div>';
+  if(!isNew&&p.conflict){h+='<div class="banner banner-danger">'+icon('alertTri')+'<div><b>This plan changed since you opened it.</b>Version '+p.conflict.serverVersion+' is now current. Reload before saving, or your changes will be rejected.</div><div class="banner-actions"><button class="btn btn-danger btn-sm" data-act="reload-conflict" data-id="'+p.id+'">'+icon('refresh')+'Reload</button></div></div>';}
+  h+='<div class="banner banner-info">'+icon('info')+'<div><b>Saving creates a new version</b>Each save becomes version '+e.nextN+'. Saving after submission or approval starts a fresh draft and clears its approvals, while the published version stays live.</div></div>';
+  h+='<div class="split"><div><div class="card card-pad" style="margin-bottom:18px"><div class="field"><label for="ed-title">Lesson title <span class="req">*</span></label><input class="input" id="ed-title" data-editor="title" value="'+esc(e.title)+'" maxlength="200" placeholder="e.g. Photosynthesis and Plant Nutrition"></div></div>'+
+  editorList('objectives','Learning objectives',e.objectives,'Add objective')+
+  editorList('materials','Materials',e.materials,'Add material')+
+  editorActivities(e.activities)+
+  '<div class="card card-pad" style="margin-bottom:18px"><div class="field" style="margin-bottom:0"><label for="ed-assess">Assessment</label><textarea class="textarea" id="ed-assess" data-editor="assessment" placeholder="How will you check understanding?">'+esc(e.assessment)+'</textarea></div></div>'+
+  '<div class="card card-pad"><div class="field" style="margin-bottom:0"><label for="ed-summary">Change summary <span class="req">*</span></label><p class="hint" style="margin-top:0;margin-bottom:8px">Briefly describe what changed in this version. This is stored with the version for reviewers.</p><textarea class="textarea" id="ed-summary" data-editor="summary" placeholder="e.g. Added the starch-test practical and clarified safety notes.">'+esc(e.summary)+'</textarea></div></div></div>'+
+  '<aside class="side"><div class="card card-pad"><h2 style="font-family:var(--font-display);font-size:17px;margin-bottom:6px">Saving creates version '+e.nextN+'</h2><p class="muted" style="font-size:13px;margin-bottom:16px">'+(isNew?'This will be the first version of the plan.':'Version '+(e.nextN-1)+' is the current latest draft.')+'</p><button class="btn btn-primary btn-block" data-act="save-plan">'+icon('check')+'Save version '+e.nextN+'</button><button class="btn btn-ghost btn-block" style="margin-top:8px" data-act="cancel-editor">Cancel</button></div></aside></div>';
+  return h;
+}
+function editorList(kind,title,arr,addLabel){
+  return '<div class="card card-pad" style="margin-bottom:18px" data-od-id="editor-'+kind+'"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px">'+title+'</h3>'+
+  arr.map(function(x,i){return '<div class="repeat-row"><input class="input" data-editor="'+kind+'" data-index="'+i+'" value="'+esc(x)+'" aria-label="'+title+' item '+(i+1)+'"><button class="icon-btn sm" data-act="editor-remove" data-kind="'+kind+'" data-index="'+i+'" aria-label="Remove item '+(i+1)+'">'+icon('trash')+'</button></div>';}).join('')+
+  '<button class="btn btn-secondary btn-sm" data-act="editor-add" data-kind="'+kind+'">'+icon('plus')+' '+addLabel+'</button></div>';
+}
+function editorActivities(arr){
+  return '<div class="card card-pad" style="margin-bottom:18px" data-od-id="editor-activities"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px">Timed activities</h3>'+
+  arr.map(function(x,i){return '<div class="act-edit"><input class="input" data-editor="act-time" data-index="'+i+'" value="'+esc(x.time)+'" style="width:96px" aria-label="Duration '+(i+1)+'" placeholder="10 min"><input class="input" data-editor="act-title" data-index="'+i+'" value="'+esc(x.title)+'" aria-label="Activity '+(i+1)+'" placeholder="Activity name"><button class="icon-btn sm" data-act="editor-remove" data-kind="activities" data-index="'+i+'" aria-label="Remove activity '+(i+1)+'">'+icon('trash')+'</button><textarea class="textarea" data-editor="act-detail" data-index="'+i+'" style="grid-column:2/3;min-height:64px" aria-label="Activity detail '+(i+1)+'" placeholder="What happens?">'+esc(x.detail)+'</textarea></div>';}).join('')+
+  '<button class="btn btn-secondary btn-sm" data-act="editor-add" data-kind="activities">'+icon('plus')+' Add activity</button></div>';
+}
+function initEditor(p,isNew){
+  var c=p?curVer(p).content:C_PHOTO;
+  state.editor=isNew?{planId:'__new',nextN:1,title:'',objectives:[''],materials:[''],activities:[{time:'',title:'',detail:''}],assessment:'',summary:'',content:{hot:1}}:
+  {planId:p.id,nextN:p.versions.length+1,title:p.title,objectives:c.objectives.slice(),materials:c.materials.slice(),activities:c.activities.map(function(a){return {time:a.time,title:a.title,detail:a.detail};}),assessment:c.assessment,summary:''};
+}
+
+function hodQueue(){
+  var u=currentUser();
+  return DB.plans.filter(function(p){return p.departmentId===u.departmentId&&curVer(p).status==='In HOD review';});
+}
+function deanDepts(){
+  return DB.memberships.filter(function(m){return m.userId===currentUser().id&&m.capability==='Approves lessons (Dean)'&&m.status==='Active';}).map(function(m){return m.department;});
+}
+function deanQueue(){
+  var ds=deanDepts();
+  return DB.plans.filter(function(p){return ds.indexOf(p.departmentId)>-1&&curVer(p).status==='In dean approval';});
+}
+function queueHTML(kind){
+  var u=currentUser(),list=kind==='hod'?hodQueue():deanQueue();
+  var title=kind==='hod'?'Review queue':'Approval queue';
+  var sub=kind==='hod'?('Versions submitted by teachers in the '+deptName(u.departmentId)+' department, awaiting your HOD decision.'):'Versions already reviewed by an HOD, awaiting your dean approval.';
+  var h=pageHead(title,sub);
+  if(!list.length)return h+'<div class="card empty"><div class="ico">'+icon(kind==='hod'?'review':'approve')+'</div><h3>'+(kind==='hod'?'Nothing to review':'Nothing to approve')+'</h3><p>'+(kind==='hod'?'When a teacher submits a version in your department, it will appear here.':'When an HOD approves a version, it will appear here for your decision.')+'</p></div>';
+  h+='<div class="grid" style="gap:14px">'+list.map(function(p){
+    var v=curVer(p),author=userById(p.authorId)||{initials:'??'};
+    var viol=kind==='hod'?v.authorId===u.id:(v.authorId===u.id||(v.hod&&v.hod.by===u.name));
+    return '<div class="card card-pad row-link" data-act="open-decision" data-id="'+p.id+'" data-kind="'+kind+'" data-v="'+v.n+'"><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">'+
+    '<div style="flex:1;min-width:240px"><div class="cell-strong" style="font-size:16px">'+esc(p.title)+'</div><div class="muted" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+avatar(author)+esc(p.author)+'<span class="sep">·</span>v'+v.n+'<span class="sep">·</span>submitted '+esc(v.submittedAt||v.savedAt)+'<span class="sep">·</span>'+statusChip(v.status)+'</div></div>'+
+    (viol?'<span class="chip chip-danger chip--plain">'+icon('lock')+'Separation of duties</span>':'<span class="btn btn-primary btn-sm">'+(kind==='hod'?'Review':'Decide')+'</span>')+
+    '</div></div>';
+  }).join('')+'</div>';
+  return h;
+}
+function decisionHTML(params){
+  var p=findPlan(params.id);if(!p)return notFoundHTML();
+  var v=p.versions.filter(function(x){return x.n===params.v;})[0]||curVer(p);
+  var u=currentUser(),kind=params.kind;
+  var crumb='<a href="#/'+(kind==='hod'?'review':'approval')+'">'+(kind==='hod'?'Review queue':'Approval queue')+'</a>'+icon('chevronRight')+'<span>'+esc(p.title)+' v'+v.n+'</span>';
+  var h=pageHead(p.title,'Version '+v.n+' · '+esc(p.author)+' · submitted '+esc(v.submittedAt||v.savedAt),'',crumb);
+  h+='<div class="split"><div class="card card-pad" data-od-id="decision-content"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px"><span class="chip chip-neutral chip--plain">Read-only view · v'+v.n+'</span>'+statusChip(v.status)+'</div>'+contentHTML(v.content)+'</div>'+
+  '<aside class="side">'+decisionPanel(kind,v,u,p)+'</aside></div>';
+  return h;
+}
+function decisionPanel(kind,v,u,p){
+  var viol=kind==='hod'?v.authorId===u.id:(v.authorId===u.id||(v.hod&&v.hod.by===u.name));
+  if(viol){
+    return '<div class="card decision-panel" data-od-id="decision-panel"><div class="role-locked">'+icon('lock')+'<b>Decision unavailable</b><p style="font-size:13px;margin-bottom:14px">Author, HOD reviewer and dean approver must be three different people. You cannot decide on this version.</p></div></div>';
+  }
+  if(kind==='dean'&&v.hod){
+    var hb='<div class="card card-pad" style="margin-bottom:16px"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px">Earlier HOD decision</h3><div class="decision" style="margin-top:0"><div class="dhead">'+icon(v.hod.decision==='Approved'?'check':'edit')+'<span>'+esc(v.hod.decision)+'</span></div><div class="muted" style="font-size:12.5px">'+esc(v.hod.by)+' · '+esc(v.hod.at)+'</div>'+(v.hod.feedback?'<div style="margin-top:6px">“'+esc(v.hod.feedback)+'”</div>':'')+'</div></div>';
+    return hb+'<div class="card decision-panel" data-od-id="decision-panel">'+decisionForm(kind,v,u,p.id)+'</div>';
+  }
+  return '<div class="card decision-panel" data-od-id="decision-panel">'+decisionForm(kind,v,u,p.id)+'</div>';
+}
+function decisionForm(kind,v,u,planId){
+  var awaiting=kind==='hod'?v.status==='In HOD review':v.status==='In dean approval';
+  if(!awaiting){
+    return '<h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:8px">Decision recorded</h2><p class="muted" style="font-size:13.5px">This version is no longer awaiting your decision.</p>';
+  }
+  return '<h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:6px">Your decision</h2><p class="muted" style="font-size:13px;margin-bottom:17px">'+(kind==='hod'?'Decide whether this version is ready to move to dean approval.':'Give the final approval to publish, or send it back with feedback.')+'</p>'+
+  '<div class="field"><label for="fb-'+kind+'">Feedback</label><textarea class="textarea" id="fb-'+kind+'" data-counter="cnt-'+kind+'" maxlength="2000" placeholder="'+(kind==='hod'?'Comments for the teacher…':'Comments for the teacher and HOD…')+'"></textarea><div class="hint"><span class="char-count" id="cnt-'+kind+'">0/2000</span>Feedback is required when you request changes.</div></div>'+
+  '<button class="btn btn-primary btn-block" data-act="approve" data-kind="'+kind+'" data-id="'+planId+'">'+icon('check')+'Approve</button>'+
+  '<button class="btn btn-outline-danger btn-block" style="margin-top:9px" data-act="request-changes" data-kind="'+kind+'" data-id="'+planId+'">'+icon('edit')+'Request changes</button>';
+}
+
+function dialogHead(title,desc){return '<div class="modal-head"><div><h2>'+esc(title)+'</h2>'+(desc?'<p>'+desc+'</p>':'')+'</div><button class="icon-btn" data-act="close-modal" aria-label="Close dialog">'+icon('x')+'</button></div>';}
+function modalHTML(){
+  var m=state.modal;if(!m)return '';
+  var body='',foot='',title='',desc='',form='';
+  if(m.type==='createSchool'){
+    title='Create school';desc='Add a new school tenant. You can add departments and memberships next.';
+    var len=(m.name||'').length,invalid=m.error==='name';
+    body='<form data-form="createSchool" id="m-form"><div class="field"><label for="cs-name">School name <span class="req">*</span></label><input class="input" id="cs-name" name="name" maxlength="200" value="'+esc(m.name||'')+'" data-modal-input="name" data-counter="cs-count" '+(invalid?'aria-invalid="true" aria-describedby="cs-err"':'')+' placeholder="e.g. Nairobi Hill School"><div class="hint"><span class="char-count" id="cs-count">'+len+'/200</span>Between 1 and 200 characters.</div>'+(invalid?'<div class="field-error" id="cs-err">'+icon('alert')+'Enter a school name of 1–200 characters.</div>':'')+'</div></form>';
+    foot='<button class="btn btn-secondary" data-act="close-modal">Cancel</button><button class="btn btn-primary" data-act="submit-form" data-form="createSchool">'+icon('plus')+'Create school</button>';
+  } else if(m.type==='addDept'){
+    var school=DB.schools.filter(function(x){return x.id===(m.schoolId||'nhs');})[0]||DB.schools[0];
+    title='Add department';desc='Departments group teaching staff and hold their lesson plans in '+esc(school.name)+'.';
+    var dinv=m.error==='dept';
+    body='<form data-form="addDept" id="m-form"><div class="field"><label for="ad-name">Department name <span class="req">*</span></label><input class="input" id="ad-name" name="name" value="'+esc(m.name||'')+'" data-modal-input="name" '+(dinv?'aria-invalid="true" aria-describedby="ad-err"':'')+' placeholder="e.g. Sciences">'+(dinv?'<div class="field-error" id="ad-err">'+icon('alert')+'Enter a department name that is not already in use.</div>':'')+'</div></form>';
+    foot='<button class="btn btn-secondary" data-act="close-modal">Cancel</button><button class="btn btn-primary" data-act="submit-form" data-form="addDept">'+icon('plus')+'Add department</button>';
+  } else if(m.type==='grant'){
+    var school2=DB.schools[0],isSuper=currentUser().role==='Super admin';
+    var needDept=m.capability&&m.capability!=='Manages members';
+    title='Grant capability';desc='Give a user a capability in '+esc(school2.name)+'.';
+    var userOpts='<option value="">Select a user…</option>'+DB.users.filter(function(x){return x.role!=='Super admin';}).map(function(x){return '<option value="'+x.id+'"'+(m.user===x.id?' selected':'')+'>'+esc(x.name)+' — '+esc(x.role)+'</option>';}).join('');
+    var capOpts='<option value="">Select a capability…</option>'+CAPS.map(function(c){
+      var dis=(c==='Manages members'&&!isSuper);
+      return '<option value="'+esc(c)+'"'+(m.capability===c?' selected':'')+(dis?' disabled':'')+'>'+esc(c)+(dis?' (super admin only)':'')+'</option>';
+    }).join('');
+    body='<form data-form="grant" id="m-form"><div class="field"><label for="g-user">User <span class="req">*</span></label><select class="select" id="g-user" data-modal-select="user" '+(m.error==='user'?'aria-invalid="true"':'')+'>'+userOpts+'</select></div>'+
+    '<div class="field"><label for="g-cap">Capability <span class="req">*</span></label><select class="select" id="g-cap" data-modal-select="capability">'+capOpts+'</select>'+(isSuper?'':'<div class="hint">As a school admin you can grant teaching, HOD and dean capabilities. Only a super admin can grant or revoke “Manages members”.</div>')+'</div>'+
+    (needDept?'<div class="field"><label for="g-dept">Department <span class="req">*</span></label><select class="select" id="g-dept" data-modal-select="department" '+(m.error==='dept'?'aria-invalid="true"':'')+'><option value="">Select a department…</option>'+deptOptions(school2).map(function(d){return '<option value="'+d.id+'"'+(m.department===d.id?' selected':'')+'>'+esc(d.name)+'</option>';}).join('')+'</select><div class="hint">A department is required for teaching, HOD and dean capabilities.</div></div>':'')+
+    (m.error?'<div class="field-error">'+icon('alert')+esc(m.errorMsg||'Please complete the required fields.')+'</div>':'')+'</form>';
+    foot='<button class="btn btn-secondary" data-act="close-modal">Cancel</button><button class="btn btn-primary" data-act="submit-form" data-form="grant">'+icon('key')+'Grant capability</button>';
+  } else if(m.type==='revoke'){
+    var mem=DB.memberships.filter(function(x){return x.id===m.id;})[0];
+    var mu2=mem?userById(mem.userId):null;
+    title='Revoke capability';desc='This takes effect immediately.';
+    body='<div class="banner banner-danger" style="margin-bottom:0">'+icon('alertTri')+'<div><b>Access ends immediately</b>'+(mem?esc(mu2?mu2.name:'this user'):'')+' will lose the “'+esc(mem?CAP_SHORT[mem.capability]:'')+'” capability straight away — even if they are signed in right now. The row stays in the table as history.</div></div>';
+    foot='<button class="btn btn-secondary" data-act="close-modal">Cancel</button><button class="btn btn-danger" data-act="submit-form" data-form="revoke">'+icon('x')+'Revoke capability</button>';
+  }
+  return '<div class="modal-backdrop" data-act="close-modal"></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title" data-od-id="modal-'+m.type+'"><span id="m-title" class="sr-only" style="position:absolute;left:-9999px">'+esc(title)+'</span>'+dialogHead(title,desc)+'<div class="modal-body">'+body+'</div><div class="modal-foot">'+foot+'</div></div>';
+}
+function toastsHTML(){
+  return state.toasts.map(function(t){
+    var ic=t.type==='success'?'check':t.type==='error'?'alertTri':t.type==='warn'?'clock':'info';
+    return '<div class="toast '+t.type+'" role="status">'+icon(ic)+'<div><b>'+esc(t.title)+'</b>'+(t.msg?'<p>'+esc(t.msg)+'</p>':'')+'</div><button class="icon-btn" data-act="toast-close" data-id="'+t.id+'" aria-label="Dismiss">'+icon('x')+'</button></div>';
+  }).join('');
+}
+function toast(type,title,msg){
+  var id=++state.toastSeq;state.toasts.push({id:id,type:type,title:title,msg:msg});
+  render();
+  setTimeout(function(){state.toasts=state.toasts.filter(function(t){return t.id!==id;});render();},4800);
+}
+function openModal(type,extra){state.modal=Object.assign({type:type},extra||{});state.menuOpen=false;render();setTimeout(focusModal,30);}
+function closeModal(){state.modal=null;render();}
+function focusModal(){var el=document.querySelector('.modal input,.modal select,.modal textarea,.modal button');if(el)el.focus();}
+function go(hash){if(('#'+hash)!==location.hash)navigate(hash);}
+function navigate(hash){location.hash=hash;}
+
+function render(){
+  var main=document.getElementById('main'),scroll=main?main.scrollTop:0;
+  state.resolved=resolveRoute();
+  document.documentElement.classList.toggle('dark',state.theme==='dark');
+  app.innerHTML=shell();
+  var nm=document.getElementById('main');if(nm)nm.scrollTop=scroll;
+  if(state.focusId){var f=document.getElementById(state.focusId);if(f){f.focus();try{if(f.setSelectionRange)f.setSelectionRange(f.value.length,f.value.length);}catch(e){}}state.focusId=null;}
+}
+function handleHash(){
+  state.loading=true;state.menuOpen=false;state.navOpen=false;state.modal=null;state.editor=null;state.decision=null;
+  render();
+  clearTimeout(loadTimer);
+  loadTimer=setTimeout(function(){state.loading=false;render();},480);
+}
+window.addEventListener('hashchange',handleHash);
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');
+  if(!t){
+    if(state.menuOpen){state.menuOpen=false;render();}
+    if(state.navOpen&&!e.target.closest('.nav')){state.navOpen=false;render();}
+    return;
+  }
+  var act=t.dataset.act;var id=t.dataset.id;
+  if(act==='skip'){e.preventDefault();var m=document.getElementById('main');if(m)m.focus();return;}
+  if(act==='toggle-nav'){state.navOpen=!state.navOpen;render();return;}
+  if(act==='close-nav'){state.navOpen=false;render();return;}
+  if(act==='toggle-theme'){state.theme=state.theme==='dark'?'light':'dark';try{localStorage.setItem('scrm-theme',state.theme);}catch(err){}render();return;}
+  if(act==='toggle-menu'){state.menuOpen=!state.menuOpen;render();return;}
+  if(act==='signout'){state.menuOpen=false;toast('info','Signed out','This is a prototype — you remain signed in to the demo.');return;}
+  if(act==='reset'){DB=seed();state.filters={q:'',schoolStatus:'all',cap:'all',dept:'all',status:'all'};state.menuOpen=false;state.editor=null;state.schoolTab='departments';go('/');toast('success','Sample data reset','All schools, memberships and lesson plans are back to their starting state.');return;}
+  if(act==='open-modal'){openModal(t.dataset.modal,{id:id,schoolId:'nhs'});return;}
+  if(act==='close-modal'){closeModal();return;}
+  if(act==='submit-form'){submitForm(t.dataset.form,id);return;}
+  if(act==='tab'){state.schoolTab=t.dataset.tab;render();return;}
+  if(act==='open-school'){go('/schools/'+id);return;}
+  if(act==='open-plan'){go('/lesson-plans/'+id);return;}
+  if(act==='open-decision'){go((t.dataset.kind==='hod'?'/review/':'/approval/')+id+'/'+t.dataset.v);return;}
+  if(act==='go-overview'){return;}
+  if(act==='toast-close'){state.toasts=state.toasts.filter(function(x){return x.id!=id;});render();return;}
+  if(act==='toast'){toast(t.dataset.kind||'info',t.dataset.title||'Not available',t.dataset.msg||'');return;}
+  if(act==='editor-add'){addEditor(t.dataset.kind);return;}
+  if(act==='editor-remove'){removeEditor(t.dataset.kind,+t.dataset.index);return;}
+  if(act==='save-plan'){savePlan();return;}
+  if(act==='cancel-editor'){state.editor=null;history.length>1?history.back():go('/lesson-plans');return;}
+  if(act==='submit-plan'){doSubmit(id);return;}
+  if(act==='publish-plan'){doPublish(id);return;}
+  if(act==='reload-conflict'){doReload(id);return;}
+  if(act==='approve'){doDecision(id,t.dataset.kind,'Approved');return;}
+  if(act==='request-changes'){doDecision(id,t.dataset.kind,'Changes requested');return;}
+});
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.dataset.act==='set-role'){state.role=t.value;state.loading=false;state.modal=null;state.editor=null;state.menuOpen=false;render();toast('info','Viewing as '+t.value,'Navigation and permissions now reflect this role.');return;}
+  if(t.dataset.modalSelect==='capability'){state.modal.capability=t.value;if(t.value==='Manages members')state.modal.department='';render();return;}
+  if(t.dataset.modalSelect){state.modal[t.dataset.modalSelect]=t.value;render();return;}
+  if(t.dataset.filter){state.filters[t.dataset.filter]=t.value;render();return;}
+});
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.dataset.editor){onEditorInput(t);return;}
+  if(t.dataset.counter){var o=document.getElementById(t.dataset.counter);if(o)o.textContent=t.value.length+'/'+(t.maxLength>0?t.maxLength:2000);return;}
+  if(t.dataset.modalInput){state.modal[t.dataset.modalInput]=t.value;if(state.modal.error)state.modal.error=null;var c=document.getElementById('cs-count');if(c&&t.id==='cs-name')c.textContent=t.value.length+'/200';return;}
+  if(t.dataset.filter){state.filters[t.dataset.filter]=t.value;if(t.dataset.focusid)state.focusId=t.dataset.focusid;var f=document.getElementById(t.id);var pos=f?f.selectionStart:null;render();return;}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){if(state.modal){closeModal();}else if(state.menuOpen){state.menuOpen=false;render();}else if(state.navOpen){state.navOpen=false;render();}return;}
+  if(e.key==='Tab'&&state.modal){trapFocus(e);}
+});
+function trapFocus(e){
+  var modal=document.querySelector('.modal');if(!modal)return;
+  var f=modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+  if(!f.length)return;var first=f[0],last=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+}
+function onEditorInput(t){
+  var f=t.dataset.editor,idx=+t.dataset.index,e=state.editor;if(!e)return;
+  if(f==='title')e.title=t.value;
+  else if(f==='assessment')e.assessment=t.value;
+  else if(f==='summary')e.summary=t.value;
+  else if(f==='objectives')e.objectives[idx]=t.value;
+  else if(f==='materials')e.materials[idx]=t.value;
+  else if(f==='act-time')e.activities[idx].time=t.value;
+  else if(f==='act-title')e.activities[idx].title=t.value;
+  else if(f==='act-detail')e.activities[idx].detail=t.value;
+}
+function addEditor(kind){
+  var e=state.editor;if(!e)return;
+  if(kind==='objectives')e.objectives.push('');
+  else if(kind==='materials')e.materials.push('');
+  else if(kind==='activities')e.activities.push({time:'',title:'',detail:''});
+  render();
+}
+function removeEditor(kind,idx){
+  var e=state.editor;if(!e)return;
+  if(kind==='objectives'&&e.objectives.length>1)e.objectives.splice(idx,1);
+  else if(kind==='materials'&&e.materials.length>1)e.materials.splice(idx,1);
+  else if(kind==='activities'&&e.activities.length>1)e.activities.splice(idx,1);
+  render();
+}
+function editorContent(e){
+  return {objectives:e.objectives.filter(function(x){return x.trim();}),materials:e.materials.filter(function(x){return x.trim();}),activities:e.activities.filter(function(x){return x.title.trim()||x.detail.trim();}),assessment:e.assessment.trim()};
+}
+function savePlan(){
+  var e=state.editor;if(!e)return;
+  if(!e.title.trim()){toast('error','Title required','Give the lesson plan a title before saving.');return;}
+  if(!e.summary.trim()){toast('error','Change summary required','Describe what changed in this version.');return;}
+  var isNew=e.planId==='__new';
+  if(!isNew){
+    var p=findPlan(e.planId);
+    if(p.conflict){toast('error','This plan changed since you opened it','Version '+p.conflict.serverVersion+' is now current. Your changes were not saved. Reload to continue.');return;}
+  }
+  var content=editorContent(e);
+  if(isNew){
+    var np={id:'lp-'+Date.now(),title:e.title.trim(),departmentId:currentUser().departmentId,authorId:currentUser().id,author:currentUser().name,updated:today(),liveVersion:null,versions:[]};
+    np.versions.push(mkVer({n:1,status:'Draft',savedAt:today(),summary:e.summary.trim(),authorId:currentUser().id,author:currentUser().name,content:content}));
+    DB.plans.push(np);state.editor=null;toast('success','Version 1 saved','Your new lesson plan was created as a private draft.');go('/lesson-plans/'+np.id);return;
+  }
+  var p2=findPlan(e.planId),n=p2.versions.length+1;
+  p2.versions.push(mkVer({n:n,status:'Draft',savedAt:today(),summary:e.summary.trim(),authorId:currentUser().id,author:currentUser().name,content:content}));
+  p2.updated=today();state.editor=null;toast('success','Version '+n+' saved','Approvals were cleared. The published version stays live.');go('/lesson-plans/'+p2.id);
+}
+function doSubmit(id){
+  var p=findPlan(id),v=curVer(p);
+  if(v.status!=='Draft'&&v.status!=='Changes requested')return;
+  v.status='In HOD review';v.submittedAt=today();
+  toast('success','Submitted for HOD review','Version '+v.n+' is now with '+((DB.users.filter(function(u){return u.role==='HOD'&&u.departmentId===p.departmentId;})[0]||{name:'your HOD'}).name)+'.');
+  go('/lesson-plans/'+id);
+}
+function doPublish(id){
+  var p=findPlan(id),v=curVer(p);
+  if(v.status!=='Approved')return;
+  v.status='Published';p.liveVersion=v.n;p.updated=today();
+  toast('success','Version '+v.n+' published','It is now the live version for this lesson plan.');
+  go('/lesson-plans/'+id);
+}
+function doReload(id){
+  var p=findPlan(id);
+  if(!p.conflict)return;
+  var c=p.conflict;
+  p.versions.push(mkVer({n:c.serverVersion,status:'Draft',savedAt:c.at,summary:c.summary,authorId:p.authorId,author:p.author,content:curVer(p).content}));
+  p.updated=c.at;p.conflict=null;state.editor=null;
+  toast('info','Reloaded version '+c.serverVersion,'The latest version is now shown. Your earlier unsaved edits were discarded.');
+  render();
+}
+function doDecision(id,kind,decision){
+  var p=findPlan(id),v=curVer(p),u=currentUser();
+  if(decision==='Changes requested'){
+    var ta=document.getElementById('fb-'+kind);
+    var fb=ta?ta.value.trim():'';
+    if(!fb){toast('error','Feedback required','Add a note explaining the changes needed before requesting changes.');if(ta)ta.focus();return;}
+    if(kind==='hod'){v.status='Changes requested';v.hod=dec(u.name,today(),'Changes requested',fb);}
+    else {v.status='Changes requested';v.dean=dec(u.name,today(),'Changes requested',fb);}
+    toast('warn','Changes requested','Your feedback was sent to the author.');
+  } else {
+    if(kind==='hod'){v.status='In dean approval';v.hod=dec(u.name,today(),'Approved','');toast('success','Approved','Version '+v.n+' now moves to dean approval.');}
+    else {v.status='Approved';v.dean=dec(u.name,today(),'Approved','');toast('success','Approved','The author can now publish this version.');}
+  }
+  p.updated=today();
+  go(kind==='hod'?'/review':'/approval');
+}
+function submitForm(kind,id){
+  if(kind==='createSchool'){
+    var name=(state.modal.name||'').trim();
+    if(name.length<1||name.length>200){state.modal.error='name';render();return;}
+    var ns={id:'sch-'+Date.now(),name:name,county:'—',status:'Onboarding',created:today(),departments:[]};
+    DB.schools.push(ns);closeModal();toast('success','School created',name+' was added. Add its departments next.');go('/schools/'+ns.id);return;
+  }
+  if(kind==='addDept'){
+    var s=DB.schools[0],dn=(state.modal.name||'').trim();
+    if(!dn||s.departments.filter(function(d){return d.name.toLowerCase()===dn.toLowerCase();}).length){state.modal.error='dept';render();return;}
+    s.departments.push({id:'d-'+Date.now(),name:dn,hod:'—'});closeModal();toast('success','Department added',dn+' was added to '+s.name+'.');render();return;
+  }
+  if(kind==='grant'){
+    var m=state.modal,need=m.capability&&m.capability!=='Manages members';
+    if(!m.user||!m.capability||(need&&!m.department)){m.error='fields';m.errorMsg=!m.user?'Select a user.':!m.capability?'Select a capability.':'Select a department — it is required for this capability.';render();return;}
+    if(m.capability==='Manages members'&&currentUser().role!=='Super admin'){m.error='fields';m.errorMsg='Only a super admin can grant “Manages members”.';render();return;}
+    DB.memberships.push({id:'m-'+Date.now(),userId:m.user,capability:m.capability,department:need?m.department:'',status:'Active',updated:today()});
+    var un=userById(m.user).name;closeModal();toast('success','Capability granted',un+' can now '+ (m.capability==='Teaches'?'teach':m.capability==='Manages members'?'manage members':m.capability==='Reviews lessons (HOD)'?'review lessons':'approve lessons')+'.');render();return;
+  }
+  if(kind==='revoke'){
+    var mem=DB.memberships.filter(function(x){return x.id===state.modal.id;})[0];
+    if(mem){mem.status='Revoked';mem.updated=today();var rn=userById(mem.userId);closeModal();toast('success','Capability revoked',(rn?rn.name:'User')+' lost access immediately. The row remains as history.');render();}
+    return;
+  }
+}
+
+(function init(){
+  try{var th=localStorage.getItem('scrm-theme');if(th==='dark')state.theme='dark';}catch(e){}
+  if(!location.hash)location.hash='#/';
+  state.resolved=resolveRoute();
+  document.documentElement.classList.toggle('dark',state.theme==='dark');
+  app.innerHTML=shell();
+})();
+</script>
+</body>
+</html>

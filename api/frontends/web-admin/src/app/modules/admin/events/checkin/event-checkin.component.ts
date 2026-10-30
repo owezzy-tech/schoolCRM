@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
@@ -6,7 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MOCK_EVENTS } from '../data/events.mock';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { catchError, of } from 'rxjs';
 import { EventItem, EventRegistration } from '../models/event.types';
 
 @Component({
@@ -25,58 +27,125 @@ import { EventItem, EventRegistration } from '../models/event.types';
     templateUrl: './event-checkin.component.html'
 })
 export class EventCheckinComponent implements OnInit {
+    private readonly admissionsService = inject(AdmissionsService);
     private readonly route = inject(ActivatedRoute);
-    
+
     readonly event = signal<EventItem | null>(null);
+    readonly loading = signal(false);
     readonly searchControl = new UntypedFormControl('');
-    
-    // Mock registrants
-    readonly registrants = signal<EventRegistration[]>([
-        { id: 'reg_1', constituentId: 'c_1', constituentName: 'Sofia Martinez', email: 'sofia.martinez@example.edu', status: 'registered', registeredAt: '2026-05-10T10:00:00Z', matchStatus: 'matched', source: 'portal' },
-        { id: 'reg_2', constituentId: 'c_2', constituentName: 'James Okoro', email: 'james.okoro@example.edu', status: 'checked-in', registeredAt: '2026-05-12T14:30:00Z', matchStatus: 'matched', source: 'campaign', checkedInAt: '2026-06-05T09:20:00Z' },
-        { id: 'reg_3', constituentId: 'c_3', constituentName: 'Liam Chen', email: 'liam.chen@example.edu', status: 'registered', registeredAt: '2026-05-15T09:15:00Z', matchStatus: 'matched', source: 'portal' },
-        { id: 'reg_4', constituentName: 'Aisha Bello', email: 'aisha.bello@example.com', status: 'registered', registeredAt: '2026-05-16T11:45:00Z', matchStatus: 'new-prospect', source: 'portal' },
-        { id: 'reg_5', constituentId: 'c_5', constituentName: 'Priya Patel', email: 'priya.patel@example.edu', status: 'checked-in', registeredAt: '2026-05-18T16:20:00Z', matchStatus: 'matched', source: 'staff', checkedInAt: '2026-06-05T09:34:00Z' },
-    ]);
+    readonly registrants = computed(
+        () => this.event()?.registrations ?? []
+    );
+
+    errorMessage = '';
+    savingRegistrationID = '';
 
     ngOnInit() {
         const id = this.route.snapshot.paramMap.get('id');
-        const found = MOCK_EVENTS.find(e => e.id === id);
-        if (found) {
-            this.event.set(found);
-        } else {
-            this.event.set(MOCK_EVENTS[0]);
+        if (!id) {
+            this.errorMessage = 'Event ID is missing.';
+
+            return;
         }
+
+        this.loadEvent(id);
     }
-    
+
+    loadEvent(eventID: string): void {
+        this.loading.set(true);
+        this.errorMessage = '';
+        this.admissionsService
+            .getEvent(eventID)
+            .pipe(
+                catchError((error) => {
+                    this.loading.set(false);
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to load check-in attendees.'
+                    );
+
+                    return of(undefined);
+                })
+            )
+            .subscribe((event) => {
+                this.loading.set(false);
+                if (event) {
+                    this.event.set(event);
+                }
+            });
+    }
+
     get filteredRegistrants() {
         const term = (this.searchControl.value || '').toLowerCase();
         if (!term) return this.registrants();
-        return this.registrants().filter(r => r.constituentName.toLowerCase().includes(term));
+        return this.registrants().filter((registration) =>
+            [
+                registration.constituentName,
+                registration.email,
+                registration.id,
+                registration.constituentId ?? '',
+            ]
+                .join(' ')
+                .toLowerCase()
+                .includes(term)
+        );
     }
-    
+
     get checkedInCount() {
         return this.registrants().filter(r => r.status === 'checked-in').length;
     }
-    
+
     toggleCheckin(id: string) {
-        this.registrants.update(regs => 
-            regs.map(r => {
-                if (r.id === id) {
-                    return {
-                        ...r,
-                        checkedInAt:
-                            r.status === 'checked-in'
-                                ? undefined
-                                : new Date().toISOString(),
-                        status:
-                            r.status === 'checked-in'
-                                ? 'registered'
-                                : 'checked-in',
-                    };
-                }
-                return r;
+        const event = this.event();
+        const registration = this.registrants().find((item) => item.id === id);
+
+        if (!event || !registration || registration.status === 'checked-in') {
+            return;
+        }
+
+        this.savingRegistrationID = id;
+        this.errorMessage = '';
+        this.admissionsService
+            .checkInEventRegistration(id, {
+                registrationId: id,
             })
-        );
+            .pipe(
+                catchError((error) => {
+                    this.savingRegistrationID = '';
+                    this.errorMessage = jsonApiErrorMessage(
+                        error,
+                        'Unable to check in attendee.'
+                    );
+
+                    return of(undefined);
+                })
+            )
+            .subscribe((updatedRegistration) => {
+                this.savingRegistrationID = '';
+
+                if (!updatedRegistration) {
+                    return;
+                }
+
+                this.event.update((current) => {
+                    if (!current) {
+                        return current;
+                    }
+
+                    const registrations = current.registrations.map((item) =>
+                        item.id === updatedRegistration.id
+                            ? updatedRegistration
+                            : item
+                    );
+
+                    return {
+                        ...current,
+                        registrations,
+                        checkedInCount: registrations.filter(
+                            (item) => item.status === 'checked-in'
+                        ).length,
+                    };
+                });
+            });
     }
 }

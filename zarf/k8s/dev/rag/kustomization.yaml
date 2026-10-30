@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base/rag/
+  - ./dev-rag-configmap.yaml
+  - ./dev-rag-secret.yaml
+patches:
+  - path: ./dev-rag-patch-deploy.yaml
+  - path: ./dev-rag-patch-service.yaml
+images:
+  - name: rag-image
+    newName: localhost/schoolcrm/rag
+    newTag: 0.0.1

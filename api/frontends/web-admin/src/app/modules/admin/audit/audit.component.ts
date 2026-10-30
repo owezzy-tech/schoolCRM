@@ -1,7 +1,18 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
+import { AuditService } from 'app/core/audit/audit.service';
+import { AuditEvent } from 'app/core/audit/audit.types';
+import { jsonApiErrorMessage, PaginatedResult } from 'app/core/api/json-api';
+import { EMPTY, catchError } from 'rxjs';
 
-interface AuditEvent {
+interface AuditEventRow {
     id: string;
     timestamp: string;
     actor: string;
@@ -18,16 +29,93 @@ interface AuditEvent {
     templateUrl: './audit.component.html',
 })
 export class AuditComponent {
-    readonly filters = ['Date range', 'Actor', 'Action'];
+    private readonly auditService = inject(AuditService);
 
-    readonly events: readonly AuditEvent[] = [
-        { id: '1', timestamp: 'May 30, 10:45 AM', actor: 'Avery', action: 'Update', entity: 'Application (APP-3024)', ip: '192.168.1.105' },
-        { id: '2', timestamp: 'May 30, 10:30 AM', actor: 'System', action: 'Create', entity: 'Communication (MSG-8492)', ip: '10.0.0.1' },
-        { id: '3', timestamp: 'May 30, 09:15 AM', actor: 'Diego', action: 'Login', entity: 'Session', ip: '172.16.254.1' },
-        { id: '4', timestamp: 'May 29, 16:20 PM', actor: 'Priya', action: 'Delete', entity: 'Duplicate Constituent (CON-921)', ip: '192.168.1.112' },
-        { id: '5', timestamp: 'May 29, 14:05 PM', actor: 'System', action: 'Create', entity: 'Application (APP-3025)', ip: '10.0.0.1' },
-        { id: '6', timestamp: 'May 29, 11:30 AM', actor: 'Avery', action: 'Update', entity: 'Campaign (CMP-42)', ip: '192.168.1.105' },
-        { id: '7', timestamp: 'May 28, 09:00 AM', actor: 'Admin', action: 'Update', entity: 'Settings (Integration)', ip: '192.168.1.5' },
-        { id: '8', timestamp: 'May 28, 08:45 AM', actor: 'Admin', action: 'Login', entity: 'Session', ip: '192.168.1.5' },
-    ];
+    readonly filters = ['Date range', 'Actor', 'Action'];
+    readonly loading = signal(true);
+    readonly errorMessage = signal<string | null>(null);
+    readonly result = toSignal(this.auditService.auditEvents$, {
+        initialValue: emptyResult<AuditEvent>(),
+    });
+
+    readonly events = computed(() =>
+        this.result().items.map((event) => this.toRow(event))
+    );
+
+    constructor() {
+        this.loadAuditEvents();
+    }
+
+    loadAuditEvents(): void {
+        this.loading.set(true);
+        this.errorMessage.set(null);
+
+        this.auditService
+            .queryAuditEvents({
+                page: 1,
+                rows: 50,
+                orderBy: 'timestamp,DESC',
+            })
+            .pipe(
+                catchError((error: unknown) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(error, 'Unable to load audit log.')
+                    );
+                    this.loading.set(false);
+
+                    return EMPTY;
+                })
+            )
+            .subscribe(() => this.loading.set(false));
+    }
+
+    private toRow(event: AuditEvent): AuditEventRow {
+        return {
+            id: event.id,
+            timestamp: this.formatDate(event.timestamp),
+            actor: event.actor_id,
+            action: this.toTitleCase(event.action),
+            entity: `${this.toTitleCase(event.obj_domain)} (${event.obj_name})`,
+            ip: this.ipFromData(event.data),
+        };
+    }
+
+    private ipFromData(data: string): string {
+        if (!data) {
+            return '—';
+        }
+
+        try {
+            const parsed = JSON.parse(data) as { ip?: unknown };
+
+            return typeof parsed.ip === 'string' ? parsed.ip : '—';
+        } catch {
+            return '—';
+        }
+    }
+
+    private toTitleCase(value: string): string {
+        return value
+            .toLowerCase()
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (character) => character.toUpperCase());
+    }
+
+    private formatDate(value: string): string {
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+        }).format(new Date(value));
+    }
+}
+
+function emptyResult<T>(): PaginatedResult<T> {
+    return {
+        items: [],
+        total: 0,
+        page: 1,
+        rowsPerPage: 50,
+    };
 }

@@ -57,6 +57,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 4545
 
 ### Notes
 
+- The [curriculum retrieval API](../../../docs/curriculum-retrieval-api.md) uses LlamaIndex PDF chunking, reviewed PostgreSQL/pgvector sources and BGE-M3 embeddings. Configure its database and run the explicit migration before use. `/openapi.json` includes its current request schemas.
+
 - LangChain is intentionally kept out of `domain/` and `use_cases/`.
-- This scaffold uses simple in-memory adapters so the service boots and the shape is testable.
-- Replace the adapters incrementally with real LangChain, vector store, auth, and persistence implementations.
+- Generic document endpoints still use in-memory and placeholder adapters. They do not establish curriculum review or persistence.

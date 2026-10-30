@@ -1,14 +1,29 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DestroyRef,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
 import {
+    AcademicTerm,
+    Application,
     ApplicationFee,
     ApplicationFeeStatus,
     ApplicationKCSEResult,
+    ApplicationStatus,
     ApplicationType,
-    KUCCPSPlacement,
+    Program,
 } from 'app/core/admissions/admissions.types';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { finalize, forkJoin } from 'rxjs';
 
 interface ApplicationRow {
     id: string;
@@ -17,23 +32,39 @@ interface ApplicationRow {
     programmeCode: string;
     term: string;
     applicationType: ApplicationType;
-    status: string;
+    status: ApplicationStatus;
     progress: number;
     reviewer: string;
     score: number | null;
-    kuccpsPlacement?: KUCCPSPlacement;
     kcseResult?: ApplicationKCSEResult;
     fee: ApplicationFee;
 }
 
+const STATUS_PROGRESS: Record<ApplicationStatus, number> = {
+    DRAFT: 10,
+    SUBMITTED: 30,
+    AWAITING_DOCUMENTS: 45,
+    READY_FOR_REVIEW: 60,
+    IN_REVIEW: 70,
+    DECISION_PENDING: 85,
+    ADMITTED: 100,
+    DENIED: 100,
+    WAITLISTED: 90,
+    DEFERRED: 80,
+    WITHDRAWN: 100,
+    ENROLLED: 100,
+};
+
 @Component({
     selector: 'app-applications',
-    standalone: true,
-    imports: [RouterLink, MatButtonModule, MatIconModule],
+    imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './applications.component.html',
 })
 export class ApplicationsComponent {
+    private readonly admissionsService = inject(AdmissionsService);
+    private readonly destroyRef = inject(DestroyRef);
+
     readonly filters = [
         'Status',
         'Programme',
@@ -43,114 +74,47 @@ export class ApplicationsComponent {
         'Fee status',
     ];
 
-    readonly applications: readonly ApplicationRow[] = [
-        {
-            id: 'APP-3024',
-            applicant: 'Achieng Otieno',
-            program: 'B.Sc. Computer Science',
-            programmeCode: 'BSC-CS',
-            term: 'September 2026',
-            applicationType: 'KUCCPS_PLACEMENT',
-            status: 'In review',
-            progress: 80,
-            reviewer: 'Avery',
-            score: 86,
-            kuccpsPlacement: {
-                placementID: 'KUCCPS-2026-003024',
-                admissionNumber: 'SCM/2026/003024',
-                institutionCode: 'SCM001',
-                programmeCode: 'BSC-CS',
-                programmeName: 'B.Sc. Computer Science',
-                placementYear: 2026,
-                clusterCode: 'CS01',
-                clusterPoints: 42.318,
-                weightedPointsNote:
-                    'Public KUCCPS approximation; exact points require KNEC PI data.',
-            },
-            kcseResult: this.kcse('204003024', 2025, 'A-', 74),
-            fee: this.fee('APP-3024', 'PAID', 'manual', 250000, {
-                transactionID: 'mpesa-qe3024',
-                paidAt: 'May 30, 2026',
-            }),
-        },
-        {
-            id: 'APP-3023',
-            applicant: 'Brian Wekesa',
-            program: 'Diploma in ICT',
-            programmeCode: 'DIP-ICT',
-            term: 'January 2027',
-            applicationType: 'DIPLOMA',
-            status: 'Documents pending',
-            progress: 45,
-            reviewer: 'Priya',
-            score: null,
-            kcseResult: this.kcse('204003023', 2024, 'C+', 46),
-            fee: this.fee('APP-3023', 'PENDING', 'manual', 150000, {
-                dueAt: 'Jun 10, 2026',
-            }),
-        },
-        {
-            id: 'APP-3022',
-            applicant: 'Njeri Mwangi',
-            program: 'Bachelor of Commerce',
-            programmeCode: 'BCOM',
-            term: 'September 2026',
-            applicationType: 'SELF_SPONSORED_UNDERGRAD',
-            status: 'Submitted',
-            progress: 60,
-            reviewer: 'Diego',
-            score: 71,
-            kcseResult: this.kcse('204003022', 2025, 'B', 59),
-            fee: this.fee('APP-3022', 'FAILED', 'manual', 250000),
-        },
-        {
-            id: 'APP-3021',
-            applicant: 'Hassan Ali',
-            program: 'Certificate in Data Support',
-            programmeCode: 'CERT-DS',
-            term: 'May 2027',
-            applicationType: 'CERTIFICATE',
-            status: 'Interview',
-            progress: 90,
-            reviewer: 'Avery',
-            score: 92,
-            kcseResult: this.kcse('204003021', 2023, 'C', 39),
-            fee: this.fee('APP-3021', 'WAIVED', 'manual', 100000, {
-                waiverGrantedBy: 'Admissions Finance',
-                waiverReason:
-                    'Need-based waiver approved for certificate intake.',
-                waiverGrantedAt: 'May 29, 2026',
-            }),
-        },
-        {
-            id: 'APP-3020',
-            applicant: 'Grace Kiplagat',
-            program: 'M.A. Education',
-            programmeCode: 'MA-EDU',
-            term: 'September 2026',
-            applicationType: 'MASTERS',
-            status: 'Decision pending',
-            progress: 95,
-            reviewer: 'Diego',
-            score: 78,
-            fee: this.fee('APP-3020', 'REFUNDED', 'manual', 300000, {
-                transactionID: 'mpesa-rf3020',
-            }),
-        },
-        {
-            id: 'APP-3019',
-            applicant: 'Peter Mutua',
-            program: 'TVET Mechatronics',
-            programmeCode: 'TVET-MECH',
-            term: 'January 2027',
-            applicationType: 'TVET',
-            status: 'Admitted',
-            progress: 100,
-            reviewer: 'Avery',
-            score: 95,
-            fee: this.fee('APP-3019', 'NOT_REQUIRED', 'not_required', 0),
-        },
-    ];
+    readonly applications = signal<Application[]>([]);
+    readonly errorMessage = signal<string | null>(null);
+    readonly isLoading = signal(false);
+    readonly programs = signal<Program[]>([]);
+    readonly searchTerm = signal('');
+    readonly terms = signal<AcademicTerm[]>([]);
+    readonly totalApplications = signal(0);
+
+    readonly rows = computed(() => {
+        const search = this.searchTerm().trim().toLowerCase();
+        const rows = this.applications().map((application) =>
+            this.toRow(application)
+        );
+
+        if (!search) {
+            return rows;
+        }
+
+        return rows.filter((row) =>
+            [
+                row.id,
+                row.applicant,
+                row.program,
+                row.programmeCode,
+                row.term,
+                row.status,
+                row.applicationType,
+            ]
+                .join(' ')
+                .toLowerCase()
+                .includes(search)
+        );
+    });
+
+    constructor() {
+        this.loadApplications();
+    }
+
+    updateSearchTerm(value: string): void {
+        this.searchTerm.set(value);
+    }
 
     feeStatusClass(status: ApplicationFeeStatus): string {
         switch (status) {
@@ -173,6 +137,10 @@ export class ApplicationsComponent {
         return status.replaceAll('_', ' ');
     }
 
+    formatApplicationStatus(status: ApplicationStatus): string {
+        return status.replaceAll('_', ' ');
+    }
+
     formatApplicationType(type: ApplicationType): string {
         return type.replaceAll('_', ' ');
     }
@@ -188,41 +156,91 @@ export class ApplicationsComponent {
         }).format(fee.amountCents / 100);
     }
 
-    private fee(
-        applicationID: string,
-        status: ApplicationFeeStatus,
-        provider: ApplicationFee['provider'],
-        amountCents: number,
-        overrides: Partial<ApplicationFee> = {}
-    ): ApplicationFee {
+    private loadApplications(): void {
+        this.isLoading.set(true);
+        this.errorMessage.set(null);
+
+        forkJoin({
+            applications: this.admissionsService.queryApplications({
+                page: 1,
+                rows: 50,
+                orderBy: 'date_updated,DESC',
+            }),
+            programs: this.admissionsService.queryPrograms({
+                rows: 100,
+                active: true,
+            }),
+            terms: this.admissionsService.queryAcademicTerms({
+                rows: 100,
+                active: true,
+            }),
+        })
+            .pipe(
+                finalize(() => this.isLoading.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: ({ applications, programs, terms }) => {
+                    this.applications.set(applications.items);
+                    this.programs.set(programs.items);
+                    this.terms.set(terms.items);
+                    this.totalApplications.set(applications.total);
+                },
+                error: (error) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(
+                            error,
+                            'Applications could not be loaded.'
+                        )
+                    );
+                },
+            });
+    }
+
+    private toRow(application: Application): ApplicationRow {
+        const program = this.programs().find(
+            (item) => item.id === application.programID
+        );
+        const term = this.terms().find(
+            (item) => item.id === application.academicTermID
+        );
+
         return {
-            id: `fee-${applicationID.toLowerCase()}`,
-            applicationID,
-            amountCents,
-            currency: 'KES',
-            status,
-            provider,
-            auditTrail: [],
-            ...overrides,
+            id: application.id,
+            applicant: application.constituentID,
+            program: program?.name ?? 'Programme pending',
+            programmeCode: program?.code ?? application.programID,
+            term: term?.name ?? application.academicTermID,
+            applicationType: application.applicationType,
+            status: application.status,
+            progress: STATUS_PROGRESS[application.status],
+            reviewer: application.assignedReviewerID ?? 'Unassigned',
+            score: application.kcseResult?.meanPoints ?? null,
+            kcseResult: application.kcseResult,
+            fee: this.feeFor(application),
         };
     }
 
-    private kcse(
-        indexNumber: string,
-        examYear: number,
-        meanGrade: string,
-        meanPoints: number
-    ): ApplicationKCSEResult {
+    private feeFor(application: Application): ApplicationFee {
+        const status = this.feeStatusFor(application.status);
+
         return {
-            indexNumber,
-            examYear,
-            meanGrade,
-            meanPoints,
-            subjects: [
-                { subjectCode: '101', grade: meanGrade, points: 11 },
-                { subjectCode: '102', grade: 'B+', points: 10 },
-                { subjectCode: '121', grade: 'A-', points: 11 },
-            ],
+            id: `fee-${application.id}`,
+            applicationID: application.id,
+            amountCents: status === 'NOT_REQUIRED' ? 0 : 15000,
+            currency: 'KES',
+            status,
+            provider: status === 'NOT_REQUIRED' ? 'not_required' : 'manual',
+            dueAt: application.submittedAt,
+            auditTrail: [],
         };
+    }
+
+    private feeStatusFor(status: ApplicationStatus): ApplicationFeeStatus {
+        if (status === 'DRAFT' || status === 'WITHDRAWN') {
+            return 'NOT_REQUIRED';
+        }
+
+        return 'PENDING';
     }
 }

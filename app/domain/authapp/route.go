@@ -29,6 +29,7 @@ func Routes(app *web.App, cfg Config) {
 
 	app.HandlerFunc(http.MethodPost, version, "/auth/login", api.login)
 	app.HandlerFunc(http.MethodPost, version, "/auth/applicant-portal/token", api.applicantPortalToken)
+	app.HandlerFunc(http.MethodPost, version, "/auth/applicant-portal/onboard", api.applicantPortalOnboard)
 	app.HandlerFunc(http.MethodGet, version, "/auth/token/{kid}", api.token, basic)
 	app.HandlerFunc(http.MethodGet, version, "/auth/authenticate", api.authenticate, bearer)
 	app.HandlerFunc(http.MethodPost, version, "/auth/authorize", api.authorize)

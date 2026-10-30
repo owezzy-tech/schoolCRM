@@ -1,5 +1,6 @@
 import {
     ApplicationConfig,
+    importProvidersFrom,
     inject,
     isDevMode,
     provideAppInitializer,
@@ -15,38 +16,60 @@ import { provideRouterStore } from '@ngrx/router-store';
 import { provideStore } from '@ngrx/store';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { appRoutes } from 'app/app.routes';
-import { provideAuth } from 'app/core/auth/auth.provider';
 import { AuthEffects } from 'app/core/auth/+state/auth.effects';
+import { provideAuth } from 'app/core/auth/auth.provider';
 import { provideIcons } from 'app/core/icons/icons.provider';
 import { MockApiService } from 'app/mock-api';
+import {
+    NgxUiLoaderConfig,
+    NgxUiLoaderHttpModule,
+    NgxUiLoaderModule,
+    PB_DIRECTION,
+} from 'ngx-ui-loader';
 import { firstValueFrom } from 'rxjs';
-import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 import { metaReducers, rootReducers } from './core/store/store.logger';
+import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
+
+const ngxUiLoaderConfig: NgxUiLoaderConfig = {
+    hasProgressBar: true,
+    pbColor: '#4f46e5',
+    pbDirection: PB_DIRECTION.leftToRight,
+    pbThickness: 3,
+    fgsSize: 0,
+    overlayColor: 'rgba(0,0,0,0)',
+};
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideAnimations(),
+        importProvidersFrom(
+            NgxUiLoaderModule.forRoot(ngxUiLoaderConfig),
+            NgxUiLoaderHttpModule.forRoot({
+                showForeground: true,
+            })
+        ),
         provideRouter(
             appRoutes,
             withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
         ),
 
-        provideStore(
-            rootReducers, {
-                metaReducers,
-                runtimeChecks: {
-                    // strictStateImmutability and strictActionImmutability are enabled by default
-                    strictStateSerializability: true,
-                    strictActionSerializability: true,
-                    strictActionWithinNgZone: false,
-                    strictActionTypeUniqueness: true,
-                },
-            }),
+        provideStore(rootReducers, {
+            metaReducers,
+            runtimeChecks: {
+                // strictStateImmutability and strictActionImmutability are enabled by default
+                strictStateSerializability: true,
+                strictActionSerializability: true,
+                strictActionWithinNgZone: false,
+                strictActionTypeUniqueness: true,
+            },
+        }),
         provideRouterStore(),
         provideEffects(AuthEffects),
         provideStoreDevtools({
             name: 'School CRM Store',
-            maxAge: 25, logOnly: !isDevMode() }),
+            maxAge: 25,
+            logOnly: !isDevMode(),
+        }),
         // Material Date Adapter
         {
             provide: DateAdapter,

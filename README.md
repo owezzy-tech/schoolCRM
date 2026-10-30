@@ -147,7 +147,7 @@ uv run pytest tests
 [//]: # (![SchoolCRM runtime architecture]&#40;docs/diagrams/schoolcrm-runtime-architecture.gif&#41;)
 
 The short animation below previews the interactive runtime architecture. Open the
-[interactive runtime diagram](docs/diagrams/schoolcrm-runtime-architecture.html) for guided views,
+[interactive runtime diagram](https://api.owenadirah.com/architecture) for guided views,
 search, and the full service map.
 
 ![SchoolCRM local service endpoints](docs/diagrams/schoolcrm-local-endpoints.png)
@@ -177,6 +177,7 @@ curl -i -X POST http://localhost:6000/v1/auth/login \
 
 ## Documentation
 
+- [School AI architecture requirements](docs/school-ai-ard.md) cover lesson planning, curriculum retrieval, student advice and school operations.
 - [`docs/local-development.md`](docs/local-development.md) — local setup and service runbook
 - [`docs/diagrams/schoolcrm-local-endpoints.html`](docs/diagrams/schoolcrm-local-endpoints.html) — local service endpoint and port map
 - [`docs/diagrams/schoolcrm-runtime-architecture.html`](docs/diagrams/schoolcrm-runtime-architecture.html) — runtime service architecture visualization

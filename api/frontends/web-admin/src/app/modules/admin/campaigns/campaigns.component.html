@@ -28,46 +28,60 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(420px,0.9fr)]">
-            <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                <div class="grid grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-secondary dark:bg-gray-900/30">
-                    <div>Name</div>
-                    <div>Channel</div>
-                    <div>Audience</div>
-                    <div>Sent</div>
-                    <div>Opened</div>
-                    <div>Actions</div>
-                </div>
+        @if (loading()) {
+            <div class="rounded-2xl border bg-card p-10 text-center text-secondary shadow-sm">
+                Loading campaigns...
+            </div>
+        } @else if (errorMessage()) {
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-sm dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                {{ errorMessage() }}
+            </div>
+        } @else if (!campaigns().length) {
+            <div class="rounded-2xl border bg-card p-10 text-center shadow-sm">
+                <h2 class="text-lg font-semibold">No campaigns yet</h2>
+                <p class="mt-2 text-sm text-secondary">Campaigns from the admissions API will appear here once they are created.</p>
+            </div>
+        } @else {
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(420px,0.9fr)]">
+                <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                    <div class="grid grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] border-b bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-secondary dark:bg-gray-900/30">
+                        <div>Name</div>
+                        <div>Channel</div>
+                        <div>Audience</div>
+                        <div>Sent</div>
+                        <div>Opened</div>
+                        <div>Actions</div>
+                    </div>
 
-                @for (campaign of campaigns; track campaign.id) {
-                    <button
-                        type="button"
-                        class="grid w-full grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] items-center border-b px-5 py-4 text-left transition-colors last:border-b-0 hover:bg-hover"
-                        [class.bg-primary-50]="selectedCampaignId() === campaign.id"
-                        [class.dark:bg-primary-900]="selectedCampaignId() === campaign.id"
-                        [class.dark:bg-opacity-20]="selectedCampaignId() === campaign.id"
-                        (click)="selectCampaign(campaign.id)">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="truncate font-semibold text-default">{{ campaign.name }}</span>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" [class]="statusClass(campaign)">
-                                    {{ campaign.status | titlecase }}
+                    @for (campaign of campaigns(); track campaign.id) {
+                        <button
+                            type="button"
+                            class="grid w-full grid-cols-[minmax(220px,1.4fr)_120px_120px_120px_120px_96px] items-center border-b px-5 py-4 text-left transition-colors last:border-b-0 hover:bg-hover"
+                            [class.bg-primary-50]="selectedCampaignId() === campaign.id"
+                            [class.dark:bg-primary-900]="selectedCampaignId() === campaign.id"
+                            [class.dark:bg-opacity-20]="selectedCampaignId() === campaign.id"
+                            (click)="selectCampaign(campaign.id)">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="truncate font-semibold text-default">{{ campaign.name }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-xs font-semibold" [class]="statusClass(campaign)">
+                                        {{ campaign.status | titlecase }}
+                                    </span>
+                                </div>
+                                <div class="mt-1 truncate text-sm text-secondary">{{ schedule(campaign) }}</div>
+                            </div>
+                            <div>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="channelClass(campaign)">
+                                    {{ campaign.channel }}
                                 </span>
                             </div>
-                            <div class="mt-1 truncate text-sm text-secondary">{{ campaign.schedule }}</div>
-                        </div>
-                        <div>
-                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="channelClass(campaign)">
-                                {{ campaign.channel }}
-                            </span>
-                        </div>
-                        <div class="font-medium">{{ compactNumber(campaign.metrics.audienceSize) }}</div>
-                        <div>{{ compactNumber(campaign.metrics.sent) }}</div>
-                        <div>{{ rate(campaign.metrics.opened, campaign.metrics.sent) }}%</div>
-                        <div class="text-primary">View</div>
-                    </button>
-                }
-            </div>
+                            <div class="font-medium">{{ compactNumber(campaign.metrics.audienceSize) }}</div>
+                            <div>{{ compactNumber(campaign.metrics.sent) }}</div>
+                            <div>{{ rate(campaign.metrics.opened, campaign.metrics.sent) }}%</div>
+                            <div class="text-primary">View</div>
+                        </button>
+                    }
+                </div>
 
             @if (selectedCampaign(); as campaign) {
                 <div class="flex flex-col gap-6">
@@ -85,7 +99,7 @@
                         <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
                             <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
                                 <div class="text-secondary">Step 1</div>
-                                <div class="font-medium">{{ campaign.channel }} · {{ campaign.schedule }}</div>
+                                <div class="font-medium">{{ campaign.channel }} · {{ schedule(campaign) }}</div>
                             </div>
                             <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/30">
                                 <div class="text-secondary">Step 2</div>
@@ -157,12 +171,12 @@
                         </div>
 
                         <div class="mt-5 space-y-3">
-                            @for (event of campaign.auditTrail; track event.timestamp) {
+                            @for (event of campaign.auditTrail; track event.id) {
                                 <div class="flex items-start gap-3 text-sm">
                                     <mat-icon svgIcon="heroicons_outline:shield-check" class="mt-0.5 text-primary icon-size-4"></mat-icon>
                                     <div>
                                         <div class="font-medium">{{ event.action }}</div>
-                                        <div class="text-secondary">{{ event.actor }} · {{ event.timestamp }}</div>
+                                        <div class="text-secondary">{{ event.actorName }} · {{ event.occurredAt }}</div>
                                     </div>
                                 </div>
                             }
@@ -170,6 +184,7 @@
                     </div>
                 </div>
             }
-        </div>
+            </div>
+        }
     </div>
 </div>

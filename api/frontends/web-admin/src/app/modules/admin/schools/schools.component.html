@@ -1,0 +1,54 @@
+<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <h1 class="text-3xl font-semibold tracking-tight">Schools</h1>
+    <p class="text-secondary mt-1">Schools you administer or belong to.</p>
+
+    @if (errorMessage()) {
+        <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (canCreate()) {
+        <form class="bg-card mt-6 flex flex-col gap-3 rounded-xl p-6 sm:flex-row sm:items-start" (ngSubmit)="create()">
+            <mat-form-field class="flex-auto" subscriptSizing="dynamic">
+                <mat-label>New school name</mat-label>
+                <input matInput name="name" maxlength="200" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+            </mat-form-field>
+            <button mat-flat-button color="primary" type="submit" class="sm:mt-2" [disabled]="saving() || !name().trim()">Create school</button>
+        </form>
+    }
+
+    <div class="bg-card mt-6 overflow-x-auto rounded-xl">
+        @if (schools() === null) {
+            <div class="animate-pulse space-y-3 p-6" aria-busy="true" aria-label="Loading schools">
+                @for (row of [1, 2, 3]; track row) {
+                    <div class="h-4 rounded bg-gray-200 dark:bg-gray-700"></div>
+                }
+            </div>
+        } @else if (!schools()!.length) {
+            <div class="p-8 text-center">
+                <h2 class="text-lg font-medium">No schools yet</h2>
+                <p class="text-secondary mt-1">
+                    {{ canCreate() ? 'Create the first school above.' : 'You have not been added to a school.' }}
+                </p>
+            </div>
+        } @else {
+            <table class="w-full text-left">
+                <thead class="text-secondary border-b font-mono text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="px-6 py-3 font-medium">School</th>
+                        <th class="px-6 py-3 font-medium">Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (school of schools(); track school.id) {
+                        <tr class="border-b last:border-0 hover:bg-hover">
+                            <td class="px-6 py-3">
+                                <a class="font-medium text-primary hover:underline" [routerLink]="school.id">{{ school.name }}</a>
+                            </td>
+                            <td class="text-secondary px-6 py-3">{{ school.dateCreated | date: 'd MMM y' }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

@@ -9,6 +9,12 @@
             <h1 class="text-2xl font-semibold">{{ isEditMode() ? 'Edit Event' : 'Create New Event' }}</h1>
         </div>
 
+        @if (errorMessage) {
+            <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200">
+                {{ errorMessage }}
+            </div>
+        }
+
         <div class="bg-card border rounded-2xl shadow-sm p-6 sm:p-8">
             <form [formGroup]="eventForm" (ngSubmit)="save()" class="flex flex-col gap-6">
                 
@@ -48,6 +54,13 @@
                     <mat-form-field class="w-full">
                         <mat-label>Description</mat-label>
                         <textarea matInput formControlName="description" rows="4" placeholder="Event details..."></textarea>
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full sm:w-1/2">
+                        <mat-label>Registration deadline</mat-label>
+                        <input matInput [matDatepicker]="registrationDeadlinePicker" formControlName="registrationDeadline">
+                        <mat-datepicker-toggle matSuffix [for]="registrationDeadlinePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #registrationDeadlinePicker></mat-datepicker>
                     </mat-form-field>
                 </div>
 
@@ -108,10 +121,22 @@
                     </div>
                 </div>
 
+                <div class="flex flex-col gap-4 mt-4">
+                    <h2 class="text-lg font-medium border-b pb-2">Automation</h2>
+
+                    <mat-slide-toggle formControlName="autoConfirmationEnabled">
+                        Send registration confirmation automatically
+                    </mat-slide-toggle>
+
+                    <mat-slide-toggle formControlName="autoReminderEnabled">
+                        Send reminder before the event
+                    </mat-slide-toggle>
+                </div>
+
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t">
                     <button mat-button type="button" [routerLink]="['..']">Cancel</button>
-                    <button mat-flat-button color="primary" type="submit" [disabled]="eventForm.invalid">
+                    <button mat-flat-button color="primary" type="submit" [disabled]="eventForm.invalid || loading() || saving()">
                         {{ isEditMode() ? 'Save Changes' : 'Create Event' }}
                     </button>
                 </div>

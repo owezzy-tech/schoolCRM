@@ -117,6 +117,28 @@ type applicationQueryParams struct {
 	ActiveOnly      string
 }
 
+type eventQueryParams struct {
+	Page    string
+	Rows    string
+	OrderBy string
+	ID      string
+	Type    string
+	Status  string
+	Virtual string
+}
+
+type eventRegistrationQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	EventID       string
+	ConstituentID string
+	Status        string
+	MatchStatus   string
+	Source        string
+}
+
 type applicationFormTemplateQueryParams struct {
 	Page            string
 	Rows            string
@@ -201,27 +223,36 @@ type importInvalidRowQueryParams struct {
 	BatchID string
 }
 
-type syncJobQueryParams struct {
-	Page      string
-	Rows      string
-	OrderBy   string
-	ID        string
-	Status    string
-	Direction string
-	Retryable string
+type campaignQueryParams struct {
+	Page        string
+	Rows        string
+	OrderBy     string
+	ID          string
+	Status      string
+	Channel     string
+	CreatedByID string
 }
 
-type syncEventQueryParams struct {
-	Page         string
-	Rows         string
-	OrderBy      string
-	ID           string
-	JobID        string
-	EventType    string
-	Status       string
-	Direction    string
-	ResourceType string
-	ResourceID   string
+type campaignAuditEventQueryParams struct {
+	Page       string
+	Rows       string
+	OrderBy    string
+	ID         string
+	CampaignID string
+}
+
+type communicationQueryParams struct {
+	Page          string
+	Rows          string
+	OrderBy       string
+	ID            string
+	ConstituentID string
+	ApplicationID string
+	CampaignID    string
+	Channel       string
+	Direction     string
+	Status        string
+	Provider      string
 }
 
 func parseProgramQueryParams(r *http.Request) programQueryParams {
@@ -371,6 +402,36 @@ func parseApplicationQueryParams(r *http.Request) applicationQueryParams {
 	}
 }
 
+func parseEventQueryParams(r *http.Request) eventQueryParams {
+	values := r.URL.Query()
+
+	return eventQueryParams{
+		Page:    values.Get("page"),
+		Rows:    values.Get("rows"),
+		OrderBy: values.Get("orderBy"),
+		ID:      values.Get("event_id"),
+		Type:    values.Get("type"),
+		Status:  values.Get("status"),
+		Virtual: values.Get("virtual"),
+	}
+}
+
+func parseEventRegistrationQueryParams(r *http.Request) eventRegistrationQueryParams {
+	values := r.URL.Query()
+
+	return eventRegistrationQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("event_registration_id"),
+		EventID:       values.Get("event_id"),
+		ConstituentID: values.Get("constituent_id"),
+		Status:        values.Get("status"),
+		MatchStatus:   values.Get("match_status"),
+		Source:        values.Get("source"),
+	}
+}
+
 func parseApplicationFormTemplateQueryParams(r *http.Request) applicationFormTemplateQueryParams {
 	values := r.URL.Query()
 
@@ -487,34 +548,47 @@ func parseImportInvalidRowQueryParams(r *http.Request) importInvalidRowQueryPara
 	}
 }
 
-func parseSyncJobQueryParams(r *http.Request) syncJobQueryParams {
+func parseCampaignQueryParams(r *http.Request) campaignQueryParams {
 	values := r.URL.Query()
 
-	return syncJobQueryParams{
-		Page:      values.Get("page"),
-		Rows:      values.Get("rows"),
-		OrderBy:   values.Get("orderBy"),
-		ID:        values.Get("sync_job_id"),
-		Status:    values.Get("status"),
-		Direction: values.Get("direction"),
-		Retryable: values.Get("retryable"),
+	return campaignQueryParams{
+		Page:        values.Get("page"),
+		Rows:        values.Get("rows"),
+		OrderBy:     values.Get("orderBy"),
+		ID:          values.Get("campaign_id"),
+		Status:      values.Get("status"),
+		Channel:     values.Get("channel"),
+		CreatedByID: values.Get("created_by_id"),
 	}
 }
 
-func parseSyncEventQueryParams(r *http.Request) syncEventQueryParams {
+func parseCampaignAuditEventQueryParams(r *http.Request) campaignAuditEventQueryParams {
 	values := r.URL.Query()
 
-	return syncEventQueryParams{
-		Page:         values.Get("page"),
-		Rows:         values.Get("rows"),
-		OrderBy:      values.Get("orderBy"),
-		ID:           values.Get("sync_event_id"),
-		JobID:        values.Get("sync_job_id"),
-		EventType:    values.Get("event_type"),
-		Status:       values.Get("status"),
-		Direction:    values.Get("direction"),
-		ResourceType: values.Get("resource_type"),
-		ResourceID:   values.Get("resource_id"),
+	return campaignAuditEventQueryParams{
+		Page:       values.Get("page"),
+		Rows:       values.Get("rows"),
+		OrderBy:    values.Get("orderBy"),
+		ID:         values.Get("campaign_audit_event_id"),
+		CampaignID: values.Get("campaign_id"),
+	}
+}
+
+func parseCommunicationQueryParams(r *http.Request) communicationQueryParams {
+	values := r.URL.Query()
+
+	return communicationQueryParams{
+		Page:          values.Get("page"),
+		Rows:          values.Get("rows"),
+		OrderBy:       values.Get("orderBy"),
+		ID:            values.Get("communication_id"),
+		ConstituentID: values.Get("constituent_id"),
+		ApplicationID: values.Get("application_id"),
+		CampaignID:    values.Get("campaign_id"),
+		Channel:       values.Get("channel"),
+		Direction:     values.Get("direction"),
+		Status:        values.Get("status"),
+		Provider:      values.Get("provider"),
 	}
 }
 
@@ -988,6 +1062,98 @@ func parseApplicationFilter(qp applicationQueryParams) (admissionsbus.Applicatio
 	return filter, nil
 }
 
+func parseEventFilter(qp eventQueryParams) (admissionsbus.EventQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.EventQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("event_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.Type != "" {
+		eventType := admissionsbus.EventType(qp.Type)
+		filter.Type = &eventType
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.EventStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.Virtual != "" {
+		isVirtual, err := strconv.ParseBool(qp.Virtual)
+		if err != nil {
+			fieldErrors.Add("virtual", err)
+		} else {
+			filter.Virtual = &isVirtual
+		}
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.EventQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
+func parseEventRegistrationFilter(qp eventRegistrationQueryParams) (admissionsbus.EventRegistrationQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.EventRegistrationQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("event_registration_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.EventID != "" {
+		id, err := uuid.Parse(qp.EventID)
+		if err != nil {
+			fieldErrors.Add("event_id", err)
+		} else {
+			filter.EventID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		id, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &id
+		}
+	}
+
+	if qp.Status != "" {
+		status := admissionsbus.EventRegistrationStatus(qp.Status)
+		filter.Status = &status
+	}
+
+	if qp.MatchStatus != "" {
+		status := admissionsbus.EventRegistrationMatchStatus(qp.MatchStatus)
+		filter.MatchStatus = &status
+	}
+
+	if qp.Source != "" {
+		source := admissionsbus.EventRegistrationSource(qp.Source)
+		filter.Source = &source
+	}
+
+	if fieldErrors != nil {
+		return admissionsbus.EventRegistrationQueryFilter{}, fieldErrors.ToError()
+	}
+
+	return filter, nil
+}
+
 func parseApplicationFormTemplateFilter(qp applicationFormTemplateQueryParams) (admissionsbus.ApplicationFormTemplateQueryFilter, error) {
 	var fieldErrors errs.FieldErrors
 	var filter admissionsbus.ApplicationFormTemplateQueryFilter
@@ -1356,97 +1522,135 @@ func parseImportInvalidRowFilter(qp importInvalidRowQueryParams) (admissionsbus.
 	return filter, nil
 }
 
-func parseSyncJobFilter(qp syncJobQueryParams) (admissionsbus.SyncJobQueryFilter, error) {
+func parseCampaignFilter(qp campaignQueryParams) (admissionsbus.CampaignQueryFilter, error) {
 	var fieldErrors errs.FieldErrors
-	var filter admissionsbus.SyncJobQueryFilter
+	var filter admissionsbus.CampaignQueryFilter
 
 	if qp.ID != "" {
 		id, err := uuid.Parse(qp.ID)
 		if err != nil {
-			fieldErrors.Add("sync_job_id", err)
+			fieldErrors.Add("campaign_id", err)
 		} else {
 			filter.ID = &id
 		}
 	}
 
 	if qp.Status != "" {
-		status := admissionsbus.SyncJobStatus(qp.Status)
+		status := admissionsbus.CampaignStatus(qp.Status)
 		filter.Status = &status
 	}
 
-	if qp.Direction != "" {
-		direction := admissionsbus.SyncDirection(qp.Direction)
-		filter.Direction = &direction
+	if qp.Channel != "" {
+		channel := admissionsbus.CampaignChannel(qp.Channel)
+		filter.Channel = &channel
 	}
 
-	if qp.Retryable != "" {
-		retryable, err := strconv.ParseBool(qp.Retryable)
+	if qp.CreatedByID != "" {
+		id, err := uuid.Parse(qp.CreatedByID)
 		if err != nil {
-			fieldErrors.Add("retryable", err)
+			fieldErrors.Add("created_by_id", err)
 		} else {
-			filter.Retryable = &retryable
+			filter.CreatedByID = &id
 		}
 	}
 
-	if fieldErrors != nil {
-		return admissionsbus.SyncJobQueryFilter{}, fieldErrors.ToError()
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CampaignQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil
 }
 
-func parseSyncEventFilter(qp syncEventQueryParams) (admissionsbus.SyncEventQueryFilter, error) {
+func parseCampaignAuditEventFilter(qp campaignAuditEventQueryParams) (admissionsbus.CampaignAuditEventQueryFilter, error) {
 	var fieldErrors errs.FieldErrors
-	var filter admissionsbus.SyncEventQueryFilter
+	var filter admissionsbus.CampaignAuditEventQueryFilter
 
 	if qp.ID != "" {
 		id, err := uuid.Parse(qp.ID)
 		if err != nil {
-			fieldErrors.Add("sync_event_id", err)
+			fieldErrors.Add("campaign_audit_event_id", err)
 		} else {
 			filter.ID = &id
 		}
 	}
 
-	if qp.JobID != "" {
-		id, err := uuid.Parse(qp.JobID)
+	if qp.CampaignID != "" {
+		id, err := uuid.Parse(qp.CampaignID)
 		if err != nil {
-			fieldErrors.Add("sync_job_id", err)
+			fieldErrors.Add("campaign_id", err)
 		} else {
-			filter.JobID = &id
+			filter.CampaignID = &id
 		}
 	}
 
-	if qp.EventType != "" {
-		eventType := admissionsbus.SyncEventType(qp.EventType)
-		filter.EventType = &eventType
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CampaignAuditEventQueryFilter{}, fieldErrors.ToError()
 	}
 
-	if qp.Status != "" {
-		status := admissionsbus.SyncEventStatus(qp.Status)
-		filter.Status = &status
+	return filter, nil
+}
+
+func parseCommunicationFilter(qp communicationQueryParams) (admissionsbus.CommunicationQueryFilter, error) {
+	var fieldErrors errs.FieldErrors
+	var filter admissionsbus.CommunicationQueryFilter
+
+	if qp.ID != "" {
+		id, err := uuid.Parse(qp.ID)
+		if err != nil {
+			fieldErrors.Add("communication_id", err)
+		} else {
+			filter.ID = &id
+		}
+	}
+
+	if qp.ConstituentID != "" {
+		id, err := uuid.Parse(qp.ConstituentID)
+		if err != nil {
+			fieldErrors.Add("constituent_id", err)
+		} else {
+			filter.ConstituentID = &id
+		}
+	}
+
+	if qp.ApplicationID != "" {
+		id, err := uuid.Parse(qp.ApplicationID)
+		if err != nil {
+			fieldErrors.Add("application_id", err)
+		} else {
+			filter.ApplicationID = &id
+		}
+	}
+
+	if qp.CampaignID != "" {
+		id, err := uuid.Parse(qp.CampaignID)
+		if err != nil {
+			fieldErrors.Add("campaign_id", err)
+		} else {
+			filter.CampaignID = &id
+		}
+	}
+
+	if qp.Channel != "" {
+		channel := admissionsbus.CommunicationChannel(qp.Channel)
+		filter.Channel = &channel
 	}
 
 	if qp.Direction != "" {
-		direction := admissionsbus.SyncDirection(qp.Direction)
+		direction := admissionsbus.CommunicationDirection(qp.Direction)
 		filter.Direction = &direction
 	}
 
-	if qp.ResourceType != "" {
-		filter.ResourceType = &qp.ResourceType
+	if qp.Status != "" {
+		status := admissionsbus.CommunicationStatus(qp.Status)
+		filter.Status = &status
 	}
 
-	if qp.ResourceID != "" {
-		id, err := uuid.Parse(qp.ResourceID)
-		if err != nil {
-			fieldErrors.Add("resource_id", err)
-		} else {
-			filter.ResourceID = &id
-		}
+	if qp.Provider != "" {
+		filter.Provider = &qp.Provider
 	}
 
-	if fieldErrors != nil {
-		return admissionsbus.SyncEventQueryFilter{}, fieldErrors.ToError()
+	if len(fieldErrors) > 0 {
+		return admissionsbus.CommunicationQueryFilter{}, fieldErrors.ToError()
 	}
 
 	return filter, nil

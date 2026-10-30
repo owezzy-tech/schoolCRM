@@ -3,15 +3,20 @@ package dbtest
 import (
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus/extensions/auditotel"
 	"github.com/owezzy/schoolCRM/business/domain/auditbus/stores/auditdb"
 	"github.com/owezzy/schoolCRM/business/domain/homebus"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/extensions/homeotel"
 	"github.com/owezzy/schoolCRM/business/domain/homebus/stores/homedb"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus"
+	"github.com/owezzy/schoolCRM/business/domain/lessonbus/stores/lessondb"
 	"github.com/owezzy/schoolCRM/business/domain/productbus"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/extensions/productotel"
 	"github.com/owezzy/schoolCRM/business/domain/productbus/stores/productdb"
+	"github.com/owezzy/schoolCRM/business/domain/schoolbus"
+	"github.com/owezzy/schoolCRM/business/domain/schoolbus/stores/schooldb"
 	"github.com/owezzy/schoolCRM/business/domain/userbus"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/extensions/useraudit"
 	"github.com/owezzy/schoolCRM/business/domain/userbus/extensions/userotel"
@@ -22,11 +27,12 @@ import (
 	"github.com/owezzy/schoolCRM/business/domain/vproductbus/stores/vproductdb"
 	"github.com/owezzy/schoolCRM/business/sdk/delegate"
 	"github.com/owezzy/schoolCRM/foundation/logger"
-	"github.com/jmoiron/sqlx"
 )
 
 // BusDomain represents all the business domain apis needed for testing.
 type BusDomain struct {
+	School   *schoolbus.Business
+	Lesson   *lessonbus.Business
 	Delegate *delegate.Delegate
 	Audit    auditbus.ExtBusiness
 	Home     homebus.ExtBusiness
@@ -60,6 +66,8 @@ func newBusDomains(log *logger.Logger, db *sqlx.DB) BusDomain {
 	vproductBus := vproductbus.NewBusiness(vproductStorage, vproductOtelExt)
 
 	return BusDomain{
+		School:   schoolbus.NewBusiness(schooldb.NewStore(log, db)),
+		Lesson:   lessonbus.NewBusiness(lessondb.NewStore(log, db)),
 		Delegate: delegate,
 		Audit:    auditBus,
 		Home:     homeBus,

@@ -1,54 +1,86 @@
-<div class="flex flex-col flex-auto min-w-0 bg-card dark:bg-transparent">
+<div class="bg-card flex min-w-0 flex-auto flex-col dark:bg-transparent">
     <div class="flex-auto p-6 sm:p-10">
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+        <div
+            class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        >
             <div>
-                <h1 class="text-3xl font-semibold tracking-tight leading-8">Events</h1>
-                <p class="text-secondary mt-1">11 total events — drag to reschedule.</p>
+                <h1 class="text-3xl font-semibold leading-8 tracking-tight">
+                    Events
+                </h1>
+                <p class="text-secondary mt-1">
+                    {{ eventsResult().total }} total events — live admissions
+                    schedule.
+                </p>
             </div>
             <div class="flex items-center gap-4">
-                <div class="inline-flex h-10 rounded-full border bg-default/5 p-1 shadow-sm dark:bg-white/5">
+                <div
+                    class="bg-default/5 inline-flex h-10 rounded-full border p-1 shadow-sm dark:bg-white/5"
+                >
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:text-default hover:bg-hover focus:outline-none focus:ring-2 focus:ring-primary/40"
                         [class.bg-card]="currentView() === 'table'"
                         [class.text-default]="currentView() === 'table'"
                         [class.shadow]="currentView() === 'table'"
                         [class.text-secondary]="currentView() !== 'table'"
-                        (click)="onViewChange('table')">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:list-bullet"></mat-icon>
+                        (click)="onViewChange('table')"
+                    >
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:list-bullet"
+                        ></mat-icon>
                         <span class="ml-1 hidden sm:inline">Table</span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:text-default hover:bg-hover focus:outline-none focus:ring-2 focus:ring-primary/40"
                         [class.bg-card]="currentView() === 'calendar'"
                         [class.text-default]="currentView() === 'calendar'"
                         [class.shadow]="currentView() === 'calendar'"
                         [class.text-secondary]="currentView() !== 'calendar'"
-                        (click)="onViewChange('calendar')">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:calendar"></mat-icon>
+                        (click)="onViewChange('calendar')"
+                    >
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:calendar"
+                        ></mat-icon>
                         <span class="ml-1 hidden sm:inline">Calendar</span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        class="inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors duration-150 hover:text-default hover:bg-hover focus:outline-none focus:ring-2 focus:ring-primary/40"
                         [class.bg-card]="currentView() === 'kanban'"
                         [class.text-default]="currentView() === 'kanban'"
                         [class.shadow]="currentView() === 'kanban'"
                         [class.text-secondary]="currentView() !== 'kanban'"
-                        (click)="onViewChange('kanban')">
-                        <mat-icon class="icon-size-5" svgIcon="heroicons_outline:view-columns"></mat-icon>
+                        (click)="onViewChange('kanban')"
+                    >
+                        <mat-icon
+                            class="icon-size-5"
+                            svgIcon="heroicons_outline:view-columns"
+                        ></mat-icon>
                         <span class="ml-1 hidden sm:inline">Kanban</span>
                     </button>
                 </div>
 
                 <button mat-flat-button color="primary" routerLink="new">
-                    <mat-icon class="icon-size-5" svgIcon="heroicons_outline:plus"></mat-icon>
+                    <mat-icon
+                        class="icon-size-5"
+                        svgIcon="heroicons_outline:plus"
+                    ></mat-icon>
                     <span class="ml-2">New event</span>
                 </button>
             </div>
         </div>
+
+        @if (errorMessage) {
+            <div
+                class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200"
+            >
+                {{ errorMessage }}
+            </div>
+        }
 
         <!-- Filters -->
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -57,17 +89,25 @@
                 @for (filter of eventTypeFilters; track filter.type) {
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 hover:border-primary/40 hover:bg-hover hover:text-default focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-150 hover:text-default hover:bg-hover hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
                         [class.border-primary]="typeFilter() === filter.type"
                         [class.bg-primary-50]="typeFilter() === filter.type"
                         [class.text-primary]="typeFilter() === filter.type"
-                        [class.dark:bg-primary-900]="typeFilter() === filter.type"
-                        [class.dark:bg-opacity-20]="typeFilter() === filter.type"
+                        [class.dark:bg-primary-900]="
+                            typeFilter() === filter.type
+                        "
+                        [class.dark:bg-opacity-20]="
+                            typeFilter() === filter.type
+                        "
                         [class.border-default]="typeFilter() !== filter.type"
                         [class.bg-card]="typeFilter() !== filter.type"
                         [class.text-secondary]="typeFilter() !== filter.type"
-                        (click)="toggleTypeFilter(filter.type)">
-                        <span class="h-2 w-2 rounded-full" [class]="filter.dotClass"></span>
+                        (click)="toggleTypeFilter(filter.type)"
+                    >
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            [class]="filter.dotClass"
+                        ></span>
                         <span>{{ filter.label }}</span>
                     </button>
                 }

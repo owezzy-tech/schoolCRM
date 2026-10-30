@@ -157,6 +157,33 @@ k8s_resource(
   resource_deps=['auth', 'sales'],
 )
 
+# =============================================================================
+# RAG Service
+# =============================================================================
+
+local_resource(
+  'rag-check',
+  'cd ./api/services/RAG && uv sync --extra dev --locked && uv run ruff check . && uv run pytest tests -v',
+  deps=['./api/services/RAG'],
+  labels=['build'],
+)
+
+docker_build_with_restart(
+  'localhost/schoolcrm/rag',
+  '.',
+  dockerfile='./zarf/docker/dockerfile.rag',
+  build_args={'BUILD_TAG': 'develop'},
+)
+
+k8s_yaml(kustomize('./zarf/k8s/dev/rag'))
+
+k8s_resource(
+  'rag',
+  labels=['services'],
+  port_forwards=['4545:7000'],
+  resource_deps=['rag-check', 'auth'],
+)
+
 # Run database migrations automatically after SchoolCRM pod is ready
 # This runs once on startup and when you manually trigger it in Tilt
 local_resource(
@@ -190,4 +217,3 @@ docker_build_with_restart(
     sync('./zarf/build/metrics', '/service/metrics'),
   ],
 )
-

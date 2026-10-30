@@ -1,9 +1,17 @@
 import { TitleCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { CAMPAIGNS } from './data/campaigns.mock';
-import { Campaign } from './models/campaign.types';
+import { AdmissionsService } from 'app/core/admissions/admissions.service';
+import { Campaign } from 'app/core/admissions/admissions.types';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
+import { catchError, of } from 'rxjs';
 
 @Component({
     selector: 'app-campaigns',
@@ -13,27 +21,31 @@ import { Campaign } from './models/campaign.types';
     templateUrl: './campaigns.component.html',
 })
 export class CampaignsComponent {
-    readonly campaigns = CAMPAIGNS;
-    readonly selectedCampaignId = signal(this.campaigns[0]?.id ?? '');
+    private readonly admissionsService = inject(AdmissionsService);
+
+    readonly loading = signal(false);
+    readonly errorMessage = signal('');
+    readonly campaigns = signal<Campaign[]>([]);
+    readonly selectedCampaignId = signal('');
     readonly selectedCampaign = computed(
         () =>
-            this.campaigns.find(
+            this.campaigns().find(
                 (campaign) => campaign.id === this.selectedCampaignId()
-            ) ?? this.campaigns[0]
+            ) ?? this.campaigns()[0]
     );
     readonly totalAudience = computed(() =>
-        this.campaigns.reduce(
+        this.campaigns().reduce(
             (total, campaign) => total + campaign.metrics.audienceSize,
             0
         )
     );
     readonly activeCampaigns = computed(
         () =>
-            this.campaigns.filter((campaign) => campaign.status === 'ACTIVE')
+            this.campaigns().filter((campaign) => campaign.status === 'ACTIVE')
                 .length
     );
     readonly averageOpenRate = computed(() => {
-        const sentCampaigns = this.campaigns.filter(
+        const sentCampaigns = this.campaigns().filter(
             (campaign) => campaign.metrics.sent > 0
         );
 
@@ -48,6 +60,41 @@ export class CampaignsComponent {
 
         return Math.round(openRate / sentCampaigns.length);
     });
+
+    constructor() {
+        this.loadCampaigns();
+    }
+
+    loadCampaigns(): void {
+        this.loading.set(true);
+        this.errorMessage.set('');
+
+        this.admissionsService
+            .queryCampaigns({ page: 1, rows: 50, orderBy: 'starts_at,DESC' })
+            .pipe(
+                catchError((error) => {
+                    this.errorMessage.set(
+                        jsonApiErrorMessage(error, 'Unable to load campaigns.')
+                    );
+                    this.campaigns.set([]);
+
+                    return of(undefined);
+                })
+            )
+            .subscribe((result) => {
+                this.loading.set(false);
+
+                if (!result) {
+                    return;
+                }
+
+                this.campaigns.set(result.items);
+
+                if (!this.selectedCampaignId() && result.items.length) {
+                    this.selectedCampaignId.set(result.items[0].id);
+                }
+            });
+    }
 
     selectCampaign(campaignId: string): void {
         this.selectedCampaignId.set(campaignId);
@@ -82,5 +129,16 @@ export class CampaignsComponent {
 
     compactNumber(value: number): string {
         return new Intl.NumberFormat('en-US').format(value);
+    }
+
+    schedule(campaign: Campaign): string {
+        if (!campaign.startsAt && !campaign.endsAt) {
+            return 'No schedule set';
+        }
+
+        return [campaign.startsAt, campaign.endsAt]
+            .filter((value): value is string => Boolean(value))
+            .map((value) => new Intl.DateTimeFormat('en-US').format(new Date(value)))
+            .join(' - ');
     }
 }

@@ -1,15 +1,34 @@
 from dataclasses import dataclass
+from typing import Any
 
 from fastapi import Request
 
+from adapters.application_ownership.stub_application_ownership_checker import (
+    StubApplicationOwnershipChecker,
+)
+from adapters.audit.logging_query_audit_adapter import LoggingQueryAuditAdapter
+from adapters.clients.lesson_client import GoLessonClient
+from adapters.embeddings.bge_m3 import BGEM3Embeddings
 from adapters.embeddings.noop_embedding_provider import NoopEmbeddingProvider
+from adapters.graph.in_memory_graph_retriever import InMemoryGraphRetriever
+from adapters.llm.deepseek_lesson_generator import DeepSeekLessonGenerator
 from adapters.llm.echo_llm_provider import EchoLLMProvider
+from adapters.llm.graph_context_answer_provider import GraphContextAnswerProvider
+from adapters.llm.ollama_answer_provider import OllamaAnswerProvider
+from adapters.parsers.curriculum_pdf import parse_curriculum_pdf
 from adapters.parsers.noop_document_parser import NoopDocumentParser
+from adapters.repositories.curriculum_postgres import CurriculumPostgres
 from adapters.repositories.in_memory_document_repository import InMemoryDocumentRepository
 from adapters.storage.local_file_store import LocalFileStore
 from adapters.vector_stores.in_memory_vector_store import InMemoryVectorStore
+from domain.ports.application_ownership import IApplicationOwnershipChecker
 from infrastructure.auth_client import AuthServiceClient
 from infrastructure.config import Settings
+from infrastructure.lesson_workflow import LessonWorkflow
+from infrastructure.school_access import SchoolAccessClient
+from infrastructure.tracing import trace_container
+from use_cases.admissions_query import AdmissionsQueryUseCase
+from use_cases.curriculum import CurriculumService
 from use_cases.delete_document import DeleteDocumentUseCase
 from use_cases.ingest_document import IngestDocumentUseCase
 from use_cases.query_documents import QueryDocumentsUseCase
@@ -19,11 +38,25 @@ from use_cases.query_documents import QueryDocumentsUseCase
 class Container:
     ingest_document: IngestDocumentUseCase
     query_documents: QueryDocumentsUseCase
+    admissions_query: AdmissionsQueryUseCase
+    application_ownership_checker: IApplicationOwnershipChecker
     delete_document: DeleteDocumentUseCase
     auth_service: AuthServiceClient
+    curriculum: CurriculumService | None = None
+    lesson_workflow: LessonWorkflow | None = None
+    neo4j_driver: Any | None = None
+    ollama_answer_provider: OllamaAnswerProvider | None = None
 
     async def close(self) -> None:
         await self.auth_service.close()
+        if self.curriculum is not None:
+            await self.curriculum.close()
+        if self.lesson_workflow is not None:
+            await self.lesson_workflow.close()
+        if self.neo4j_driver is not None:
+            await self.neo4j_driver.close()
+        if self.ollama_answer_provider is not None:
+            await self.ollama_answer_provider.close()
 
 
 def build_container(settings: Settings) -> Container:
@@ -33,20 +66,81 @@ def build_container(settings: Settings) -> Container:
     llm_provider = EchoLLMProvider()
     document_repository = InMemoryDocumentRepository()
     file_store = LocalFileStore(settings.file_storage_dir)
+    neo4j_driver: Any | None = None
+    if settings.graph_retriever == "neo4j":
+        from neo4j import AsyncGraphDatabase
 
-    return Container(
-        ingest_document=IngestDocumentUseCase(
-            file_store=file_store,
-            parser=parser,
-            embedding_provider=embedding_provider,
-            vector_store=vector_store,
-            document_repository=document_repository,
-        ),
-        query_documents=QueryDocumentsUseCase(
-            embedding_provider=embedding_provider,
-            vector_store=vector_store,
-            llm_provider=llm_provider,
-        ),
+        from adapters.graph.neo4j_graph_retriever import Neo4jGraphRetriever
+
+        neo4j_driver = AsyncGraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_username, settings.neo4j_password),
+        )
+        graph_retriever = Neo4jGraphRetriever(neo4j_driver)
+    else:
+        graph_retriever = InMemoryGraphRetriever()
+
+    ollama_answer_provider: OllamaAnswerProvider | None = None
+    if settings.admissions_answer_provider == "ollama":
+        ollama_answer_provider = OllamaAnswerProvider(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+            timeout_seconds=settings.ollama_timeout_seconds,
+        )
+        answer_provider = ollama_answer_provider
+    else:
+        answer_provider = GraphContextAnswerProvider()
+
+    application_ownership_checker = StubApplicationOwnershipChecker()
+    audit_port = LoggingQueryAuditAdapter()
+    ingest_document = IngestDocumentUseCase(
+        file_store=file_store,
+        parser=parser,
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        document_repository=document_repository,
+    )
+    query_documents = QueryDocumentsUseCase(
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+    )
+    admissions_query = AdmissionsQueryUseCase(
+        graph_retriever=graph_retriever,
+        answer_provider=answer_provider,
+        audit_port=audit_port,
+    )
+
+    (
+        ingest_document,
+        query_documents,
+        admissions_query,
+        graph_retriever,
+        answer_provider,
+        embedding_provider,
+        vector_store,
+        llm_provider,
+    ) = trace_container(
+        settings=settings,
+        ingest_document=ingest_document,
+        query_documents=query_documents,
+        admissions_query=admissions_query,
+        graph_retriever=graph_retriever,
+        answer_provider=answer_provider,
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+        audit_port=audit_port,
+        file_store=file_store,
+        parser=parser,
+        document_repository=document_repository,
+    )
+
+    container = Container(
+        ingest_document=ingest_document,
+        query_documents=query_documents,
+        admissions_query=admissions_query,
+        application_ownership_checker=application_ownership_checker,
         delete_document=DeleteDocumentUseCase(
             vector_store=vector_store,
             document_repository=document_repository,
@@ -56,7 +150,30 @@ def build_container(settings: Settings) -> Container:
             base_url=settings.auth_service_url,
             timeout_seconds=settings.auth_request_timeout_seconds,
         ),
+        curriculum=CurriculumService(
+            CurriculumPostgres(settings.curriculum_database_url),
+            BGEM3Embeddings(
+                settings.curriculum_embedding_provider,
+                settings.ollama_base_url,
+                settings.cloudflare_account_id,
+                settings.cloudflare_api_token,
+            ),
+            SchoolAccessClient(settings.school_service_url),
+            parse_curriculum_pdf,
+        )
+        if settings.curriculum_database_url
+        else None,
+        neo4j_driver=neo4j_driver,
+        ollama_answer_provider=ollama_answer_provider,
     )
+    if container.curriculum is not None:
+        container.lesson_workflow = LessonWorkflow(
+            settings.curriculum_database_url,
+            container.curriculum,
+            DeepSeekLessonGenerator(settings.deepseek_api_key),
+            GoLessonClient(settings.school_service_url),
+        )
+    return container
 
 
 def get_ingest_document_use_case(request: Request) -> IngestDocumentUseCase:
@@ -65,6 +182,14 @@ def get_ingest_document_use_case(request: Request) -> IngestDocumentUseCase:
 
 def get_query_documents_use_case(request: Request) -> QueryDocumentsUseCase:
     return request.app.state.container.query_documents
+
+
+def get_admissions_query_use_case(request: Request) -> AdmissionsQueryUseCase:
+    return request.app.state.container.admissions_query
+
+
+def get_application_ownership_checker(request: Request) -> IApplicationOwnershipChecker:
+    return request.app.state.container.application_ownership_checker
 
 
 def get_delete_document_use_case(request: Request) -> DeleteDocumentUseCase:

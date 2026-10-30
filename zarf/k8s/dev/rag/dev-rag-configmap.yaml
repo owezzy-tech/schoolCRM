@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-config
+  namespace: schoolcrm-system
+data:
+  api_host: "0.0.0.0"
+  api_port: "7000"
+  allow_anonymous: "true"
+  auth_service_url: "http://auth-service:6000"
+  auth_request_timeout_seconds: "5.0"
+  file_storage_dir: "/service/var/files"
+  graph_retriever: "memory"
+  neo4j_uri: "bolt://neo4j-service:7687"
+  admissions_answer_provider: "stub"
+  ollama_base_url: "http://host.docker.internal:11434"
+  ollama_model: "nemotron-3-super:cloud"
+  ollama_timeout_seconds: "60.0"

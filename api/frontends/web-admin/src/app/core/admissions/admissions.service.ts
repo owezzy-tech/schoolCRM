@@ -1,16 +1,39 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+    AcademicTerm,
+    AcademicTermQuery,
     AdmissionsDocument,
     AdmissionsDocumentQuery,
     AdmissionsDocumentRequest,
     AdmissionsDocumentVerificationRequest,
+    AdmissionsEvent,
+    AdmissionsEventCheckInRequest,
+    AdmissionsEventQuery,
+    AdmissionsEventRegistration,
+    AdmissionsEventRegistrationQuery,
+    AdmissionsEventRegistrationRequest,
+    AdmissionsEventRequest,
+    Campaign,
+    CampaignAuditEvent,
+    CampaignAuditEventQuery,
+    CampaignQuery,
+    Application,
     ApplicationFormTemplate,
     ApplicationFormTemplateQuery,
     ApplicationFormTemplateRequest,
+    ApplicationQuery,
+    ApplicationRequest,
+    ApplicationTransition,
+    ApplicationTransitionQuery,
+    ApplicationTransitionRequest,
     ChecklistItem,
     ChecklistItemQuery,
     ChecklistItemRequest,
+    CommunicationQuery,
+    CommunicationRecord,
+    Constituent,
+    ConstituentQuery,
     CustomFieldDefinition,
     CustomFieldDefinitionQuery,
     CustomFieldDefinitionRequest,
@@ -23,12 +46,15 @@ import {
     ImportInvalidRowQuery,
     ImportInvalidRowsRequest,
     Inquiry,
+    InquiryQuery,
     InquiryRequest,
     LeadScore,
     LeadScoreQuery,
     LeadScoreRule,
     LeadScoreRuleQuery,
     LeadScoreRuleRequest,
+    Program,
+    ProgramQuery,
 } from 'app/core/admissions/admissions.types';
 import {
     JsonApiCollectionDocument,
@@ -51,6 +77,30 @@ export class AdmissionsService {
     private readonly templatesSubject = new ReplaySubject<
         PaginatedResult<ApplicationFormTemplate>
     >(1);
+    private readonly applicantApplicationsSubject = new ReplaySubject<
+        PaginatedResult<Application>
+    >(1);
+    private readonly applicationsSubject = new ReplaySubject<
+        PaginatedResult<Application>
+    >(1);
+    private readonly programsSubject = new ReplaySubject<
+        PaginatedResult<Program>
+    >(1);
+    private readonly academicTermsSubject = new ReplaySubject<
+        PaginatedResult<AcademicTerm>
+    >(1);
+    private readonly applicationTransitionsSubject = new ReplaySubject<
+        PaginatedResult<ApplicationTransition>
+    >(1);
+    private readonly applicantProgramsSubject = new ReplaySubject<
+        PaginatedResult<Program>
+    >(1);
+    private readonly applicantAcademicTermsSubject = new ReplaySubject<
+        PaginatedResult<AcademicTerm>
+    >(1);
+    private readonly applicantTemplatesSubject = new ReplaySubject<
+        PaginatedResult<ApplicationFormTemplate>
+    >(1);
     private readonly checklistItemsSubject = new ReplaySubject<
         PaginatedResult<ChecklistItem>
     >(1);
@@ -66,16 +116,53 @@ export class AdmissionsService {
     private readonly importInvalidRowsSubject = new ReplaySubject<
         PaginatedResult<ImportInvalidRow>
     >(1);
+    private readonly eventsSubject = new ReplaySubject<
+        PaginatedResult<AdmissionsEvent>
+    >(1);
+    private readonly eventRegistrationsSubject = new ReplaySubject<
+        PaginatedResult<AdmissionsEventRegistration>
+    >(1);
+    private readonly constituentsSubject = new ReplaySubject<
+        PaginatedResult<Constituent>
+    >(1);
+    private readonly inquiriesSubject = new ReplaySubject<
+        PaginatedResult<Inquiry>
+    >(1);
+    private readonly campaignsSubject = new ReplaySubject<
+        PaginatedResult<Campaign>
+    >(1);
+    private readonly communicationsSubject = new ReplaySubject<
+        PaginatedResult<CommunicationRecord>
+    >(1);
 
     readonly scores$ = this.scoresSubject.asObservable();
     readonly rules$ = this.rulesSubject.asObservable();
     readonly templates$ = this.templatesSubject.asObservable();
+    readonly applications$ = this.applicationsSubject.asObservable();
+    readonly programs$ = this.programsSubject.asObservable();
+    readonly academicTerms$ = this.academicTermsSubject.asObservable();
+    readonly applicationTransitions$ =
+        this.applicationTransitionsSubject.asObservable();
+    readonly applicantApplications$ =
+        this.applicantApplicationsSubject.asObservable();
+    readonly applicantPrograms$ = this.applicantProgramsSubject.asObservable();
+    readonly applicantAcademicTerms$ =
+        this.applicantAcademicTermsSubject.asObservable();
+    readonly applicantTemplates$ =
+        this.applicantTemplatesSubject.asObservable();
     readonly checklistItems$ = this.checklistItemsSubject.asObservable();
     readonly documents$ = this.documentsSubject.asObservable();
     readonly customFieldDefinitions$ =
         this.customFieldDefinitionsSubject.asObservable();
     readonly importBatches$ = this.importBatchesSubject.asObservable();
     readonly importInvalidRows$ = this.importInvalidRowsSubject.asObservable();
+    readonly events$ = this.eventsSubject.asObservable();
+    readonly eventRegistrations$ =
+        this.eventRegistrationsSubject.asObservable();
+    readonly constituents$ = this.constituentsSubject.asObservable();
+    readonly inquiries$ = this.inquiriesSubject.asObservable();
+    readonly campaigns$ = this.campaignsSubject.asObservable();
+    readonly communications$ = this.communicationsSubject.asObservable();
 
     queryLeadScores(
         query: LeadScoreQuery = {}
@@ -130,6 +217,206 @@ export class AdmissionsService {
             .pipe(map(unwrapJsonApiResource));
     }
 
+    queryInquiries(
+        query: InquiryQuery = {}
+    ): Observable<PaginatedResult<Inquiry>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Inquiry>>('/v1/admissions/inquiries', {
+                params: this.queryParams(query),
+            })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.inquiriesSubject.next(result))
+            );
+    }
+
+    queryConstituents(
+        query: ConstituentQuery = {}
+    ): Observable<PaginatedResult<Constituent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Constituent>>(
+                '/v1/admissions/constituents',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.constituentsSubject.next(result))
+            );
+    }
+
+    getConstituent(constituentID: string): Observable<Constituent> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Constituent>
+            >(`/v1/admissions/constituents/${constituentID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryEvents(
+        query: AdmissionsEventQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEvent>>(
+                '/v1/admissions/events',
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventsSubject.next(result))
+            );
+    }
+
+    queryApplicantEvents(
+        query: AdmissionsEventQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEvent>>(
+                '/v1/admissions/applicant/events',
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventsSubject.next(result))
+            );
+    }
+
+    getEvent(eventID: string): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<AdmissionsEvent>
+            >(`/v1/admissions/events/${eventID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createEvent(request: AdmissionsEventRequest): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEvent>
+            >('/v1/admissions/events', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateEvent(
+        eventID: string,
+        request: AdmissionsEventRequest
+    ): Observable<AdmissionsEvent> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<AdmissionsEvent>
+            >(`/v1/admissions/events/${eventID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryEventRegistrations(
+        eventID: string,
+        query: AdmissionsEventRegistrationQuery = {}
+    ): Observable<PaginatedResult<AdmissionsEventRegistration>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<AdmissionsEventRegistration>>(
+                `/v1/admissions/events/${eventID}/registrations`,
+                {
+                    params: this.queryParams(query),
+                }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.eventRegistrationsSubject.next(result))
+            );
+    }
+
+    createEventRegistration(
+        eventID: string,
+        request: AdmissionsEventRegistrationRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/events/${eventID}/registrations`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createApplicantEventRegistration(
+        eventID: string,
+        request: AdmissionsEventRegistrationRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/applicant/events/${eventID}/registrations`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    checkInEventRegistration(
+        registrationID: string,
+        request: AdmissionsEventCheckInRequest
+    ): Observable<AdmissionsEventRegistration> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsEventRegistration>
+            >(`/v1/admissions/event-registrations/${registrationID}/check-in`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryCampaigns(
+        query: CampaignQuery = {}
+    ): Observable<PaginatedResult<Campaign>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<Campaign>>(
+                '/v1/admissions/campaigns',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.campaignsSubject.next(result))
+            );
+    }
+
+    getCampaign(campaignID: string): Observable<Campaign> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Campaign>
+            >(`/v1/admissions/campaigns/${campaignID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryCampaignAuditEvents(
+        campaignID: string,
+        query: CampaignAuditEventQuery = {}
+    ): Observable<PaginatedResult<CampaignAuditEvent>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<CampaignAuditEvent>>(
+                `/v1/admissions/campaigns/${campaignID}/audit-events`,
+                { params: this.queryParams(query) }
+            )
+            .pipe(map(unwrapJsonApiCollection));
+    }
+
+    queryCommunications(
+        query: CommunicationQuery = {}
+    ): Observable<PaginatedResult<CommunicationRecord>> {
+        return this.httpClient
+            .get<JsonApiCollectionDocument<CommunicationRecord>>(
+                '/v1/admissions/communications',
+                { params: this.queryParams(query) }
+            )
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.communicationsSubject.next(result))
+            );
+    }
+
+    getCommunication(communicationID: string): Observable<CommunicationRecord> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<CommunicationRecord>
+            >(`/v1/admissions/communications/${communicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
     queryApplicationFormTemplates(
         query: ApplicationFormTemplateQuery = {}
     ): Observable<PaginatedResult<ApplicationFormTemplate>> {
@@ -161,6 +448,159 @@ export class AdmissionsService {
             .put<
                 JsonApiDocument<ApplicationFormTemplate>
             >(`/v1/admissions/application-form-templates/${templateID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryApplicantPrograms(
+        query: ProgramQuery = {}
+    ): Observable<PaginatedResult<Program>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Program>
+            >('/v1/admissions/applicant/programs', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantProgramsSubject.next(result))
+            );
+    }
+
+    queryPrograms(
+        query: ProgramQuery = {}
+    ): Observable<PaginatedResult<Program>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Program>
+            >('/v1/admissions/programs', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.programsSubject.next(result))
+            );
+    }
+
+    queryApplicantAcademicTerms(
+        query: AcademicTermQuery = {}
+    ): Observable<PaginatedResult<AcademicTerm>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AcademicTerm>
+            >('/v1/admissions/applicant/academic-terms', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantAcademicTermsSubject.next(result))
+            );
+    }
+
+    queryAcademicTerms(
+        query: AcademicTermQuery = {}
+    ): Observable<PaginatedResult<AcademicTerm>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AcademicTerm>
+            >('/v1/admissions/academic-terms', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.academicTermsSubject.next(result))
+            );
+    }
+
+    queryApplicantApplicationFormTemplates(
+        query: ApplicationFormTemplateQuery = {}
+    ): Observable<PaginatedResult<ApplicationFormTemplate>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ApplicationFormTemplate>
+            >('/v1/admissions/applicant/application-form-templates', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantTemplatesSubject.next(result))
+            );
+    }
+
+    queryApplicantApplications(
+        query: ApplicationQuery = {}
+    ): Observable<PaginatedResult<Application>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Application>
+            >('/v1/admissions/applicant/applications', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicantApplicationsSubject.next(result))
+            );
+    }
+
+    queryApplications(
+        query: ApplicationQuery = {}
+    ): Observable<PaginatedResult<Application>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<Application>
+            >('/v1/admissions/applications', { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicationsSubject.next(result))
+            );
+    }
+
+    getApplication(applicationID: string): Observable<Application> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applications/${applicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryApplicationTransitions(
+        applicationID: string,
+        query: ApplicationTransitionQuery = {}
+    ): Observable<PaginatedResult<ApplicationTransition>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ApplicationTransition>
+            >(`/v1/admissions/applications/${applicationID}/transitions`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.applicationTransitionsSubject.next(result))
+            );
+    }
+
+    getApplicantApplication(applicationID: string): Observable<Application> {
+        return this.httpClient
+            .get<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}`)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    createApplicantApplication(
+        request: ApplicationRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<Application>
+            >('/v1/admissions/applicant/applications', request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    updateApplicantApplication(
+        applicationID: string,
+        request: ApplicationRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .put<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    transitionApplicantApplication(
+        applicationID: string,
+        request: ApplicationTransitionRequest
+    ): Observable<Application> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<Application>
+            >(`/v1/admissions/applicant/applications/${applicationID}/transitions`, request)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -222,6 +662,20 @@ export class AdmissionsService {
             );
     }
 
+    queryApplicantChecklistItems(
+        applicationID: string,
+        query: ChecklistItemQuery = {}
+    ): Observable<PaginatedResult<ChecklistItem>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<ChecklistItem>
+            >(`/v1/admissions/applicant/applications/${applicationID}/checklist-items`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.checklistItemsSubject.next(result))
+            );
+    }
+
     createChecklistItem(
         applicationID: string,
         request: ChecklistItemRequest
@@ -267,6 +721,31 @@ export class AdmissionsService {
             .post<
                 JsonApiDocument<AdmissionsDocument>
             >(`/v1/admissions/applications/${applicationID}/documents`, request)
+            .pipe(map(unwrapJsonApiResource));
+    }
+
+    queryApplicantDocuments(
+        applicationID: string,
+        query: AdmissionsDocumentQuery = {}
+    ): Observable<PaginatedResult<AdmissionsDocument>> {
+        return this.httpClient
+            .get<
+                JsonApiCollectionDocument<AdmissionsDocument>
+            >(`/v1/admissions/applicant/applications/${applicationID}/documents`, { params: this.queryParams(query) })
+            .pipe(
+                map(unwrapJsonApiCollection),
+                tap((result) => this.documentsSubject.next(result))
+            );
+    }
+
+    createApplicantDocument(
+        applicationID: string,
+        request: AdmissionsDocumentRequest
+    ): Observable<AdmissionsDocument> {
+        return this.httpClient
+            .post<
+                JsonApiDocument<AdmissionsDocument>
+            >(`/v1/admissions/applicant/applications/${applicationID}/documents`, request)
             .pipe(map(unwrapJsonApiResource));
     }
 
@@ -349,12 +828,23 @@ export class AdmissionsService {
         query:
             | LeadScoreQuery
             | LeadScoreRuleQuery
+            | ConstituentQuery
+            | InquiryQuery
+            | ProgramQuery
+            | AcademicTermQuery
             | ApplicationFormTemplateQuery
+            | ApplicationQuery
+            | ApplicationTransitionQuery
+            | AdmissionsEventQuery
+            | AdmissionsEventRegistrationQuery
             | CustomFieldDefinitionQuery
             | ChecklistItemQuery
             | AdmissionsDocumentQuery
             | ImportBatchQuery
             | ImportInvalidRowQuery
+            | CampaignQuery
+            | CampaignAuditEventQuery
+            | CommunicationQuery
     ): HttpParams {
         let params = new HttpParams();
 

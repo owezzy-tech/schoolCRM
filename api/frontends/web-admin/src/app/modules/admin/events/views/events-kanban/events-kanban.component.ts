@@ -1,12 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { MOCK_EVENTS } from '../../data/events.mock';
 import { EventItem } from '../../models/event.types';
+import { EventsComponent } from '../../events.component';
 
 @Component({
     selector: 'app-events-kanban',
@@ -25,13 +25,34 @@ import { EventItem } from '../../models/event.types';
     styleUrls: ['./events-kanban.component.scss']
 })
 export class EventsKanbanComponent {
-    
-    readonly columns = signal([
-        { id: 'draft', title: 'Draft', events: MOCK_EVENTS.filter(e => e.status === 'draft') },
-        { id: 'upcoming', title: 'Upcoming', events: MOCK_EVENTS.filter(e => e.status === 'upcoming') },
-        { id: 'live', title: 'Live', events: MOCK_EVENTS.filter(e => e.status === 'live') },
-        { id: 'completed', title: 'Completed', events: MOCK_EVENTS.filter(e => e.status === 'completed') }
-    ]);
+    private readonly shell = inject(EventsComponent);
+
+    readonly columns = computed(() => {
+        const events = this.shell.events();
+
+        return [
+            {
+                id: 'draft',
+                title: 'Draft',
+                events: events.filter((event) => event.status === 'draft'),
+            },
+            {
+                id: 'upcoming',
+                title: 'Upcoming',
+                events: events.filter((event) => event.status === 'upcoming'),
+            },
+            {
+                id: 'live',
+                title: 'Live',
+                events: events.filter((event) => event.status === 'live'),
+            },
+            {
+                id: 'completed',
+                title: 'Completed',
+                events: events.filter((event) => event.status === 'completed'),
+            },
+        ];
+    });
 
     drop(event: CdkDragDrop<EventItem[]>) {
         if (event.previousContainer === event.container) {

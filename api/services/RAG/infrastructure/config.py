@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,8 +12,34 @@ class Settings(BaseSettings):
     auth_service_url: str = "http://auth-service:6000"
     auth_request_timeout_seconds: float = 5.0
     file_storage_dir: str = "./var/files"
+    school_service_url: str = "http://schoolcrm:3000"
+    curriculum_database_url: str | None = None
+    curriculum_embedding_provider: str = "ollama"
+    cloudflare_account_id: str | None = None
+    cloudflare_api_token: str | None = None
+    deepseek_api_key: SecretStr | None = Field(
+        default=None, validation_alias=AliasChoices("RAG_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY")
+    )
+    admissions_answer_provider: str = "stub"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "nemotron-3-super:cloud"
+    ollama_timeout_seconds: float = 60.0
+    graph_retriever: str = "memory"
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_username: str = "neo4j"
+    neo4j_password: str = "password"
+    langsmith_enabled: bool = False
+    langsmith_api_key: str | None = None
+    langsmith_project: str = "schoolcrm-rag"
+    langsmith_endpoint: str | None = None
 
-    model_config = SettingsConfigDict(env_prefix="RAG_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="RAG_",
+        env_file=(".env", "api/services/RAG/.env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
 
 @lru_cache

@@ -19,6 +19,11 @@
             </div>
 
             <div class="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                @if (loading()) {
+                    <div class="px-4 py-6 text-sm text-secondary">Loading inquiries…</div>
+                } @else if (errorMessage()) {
+                    <div class="px-4 py-6 text-sm text-warn">{{ errorMessage() }}</div>
+                } @else {
                 <table class="w-full text-sm">
                     <thead class="text-left text-secondary bg-gray-50 dark:bg-gray-900 border-b">
                         <tr>
@@ -33,7 +38,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (i of inquiries; track i.id) {
+                        @for (i of inquiries(); track i.id) {
                             <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-900">
                                 <td class="px-4 py-3 font-mono text-xs">{{ i.id }}</td>
                                 <td class="px-4 py-3">{{ i.from }}</td>
@@ -56,9 +61,14 @@
                                 <td class="px-4 py-3">{{ i.assigned }}</td>
                                 <td class="px-4 py-3 text-secondary">{{ i.submitted }}</td>
                             </tr>
+                        } @empty {
+                            <tr>
+                                <td class="px-4 py-6 text-secondary" colspan="8">No inquiries found.</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
     </div>
