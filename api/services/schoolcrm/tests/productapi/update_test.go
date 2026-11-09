@@ -101,19 +101,26 @@ func update401(sd apitest.SeedData) []apitest.Table {
 				return cmp.Diff(got, exp)
 			},
 		},
+	}
+
+	return table
+}
+
+func update404(sd apitest.SeedData) []apitest.Table {
+	table := []apitest.Table{
 		{
 			Name:       "wronguser",
 			URL:        fmt.Sprintf("/v1/products/%s", sd.Admins[0].Products[0].ID),
 			Token:      sd.Users[0].Token,
 			Method:     http.MethodPut,
-			StatusCode: http.StatusUnauthorized,
+			StatusCode: http.StatusNotFound,
 			Input: &productapp.UpdateProduct{
 				Name:     dbtest.StringPointer("Guitar"),
 				Cost:     dbtest.FloatPointer(10.34),
 				Quantity: dbtest.IntPointer(10),
 			},
 			GotResp: &errs.Error{},
-			ExpResp: errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_or_subject]"),
+			ExpResp: errs.Errorf(errs.NotFound, "product not found"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

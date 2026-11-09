@@ -56,14 +56,21 @@ func delete401(sd apitest.SeedData) []apitest.Table {
 				return cmp.Diff(got, exp)
 			},
 		},
+	}
+
+	return table
+}
+
+func delete404(sd apitest.SeedData) []apitest.Table {
+	table := []apitest.Table{
 		{
 			Name:       "wronguser",
 			URL:        fmt.Sprintf("/v1/users/%s", sd.Users[0].ID),
 			Token:      sd.Users[2].Token,
 			Method:     http.MethodDelete,
-			StatusCode: http.StatusUnauthorized,
+			StatusCode: http.StatusNotFound,
 			GotResp:    &errs.Error{},
-			ExpResp:    errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_or_subject]"),
+			ExpResp:    errs.Errorf(errs.NotFound, "user not found"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},
