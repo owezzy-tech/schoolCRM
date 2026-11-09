@@ -106,6 +106,35 @@ func (at *Test) Run(t *testing.T, table []Table, testName string, options ...Opt
 	}
 }
 
+// Do sends one request through the service mux and returns the raw status
+// code and body. An empty token sends no Authorization header.
+func (at *Test) Do(t *testing.T, method string, url string, token string, input any) (int, []byte) {
+	t.Helper()
+
+	var body *bytes.Buffer
+	if input != nil {
+		d, err := json.Marshal(input)
+		if err != nil {
+			t.Fatalf("Should be able to marshal the model : %s", err)
+		}
+		body = bytes.NewBuffer(d)
+	}
+
+	r := httptest.NewRequest(method, url, nil)
+	if body != nil {
+		r = httptest.NewRequest(method, url, body)
+	}
+
+	if token != "" {
+		r.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	w := httptest.NewRecorder()
+	at.mux.ServeHTTP(w, r)
+
+	return w.Code, w.Body.Bytes()
+}
+
 func unwrapJSONAPI(body []byte, statusCode int) ([]byte, error) {
 	var doc struct {
 		Data   json.RawMessage `json:"data"`
