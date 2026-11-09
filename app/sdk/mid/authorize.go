@@ -59,6 +59,19 @@ func authorizationError(err error) *errs.Error {
 	return errs.New(errs.Unauthenticated, err)
 }
 
+// recordAuthorizationError converts a failed authorization check on a
+// record-scoped route. A policy denial returns the same NotFound error as a
+// missing record, so callers cannot learn whether a record they may not access
+// exists. Other failures keep their code.
+func recordAuthorizationError(err error, notFound error) *errs.Error {
+	var appErr *errs.Error
+	if errors.As(err, &appErr) && appErr.Code == errs.PermissionDenied {
+		return errs.New(errs.NotFound, notFound)
+	}
+
+	return authorizationError(err)
+}
+
 // AuthorizeUser executes the specified role and extracts the specified
 // user from the DB if a user id is specified in the call. Depending on the rule
 // specified, the userid from the claims may be compared with the specified
@@ -74,16 +87,16 @@ func AuthorizeUser(client authclient.Authenticator, userBus userbus.ExtBusiness,
 				var err error
 				userID, err = uuid.Parse(id)
 				if err != nil {
-					return errs.New(errs.Unauthenticated, ErrInvalidID)
+					return errs.New(errs.InvalidArgument, ErrInvalidID)
 				}
 
 				usr, err := userBus.QueryByID(ctx, userID)
 				if err != nil {
 					switch {
 					case errors.Is(err, userbus.ErrNotFound):
-						return errs.New(errs.Unauthenticated, err)
+						return errs.New(errs.NotFound, userbus.ErrNotFound)
 					default:
-						return errs.Errorf(errs.Unauthenticated, "querybyid: userID[%s]: %s", userID, err)
+						return errs.Errorf(errs.Internal, "querybyid: userID[%s]: %s", userID, err)
 					}
 				}
 
@@ -100,7 +113,7 @@ func AuthorizeUser(client authclient.Authenticator, userBus userbus.ExtBusiness,
 			}
 
 			if err := client.Authorize(ctx, auth); err != nil {
-				return errs.New(errs.Unauthenticated, err)
+				return recordAuthorizationError(err, userbus.ErrNotFound)
 			}
 
 			return next(ctx, r)
@@ -127,16 +140,16 @@ func AuthorizeProduct(client authclient.Authenticator, productBus productbus.Ext
 				var err error
 				productID, err := uuid.Parse(id)
 				if err != nil {
-					return errs.New(errs.Unauthenticated, ErrInvalidID)
+					return errs.New(errs.InvalidArgument, ErrInvalidID)
 				}
 
 				prd, err := productBus.QueryByID(ctx, productID)
 				if err != nil {
 					switch {
 					case errors.Is(err, productbus.ErrNotFound):
-						return errs.New(errs.Unauthenticated, err)
+						return errs.New(errs.NotFound, productbus.ErrNotFound)
 					default:
-						return errs.Errorf(errs.Unauthenticated, "querybyid: productID[%s]: %s", productID, err)
+						return errs.Errorf(errs.Internal, "querybyid: productID[%s]: %s", productID, err)
 					}
 				}
 
@@ -154,7 +167,7 @@ func AuthorizeProduct(client authclient.Authenticator, productBus productbus.Ext
 			}
 
 			if err := client.Authorize(ctx, auth); err != nil {
-				return errs.New(errs.Unauthenticated, err)
+				return recordAuthorizationError(err, productbus.ErrNotFound)
 			}
 
 			return next(ctx, r)
@@ -181,16 +194,16 @@ func AuthorizeHome(client authclient.Authenticator, homeBus homebus.ExtBusiness)
 				var err error
 				homeID, err := uuid.Parse(id)
 				if err != nil {
-					return errs.New(errs.Unauthenticated, ErrInvalidID)
+					return errs.New(errs.InvalidArgument, ErrInvalidID)
 				}
 
 				hme, err := homeBus.QueryByID(ctx, homeID)
 				if err != nil {
 					switch {
 					case errors.Is(err, homebus.ErrNotFound):
-						return errs.New(errs.Unauthenticated, err)
+						return errs.New(errs.NotFound, homebus.ErrNotFound)
 					default:
-						return errs.Errorf(errs.Unauthenticated, "querybyid: homeID[%s]: %s", homeID, err)
+						return errs.Errorf(errs.Internal, "querybyid: homeID[%s]: %s", homeID, err)
 					}
 				}
 
@@ -208,7 +221,7 @@ func AuthorizeHome(client authclient.Authenticator, homeBus homebus.ExtBusiness)
 			}
 
 			if err := client.Authorize(ctx, auth); err != nil {
-				return errs.New(errs.Unauthenticated, err)
+				return recordAuthorizationError(err, homebus.ErrNotFound)
 			}
 
 			return next(ctx, r)
