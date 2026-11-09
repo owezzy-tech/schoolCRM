@@ -177,17 +177,24 @@ func update404(sd apitest.SeedData) []apitest.Table {
 				return cmp.Diff(got, exp)
 			},
 		},
+	}
+
+	return table
+}
+
+func update403(sd apitest.SeedData) []apitest.Table {
+	table := []apitest.Table{
 		{
 			Name:       "roleadminonly",
 			URL:        fmt.Sprintf("/v1/users/role/%s", sd.Users[0].ID),
 			Token:      sd.Users[0].Token,
 			Method:     http.MethodPut,
-			StatusCode: http.StatusNotFound,
+			StatusCode: http.StatusForbidden,
 			Input: &userapp.UpdateUserRole{
 				Roles: []string{"SCHOOL_ADMIN"},
 			},
 			GotResp: &errs.Error{},
-			ExpResp: errs.Errorf(errs.NotFound, "user not found"),
+			ExpResp: errs.Errorf(errs.PermissionDenied, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_only]"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

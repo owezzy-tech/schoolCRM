@@ -31,6 +31,7 @@ func Test_User(t *testing.T) {
 
 	test.Run(t, update200(sd), "update-200")
 	test.Run(t, update401(sd), "update-401")
+	test.Run(t, update403(sd), "update-403")
 	test.Run(t, update404(sd), "update-404")
 	test.Run(t, update400(sd), "update-400")
 

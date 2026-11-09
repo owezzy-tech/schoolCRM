@@ -6,9 +6,11 @@
 //   - rule_admin_only: SUPER_ADMIN or SCHOOL_ADMIN.
 //   - rule_admin_or_subject: an admin, or a user role acting on its own record.
 //
-// Authentication failures return 401. Role denials on routes that are not
-// about one record return 403. On record routes, a denial returns the same 404
-// as a record that does not exist, so callers cannot learn which records exist.
+// Authentication failures return 401. Role denials return 403, and on record
+// routes with a role-only rule the role is checked before the record is loaded,
+// so the 403 reveals nothing about the record. Ownership denials on record
+// routes return the same 404 as a record that does not exist, so callers
+// cannot learn which records exist.
 package authz_test
 
 import (
@@ -99,8 +101,8 @@ func Test_AuthzMatrix(t *testing.T) {
 			wrongCode, wrongBody := rt.do(t, test, f, wrongUser)
 			missingCode, missingBody := rt.do(t, test, f.missing(), wrongUser)
 
-			if wrongCode != http.StatusNotFound || missingCode != http.StatusNotFound {
-				t.Fatalf("status: wronguser %d, missing %d, want both %d", wrongCode, missingCode, http.StatusNotFound)
+			if exp := rt.expect[wrongUser]; wrongCode != exp || missingCode != exp {
+				t.Fatalf("status: wronguser %d, missing %d, want both %d", wrongCode, missingCode, exp)
 			}
 
 			if !bytes.Equal(wrongBody, missingBody) {
@@ -258,10 +260,10 @@ func routes() []route {
 			expect: map[caller]int{anonymous: unauth, student: forbidden, wrongUser: forbidden, schoolAdmin: ok},
 		},
 		{
-			// rule_admin_only on a record route: a STUDENT is denied even for
-			// its own record, and the denial is the record-route 404.
+			// rule_admin_only on a record route: the role is checked before
+			// the record is loaded, so a STUDENT gets 403 for any id.
 			method: http.MethodPut, path: func(f fixture) string { return "/v1/users/role/" + id(f.userID) }, input: updateRole, record: true,
-			expect: map[caller]int{anonymous: unauth, student: notFound, wrongUser: notFound, schoolAdmin: ok},
+			expect: map[caller]int{anonymous: unauth, student: forbidden, wrongUser: forbidden, schoolAdmin: ok},
 		},
 		{
 			method: http.MethodPut, path: userPath, input: updateUser, record: true,
