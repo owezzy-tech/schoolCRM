@@ -4,7 +4,6 @@ import argparse
 import csv
 import hashlib
 import json
-import math
 import re
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -15,6 +14,10 @@ DATA = ROOT / "docs/RAGData"
 CSV_NAME = "maseno_university_all_programmes_expanded.csv"
 PDF_NAME = "CUT-OFF-POINTS-FOR-2023-2024-COHORT.pdf"
 BLUEPRINT_NAME = "EduPlan Studio Architecture Blueprint.pdf"
+CUTOFF_REVIEW = "review/cutoff-table-review.json"
+PROVENANCE = "review/source-provenance.json"
+COHORTS = ("2022/2023", "2023/2024")
+UNRESOLVED = ("uncertain", "disputed_source_value")
 
 
 def digest(path):
@@ -27,10 +30,12 @@ def identity(kind, *parts):
 
 
 class Graph:
-    def __init__(self):
+    def __init__(self, provenance=()):
         self.nodes = {}
         self.edges = set()
         self.issues = []
+        self.reviews = {}
+        self.provenance = {entry["file"]: entry for entry in provenance}
 
     def node(self, label, key, **properties):
         value = {"id": key, "label": label, "properties": properties}
@@ -57,12 +62,19 @@ class Graph:
     def source(self, path):
         checksum = digest(path)
         key = identity("source", path.name, checksum)
+        # Source identity verification is pinned separately from per-cell transcription review.
+        verified = {"authority_status": "user_supplied"}
+        if path.name in self.provenance:
+            verified = dict(self.provenance[path.name])
+            if verified.pop("sha256") != checksum:
+                raise ValueError(f"Source provenance is pinned to different bytes: {path.name}")
+            del verified["file"]
         return self.node(
             "SourceArtifact",
             key,
             path="docs/RAGData/" + path.name,
             sha256=checksum,
-            authority_status="user_supplied",
+            **verified,
         ), checksum
 
     def document(self):
@@ -73,6 +85,7 @@ class Graph:
             "schema_version": 1,
             "nodes": sorted(self.nodes.values(), key=lambda n: n["id"]),
             "edges": [{"source": s, "type": r, "target": t} for s, r, t in sorted(self.edges)],
+            "transcription_reviews": self.reviews,
             "review_issues": self.issues,
         }
 
@@ -145,131 +158,119 @@ def import_catalog(graph, path):
                 graph.edge(programme, "STATES_CUTOFF", claim)
 
 
-def cutoff(raw):
-    if raw == "N/A":
-        return None, "not_available"
-    if not re.fullmatch(r"\d{1,2}\.\d{3}", raw or ""):
-        return None, "unreadable_or_nonstandard"
-    value = float(raw)
-    if not 0 <= value <= 48:
-        return None, "outside_cluster_points_range"
-    return value, "ocr_candidate"
+def cutoff_points(text):
+    """Return reviewed historical points, or None for a printed N/A. Never zero."""
+    if text == "N/A":
+        return None
+    if not re.fullmatch(r"\d{1,2}\.\d{3}", text) or not 0 <= float(text) <= 48:
+        raise ValueError(f"Reviewed cutoff is not a cluster-points value: {text!r}")
+    return float(text)
 
 
-def import_cutoffs(graph, pdf, ocr_path):
+def field_review(row, field):
+    """Validate one reviewed cell; unlisted cells were reviewed and accepted as extracted."""
+    review = row.get("review", {}).get(field)
+    value = row[field]
+    if review is None:
+        if value is None:
+            raise ValueError(f"Unreviewed empty {field} in S.No {row['serial']}")
+        return "reviewed", {}
+    status = review["status"]
+    if status == "corrected" and value is not None and review["extracted"] != value:
+        return status, {"extracted_text": review["extracted"]}
+    if status == "uncertain" and review["observed"] and (value is None or field == "name"):
+        return status, {
+            "extracted_text": review["extracted"],
+            "scan_observation": review["observed"],
+        }
+    if status == "disputed_source_value" and value is not None and review["observed"]:
+        return status, {"scan_observation": review["observed"]}
+    raise ValueError(f"Invalid {field} review in S.No {row['serial']}")
+
+
+def import_cutoffs(graph, pdf, review_path):
+    """Import the reviewed transcription; OCR stays pinned audit evidence, not a build input."""
     source, checksum = graph.source(pdf)
-    ocr = json.loads(ocr_path.read_text())
-    if ocr["source_sha256"] != checksum:
+    review = json.loads(review_path.read_text())
+    extraction = pdf.parent / review["extraction_file"]
+    if review["source_sha256"] != checksum or review["source_file"] != pdf.name:
+        raise ValueError("Cutoff review is pinned to a different PDF; review the new scan")
+    if json.loads(extraction.read_text())["source_sha256"] != checksum:
         raise ValueError("OCR source checksum does not match PDF; regenerate OCR")
-    if [p["page"] for p in ocr["pages"]] != [1, 2, 3, 4]:
-        raise ValueError("Expected all four cutoff PDF pages")
-    school_name = ""
-    count = 0
-    seen_codes = set()
-    for page in ocr["pages"]:
-        lines = page["lines"]
-        for line in lines:
-            if not isinstance(line["text"], str):
-                raise ValueError("Invalid OCR text")
-            for field in ("x", "y", "width", "height", "confidence"):
-                if not math.isfinite(line[field]) or not 0 <= line[field] <= 1:
-                    raise ValueError(f"Invalid OCR {field}")
-        anchors = []
-        for line in lines:
-            match = re.search(r"\b[0-9B]{7}\b", line["text"])
-            if line["x"] < 0.24 and match:
-                anchors.append((line, match.group()))
-        anchors.sort(key=lambda a: -a[0]["y"])
-        headings = sorted(
-            [line for line in lines if line["text"].startswith("SCHOOL OF")],
-            key=lambda line: -line["y"],
-        )
-        for index, (anchor, code) in enumerate(anchors):
-            for heading in headings:
-                if heading["y"] > anchor["y"]:
-                    school_name = heading["text"]
-            upper = (anchors[index - 1][0]["y"] + anchor["y"]) / 2 if index else 0.94
-            lower = (
-                (anchors[index + 1][0]["y"] + anchor["y"]) / 2 if index + 1 < len(anchors) else 0.07
-            )
-            upper = min(upper, anchor["y"] + 0.02)
-            lower = max(lower, anchor["y"] - 0.025)
-            cells = [
-                line
-                for line in lines
-                if lower < line["y"] <= upper and not line["text"].startswith("SCHOOL OF")
-            ]
-            names = sorted(
-                [line for line in cells if 0.24 <= line["x"] < 0.63], key=lambda line: -line["y"]
-            )
-            name = " ".join(line["text"] for line in names)
-            if not name or code in seen_codes:
-                raise ValueError(f"Missing name or duplicate PDF code: {code}")
-            seen_codes.add(code)
-            count += 1
-            location = f"PDF page {page['page']}, programme code OCR {code}"
-            programme = identity("pdf_programme", source, code)
-            graph.claim(
-                "ProgrammeRecord",
-                programme,
-                source,
-                location,
-                name=name,
-                programme_code_raw=code,
-                record_type="cutoff_table",
-                institution_name="Maseno University",
-                review_required=True,
-                extraction_method=ocr["engine"],
-                region_top=upper,
-                region_bottom=lower,
-            )
-            school = identity("school_record", source, school_name)
-            graph.claim(
-                "SchoolRecord",
-                school,
-                source,
-                "PDF school heading",
-                name=school_name,
-                review_required=True,
-            )
-            graph.edge(school, "LISTS_PROGRAMME", programme)
-            cluster_cells = [line for line in cells if 0.63 <= line["x"] < 0.72]
-            cluster_raw = " ".join(line["text"] for line in cluster_cells)
-            if re.fullmatch(r"\d{1,2}", cluster_raw):
-                cluster = identity("cluster", source, cluster_raw)
-                graph.claim(
-                    "ClusterRecord",
-                    cluster,
-                    source,
-                    "PDF cluster column",
-                    number=int(cluster_raw),
-                    review_required=True,
+    if review["extraction_sha256"] != digest(extraction):
+        raise ValueError("OCR evidence checksum differs from the reviewed extraction")
+    rows = review["rows"]
+    if [row["serial"] for row in rows] != list(range(1, 88)):
+        raise ValueError("Expected reviewed S.No 1-87 in printed order")
+    if len({row["code"] for row in rows}) != len(rows):
+        raise ValueError("Duplicate PDF programme code")
+    pinned = {"review_revision": review["review_revision"], "reviewed_on": review["reviewed_on"]}
+    graph.reviews[source] = {
+        **pinned,
+        "reviewers": review["reviewers"],
+        "scope": review["scope"],
+        "rows_reviewed": len(rows),
+    }
+    for row in rows:
+        location = f"PDF page {row['page']}, S.No {row['serial']}, code {row['code']}"
+        reviews = {}
+        for field in ("code", "name", "cluster", *COHORTS):
+            status, evidence = field_review(row, field)
+            reviews[field] = {"status": status, **evidence}
+            if status != "reviewed":
+                graph.issues.append(
+                    {"location": location, "field": field, "reviewed": row[field], **reviews[field]}
                 )
-                graph.edge(programme, "ASSIGNED_TO_CLUSTER", cluster)
-            else:
-                graph.issues.append({"location": location, "field": "cluster", "raw": cluster_raw})
-            if not code.isdigit():
-                graph.issues.append({"location": location, "field": "programme_code", "raw": code})
-            for cohort, left, right in (("2022/2023", 0.72, 0.82), ("2023/2024", 0.82, 0.95)):
-                column = [line for line in cells if left <= line["x"] < right]
-                raw = " ".join(line["text"] for line in column)
-                value, status = cutoff(raw)
-                claim = identity("cutoff", programme, cohort)
-                properties = {
-                    "cohort": cohort,
-                    "raw_value": raw,
-                    "extraction_status": status,
-                    "review_required": True,
-                    "usable_for_eligibility": False,
-                }
-                if value is not None:
-                    properties["points_candidate"] = value
-                graph.claim("CutoffClaim", claim, source, location, **properties)
-                graph.edge(programme, "STATES_CUTOFF", claim)
-                if status not in ("ocr_candidate", "not_available"):
-                    graph.issues.append({"location": location, "field": cohort, "raw": raw})
-    if count != 87:
-        raise ValueError(f"Expected 87 PDF programme rows, extracted {count}")
+        exceptions = {
+            field: review
+            for field, review in reviews.items()
+            if field not in COHORTS and review["status"] != "reviewed"
+        }
+        programme = identity("pdf_programme", source, row["code"])
+        graph.claim(
+            "ProgrammeRecord",
+            programme,
+            source,
+            location,
+            name=row["name"],
+            programme_code=row["code"],
+            record_type="cutoff_table",
+            institution_name="Maseno University",
+            field_reviews=exceptions,
+            review_note=row.get("note"),
+            review_required=any(r["status"] in UNRESOLVED for r in exceptions.values()),
+            **pinned,
+        )
+        school = identity("school_record", source, row["school"])
+        graph.claim("SchoolRecord", school, source, "PDF school heading", name=row["school"])
+        graph.edge(school, "LISTS_PROGRAMME", programme)
+        if row["cluster"] is not None:
+            cluster = identity("cluster", source, str(row["cluster"]))
+            graph.claim(
+                "ClusterRecord", cluster, source, "PDF cluster column", number=row["cluster"]
+            )
+            graph.edge(programme, "ASSIGNED_TO_CLUSTER", cluster)
+        for cohort in COHORTS:
+            evidence = dict(reviews[cohort])
+            status = evidence.pop("status")
+            properties = {
+                "cohort": cohort,
+                "transcription": row[cohort],
+                "transcription_review": status,
+                "review_required": status in UNRESOLVED,
+                "usable_for_eligibility": False,
+                **evidence,
+                **pinned,
+            }
+            # Uncertain and disputed cells keep their evidence but never become numbers.
+            if status not in UNRESOLVED:
+                points = cutoff_points(row[cohort])
+                properties["availability"] = "printed" if points is not None else "not_available"
+                if points is not None:
+                    properties["points_candidate"] = points
+            claim = identity("cutoff", programme, cohort)
+            graph.claim("CutoffClaim", claim, source, location, **properties)
+            graph.edge(programme, "STATES_CUTOFF", claim)
 
 
 def import_blueprint(graph, pdf, extraction_path):
@@ -347,9 +348,9 @@ def import_blueprint(graph, pdf, extraction_path):
 
 
 def build(data_dir=DATA):
-    graph = Graph()
+    graph = Graph(json.loads((data_dir / PROVENANCE).read_text())["sources"])
     import_catalog(graph, data_dir / CSV_NAME)
-    import_cutoffs(graph, data_dir / PDF_NAME, data_dir / "extracted/cutoffs.ocr.json")
+    import_cutoffs(graph, data_dir / PDF_NAME, data_dir / CUTOFF_REVIEW)
     import_blueprint(
         graph, data_dir / BLUEPRINT_NAME, data_dir / "extracted/eduplan.blueprint.json"
     )
@@ -370,28 +371,65 @@ def write_outputs(graph, output):
         "",
     ]
     report.extend(f"- {kind}: {count}" for kind, count in sorted(counts.items()))
+    report.extend(["", "## Source authority", ""])
+    for node in graph["nodes"]:
+        if node["label"] == "SourceArtifact":
+            p = node["properties"]
+            check = p.get("identity_check", "no publisher identity check")
+            report.append(f"- `{p['path']}`: {p['authority_status']}; {check}")
+    report.extend(["", "## Cut-off table transcription review", ""])
+    for review in graph["transcription_reviews"].values():
+        report.extend(
+            [
+                (
+                    f"Revision `{review['review_revision']}` ({review['reviewed_on']}) covers "
+                    f"{review['rows_reviewed']} of 87 printed rows: code, name, school, "
+                    "cluster and both cohort cut-offs."
+                ),
+                "Reviewers: " + "; ".join(r["reviewer"] for r in review["reviewers"]) + ".",
+                review["scope"],
+            ]
+        )
+
+    def describe(issue):
+        evidence = [f"extracted {issue['extracted_text']!r}"] if "extracted_text" in issue else []
+        evidence += [issue["scan_observation"]] if "scan_observation" in issue else []
+        return f"- {issue['location']}: {issue['field']} = {issue['reviewed']!r}; " + "; ".join(
+            evidence
+        )
+
+    issues = graph["review_issues"]
+    report.extend(["", "### Resolved scan corrections (original extraction retained)", ""])
+    report.extend(describe(i) for i in issues if i["status"] == "corrected")
+    report.extend(["", "### Unresolved: uncertain or disputed (never numeric or eligible)", ""])
+    report.extend(f"{describe(i)} [{i['status']}]" for i in issues if i["status"] != "corrected")
     report.extend(
         [
             "",
             "## Trust and coverage",
             "",
             "77 CSV programme records and 87 PDF programme records are source-scoped.",
-            "No cross-source programme equivalence has been inferred.",
-            "All requirements are unverified text claims, not executable eligibility rules.",
-            "Cutoff PDF records need visual review. OCR confidence is not factual certainty.",
-            "Both historical cohorts are retained. N/A is unavailable, never zero.",
-            "CSV cluster points have no cohort and are not current thresholds.",
+            "PDF cut-offs are historical 2022/2023 and 2023/2024 published claims only.",
+            "They are not current policy and no cutoff claim is usable for eligibility.",
+            "N/A is unavailable, never zero.",
+            "The scan review checks transcription; it is not institutional approval of its use.",
+            "",
+            "## Blocked: CSV authority and programme mappings",
+            "",
+            "CSV publisher, revision and applicable cycle are unverified.",
+            "All CSV requirements are unverified text claims, not executable eligibility rules.",
+            "CSV cluster points have no cohort; they are not historical or current thresholds.",
+            "No cross-source programme equivalence is inferred or approved.",
+            "",
+            "## Other inputs",
+            "",
             "The blueprint contributes quoted proposals; keep them outside curriculum retrieval.",
             "Blueprint components are not installed or implemented by this graph build.",
             "Selected architecture: existing Go/Angular/Python RAG with LlamaIndex in Python.",
             "See ../architecture-adaptation.md for user decisions and blueprint reconciliation.",
             "These inputs lack cluster formulas, teaching curriculum and actual lesson plans.",
-            "",
-            "## Cells needing particular attention",
-            "",
         ]
     )
-    report.extend(f"- {i['location']}: {i['field']} = {i['raw']!r}" for i in graph["review_issues"])
     (output / "REPORT.md").write_text("\n".join(report) + "\n")
     # Portable, dependency-free GraphML for graph tools. JSON preserves typed properties.
     ns = "http://graphml.graphdrawing.org/xmlns"

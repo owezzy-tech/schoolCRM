@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "review_revision": "maseno-admissions-evidence-2026-10-09-v1",
+  "sources": [
+    {
+      "file": "CUT-OFF-POINTS-FOR-2023-2024-COHORT.pdf",
+      "sha256": "418598585c0a344496f547c43f810e3dfe1bb2469963649db612bf6b48bb0843",
+      "publisher": "Maseno University, Office of the Registrar, Academic and Student Affairs",
+      "official_url": "https://www.maseno.ac.ke/sites/default/files/2024-02/CUT-OFF-POINTS-FOR-2023-2024-COHORT.pdf",
+      "retrieved_on": "2026-10-09",
+      "identity_check": "byte_identical_to_official_https_download",
+      "printed_academic_year": "2023/2024",
+      "historical_cutoff_cohorts": [
+        "2022/2023",
+        "2023/2024"
+      ],
+      "printed_stamp_date": "14 SEP 2023",
+      "authority_status": "official_historical_source",
+      "current_policy": false,
+      "calculation_rule": false
+    },
+    {
+      "file": "maseno_university_all_programmes_expanded.csv",
+      "sha256": "73ecf6fab1ae2c9af9f76c4a7764d81b15dc340c60e227936f912c356051114f",
+      "authority_status": "unverified_user_supplied",
+      "applicable_cycle": null,
+      "cluster_points_cohort": null,
+      "executable_requirements": false,
+      "programme_mappings_approved": false,
+      "unresolved": "Original publisher, revision and applicable cycle are pending user provenance; an undated number does not establish a historical or current cutoff."
+    }
+  ]
+}

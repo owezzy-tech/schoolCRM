@@ -34,22 +34,28 @@ cross-source mappings are needed before combining their claims for qualification
 
 ## Evidence and review
 
-`extracted/cutoffs.ocr.json` preserves all four pages' OCR text, confidence and normalised
-bounding boxes. Coordinates use the bottom-left origin. Its checksum must match the PDF.
-PDF table rows are reconstructed using programme-code anchors and column positions.
-This importer intentionally targets this four-page layout and rejects incomplete coverage.
+Source identity, per-cell transcription review and qualification authority are separate:
 
-All PDF claims require review against the scan, including apparently clean numeric cells.
-OCR confidence does not establish correctness. Particular extraction problems appear in
-the report; missing cells and `N/A` never become zero. The original document appears to
-print `17043` for Horticulture in 2023/2024. This is preserved and flagged, not corrected
-to an assumed value. The PDF contains both 2022/2023 and 2023/2024 cut-offs.
+- `review/source-provenance.json` pins each source's checksum, publisher and authority.
+  The build copies it onto `SourceArtifact` and fails if the bytes differ.
+- `review/cutoff-table-review.json` is the reviewed transcription of all 87 printed PDF rows.
+  It is pinned to the PDF and OCR checksums and records the review revision and reviewers.
+  It is the build input for PDF rows; the build fails if either checksum changes.
+- No cutoff claim is usable for eligibility, whatever its review status.
+
+`extracted/cutoffs.ocr.json` preserves all four pages' OCR text, confidence and normalised
+bounding boxes as audit evidence. Coordinates use the bottom-left origin. Fields not listed
+in a row's `review` were compared with the scan and accept the extracted text. Listed fields
+are `corrected` (scan clearly readable; `extracted` keeps the OCR text), `uncertain` (not
+reliably readable; no reviewed value) or `disputed_source_value` (clearly printed but
+anomalous, such as Horticulture's `17043` and code `1229B52`). Uncertain and disputed cells
+never produce `points_candidate`. Printed `N/A` is unavailable, never zero. The PDF holds
+historical 2022/2023 and 2023/2024 cut-offs, not current policy or a calculation rule.
 
 CSV requirements remain unverified natural-language claims. Subject alternatives, combined
 conditions and postgraduate entry paths are not converted into executable rules. CSV
-cluster points have no stated cohort. No cutoff claim is authorised for automated eligibility.
-The PDF's institutional header does not authenticate the supplied copy, and the CSV's
-original authority and date still need confirmation.
+cluster points have no stated cohort. The CSV's original authority and cycle still need
+confirmation, so no CSV-to-PDF programme mapping is approved.
 
 To regenerate OCR on macOS using PDFKit and Apple Vision:
 
@@ -60,7 +66,8 @@ swift scripts/ocr_rag_cutoffs.swift \
 python3 scripts/build_rag_knowledge_graph.py
 ```
 
-Review OCR changes before rebuilding or publishing the resulting graph.
+New OCR output changes the extraction checksum, so the build fails until the reviewed table
+is compared with the scan again and given a new review revision.
 
 The blueprint's extracted text is pinned to its PDF checksum in
 `extracted/eduplan.blueprint.json`. Import verifies each proposal's quotation against
@@ -71,8 +78,9 @@ The user selected the existing Go/Angular/Python stack with LlamaIndex for the P
 RAG integration. [Architecture adaptation](architecture-adaptation.md) maps the blueprint
 to that stack and identifies schema/security gaps. No runtime integration is claimed.
 
-The broader school assistant requirements, including curriculum retrieval, semantic search,
-lesson-plan generation/versioning/publishing, admin management and access control, are
-tracked in Beads epic `schoolCRM-o58`. Curriculum files and publishing permissions remain
-unresolved. These artifacts implement admissions data preparation `schoolCRM-5pp`
-and blueprint incorporation `schoolCRM-4tv`.
+The broader School AI requirements and delivery status are recorded in
+[the ARD](../school-ai-ard.md) and Beads epic `schoolCRM-o58`. These source artifacts
+were originally prepared for admissions data preparation `schoolCRM-5pp` and blueprint
+incorporation `schoolCRM-4tv`. Their admission-rule suitability is being reviewed in
+`schoolCRM-o58.5`; see [the evidence review](admissions-evidence-review.md). Runtime
+curriculum and lesson workflows use their own scoped, reviewed sources and Go APIs.

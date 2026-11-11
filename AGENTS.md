@@ -52,6 +52,39 @@ cp -rf source dest          # NOT: cp -r source dest
 - Commit and push each validated bead, then open its own PR against `develop`, or `main` for a hotfix. Include the bead ID, acceptance evidence, review verdict and material risks in the PR. Record the PR URL in Beads and close the bead only after validation, review and PR creation succeed. PR creation is required; merging remains a separate action.
 - Finish one bead's PR before starting the next. A parent epic stays open until its child features satisfy their acceptance conditions. Documentation delivery does not close implementation beads.
 
+## Agent Checkpoints
+
+Stop and ask the user before you do any of these. Do not decide alone, even when the change looks small or obviously right.
+
+1. **Changing an existing test's expected result.** This includes status codes, error codes, messages and golden values. Adding a new test is fine. Do not edit what an existing test expects unless the user approved that behaviour change. List each changed expectation in the handoff.
+2. **Changing Git hooks, CI configuration or the scope of any check.** This covers `.husky/`, `scripts/git-hooks/`, `.circleci/`, linter configuration, and any change that skips, narrows or weakens a check. Never use `--no-verify`. If a hook blocks you, stop and report it.
+3. **Starting or stopping local services.** This covers Docker containers, databases and dev servers. Ask first, unless the task brief already approves that service.
+4. **A test and the code disagree.** Do not change either one to make them agree. Report which one you think is wrong and why, then wait for a decision.
+
+## Handoff Format
+
+End every task, and every stop at a checkpoint, with these four sections:
+
+- **Changed:** each file or behaviour that changed, and why. List every changed test expectation separately.
+- **Checks run:** each check with its command, result and environment (for example: `CGO_ENABLED=0 go test ./...`, pass, local macOS with Docker `servicetest`).
+- **Not run or unfinished:** checks you skipped, work left open, and the reason for each.
+- **Questions for the reviewer:** decisions you made that need confirmation, and open risks.
+
+## Code Review Rules
+
+### Authorization
+
+- Check every school and lesson command against the caller's active membership on the server. Hiding a button in the frontend or reading `/v1/me/school-memberships` grants nothing.
+- Only the author may read an unsubmitted lesson draft. Other members see the newest submitted version.
+
+### API contract
+
+- Flag any handler that bypasses `foundation/web.Respond` or returns a body that is not JSON:API v1.1, as defined in "API Response Contract" above.
+
+### Migrations
+
+- Add schema changes as a new `-- Version:` block at the end of `business/sdk/migrate/sql/migrate.sql`. Flag any edit to a block that already exists on `develop`.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 

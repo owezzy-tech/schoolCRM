@@ -1,0 +1,75 @@
+<!-- Forked from ngx-mat-select-search 9.0.0 (MIT, Copyright (c) 2018 Bithost GmbH). See LICENSE. -->
+<!-- Placeholder to adjust vertical offset of the mat-option elements -->
+<input matInput class="elimu-select-search-input elimu-select-search-hidden" />
+
+<!-- Note: the  mat-datepicker-content mat-tab-header are needed to inherit the material theme colors, see PR #22 -->
+<div
+    #innerSelectSearch
+    class="elimu-select-search-inner mat-typography mat-datepicker-content mat-tab-header"
+    [class.elimu-select-search-inner-multiple]="matSelect.multiple"
+    [class.elimu-select-search-inner-toggle-all]="_isToggleAllCheckboxVisible()"
+>
+    <div class="elimu-select-search-inner-row">
+        @if (_isToggleAllCheckboxVisible()) {
+            <mat-checkbox
+                [color]="matFormField?.color"
+                class="elimu-select-search-toggle-all-checkbox"
+                [checked]="toggleAllCheckboxChecked"
+                [indeterminate]="toggleAllCheckboxIndeterminate"
+                [matTooltip]="toggleAllCheckboxTooltipMessage"
+                matTooltipClass="elimu-select-search-toggle-all-tooltip"
+                [matTooltipPosition]="toggleAllCheckboxTooltipPosition"
+                (change)="_emitSelectAllBooleanToParent($event.checked)"
+            />
+        }
+
+        <input
+            class="elimu-select-search-input"
+            autocomplete="off"
+            [type]="type"
+            [formControl]="_formControl"
+            #searchSelectInput
+            (keydown)="_handleKeydown($event)"
+            (keyup)="_handleKeyup($event)"
+            (blur)="onBlur()"
+            [placeholder]="placeholderLabel"
+            [attr.aria-label]="ariaLabel"
+        />
+        @if (searching) {
+            <mat-spinner class="elimu-select-search-spinner" diameter="16" />
+        }
+
+        @if (!hideClearSearchButton && value && !searching) {
+            <button
+                mat-icon-button
+                aria-label="Clear"
+                (click)="_reset(true)"
+                class="elimu-select-search-clear"
+            >
+                @if (clearIcon) {
+                    <ng-content select="[elimuSelectSearchClear]" />
+                } @else if (closeSvgIcon) {
+                    <mat-icon [svgIcon]="closeSvgIcon" />
+                } @else {
+                    <mat-icon>
+                        {{ closeIcon }}
+                    </mat-icon>
+                }
+            </button>
+        }
+
+        <ng-content select=".elimu-select-search-custom-header-content" />
+    </div>
+
+    <mat-divider />
+</div>
+
+@if (_showNoEntriesFound$ | async) {
+    <div class="elimu-select-search-no-entries-found">
+        @if (noEntriesFound) {
+            <ng-content select="[elimuSelectNoEntriesFound]" />
+        } @else {
+            {{ noEntriesFoundLabel }}
+        }
+    </div>
+}

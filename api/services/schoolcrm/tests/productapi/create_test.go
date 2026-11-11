@@ -107,6 +107,13 @@ func create401(sd apitest.SeedData) []apitest.Table {
 				return cmp.Diff(got, exp)
 			},
 		},
+	}
+
+	return table
+}
+
+func create403(sd apitest.SeedData) []apitest.Table {
+	table := []apitest.Table{
 		{
 			Name:       "wronguser",
 			URL:        "/v1/products",

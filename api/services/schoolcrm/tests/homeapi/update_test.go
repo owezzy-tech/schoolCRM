@@ -113,12 +113,19 @@ func update401(sd apitest.SeedData) []apitest.Table {
 				return cmp.Diff(got, exp)
 			},
 		},
+	}
+
+	return table
+}
+
+func update404(sd apitest.SeedData) []apitest.Table {
+	table := []apitest.Table{
 		{
 			Name:       "wronguser",
 			URL:        fmt.Sprintf("/v1/homes/%s", sd.Admins[0].Homes[0].ID),
 			Token:      sd.Users[0].Token,
 			Method:     http.MethodPut,
-			StatusCode: http.StatusUnauthorized,
+			StatusCode: http.StatusNotFound,
 			Input: &homeapp.UpdateHome{
 				Type: dbtest.StringPointer("SINGLE FAMILY"),
 				Address: &homeapp.UpdateAddress{
@@ -131,7 +138,7 @@ func update401(sd apitest.SeedData) []apitest.Table {
 				},
 			},
 			GotResp: &errs.Error{},
-			ExpResp: errs.Errorf(errs.Unauthenticated, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_or_subject]"),
+			ExpResp: errs.Errorf(errs.NotFound, "home not found"),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

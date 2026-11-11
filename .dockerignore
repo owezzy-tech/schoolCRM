@@ -28,6 +28,9 @@ README.md
 **/.ruff_cache/
 **/database-data/
 **/var/files/
+zarf/vps/secrets/
+zarf/vps/backups/
+zarf/vps/deploy.env
 node_modules/
 api/frontends/web-admin/node_modules/
 api/frontends/web-admin/dist/
