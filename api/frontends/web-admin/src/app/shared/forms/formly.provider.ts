@@ -3,7 +3,7 @@ import { FormlyFieldConfig, provideFormlyCore } from '@ngx-formly/core';
 import { withFormlyMaterial } from '@ngx-formly/material';
 
 /** Messages Formly shows under a field once it is touched or its form is submitted. */
-export const FORMLY_VALIDATION_MESSAGES = [
+const FORMLY_VALIDATION_MESSAGES = [
     { name: 'required', message: 'This field is required.' },
     { name: 'email', message: 'Enter a valid email address.' },
     {

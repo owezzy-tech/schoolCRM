@@ -14,10 +14,14 @@ import { provideAppFormly } from 'app/shared/forms/formly.provider';
     template: `
         <form [formGroup]="form" (ngSubmit)="submit()" style="max-width: 560px">
             <formly-form [form]="form" [fields]="fields()" [model]="model" />
-            <button mat-flat-button color="primary" type="submit">Submit</button>
+            <button mat-flat-button color="primary" type="submit">
+                Submit
+            </button>
         </form>
         @if (submitted) {
-            <pre style="margin-top: 24px; font-size: 13px">{{ submitted | json }}</pre>
+            <pre style="margin-top: 24px; font-size: 13px">{{
+                submitted | json
+            }}</pre>
         }
     `,
 })
@@ -36,8 +40,21 @@ const enquiryFields: FormlyFieldConfig[] = [
     {
         fieldGroupClassName: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4',
         fieldGroup: [
-            { key: 'guardianName', type: 'input', props: { label: 'Guardian name', required: true, minLength: 2 } },
-            { key: 'email', type: 'input', props: { label: 'Email', type: 'email', required: true, pattern: /^\S+@\S+\.\S+$/ } },
+            {
+                key: 'guardianName',
+                type: 'input',
+                props: { label: 'Guardian name', required: true, minLength: 2 },
+            },
+            {
+                key: 'email',
+                type: 'input',
+                props: {
+                    label: 'Email',
+                    type: 'email',
+                    required: true,
+                    pattern: /^\S+@\S+\.\S+$/,
+                },
+            },
         ],
     },
     {
@@ -46,7 +63,14 @@ const enquiryFields: FormlyFieldConfig[] = [
         props: {
             label: 'Grade applying for',
             required: true,
-            options: ['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'].map((g) => ({ label: g, value: g })),
+            options: [
+                'PP1',
+                'PP2',
+                'Grade 1',
+                'Grade 2',
+                'Grade 3',
+                'Grade 4',
+            ].map((g) => ({ label: g, value: g })),
         },
     },
     {
@@ -67,13 +91,21 @@ const enquiryFields: FormlyFieldConfig[] = [
         // Shown only when the guardian answers yes: the dynamic part of a Formly form.
         expressions: { hide: 'model.siblings !== true' },
     },
-    { key: 'notes', type: 'textarea', props: { label: 'Anything we should know?', rows: 3, maxLength: 500 } },
+    {
+        key: 'notes',
+        type: 'textarea',
+        props: { label: 'Anything we should know?', rows: 3, maxLength: 500 },
+    },
     {
         key: 'consent',
         type: 'checkbox',
         defaultValue: false,
         // Formly's Material checkbox is tri-state by default; consent must be a plain yes/no.
-        props: { label: 'I agree to be contacted about this enquiry', required: true, indeterminate: false },
+        props: {
+            label: 'I agree to be contacted about this enquiry',
+            required: true,
+            indeterminate: false,
+        },
         validators: { validation: [Validators.requiredTrue] },
     },
 ];

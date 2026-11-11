@@ -9,13 +9,19 @@ import { provideAppFormly } from './formly.provider';
 
 @Component({
     imports: [ReactiveFormsModule, FormlyForm],
-    template: `<form [formGroup]="form"><formly-form [form]="form" [fields]="fields" [model]="model" /></form>`,
+    template: `<form [formGroup]="form">
+        <formly-form [form]="form" [fields]="fields" [model]="model" />
+    </form>`,
 })
 class HostComponent {
     form = new FormGroup({});
     model = { email: '' };
     fields: FormlyFieldConfig[] = [
-        { key: 'email', type: 'input', props: { label: 'Email', required: true, type: 'email' } },
+        {
+            key: 'email',
+            type: 'input',
+            props: { label: 'Email', required: true, type: 'email' },
+        },
     ];
 }
 
@@ -45,6 +51,8 @@ describe('provideAppFormly', () => {
         fixture.componentInstance.form.get('email')!.markAsTouched();
         fixture.detectChanges();
 
-        expect(el.querySelector('mat-error')?.textContent).toContain('This field is required.');
+        expect(el.querySelector('mat-error')?.textContent).toContain(
+            'This field is required.'
+        );
     });
 });
