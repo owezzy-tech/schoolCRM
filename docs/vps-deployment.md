@@ -131,7 +131,7 @@ make vps-status
    ```sh
    cd /opt/schoolcrm/backups
    docker exec -i postgres sh -c 'umask 077; cat > /tmp/source.dump' < source-rehearsal-20261030.dump
-   docker exec postgres sh -c "pg_restore -l /tmp/source.dump | grep -vE ' EXTENSION | COMMENT - EXTENSION ' > /tmp/restore.list"
+   docker exec postgres sh -c "pg_restore -l /tmp/source.dump | grep -vE ' EXTENSION | COMMENT - EXTENSION ' > /tmp/restore.list; chown postgres /tmp/source.dump /tmp/restore.list"
    docker exec -u postgres postgres pg_restore -d schoolcrm --no-owner --role=schoolcrm \
      --no-privileges --exit-on-error -L /tmp/restore.list /tmp/source.dump
    docker exec postgres rm -f /tmp/restore.list /tmp/source.dump
