@@ -32,6 +32,15 @@ data. Supply only the providers needed by the component; avoid importing `app.co
 which starts the real application services. Storybook dependencies are development-only,
 and its output is separate from the deployed application build.
 
+## Dynamic forms (Formly)
+
+`provideAppFormly()` (`src/app/shared/forms/formly.provider.ts`) registers
+[Formly](https://formly.dev) with the Angular Material field types and the shared validation
+messages. Add it to the `providers` of the lazy route that uses Formly, not to
+`app.config.ts`, so its ~140 kB stays out of the initial bundle. Describe a form as `FormlyFieldConfig[]` and
+render it with `<formly-form>` inside a `[formGroup]`; see the *Forms/Formly dynamic form*
+story. Formly 10 is the last line that supports Angular 21; Formly 11 needs Angular 22.
+
 ## Code scaffolding
 
 Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
