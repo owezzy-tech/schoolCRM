@@ -5,15 +5,10 @@ import {
     input,
     signal,
 } from '@angular/core';
-import {
-    FormControl,
-    FormsModule,
-    ReactiveFormsModule,
-    Validators,
-} from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSelectSearchComponent } from 'ngx-mat-select-search';
+import { ElimuSelectSearchComponent } from 'app/shared/components/select-search';
 
 export interface SelectOption<T = unknown> {
     label: string;
@@ -26,16 +21,19 @@ export function filterOptions<T>(
     query: string
 ): SelectOption<T>[] {
     const fold = (s: string) =>
-        s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        s
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase();
     const q = fold(query.trim());
     return q ? options.filter((o) => fold(o.label).includes(q)) : [...options];
 }
 
 /**
- * Material select with a search box (ngx-mat-select-search), bound to any FormControl.
+ * Material select with a search box (<elimu-select-search>, our fork of ngx-mat-select-search), bound to any FormControl.
  *
  * ```html
- * <app-searchable-select label="Class" [control]="form.controls.classId" [options]="classes">
+ * <app-searchable-select label="Class" [control]="form.controls.classId" [options]="classes" required>
  *     <span error>Choose a class.</span>
  * </app-searchable-select>
  * ```
@@ -49,7 +47,7 @@ export function filterOptions<T>(
         ReactiveFormsModule,
         MatFormFieldModule,
         MatSelectModule,
-        MatSelectSearchComponent,
+        ElimuSelectSearchComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block' },
@@ -59,11 +57,10 @@ export function filterOptions<T>(
             <mat-select
                 [formControl]="control()"
                 [multiple]="multiple()"
-                [required]="isRequired()"
-                (openedChange)="!$event && query.set('')"
+                [required]="required()"
             >
                 <mat-option>
-                    <ngx-mat-select-search
+                    <elimu-select-search
                         [ngModel]="query()"
                         (ngModelChange)="query.set($event)"
                         [placeholderLabel]="searchPlaceholder()"
@@ -73,7 +70,9 @@ export function filterOptions<T>(
                     />
                 </mat-option>
                 @for (option of filtered(); track option.value) {
-                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    <mat-option [value]="option.value">{{
+                        option.label
+                    }}</mat-option>
                 }
             </mat-select>
             @if (hint()) {
@@ -88,16 +87,13 @@ export class SearchableSelectComponent<T = unknown> {
     readonly control = input.required<FormControl<T | T[] | null>>();
     readonly options = input.required<readonly SelectOption<T>[]>();
     readonly multiple = input(false);
-    /** Overrides the required marker; by default it follows Validators.required on the control. */
-    readonly required = input<boolean | undefined>(undefined);
+    /** Shows the required marker, as on mat-select; the control still owns validation. */
+    readonly required = input(false);
     readonly hint = input('');
     readonly searchPlaceholder = input('Search');
     readonly noEntriesLabel = input('No matches');
 
     protected readonly query = signal('');
-    protected readonly isRequired = computed(
-        () => this.required() ?? this.control().hasValidator(Validators.required)
-    );
     protected readonly filtered = computed(() =>
         filterOptions(this.options(), this.query())
     );

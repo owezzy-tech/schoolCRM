@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { FormControl } from '@angular/forms';
 import {
     FieldType,
     FieldTypeConfig,
@@ -30,7 +29,7 @@ interface SearchableSelectProps extends FormlyFieldProps {
     template: `
         <app-searchable-select
             [label]="props.label ?? ''"
-            [control]="control"
+            [control]="formControl"
             [options]="props.options"
             [multiple]="props.multiple ?? false"
             [required]="props.required ?? false"
@@ -44,15 +43,16 @@ interface SearchableSelectProps extends FormlyFieldProps {
 })
 export class FormlySearchableSelectType extends FieldType<
     FieldTypeConfig<SearchableSelectProps>
-> {
-    protected get control(): FormControl {
-        return this.formControl as FormControl;
-    }
-}
+> {}
 
 /** Registers `type: 'searchable-select'`. Use alongside provideAppFormly() in the same route. */
 export function provideSearchableSelectFormly() {
     return provideFormlyConfig({
-        types: [{ name: 'searchable-select', component: FormlySearchableSelectType }],
+        types: [
+            {
+                name: 'searchable-select',
+                component: FormlySearchableSelectType,
+            },
+        ],
     });
 }

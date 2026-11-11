@@ -44,8 +44,10 @@ story. Formly 10 is the last line that supports Angular 21; Formly 11 needs Angu
 ## Searchable select
 
 `<app-searchable-select>` (`src/app/shared/components/searchable-select`) is a Material
-select with an [ngx-mat-select-search](https://github.com/bithost-gmbh/ngx-mat-select-search)
-box. Bind it to any `FormControl`, pass `options` as `{ label, value }[]`, and project an
+select with an `<elimu-select-search>` box. That component lives in
+`src/app/shared/components/select-search`: a renamed fork of
+[ngx-mat-select-search](https://github.com/bithost-gmbh/ngx-mat-select-search) 9.0.0 (MIT,
+licence kept beside the source), owned and changed here rather than installed from npm. Bind it to any `FormControl`, pass `options` as `{ label, value }[]`, and project an
 `error` slot for the message. Filtering ignores case and accents. In Formly forms add
 `provideSearchableSelectFormly()` next to `provideAppFormly()` and use
 `type: 'searchable-select'`. See the *Forms/Searchable select* stories.

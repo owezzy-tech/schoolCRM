@@ -1,6 +1,11 @@
 import { JsonPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+    FormControl,
+    FormGroup,
+    ReactiveFormsModule,
+    Validators,
+} from '@angular/forms';
 import { FormlyFieldConfig, FormlyForm } from '@ngx-formly/core';
 import type { Meta, StoryObj } from '@storybook/angular';
 import { applicationConfig, moduleMetadata } from '@storybook/angular';
@@ -12,9 +17,21 @@ import {
 import { provideAppFormly } from 'app/shared/forms/formly.provider';
 
 const teachers: SelectOption<string>[] = [
-    'Amina Otieno', 'Brian Kiprotich', 'Catherine Njeri', 'David Ochieng', 'Esther Achieng',
-    'Faith Mutua', 'Grace Wanjiru', 'Hassan Abdi', 'Irene Chebet', 'José Mwangi',
-    'Kevin Kamau', 'Lucy Akinyi', 'Mercy Nyambura', 'Nelson Omondi', 'Purity Wairimu',
+    'Amina Otieno',
+    'Brian Kiprotich',
+    'Catherine Njeri',
+    'David Ochieng',
+    'Esther Achieng',
+    'Faith Mutua',
+    'Grace Wanjiru',
+    'Hassan Abdi',
+    'Irene Chebet',
+    'José Mwangi',
+    'Kevin Kamau',
+    'Lucy Akinyi',
+    'Mercy Nyambura',
+    'Nelson Omondi',
+    'Purity Wairimu',
 ].map((name, i) => ({ label: name, value: `t${i + 1}` }));
 
 @Component({
@@ -27,6 +44,7 @@ const teachers: SelectOption<string>[] = [
                 [control]="control"
                 [options]="options()"
                 [multiple]="multiple()"
+                required
                 hint="Type to filter the list"
             >
                 <span error>Choose a class teacher.</span>
@@ -39,7 +57,10 @@ class StorySearchableSelectComponent {
     label = input('Class teacher');
     options = input<SelectOption<string>[]>(teachers);
     multiple = input(false);
-    control = new FormControl<string | string[] | null>(null, Validators.required);
+    control = new FormControl<string | string[] | null>(
+        null,
+        Validators.required
+    );
 }
 
 const meta: Meta<StorySearchableSelectComponent> = {
@@ -50,7 +71,7 @@ const meta: Meta<StorySearchableSelectComponent> = {
         docs: {
             description: {
                 component:
-                    '`<app-searchable-select>` from `app/shared/components/searchable-select`: a Material select with an ngx-mat-select-search box, bound to any `FormControl`. Filtering ignores case and accents ("jose" finds "José"). In Formly forms use `type: \'searchable-select\'` after `provideSearchableSelectFormly()`.',
+                    '`<app-searchable-select>` from `app/shared/components/searchable-select`: a Material select with an `<elimu-select-search>` box (our fork of ngx-mat-select-search), bound to any `FormControl`. Filtering ignores case and accents ("jose" finds "José"). In Formly forms use `type: \'searchable-select\'` after `provideSearchableSelectFormly()`.',
             },
         },
     },
@@ -83,7 +104,11 @@ class StorySearchableSelectFormlyComponent {
         {
             key: 'classTeacher',
             type: 'searchable-select',
-            props: { label: 'Class teacher', required: true, options: teachers },
+            props: {
+                label: 'Class teacher',
+                required: true,
+                options: teachers,
+            },
         },
         {
             key: 'subjectTeachers',
@@ -104,6 +129,8 @@ export const InFormly: Story = {
     render: () => ({ template: '<story-searchable-select-formly />' }),
     decorators: [
         moduleMetadata({ imports: [StorySearchableSelectFormlyComponent] }),
-        applicationConfig({ providers: [provideAppFormly(), provideSearchableSelectFormly()] }),
+        applicationConfig({
+            providers: [provideAppFormly(), provideSearchableSelectFormly()],
+        }),
     ],
 };
