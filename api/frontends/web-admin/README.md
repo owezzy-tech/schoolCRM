@@ -32,6 +32,26 @@ data. Supply only the providers needed by the component; avoid importing `app.co
 which starts the real application services. Storybook dependencies are development-only,
 and its output is separate from the deployed application build.
 
+## Dynamic forms (Formly)
+
+`provideAppFormly()` (`src/app/shared/forms/formly.provider.ts`) registers
+[Formly](https://formly.dev) with the Angular Material field types and the shared validation
+messages. Add it to the `providers` of the lazy route that uses Formly, not to
+`app.config.ts`, so its ~140 kB stays out of the initial bundle. Describe a form as `FormlyFieldConfig[]` and
+render it with `<formly-form>` inside a `[formGroup]`; see the *Forms/Formly dynamic form*
+story. Formly 10 is the last line that supports Angular 21; Formly 11 needs Angular 22.
+
+## Searchable select
+
+`<app-searchable-select>` (`src/app/shared/components/searchable-select`) is a Material
+select with an `<elimu-select-search>` box. That component lives in
+`src/app/shared/components/select-search`: a renamed fork of
+[ngx-mat-select-search](https://github.com/bithost-gmbh/ngx-mat-select-search) 9.0.0 (MIT,
+licence kept beside the source), owned and changed here rather than installed from npm. Bind it to any `FormControl`, pass `options` as `{ label, value }[]`, and project an
+`error` slot for the message. Filtering ignores case and accents. In Formly forms add
+`provideSearchableSelectFormly()` next to `provideAppFormly()` and use
+`type: 'searchable-select'`. See the *Forms/Searchable select* stories.
+
 ## Code scaffolding
 
 Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.

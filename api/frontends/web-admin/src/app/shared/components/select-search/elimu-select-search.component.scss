@@ -1,0 +1,140 @@
+/*
+ * Forked from ngx-mat-select-search 9.0.0 (https://github.com/bithost-gmbh/ngx-mat-select-search,
+ * tag 9.0.0, commit 9fa3f73) and renamed for SchoolCRM. Copyright (c) 2018 Bithost GmbH.
+ * MIT licence: see LICENSE in this directory.
+ */
+
+$clear-button-width: 40px;
+$multiple-check-width: 33px;
+//set min-height according to `.mat-mdc-option` min-height (https://github.com/angular/components/blob/f699d2e2a4f2648abe68ccde0a30b70fdd313f37/src/material/core/option/option.scss#L19C3-L19C20)
+$mat-option-min-height: 48px;
+$elimu-select-search-clear-x: 4px;
+$elimu-select-search-spinner-x: 16px;
+$elimu-select-search-toggle-all-checkbox-x: 5px;
+$mat-select-panel-padding: 8px;
+
+.elimu-select-search-hidden {
+    visibility: hidden;
+}
+
+.elimu-select-search-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    font-size: inherit;
+    /*
+    compensate effects of .mat-datepicker-content
+    (see https://github.com/angular/material2/blob/master/src/lib/datepicker/datepicker-content.scss#L27)
+    TODO: implement proper theming (https://github.com/bithost-gmbh/elimu-select-search/issues/34)
+  */
+    box-shadow: none;
+
+    background-color: var(
+        --mat-sys-surface-container,
+        var(--mat-select-panel-background-color, white)
+    );
+
+    &.elimu-select-search-inner-multiple.elimu-select-search-inner-toggle-all {
+        .elimu-select-search-inner-row {
+            display: flex;
+            align-items: center;
+        }
+    }
+}
+
+.elimu-select-search-input {
+    box-sizing: border-box;
+    width: 100%;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: currentColor;
+    outline: none;
+    background-color: var(
+        --mat-sys-surface-container,
+        var(--mat-select-panel-background-color, white)
+    );
+    padding: 0 $clear-button-width + $elimu-select-search-clear-x 0 16px;
+    height: calc($mat-option-min-height - 1px);
+    line-height: calc($mat-option-min-height - 1px);
+
+    :host-context([dir='rtl']) & {
+        padding-right: 16px;
+        padding-left: $clear-button-width + $elimu-select-search-clear-x;
+    }
+}
+
+.elimu-select-search-input::placeholder {
+    /*
+    `--mat-form-field-filled-input-text-placeholder-color` is to support Angular Material 20+
+    `--mdc-filled-text-field-input-text-placeholder-color` is for Angular Material 19 and below
+  */
+    color: var(
+        --mat-form-field-filled-input-text-placeholder-color,
+        var(--mdc-filled-text-field-input-text-placeholder-color)
+    );
+}
+
+.elimu-select-search-inner-toggle-all {
+    .elimu-select-search-input {
+        padding-left: 5px;
+    }
+}
+
+.elimu-select-search-no-entries-found {
+    padding-top: 8px;
+}
+
+.elimu-select-search-clear {
+    position: absolute;
+    right: $elimu-select-search-clear-x;
+    top: 0;
+
+    :host-context([dir='rtl']) & {
+        right: auto;
+        left: $elimu-select-search-clear-x;
+    }
+}
+
+.elimu-select-search-spinner {
+    position: absolute;
+    right: $elimu-select-search-spinner-x;
+    top: calc(50% - 8px);
+
+    :host-context([dir='rtl']) & {
+        right: auto;
+        left: $elimu-select-search-spinner-x;
+    }
+}
+
+::ng-deep .mat-mdc-option[aria-disabled='true'].contains-elimu-select-search {
+    /* let move elimu-select-search at the top of the dropdown. As option is disabled, there will be no-ripple hence safe. */
+    position: sticky;
+    top: -$mat-select-panel-padding;
+    z-index: 1;
+    opacity: 1;
+    margin-top: -$mat-select-panel-padding;
+    pointer-events: all;
+
+    .mat-icon {
+        margin-right: 0;
+        margin-left: 0;
+    }
+    mat-pseudo-checkbox {
+        display: none;
+    }
+    .mdc-list-item__primary-text {
+        opacity: 1;
+    }
+}
+
+.elimu-select-search-toggle-all-checkbox {
+    padding-left: $elimu-select-search-toggle-all-checkbox-x;
+
+    :host-context([dir='rtl']) & {
+        padding-left: 0;
+        padding-right: $elimu-select-search-toggle-all-checkbox-x;
+    }
+}
