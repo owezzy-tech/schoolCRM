@@ -22,10 +22,16 @@ active nav marker and the single primary action — never splashed.
 
 Derived tones (never new hex): `--accent-soft` and `--fg-soft` via `color-mix(in oklch, …)`.
 
+In code these tokens live once in `src/styles/design-tokens.css` with an `--elimu-` prefix
+(`--elimu-bg`, `--elimu-accent`, …) so they cannot collide with Fuse, Material or third-party
+variables. Light values sit on `:root` and dark values on `.dark`. The file also holds the
+typography, spacing, radius, motion and focus tokens below. Storybook's
+*Design System/Foundations* stories render every token in both modes.
+
 ## Design system details
 
 ### Typography scale
-- **Display** (brand moment + page titles): serif stack `var(--font-display)` — Iowan Old Style / Charter / Georgia. Page titles clamp 26–34px, weight 600, letter-spacing −0.01em.
+- **Display** (brand moment + page titles): serif stack `var(--font-display)` — Iowan Old Style / Charter / Georgia. Page titles clamp 26–34px, weight 600, letter-spacing −0.01em. Always pair it with `font-feature-settings: var(--elimu-font-display-features)`: the global Fuse `'salt'` setting for Inter swaps the serif's s for a long s.
 - **Body**: system sans, 15–16px, line-height 1.6, line-length 65–75ch. Data-dense tables reuse the sans at 14px.
 - **Mono / numerics**: `ui-monospace` stack with `font-variant-numeric: tabular-nums` for **every** number; eyebrow / caption labels 9–11px with ~0.18em tracking, uppercase.
 
