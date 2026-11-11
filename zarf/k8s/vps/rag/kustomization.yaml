@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: schoolcrm
+resources:
+  - ../../base/rag/
+patches:
+  # platform/ owns the Namespace (with pod-security labels); don't re-apply the base copy.
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: schoolcrm-system
+  - path: ./vps-rag-patch-deploy.yaml
+  - path: ./vps-rag-patch-service.yaml
+images:
+  - name: rag-image
+    newName: localhost/schoolcrm/rag
+    newTag: set-by-deploy

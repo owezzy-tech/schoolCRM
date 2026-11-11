@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: schoolcrm-service
+  namespace: schoolcrm-system
+spec:
+  type: ClusterIP
+  ports:
+    - name: schoolcrm
+      port: 3000
+      targetPort: schoolcrm

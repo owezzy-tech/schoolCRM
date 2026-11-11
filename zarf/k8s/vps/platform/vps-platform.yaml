@@ -1,0 +1,97 @@
+# Shared SchoolCRM resources on the owezzy-db k3s node (bead schoolCRM-5ho.11).
+# The node also runs GG-Garage and HRAS namespaces; the quota keeps SchoolCRM inside
+# its share of the 2828Mi the kubelet allocates to pods (see docs/vps-deployment.md).
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: schoolcrm
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: schoolcrm-quota
+  namespace: schoolcrm
+spec:
+  hard:
+    pods: "12"
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "3"
+    limits.memory: 2Gi
+    persistentvolumeclaims: "2"
+    requests.storage: 5Gi
+
+---
+# Defaults for containers that do not declare resources (for example ad hoc debug pods).
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: schoolcrm-defaults
+  namespace: schoolcrm
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 250m
+        memory: 128Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+
+---
+# The shared PostgreSQL server runs in Docker on the same host, outside the cluster.
+# Pods reach its published port through db.owenadirah.com (DNS-only record pointing
+# at the node). PostgreSQL sees them as 172.19.0.1 and pg_hba allows only TLS
+# connections from there to the schoolcrm database as the schoolcrm role.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: schoolcrm
+spec:
+  type: ExternalName
+  externalName: db.owenadirah.com
+
+---
+# local-path's default class deletes the host directory with the claim. RAG files are
+# user data, so their volume is retained if the claim is ever deleted.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rag-files
+  namespace: schoolcrm
+spec:
+  storageClassName: local-path-retain
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# Only pods in this namespace (including the cloudflared connector) may connect to
+# SchoolCRM pods. Egress stays open for PostgreSQL and the AI providers.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: same-namespace-only
+  namespace: schoolcrm
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
