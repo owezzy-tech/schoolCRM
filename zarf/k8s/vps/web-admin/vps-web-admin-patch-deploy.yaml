@@ -54,6 +54,10 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+              # The caddy binary carries the cap_net_bind_service file capability; the
+              # kernel refuses to exec it (exit 126) unless the capability is in the
+              # bounding set. Pod security "restricted" allows exactly this one.
+              add: [NET_BIND_SERVICE]
           resources:
             requests:
               cpu: 20m

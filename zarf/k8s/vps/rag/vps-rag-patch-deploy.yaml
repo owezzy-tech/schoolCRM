@@ -30,6 +30,14 @@ spec:
           imagePullPolicy: IfNotPresent
           command: [python, -m, infrastructure.container_entrypoint]
           args: [uvicorn, "main:app", --host, 0.0.0.0, --port, "7000", --workers, "1", --limit-concurrency, "4"]
+          # Imports (LlamaIndex, LangGraph) take longer than the base liveness probe allows;
+          # give startup up to 3 minutes before liveness can restart the container.
+          startupProbe:
+            httpGet:
+              path: /v1/liveness
+              port: rag
+            periodSeconds: 5
+            failureThreshold: 36
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
