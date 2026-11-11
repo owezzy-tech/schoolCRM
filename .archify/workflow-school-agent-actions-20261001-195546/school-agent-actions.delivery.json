@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "af3a1dee-9d7e-49e9-b03b-a09a43a82746",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/workflow-school-agent-actions-20261001-195546/candidate.json",
+  "output": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/workflow-school-agent-actions-20261001-195546/school-agent-actions.html",
+  "specification": {
+    "sha256": "bbd447ee855c96d6fd7507e60d8c7f06e8a01a57961bd88311f52b7fbc29ddbc",
+    "bytes": 8228
+  },
+  "artifact": {
+    "sha256": "9c50f4e55056d83f359cabdc0d1e8da69b8182267cc49b1c6494b6ef33fabd28",
+    "bytes": 770705
+  }
+}

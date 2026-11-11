@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "School assistant: proposed v1 architecture",
+    "output": ".archify/architecture-school-ai-v1-20261001-195546/school-ai-v1.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {"url": "https://github.com/owezzy-tech/schoolCRM", "revision": "bea454bdb4f420cac2074c91adbd89a6c0e9cc74", "provider": "github"}
+  },
+  "components": [
+    {"id":"ui","type":"frontend","label":"Angular workspaces","sublabel":"Student / teacher / admin","tag":"Existing app, new journeys","pos":[40,110],"size":[195,76],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":9,"end_line":10},{"path":"api/frontends/web-admin/src/app/app.routes.ts","line":119,"end_line":133}]},
+    {"id":"auth","type":"security","label":"Go identity + scope","sublabel":"Auth service; scoped membership","tag":"Scope extension required","pos":[350,110],"size":[200,76],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":14,"end_line":16},{"path":"api/services/RAG/infrastructure/auth.py","line":18,"end_line":43}]},
+    {"id":"agent","type":"backend","label":"FastAPI + LangGraph","sublabel":"Route / checkpoint / approve","tag":"Three bounded workflows","pos":[40,345],"size":[195,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":11,"end_line":13},{"path":"docs/diagrams/school-ai-v1-design.md","line":50,"end_line":62}]},
+    {"id":"retrieval","type":"backend","label":"LlamaIndex retrieval","sublabel":"Scope + curriculum + revision","tag":"Approved sources only","pos":[350,345],"size":[200,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":17},{"path":"docs/diagrams/school-ai-v1-design.md","line":39,"end_line":48}]},
+    {"id":"knowledge","type":"database","label":"Knowledge projection","sublabel":"pgvector + reviewed graph facts","tag":"Curricula kept separate","pos":[680,345],"size":[210,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":31,"end_line":48}]},
+    {"id":"checkpoints","type":"database","label":"Workflow checkpoints","sublabel":"Private threads / pending approval","tag":"PostgreSQL workflow tables","pos":[40,570],"size":[195,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":23,"end_line":24}]},
+    {"id":"model","type":"cloud","label":"Model provider","sublabel":"Scoped inputs / validated output","tag":"Provider not yet selected","pos":[350,570],"size":[200,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":25,"end_line":27}]},
+    {"id":"go","type":"backend","label":"Go business APIs","sublabel":"Rules / records / authorised tools","tag":"Recheck scope + approval","pos":[40,805],"size":[195,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":18,"end_line":22},{"path":"app/domain/userapp/route.go","line":32,"end_line":37}]},
+    {"id":"records","type":"database","label":"School records","sublabel":"Lessons / timetable / audit","tag":"PostgreSQL authoritative data","pos":[350,805],"size":[200,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":18,"end_line":22}]},
+    {"id":"google","type":"external","label":"Google Calendar","sublabel":"OAuth / availability / event sync","tag":"Initial calendar provider","pos":[40,1030],"size":[195,86],"sources":[{"path":"docs/diagrams/school-ai-v1-design.md","line":81,"end_line":88}]}
+  ],
+  "connections": [
+    {"id":"identity","from":"ui","to":"auth","label":"Login + scope","variant":"security"},
+    {"id":"chat","from":"ui","to":"agent","label":"Authenticated chat","variant":"emphasis"},
+    {"id":"scope","from":"agent","to":"auth","label":"Validate identity","variant":"security"},
+    {"id":"retrieve","from":"agent","to":"retrieval","label":"Evidence request","variant":"emphasis"},
+    {"id":"filter","from":"retrieval","to":"knowledge","label":"Filtered retrieval","variant":"security"},
+    {"id":"persist","from":"agent","to":"checkpoints","label":"Persist / resume","variant":"dashed"},
+    {"id":"generate","from":"agent","to":"model","label":"Bounded generation"},
+    {"id":"tool","from":"agent","to":"go","label":"Approved write tools","variant":"security"},
+    {"id":"sql","from":"go","to":"records","label":"Transactional writes"},
+    {"id":"calendar","from":"go","to":"google","label":"Idempotent OAuth sync","variant":"dashed"}
+  ],
+  "cards": [
+    {"dot":"cyan","title":"Framework ownership","items":["LangGraph routes student adviser, teaching assistant and operations workflows.","LlamaIndex retrieves evidence; Go computes points, report totals and scheduling conflicts.","Existing Go/Angular/Python services are extended. Agent functionality is proposed, not deployed."]},
+    {"dot":"emerald","title":"Curriculum boundaries","items":["Kenya CBC/CBE and 8-4-4: Playgroup through secondary.","Cambridge: Early Years through Year 9; later years are future expansion.","Filter school, curriculum, stage/year, subject, revision and access before model exposure."]},
+    {"dot":"rose","title":"Human control","items":["Every lesson version: teacher draft, HOD review, dean approval, teacher publication.","Go rechecks approved command payloads, current authority, versions and conflicts.","Checkpointed approvals contain no bearer tokens or calendar credentials."]},
+    {"dot":"amber","title":"Calendar choice","items":["Google Calendar is v1; standard API use currently has no additional charge within applicable limits.","Quota excess charging is planned later in 2026; Workspace account costs are separate.","Nextcloud/CalDAV remains an alternative needing hosting and its own integration; not feature-identical."]}
+  ]
+}

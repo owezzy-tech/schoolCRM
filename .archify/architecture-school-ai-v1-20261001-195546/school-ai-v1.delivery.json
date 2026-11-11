@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "edacd0d2-3e9e-4aa7-ae2a-a116b3b45797",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/candidate.json",
+  "output": "/Users/owen_adirah/GolandProjects/schoolCRM/.archify/architecture-school-ai-v1-20261001-195546/school-ai-v1.html",
+  "specification": {
+    "sha256": "d5ec0e1757876855e08b55be2bafff976f465cb4e80ee7253ce599e0b0f536ad",
+    "bytes": 5664
+  },
+  "artifact": {
+    "sha256": "77d32b8b13fcc440ec2fea795fca3b53e1c963812034989307fd36260416ee6d",
+    "bytes": 772055
+  }
+}

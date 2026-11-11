@@ -1,2 +1,4 @@
+default_permissions = ":danger-full-access"
+
 [features]
 hooks = true

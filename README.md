@@ -24,6 +24,7 @@ SchoolCRM is a service-oriented school operations platform with Go APIs, an Angu
 - [Local service endpoints](#local-service-endpoints)
 - [Default users](#default-users)
 - [Documentation](#documentation)
+- [Releases](#releases)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -185,6 +186,25 @@ curl -i -X POST http://localhost:6000/v1/auth/login \
 - [`docs/diagrams/schoolcrm-local-architecture.html`](docs/diagrams/schoolcrm-local-architecture.html) — legacy local topology reference
 - [`api/frontends/web-admin/README.md`](api/frontends/web-admin/README.md) — Angular development commands
 - [`api/services/RAG/README.md`](api/services/RAG/README.md) — RAG architecture and standalone run instructions
+
+## Releases
+
+`main` holds releases and `develop` integrates work (see AGENTS.md). `CHANGELOG.md` is generated
+from the Conventional Commits that commitlint enforces, using
+[conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
+with the `conventionalcommits` preset.
+
+```bash
+git switch -c release/<version> origin/develop
+npm version <version> --no-git-tag-version   # root package.json; the changelog reads its version
+npm run changelog:preview                    # check the notes
+npm run changelog                            # prepend the new release to CHANGELOG.md
+git commit -am "chore(release): <version>"
+# PR release/<version> -> main; after merge, tag main and merge it back into develop:
+git tag v<version> origin/main && git push origin v<version>
+```
+
+The changelog covers commits since the previous `v*` tag, so tag every release.
 
 ## Contributing
 
