@@ -55,6 +55,7 @@
                             "src/@fuse/styles/tailwind.scss",
                             "src/@fuse/styles/themes.scss",
                             "src/styles/vendors.scss",
+                            "src/styles/design-tokens.css",
                             "src/@fuse/styles/main.scss",
                             "src/styles/styles.scss",
                             "src/styles/tailwind.scss"
@@ -102,6 +103,28 @@
                 },
                 "test": {
                     "builder": "@angular/build:unit-test"
+                },
+                "storybook": {
+                    "builder": "@storybook/angular:start-storybook",
+                    "options": {
+                        "configDir": ".storybook",
+                        "browserTarget": "fuse:build:development",
+                        "port": 6006,
+                        "host": "127.0.0.1",
+                        "open": false,
+                        "compodoc": false,
+                        "tsConfig": ".storybook/tsconfig.json"
+                    }
+                },
+                "build-storybook": {
+                    "builder": "@storybook/angular:build-storybook",
+                    "options": {
+                        "configDir": ".storybook",
+                        "browserTarget": "fuse:build:development",
+                        "outputDir": "dist/storybook",
+                        "compodoc": false,
+                        "tsConfig": ".storybook/tsconfig.json"
+                    }
                 }
             }
         }

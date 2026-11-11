@@ -1,0 +1,106 @@
+/* ----------------------------------------------------------------------------------------------------- */
+/*  @ Elimu design tokens
+/*  Source of truth: design-spec.md. Light values live on :root; dark values on `.dark`, the class
+/*  Fuse applies to <body>. Components read these properties instead of hard-coding hex values.
+/* ----------------------------------------------------------------------------------------------------- */
+
+:root {
+    /* Colour */
+    --elimu-bg: #eef1f5;
+    --elimu-surface: #ffffff;
+    --elimu-surface-2: #f6f8fa;
+    --elimu-fg: #1b1f27;
+    --elimu-muted: #5f6773;
+    --elimu-border: #d9dee6;
+    --elimu-accent: #2f5fa8;
+    --elimu-on-accent: #ffffff;
+    --elimu-danger: #b3261e;
+    --elimu-success: #256c49;
+    --elimu-warning: #8a6000;
+
+    /* Derived tones: mixed from the tokens above, never new hex values */
+    --elimu-accent-soft: color-mix(
+        in oklab,
+        var(--elimu-accent) 12%,
+        var(--elimu-surface)
+    );
+    --elimu-fg-soft: color-mix(
+        in oklab,
+        var(--elimu-fg) 72%,
+        var(--elimu-surface)
+    );
+
+    /* Typography */
+    --elimu-font-display: 'Iowan Old Style', Charter, Georgia, serif;
+    /* Fuse sets font-feature-settings: 'salt' for Inter; in the serif it turns s into a long s */
+    --elimu-font-display-features: normal;
+    --elimu-font-sans: 'Inter var', ui-sans-serif, system-ui, sans-serif;
+    --elimu-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo,
+        monospace;
+    --elimu-text-title: clamp(26px, 2.2vw + 14px, 34px);
+    --elimu-text-body: 15px;
+    --elimu-text-data: 14px;
+    --elimu-text-eyebrow: 11px;
+    --elimu-tracking-eyebrow: 0.18em;
+
+    /* Spacing: 8pt grid on a 4px base */
+    --elimu-space-1: 4px;
+    --elimu-space-2: 8px;
+    --elimu-space-3: 12px;
+    --elimu-space-4: 16px;
+    --elimu-space-5: 20px;
+    --elimu-space-6: 24px;
+    --elimu-space-8: 32px;
+
+    /* Shape and elevation */
+    --elimu-radius: 10px;
+    --elimu-radius-lg: 14px;
+    --elimu-shadow: 0 1px 2px rgb(16 24 40 / 0.06),
+        0 1px 3px rgb(16 24 40 / 0.08);
+
+    /* Motion: only transform and opacity animate */
+    --elimu-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --elimu-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --elimu-duration-press: 160ms;
+    --elimu-duration-popover: 180ms;
+    --elimu-duration-view: 240ms;
+
+    /* Focus */
+    --elimu-focus-ring: 2px solid var(--elimu-accent);
+    --elimu-focus-offset: 2px;
+}
+
+.dark {
+    --elimu-bg: #12151b;
+    --elimu-surface: #1a1e26;
+    --elimu-surface-2: #20252f;
+    --elimu-fg: #e7eaf0;
+    --elimu-muted: #9aa2af;
+    --elimu-border: #2b313c;
+    --elimu-accent: #82aef0;
+    --elimu-on-accent: #12151b;
+    --elimu-danger: #f2b8b5;
+    --elimu-success: #7fd0a9;
+    --elimu-warning: #e8c777;
+    --elimu-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+
+    /* Re-derive here: var() resolves where it is declared, and Fuse puts .dark on <body>, below :root */
+    --elimu-accent-soft: color-mix(
+        in oklab,
+        var(--elimu-accent) 12%,
+        var(--elimu-surface)
+    );
+    --elimu-fg-soft: color-mix(
+        in oklab,
+        var(--elimu-fg) 72%,
+        var(--elimu-surface)
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --elimu-duration-press: 0ms;
+        --elimu-duration-popover: 0ms;
+        --elimu-duration-view: 0ms;
+    }
+}
