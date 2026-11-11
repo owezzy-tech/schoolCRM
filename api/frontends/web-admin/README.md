@@ -41,6 +41,17 @@ messages. Add it to the `providers` of the lazy route that uses Formly, not to
 render it with `<formly-form>` inside a `[formGroup]`; see the *Forms/Formly dynamic form*
 story. Formly 10 is the last line that supports Angular 21; Formly 11 needs Angular 22.
 
+## Searchable select
+
+`<app-searchable-select>` (`src/app/shared/components/searchable-select`) is a Material
+select with an `<elimu-select-search>` box. That component lives in
+`src/app/shared/components/select-search`: a renamed fork of
+[ngx-mat-select-search](https://github.com/bithost-gmbh/ngx-mat-select-search) 9.0.0 (MIT,
+licence kept beside the source), owned and changed here rather than installed from npm. Bind it to any `FormControl`, pass `options` as `{ label, value }[]`, and project an
+`error` slot for the message. Filtering ignores case and accents. In Formly forms add
+`provideSearchableSelectFormly()` next to `provideAppFormly()` and use
+`type: 'searchable-select'`. See the *Forms/Searchable select* stories.
+
 ## Code scaffolding
 
 Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
