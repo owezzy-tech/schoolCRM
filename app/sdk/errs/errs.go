@@ -49,6 +49,30 @@ type Error struct {
 	Message  string  `json:"message"`
 	FuncName string  `json:"-"`
 	FileName string  `json:"-"`
+
+	// cause is the internal error behind a client-safe Message. The Errors
+	// middleware logs it; it is never encoded into a response.
+	cause error
+}
+
+// Mask constructs an error whose client-visible message hides the cause. Use it
+// where the underlying error would leak internals or let a caller probe state,
+// such as whether an account exists. The cause is still logged.
+func Mask(code ErrCode, message string, cause error) *Error {
+	pc, filename, line, _ := runtime.Caller(1)
+
+	return &Error{
+		Code:     code,
+		Message:  message,
+		FuncName: runtime.FuncForPC(pc).Name(),
+		FileName: fmt.Sprintf("%s:%d", filename, line),
+		cause:    cause,
+	}
+}
+
+// Unwrap returns the masked internal cause, if any.
+func (e *Error) Unwrap() error {
+	return e.cause
 }
 
 // New constructs an error based on an app error.

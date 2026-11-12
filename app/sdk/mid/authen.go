@@ -115,7 +115,7 @@ func HandleAuthorization(ctx context.Context, authorizationHeader string, userBu
 
 	usr, err := userBus.Authenticate(ctx, *addr, pass)
 	if err != nil {
-		return ctx, errs.New(errs.Unauthenticated, err)
+		return ctx, errs.Mask(errs.Unauthenticated, auth.InvalidCredentials, err)
 	}
 
 	claims := auth.Claims{

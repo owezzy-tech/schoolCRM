@@ -54,11 +54,12 @@ func (a *app) login(ctx context.Context, r *http.Request) web.Encoder {
 
 	usr, err := a.userBus.Authenticate(ctx, *addr, req.Password)
 	if err != nil {
-		return errs.New(errs.Unauthenticated, err)
+		return errs.Mask(errs.Unauthenticated, auth.InvalidCredentials, err)
 	}
 
 	if !usr.Enabled {
-		return errs.New(errs.Unauthenticated, auth.ErrUserDisabled)
+		// Shown only after the password matched, so it reveals nothing to a guesser.
+		return errs.Mask(errs.Unauthenticated, "This account is disabled. Contact your school administrator.", auth.ErrUserDisabled)
 	}
 
 	now := time.Now().UTC()
@@ -109,7 +110,7 @@ func (a *app) applicantPortalToken(ctx context.Context, r *http.Request) web.Enc
 
 	profile, err := a.admissionsBus.QueryApplicantProfileByConstituentID(ctx, constituent.ID)
 	if err != nil {
-		return errs.New(errs.Unauthenticated, err)
+		return errs.Mask(errs.Unauthenticated, "we could not verify a submitted application for that email", err)
 	}
 	if !profile.Active {
 		return errs.New(errs.Unauthenticated, fmt.Errorf("admissions applicant profile inactive"))
