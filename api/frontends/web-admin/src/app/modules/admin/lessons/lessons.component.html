@@ -1,14 +1,16 @@
-<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+<div class="elimu-workspace flex min-w-0 flex-auto flex-col p-6 sm:p-8">
     <div
         class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
     >
         <div>
+            <p class="elimu-eyebrow">Teaching workspace</p>
             <h1 class="text-3xl font-semibold tracking-tight">Lesson plans</h1>
             <p class="text-secondary mt-1">
                 Drafts stay private to their author until submitted for HOD
                 review.
             </p>
         </div>
+
         @if (scope() && can('teach')) {
             <a
                 mat-stroked-button
@@ -32,6 +34,22 @@
                 <span class="ml-2">New lesson plan</span>
             </a>
         }
+    </div>
+
+    <div class="elimu-toolbar mb-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        <mat-form-field class="w-full sm:flex-1" subscriptSizing="dynamic">
+            <mat-label>Search lesson plans</mat-label>
+            <input matInput type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+        </mat-form-field>
+        <mat-form-field class="w-full sm:w-72" subscriptSizing="dynamic">
+            <mat-label>Filter by status</mat-label>
+            <mat-select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+                <mat-option value="">All statuses</mat-option>
+                @for (status of statuses; track status) {
+                    <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
     </div>
 
     @if (errorMessage()) {

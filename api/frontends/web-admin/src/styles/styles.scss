@@ -6,6 +6,45 @@
 @use 'apps/calendar';
 @use 'vendors/filepond';
 
+.elimu-workspace {
+    color: var(--elimu-fg);
+    font-family: var(--elimu-font-sans);
+    font-size: var(--elimu-text-body);
+}
+
+.elimu-workspace h1 {
+    font-family: var(--elimu-font-display);
+    font-feature-settings: var(--elimu-font-display-features);
+    font-size: var(--elimu-text-title);
+    line-height: 1.15;
+}
+
+.elimu-workspace .bg-card,
+.elimu-toolbar {
+    background: var(--elimu-surface);
+    border: 1px solid var(--elimu-border);
+    border-radius: var(--elimu-radius-lg);
+    box-shadow: var(--elimu-shadow);
+}
+
+.elimu-workspace table thead {
+    background: var(--elimu-surface-2);
+    color: var(--elimu-muted);
+}
+
+.elimu-workspace table tbody tr:hover {
+    background: var(--elimu-accent-soft);
+}
+
+.elimu-eyebrow {
+    color: var(--elimu-muted);
+    font-family: var(--elimu-font-mono);
+    font-size: var(--elimu-text-eyebrow);
+    letter-spacing: var(--elimu-tracking-eyebrow);
+    margin-bottom: var(--elimu-space-2);
+    text-transform: uppercase;
+}
+
 @media print {
     body:has(app-lesson-export) ngx-ui-loader {
         display: none !important;

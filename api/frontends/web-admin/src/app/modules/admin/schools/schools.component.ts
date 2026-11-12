@@ -34,7 +34,14 @@ export class SchoolsComponent {
     readonly schools = signal<School[] | null>(null);
     readonly errorMessage = signal<string | null>(null);
     readonly name = signal('');
+    readonly query = signal('');
     readonly saving = signal(false);
+    readonly visibleSchools = computed(() => {
+        const query = this.query().trim().toLocaleLowerCase();
+        return (this.schools() ?? []).filter((school) =>
+            school.name.toLocaleLowerCase().includes(query)
+        );
+    });
 
     constructor() {
         this.load();

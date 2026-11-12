@@ -26,6 +26,17 @@
             </div>
 
             <!-- Alert -->
+            <fuse-alert
+                class="mt-8"
+                [appearance]="'outline'"
+                [showIcon]="false"
+                [type]="'info'"
+            >
+                You are browsing <strong>Fuse Demo</strong>. Click on the "Sign
+                in" button to access the Demo and Documentation.
+            </fuse-alert>
+
+            <!-- Alert -->
             @if (showAlert) {
                 <fuse-alert
                     class="mt-8"
@@ -116,15 +127,7 @@
                     [disabled]="signInForm.disabled"
                     (click)="signIn()"
                 >
-                    @if (!signInForm.disabled) {
-                        <span> Sign in </span>
-                    }
-                    @if (signInForm.disabled) {
-                        <mat-progress-spinner
-                            [diameter]="24"
-                            [mode]="'indeterminate'"
-                        ></mat-progress-spinner>
-                    }
+                    <span> Sign in </span>
                 </button>
 
                 <!-- Separator -->

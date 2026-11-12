@@ -89,15 +89,7 @@
                     [disabled]="unlockSessionForm.disabled"
                     (click)="unlock()"
                 >
-                    @if (!unlockSessionForm.disabled) {
-                        <span> Unlock your session </span>
-                    }
-                    @if (unlockSessionForm.disabled) {
-                        <mat-progress-spinner
-                            [diameter]="24"
-                            [mode]="'indeterminate'"
-                        ></mat-progress-spinner>
-                    }
+                    <span> Unlock your session </span>
                 </button>
 
                 <!-- Form footer -->

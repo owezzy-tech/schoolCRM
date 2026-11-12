@@ -1,6 +1,9 @@
-<div class="flex min-w-0 flex-auto flex-col p-6 sm:p-8">
-    <h1 class="text-3xl font-semibold tracking-tight">Schools</h1>
-    <p class="text-secondary mt-1">Schools you administer or belong to.</p>
+<div class="elimu-workspace flex min-w-0 flex-auto flex-col p-6 sm:p-8">
+    <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><p class="elimu-eyebrow">School access</p><h1 class="text-3xl font-semibold tracking-tight">Schools</h1>
+        <p class="text-secondary mt-1">Schools you administer or belong to.</p></div>
+        <mat-form-field class="w-full sm:w-80" subscriptSizing="dynamic"><mat-label>Search schools</mat-label><input matInput type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" /></mat-form-field>
+    </header>
 
     @if (errorMessage()) {
         <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{{ errorMessage() }}</div>
@@ -30,6 +33,8 @@
                     {{ canCreate() ? 'Create the first school above.' : 'You have not been added to a school.' }}
                 </p>
             </div>
+        } @else if (!visibleSchools().length) {
+            <div class="p-8 text-center"><h2 class="text-lg font-medium">No schools match</h2><p class="text-secondary mt-1">Try another school name.</p></div>
         } @else {
             <table class="w-full text-left">
                 <thead class="text-secondary border-b font-mono text-xs uppercase tracking-wider">
@@ -39,7 +44,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @for (school of schools(); track school.id) {
+                    @for (school of visibleSchools(); track school.id) {
                         <tr class="border-b last:border-0 hover:bg-hover">
                             <td class="px-6 py-3">
                                 <a class="font-medium text-primary hover:underline" [routerLink]="school.id">{{ school.name }}</a>

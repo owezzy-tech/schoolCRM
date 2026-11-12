@@ -125,15 +125,7 @@
                         type="submit"
                         [disabled]="submitting()"
                     >
-                        @if (!submitting()) {
-                            <span>Submit inquiry</span>
-                        }
-                        @if (submitting()) {
-                            <mat-progress-spinner
-                                [diameter]="24"
-                                [mode]="'indeterminate'"
-                            ></mat-progress-spinner>
-                        }
+                        <span>Submit inquiry</span>
                     </button>
                 </form>
             </div>

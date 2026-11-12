@@ -20,7 +20,11 @@ import {
 } from 'app/core/api/json-api';
 import { LessonScope, loadLessonScopes } from 'app/core/lessons/lesson-scopes';
 import { LessonsService } from 'app/core/lessons/lessons.service';
-import { LessonPlan } from 'app/core/lessons/lessons.types';
+import {
+    LESSON_STATUS_LABELS,
+    LessonPlan,
+    LessonStatus,
+} from 'app/core/lessons/lessons.types';
 import { SchoolAccessService } from 'app/core/school-access/school-access.service';
 import { Capability } from 'app/core/school-access/school-access.types';
 import { UserService } from 'app/core/user/user.service';
@@ -29,6 +33,14 @@ import { catchError, EMPTY, map } from 'rxjs';
 import { LessonStatusComponent } from './shared/lesson-status.component';
 
 export type LessonFilter = 'all' | 'mine' | 'review' | 'approval';
+const LESSON_STATUSES: LessonStatus[] = [
+    'draft',
+    'hod_review',
+    'dean_approval',
+    'changes_requested',
+    'approved',
+    'published',
+];
 
 @Component({
     selector: 'app-lessons',
@@ -58,6 +70,10 @@ export class LessonsComponent {
     readonly plans = signal<LessonPlan[] | null>(null);
     readonly errorMessage = signal<string | null>(null);
     readonly filter = signal<LessonFilter>('all');
+    readonly query = signal('');
+    readonly statusFilter = signal<LessonStatus | ''>('');
+    readonly statuses = LESSON_STATUSES;
+    readonly statusLabels = LESSON_STATUS_LABELS;
     private readonly selectedKey = toSignal(
         this.route.queryParamMap.pipe(
             map((params) =>
@@ -83,17 +99,25 @@ export class LessonsComponent {
     readonly visiblePlans = computed(() => {
         const plans = this.plans() ?? [];
         const viewerID = this.viewer()?.id;
+        const query = this.query().trim().toLocaleLowerCase();
         switch (this.filter()) {
             case 'mine':
-                return plans.filter((plan) => plan.authorID === viewerID);
+                return this.matchFilters(plans.filter((plan) => plan.authorID === viewerID), query);
             case 'review':
-                return plans.filter((plan) => plan.status === 'hod_review');
+                return this.matchFilters(plans.filter((plan) => plan.status === 'hod_review'), query);
             case 'approval':
-                return plans.filter((plan) => plan.status === 'dean_approval');
+                return this.matchFilters(plans.filter((plan) => plan.status === 'dean_approval'), query);
             default:
-                return plans;
+                return this.matchFilters(plans, query);
         }
     });
+
+    private matchFilters(plans: LessonPlan[], query: string): LessonPlan[] {
+        return plans.filter((plan) =>
+            (!query || plan.title.toLocaleLowerCase().includes(query)) &&
+            (!this.statusFilter() || plan.status === this.statusFilter())
+        );
+    }
 
     constructor() {
         this.loadScopes();

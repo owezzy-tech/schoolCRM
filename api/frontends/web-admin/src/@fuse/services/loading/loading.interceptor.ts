@@ -14,12 +14,13 @@ export const fuseLoadingInterceptor = (
     req: HttpRequest<unknown>,
     next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
-    const fuseLoadingService = inject(FuseLoadingService);
-    let handleRequestsAutomatically = false;
-
-    if (req.context.get(FUSE_SKIP_LOADING)) {
+    // The shared top bar is reserved for requests handled by the SchoolCRM API.
+    if (req.context.get(FUSE_SKIP_LOADING) || !req.url.startsWith('/v1/')) {
         return next(req);
     }
+
+    const fuseLoadingService = inject(FuseLoadingService);
+    let handleRequestsAutomatically = false;
 
     fuseLoadingService.auto$.pipe(take(1)).subscribe((value) => {
         handleRequestsAutomatically = value;
