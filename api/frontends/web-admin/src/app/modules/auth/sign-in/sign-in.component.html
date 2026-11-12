@@ -25,15 +25,19 @@
                 </a>
             </div>
 
-            <!-- Alert -->
+            <!-- Result banner: success (status) or failure (alert) -->
             @if (showAlert) {
                 <fuse-alert
                     class="mt-8"
-                    [appearance]="'outline'"
-                    [showIcon]="false"
+                    data-testid="sign-in-banner"
+                    [attr.role]="alert.type === 'error' ? 'alert' : 'status'"
+                    [attr.aria-live]="alert.type === 'error' ? 'assertive' : 'polite'"
+                    [appearance]="'soft'"
+                    [showIcon]="true"
                     [type]="alert.type"
                     [@shake]="alert.type === 'error'"
                 >
+                    <span fuseAlertTitle>{{ alert.title }}</span>
                     {{ alert.message }}
                 </fuse-alert>
             }

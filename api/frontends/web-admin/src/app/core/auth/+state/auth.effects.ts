@@ -39,6 +39,7 @@ interface JsonApiError {
 }
 
 interface AuthErrorResponse {
+    status?: number;
     error?: {
         message?: string;
         errors?: JsonApiError[];
@@ -142,7 +143,22 @@ export class AuthEffects {
     );
 }
 
+/**
+ * 4xx details are client-safe by contract (the auth service masks credential
+ * failures); network and server failures get plain-language copy instead of
+ * whatever the proxy or server returned.
+ */
 function authErrorMessage(error: AuthErrorResponse): string {
+    const status = error.status ?? 0;
+    if (status === 0) {
+        return "We couldn't reach SchoolCRM. Check your connection and try again.";
+    }
+    if (status === 429) {
+        return 'Too many sign-in attempts. Wait a minute and try again.';
+    }
+    if (status >= 500) {
+        return 'Sign-in is temporarily unavailable. Please try again in a moment.';
+    }
     return (
         error.error?.errors?.[0]?.detail ??
         error.error?.errors?.[0]?.title ??
