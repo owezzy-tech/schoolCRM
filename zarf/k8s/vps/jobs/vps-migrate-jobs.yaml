@@ -6,7 +6,6 @@ metadata:
   namespace: schoolcrm
 spec:
   backoffLimit: 0
-  ttlSecondsAfterFinished: 86400
   template:
     spec:
       restartPolicy: Never
@@ -52,7 +51,6 @@ metadata:
   namespace: schoolcrm
 spec:
   backoffLimit: 0
-  ttlSecondsAfterFinished: 86400
   template:
     spec:
       restartPolicy: Never
@@ -90,7 +88,6 @@ metadata:
   namespace: schoolcrm
 spec:
   backoffLimit: 0
-  ttlSecondsAfterFinished: 86400
   template:
     spec:
       restartPolicy: Never

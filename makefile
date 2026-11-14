@@ -408,45 +408,34 @@ dev-database-restart:
 # ==============================================================================
 # Production on the owezzy-db k3s node (docs/vps-deployment.md, zarf/k8s/vps)
 #
-# Images are built for linux/amd64 here and imported straight into k3s's
-# containerd over SSH; no registry is involved. VPS_TAG pins every release to
-# a commit. kubectl talks to the API through an SSH tunnel:
+# Releases deploy themselves: pushing a v* tag runs .github/workflows/release.yml,
+# which pushes the images to GHCR, and Flux in the cluster applies that tag.
+# These targets are the one-off admin steps. kubectl talks to the API through
+# an SSH tunnel:
 #   ssh -f -N -L 16443:127.0.0.1:6443 owezzy-db
 #   export KUBECONFIG=~/.kube/owezzy-k3s.yaml
 
-VPS_HOST    ?= owezzy-db
-VPS_TAG     ?= $(shell git rev-parse --short=12 HEAD)
-VPS_IMAGES  := schoolcrm auth rag web-admin
 VPS_KUBECTL := kubectl --namespace=schoolcrm
 
-vps-images:
-	@test -z "$$(git status --porcelain)" || { echo "commit or stash changes before building release images"; exit 1; }
-	docker buildx build --platform linux/amd64 --load -f zarf/docker/dockerfile.schoolcrm -t $(BASE_IMAGE_NAME)/schoolcrm:$(VPS_TAG) --build-arg BUILD_TAG=$(VPS_TAG) --build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") .
-	docker buildx build --platform linux/amd64 --load -f zarf/docker/dockerfile.auth --target production -t $(BASE_IMAGE_NAME)/auth:$(VPS_TAG) --build-arg BUILD_TAG=$(VPS_TAG) --build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") .
-	docker buildx build --platform linux/amd64 --load -f zarf/docker/dockerfile.rag -t $(BASE_IMAGE_NAME)/rag:$(VPS_TAG) --build-arg BUILD_TAG=$(VPS_TAG) --build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") .
-	docker buildx build --platform linux/amd64 --load -f zarf/docker/dockerfile.web-admin -t $(BASE_IMAGE_NAME)/web-admin:$(VPS_TAG) --build-arg BUILD_TAG=$(VPS_TAG) --build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") .
-	for app in $(VPS_IMAGES); do \
-		docker save $(BASE_IMAGE_NAME)/$$app:$(VPS_TAG) | ssh $(VPS_HOST) k3s ctr --namespace=k8s.io images import - || exit 1; \
-	done
-
-# Explicit release step: migrations never seed. Re-running deletes the finished Jobs first.
-vps-migrate:
-	$(VPS_KUBECTL) delete job schoolcrm-migrate rag-curriculum-migrate rag-lesson-migrate --ignore-not-found
-	kustomize build zarf/k8s/vps/jobs | sed 's/:set-by-deploy/:$(VPS_TAG)/' | kubectl apply -f -
-	$(VPS_KUBECTL) wait --for=condition=complete --timeout=300s job/schoolcrm-migrate job/rag-curriculum-migrate job/rag-lesson-migrate
-
-vps-apply:
+# Namespace, quota, StorageClass and the postgres ExternalName; outside Flux's reach.
+vps-platform:
 	kustomize build zarf/k8s/vps/platform | kubectl apply -f -
-	for app in auth schoolcrm rag web-admin; do \
-		kustomize build zarf/k8s/vps/$$app | sed 's/:set-by-deploy/:$(VPS_TAG)/' | kubectl apply -f - || exit 1; \
-	done
-	$(VPS_KUBECTL) rollout status deployment/auth deployment/schoolcrm deployment/rag deployment/web-admin --timeout=300s
+
+# Install Flux and the SchoolCRM sync objects (re-run to upgrade Flux).
+vps-flux:
+	kustomize build zarf/k8s/flux | kubectl apply --server-side -f -
+	kubectl --namespace=flux-system rollout status deployment/source-controller deployment/kustomize-controller --timeout=180s
+
+# Check for a new release now instead of at the next 5-minute poll.
+vps-reconcile:
+	$(VPS_KUBECTL) annotate --overwrite gitrepository/schoolcrm reconcile.fluxcd.io/requestedAt="$$(date +%s)"
 
 vps-tunnel:
 	kustomize build zarf/k8s/vps/cloudflared | kubectl apply -f -
 	$(VPS_KUBECTL) rollout status deployment/cloudflared --timeout=120s
 
 vps-status:
+	$(VPS_KUBECTL) get gitrepository,kustomization
 	$(VPS_KUBECTL) get pods,svc,pvc -o wide
 	$(VPS_KUBECTL) describe resourcequota schoolcrm-quota
 

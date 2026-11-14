@@ -8,7 +8,3 @@ components:
 patches:
   - path: ./vps-auth-patch-deploy.yaml
   - path: ./vps-auth-patch-service.yaml
-images:
-  - name: auth-image
-    newName: localhost/schoolcrm/auth
-    newTag: set-by-deploy

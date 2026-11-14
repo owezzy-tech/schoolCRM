@@ -4,6 +4,8 @@ Run with python3 -m unittest discover -s scripts/tests -p test_k8s_vps_contract.
 Needs the kustomize binary and PyYAML. No cluster, images or credentials are used.
 """
 
+import json
+import re
 import shutil
 import subprocess
 import unittest
@@ -13,17 +15,22 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 VPS = ROOT / "zarf/k8s/vps"
-OVERLAYS = ("platform", "auth", "schoolcrm", "rag", "web-admin", "jobs", "cloudflared")
+# What reaches the cluster: platform/ and cloudflared/ by hand, apps/ and jobs/ through Flux.
+OVERLAYS = ("platform", "apps", "jobs", "cloudflared")
 
 
-def build(overlay):
+def build_path(path):
     result = subprocess.run(
-        ["kustomize", "build", str(VPS / overlay)],
+        ["kustomize", "build", str(path)],
         capture_output=True,
         text=True,
         check=True,
     )
     return [doc for doc in yaml.safe_load_all(result.stdout) if doc]
+
+
+def build(overlay):
+    return build_path(VPS / overlay)
 
 
 def pod_specs(docs):
@@ -96,7 +103,7 @@ class K8sVPSContractTests(unittest.TestCase):
                 self.assertIn("cpu", limits, name)
 
     def test_migrations_are_explicit_jobs_and_never_seed(self):
-        api = dict(pod_specs(self.docs["schoolcrm"]))["schoolcrm"]
+        api = dict(pod_specs(self.docs["apps"]))["schoolcrm"]
         self.assertEqual(api.get("initContainers", []), [])
         self.assertEqual([c["name"] for c in api["containers"]], ["schoolcrm"])
         jobs = {d["metadata"]["name"]: d for d in self.docs["jobs"] if d["kind"] == "Job"}
@@ -117,14 +124,28 @@ class K8sVPSContractTests(unittest.TestCase):
                         self.assertIn("secretKeyRef", e.get("valueFrom", {}), f"{name}: {e['name']}")
                     self.assertNotIn("configMapKeyRef", e.get("valueFrom", {}), f"{name}: {e['name']}")
 
-    def test_images_have_no_development_defaults(self):
-        for name, spec in pod_specs(self.all):
+    def test_every_service_runs_the_release_version(self):
+        version = json.loads((ROOT / "package.json").read_text())["version"]
+        for name, spec in pod_specs(self.docs["apps"] + self.docs["jobs"]):
             for c in containers(spec):
-                image = c["image"]
-                self.assertNotRegex(image, r":(latest|0\.0\.1)$", name)
-                if image.startswith("localhost/schoolcrm/"):
-                    self.assertTrue(image.endswith(":set-by-deploy"), image)
-                    self.assertEqual(c["imagePullPolicy"], "IfNotPresent")
+                self.assertRegex(c["image"], rf"^ghcr\.io/owezzy-tech/schoolcrm-[a-z-]+:v{re.escape(version)}$", name)
+                self.assertEqual(c["imagePullPolicy"], "IfNotPresent", name)
+
+    def test_flux_deploys_only_inside_the_namespace_and_migrates_first(self):
+        flux = build_path(ROOT / "zarf/k8s/flux")
+        repo = next(d for d in flux if d["kind"] == "GitRepository")
+        self.assertIn("semver", repo["spec"]["ref"])
+        syncs = {d["metadata"]["name"]: d["spec"] for d in flux if d["kind"] == "Kustomization" and "sourceRef" in d.get("spec", {})}
+        self.assertEqual(set(syncs), {"schoolcrm-migrations", "schoolcrm-apps"})
+        for spec in syncs.values():
+            self.assertEqual(spec["serviceAccountName"], "flux-deployer")
+            self.assertTrue(spec["wait"])
+        self.assertEqual(syncs["schoolcrm-migrations"]["path"], "./zarf/k8s/vps/jobs")
+        self.assertTrue(syncs["schoolcrm-migrations"]["force"])
+        self.assertEqual(syncs["schoolcrm-apps"]["dependsOn"], [{"name": "schoolcrm-migrations"}])
+        binding = next(d for d in flux if d["kind"] == "RoleBinding" and d["metadata"]["name"] == "flux-deployer")
+        self.assertEqual(binding["metadata"]["namespace"], "schoolcrm")
+        self.assertFalse([d for d in flux if d["kind"] == "ClusterRoleBinding" and "flux-deployer" in yaml.safe_dump(d)])
 
     def test_user_files_survive_claim_deletion(self):
         storage = next(d for d in self.all if d["kind"] == "StorageClass")
@@ -137,9 +158,9 @@ class K8sVPSContractTests(unittest.TestCase):
         mib = lambda v: int(v[:-2]) * (1024 if v.endswith("Gi") else 1)
         limit = lambda spec: sum(mib(c["resources"]["limits"]["memory"]) for c in spec["containers"])
         services = sum(limit(spec) for d in self.all if d["kind"] == "Deployment" for spec in [d["spec"]["template"]["spec"]])
-        # Migration Jobs run one at a time during a release, alongside the services.
-        largest_job = max(limit(d["spec"]["template"]["spec"]) for d in self.all if d["kind"] == "Job")
-        self.assertLessEqual(services + largest_job, mib(quota["limits.memory"]))
+        # Flux starts all migration Jobs together during a release, alongside the services.
+        jobs = sum(limit(d["spec"]["template"]["spec"]) for d in self.all if d["kind"] == "Job")
+        self.assertLessEqual(services + jobs, mib(quota["limits.memory"]))
 
 
 if __name__ == "__main__":

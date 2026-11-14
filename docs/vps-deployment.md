@@ -16,14 +16,16 @@ The VPS has 4 vCPU, 7.9 GB RAM and about 87 GB free disk. It is shared:
 - **k3s v1.37.2+k3s1** (`/etc/rancher/k3s/config.yaml`) has `servicelb` and
   `traefik` disabled, so ports 80/443 stay free: certbot renews
   `db.owenadirah.com` in standalone mode on port 80. Secrets are encrypted at rest.
-  The kubelet reserves 4608 Mi for Docker, k3s and the OS, which leaves 2828 Mi
-  for pods across all namespaces (SchoolCRM, GG-Garage, HRAS).
+  The kubelet reserves 3072 Mi for Docker (PostgreSQL capped at 1.5 GiB, Neo4j
+  at 1 GiB), k3s and the OS, which leaves 4364 Mi for pods across all
+  namespaces (SchoolCRM, Flux, GG-Garage, HRAS).
 - **ufw** allows the pod (`10.42.0.0/16`) and service (`10.43.0.0/16`) ranges.
   The Kubernetes API (6443) and kubelet (10250) are not reachable from outside.
 - **Namespace `schoolcrm`** enforces the `restricted` pod-security level. Every
   container runs as a non-root user with a read-only root filesystem, no
   privilege escalation and all capabilities dropped. A ResourceQuota (1 Gi
-  requests, 2 Gi limits) keeps SchoolCRM inside its share. A NetworkPolicy
+  requests, 3 Gi limits, enough for the services plus a release's migration
+  Jobs) keeps SchoolCRM inside its share. A NetworkPolicy
   admits traffic only from pods in the same namespace.
 - **Nothing binds a host port.** Public traffic arrives through the outbound-only
   `cloudflared` connector in the namespace.
@@ -104,18 +106,38 @@ VPS, then `kubectl rollout restart` the consumer.
 
 ## Release
 
-Build images from a clean, reviewed commit; the tag is the commit's short SHA:
+Releases deploy themselves; nothing outside the cluster can reach it.
 
-```sh
-make vps-images                # linux/amd64 builds, imported into k3s over SSH
-make vps-migrate               # Go ./admin migrate + RAG curriculum/lesson migrations
-make vps-apply                 # platform, auth, API, RAG, web-admin; waits for rollouts
-make vps-status
+```text
+release/x.y.z branch   npm version x.y.z      package.json + zarf/k8s/vps/release newTag, one commit
+                       npm run changelog
+main + tag vx.y.z ──▶ .github/workflows/release.yml
+                       tests, then ghcr.io/owezzy-tech/schoolcrm-{schoolcrm,auth,rag,web-admin}:vx.y.z
+Flux (in k3s)    ◀── polls the public repo every 5 min for the newest v* tag ≥ 0.2.0
+                       schoolcrm-migrations: zarf/k8s/vps/jobs, waits for the three Jobs
+                       schoolcrm-apps:       zarf/k8s/vps/apps, waits for the rollouts
 ```
 
-`vps-migrate` runs `./admin migrate` only; nothing on this host runs `seed` or
-`migrate-seed`. Run it before `vps-apply` whenever the schema changes. Use
-`VPS_TAG=<sha>` to redeploy or roll back to an earlier imported build.
+- `npm version` runs `scripts/release/set-image-tag.mjs` through the `version`
+  lifecycle, so the tag and the manifests cannot drift; the workflow and the
+  contract test both fail if they do.
+- Flux may see the tag before the images finish pushing. The pods retry the
+  pull; the migrations Kustomization allows 20 minutes.
+- The Jobs run `./admin migrate` and the RAG migrations only; nothing on this
+  host runs `seed` or `migrate-seed`. Flux replaces them (`force`) when the
+  release changes, so each release migrates exactly once.
+- Flux applies as `flux-deployer`, bound to the `admin` role in `schoolcrm`
+  only. It reverts manual edits to the objects it manages; Secrets created on
+  the VPS are not in Git and are left alone.
+- `make vps-status` shows the Flux objects and pods; `make vps-reconcile`
+  checks for a new tag immediately.
+
+One-off admin steps, outside Flux: `make vps-platform` (Namespace, quota,
+StorageClass, `postgres` ExternalName) and `make vps-flux` (installs Flux
+v2.10.0 with only the source and kustomize controllers, about 130 Mi; re-run to
+upgrade). The first release's GHCR packages start private: set each of the four
+`schoolcrm-*` packages to public once, under the organisation's Packages
+settings, so k3s can pull without a credential.
 
 ## First deployment: data restore order
 
@@ -140,7 +162,8 @@ make vps-status
    Never use `--clean` against the shared server. Compare table counts with the
    receipt `final-source-decision-20261111.receipt.json`, check table ownership,
    constraints and a vector query.
-3. **Create the Secrets**, then `make vps-images vps-migrate vps-apply`.
+3. **Create the Secrets**, then `make vps-platform vps-flux` and cut a release
+   (see Release).
 4. **Verify inside the cluster** before public traffic: readiness of every
    service, existing-user login through `/v1/auth`, school-scoped permissions
    and denied requests (JSON:API errors), published lesson history, and RAG
@@ -155,9 +178,17 @@ make vps-status
 
 ## Rollback
 
-- **Application:** `make vps-apply VPS_TAG=<previous sha>`, provided the
-  previous images are compatible with the current schema. Migrations are
-  additive; do not drop tables or published lesson versions.
+- **Application:** pin Flux to the previous release, provided its images are
+  compatible with the current schema:
+
+  ```sh
+  kubectl -n schoolcrm patch gitrepository schoolcrm --type merge \
+    -p '{"spec":{"ref":{"semver":null,"tag":"v<previous>"}}}'
+  make vps-reconcile
+  ```
+
+  Fix forward with a new release, then restore `semver` with `make vps-flux`.
+  Migrations are additive; do not drop tables or published lesson versions.
 - **Data:** the restore never touches GG-Garage databases. To redo a failed
   first restore, drop and recreate only the `schoolcrm` database as the
   administrator, then restore again from the verified dump.

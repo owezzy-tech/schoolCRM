@@ -15,7 +15,3 @@ patches:
         path: /spec/template/spec/containers/0/ports/0/containerPort
         value: 8080
   - path: ./vps-web-admin-patch-deploy.yaml
-images:
-  - name: web-admin-image
-    newName: localhost/schoolcrm/web-admin
-    newTag: set-by-deploy

@@ -8,7 +8,3 @@ components:
 patches:
   - path: ./vps-rag-patch-deploy.yaml
   - path: ./vps-rag-patch-service.yaml
-images:
-  - name: rag-image
-    newName: localhost/schoolcrm/rag
-    newTag: set-by-deploy
