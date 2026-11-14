@@ -114,3 +114,22 @@ export const Dismissible: Story = {
         });
     },
 };
+
+// The sign-in page's result banner (auth/sign-in): soft appearance with icon.
+export const SignInSucceeded: Story = {
+    name: 'Sign-in: success',
+    args: {
+        type: 'success',
+        title: 'Signed in',
+        message: 'Taking you to your dashboard…',
+    },
+};
+
+export const SignInFailed: Story = {
+    name: 'Sign-in: failure',
+    args: {
+        type: 'error',
+        title: "Couldn't sign you in",
+        message: 'Invalid email or password.',
+    },
+};

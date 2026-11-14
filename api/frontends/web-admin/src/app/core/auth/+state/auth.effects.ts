@@ -1,6 +1,11 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import {
+    HttpClient,
+    HttpErrorResponse,
+    HttpHeaders,
+} from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { jsonApiErrorMessage } from 'app/core/api/json-api';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { TokenStorageService } from 'app/core/auth/token-storage.service';
 import { User } from 'app/core/user/user.types';
@@ -33,18 +38,6 @@ interface AuthenticateResponse {
     user: User;
 }
 
-interface JsonApiError {
-    detail?: string;
-    title?: string;
-}
-
-interface AuthErrorResponse {
-    error?: {
-        message?: string;
-        errors?: JsonApiError[];
-    };
-}
-
 @Injectable()
 export class AuthEffects {
     private readonly actions$ = inject(Actions);
@@ -71,7 +64,7 @@ export class AuthEffects {
                                 user,
                             });
                         }),
-                        catchError((error: AuthErrorResponse) =>
+                        catchError((error: HttpErrorResponse) =>
                             of(
                                 AuthApiActions.signInFailure({
                                     error: authErrorMessage(error),
@@ -142,11 +135,20 @@ export class AuthEffects {
     );
 }
 
-function authErrorMessage(error: AuthErrorResponse): string {
-    return (
-        error.error?.errors?.[0]?.detail ??
-        error.error?.errors?.[0]?.title ??
-        error.error?.message ??
-        'Sign in failed.'
-    );
+/**
+ * 4xx details are client-safe by contract (the auth service masks credential
+ * failures); network and server failures get plain-language copy instead of
+ * whatever the proxy or server returned.
+ */
+function authErrorMessage(error: HttpErrorResponse): string {
+    if (error.status === 0) {
+        return "We couldn't reach SchoolCRM. Check your connection and try again.";
+    }
+    if (error.status === 429) {
+        return 'Too many sign-in attempts. Wait a minute and try again.';
+    }
+    if (error.status >= 500) {
+        return 'Sign-in is temporarily unavailable. Please try again in a moment.';
+    }
+    return jsonApiErrorMessage(error, 'Sign in failed.');
 }

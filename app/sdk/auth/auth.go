@@ -21,6 +21,10 @@ const TokenExpiry = 8 * time.Hour
 
 const PortalScopeApplicant = "applicant_portal"
 
+// InvalidCredentials is the only message clients see for a failed sign-in, so
+// the response cannot reveal whether the email has an account.
+const InvalidCredentials = "Invalid email or password."
+
 // Specific error variables for auth failures.
 var (
 	ErrForbidden       = errors.New("attempted action is not allowed")
