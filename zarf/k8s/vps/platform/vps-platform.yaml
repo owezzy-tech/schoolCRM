@@ -1,6 +1,6 @@
 # Shared SchoolCRM resources on the owezzy-db k3s node (bead schoolCRM-5ho.11).
 # The node also runs GG-Garage and HRAS namespaces; the quota keeps SchoolCRM inside
-# its share of the 2828Mi the kubelet allocates to pods (see docs/vps-deployment.md).
+# its share of the 4364Mi the kubelet allocates to pods (see docs/vps-deployment.md).
 
 apiVersion: v1
 kind: Namespace
@@ -21,8 +21,10 @@ spec:
     pods: "12"
     requests.cpu: "1"
     requests.memory: 1Gi
-    limits.cpu: "3"
-    # Services (~1.5Gi) plus the three migration Jobs, which Flux starts together.
+    # Limits cover the services, cloudflared and the three migration Jobs, which
+    # Flux starts together (4 CPU, ~2.4Gi), plus room for a debug pod. CPU limits
+    # only throttle; they reserve nothing.
+    limits.cpu: "5"
     limits.memory: 3Gi
     persistentvolumeclaims: "2"
     requests.storage: 5Gi

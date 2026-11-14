@@ -23,9 +23,9 @@ The VPS has 4 vCPU, 7.9 GB RAM and about 87 GB free disk. It is shared:
   The Kubernetes API (6443) and kubelet (10250) are not reachable from outside.
 - **Namespace `schoolcrm`** enforces the `restricted` pod-security level. Every
   container runs as a non-root user with a read-only root filesystem, no
-  privilege escalation and all capabilities dropped. A ResourceQuota (1 Gi
-  requests, 3 Gi limits, enough for the services plus a release's migration
-  Jobs) keeps SchoolCRM inside its share. A NetworkPolicy
+  privilege escalation and all capabilities dropped. A ResourceQuota (1 CPU and
+  1 Gi requests; 5 CPU and 3 Gi limits, enough for the services plus a
+  release's migration Jobs running together) keeps SchoolCRM inside its share. A NetworkPolicy
   admits traffic only from pods in the same namespace.
 - **Nothing binds a host port.** Public traffic arrives through the outbound-only
   `cloudflared` connector in the namespace.

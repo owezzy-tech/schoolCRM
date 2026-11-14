@@ -43,6 +43,18 @@ def containers(spec):
     return spec.get("initContainers", []) + spec["containers"]
 
 
+def quantity(value):
+    """CPU in millicores or memory in MiB, from the forms these manifests use."""
+    value = str(value)
+    if value.endswith("m"):
+        return int(value[:-1])
+    if value.endswith("Gi"):
+        return int(value[:-2]) * 1024
+    if value.endswith("Mi"):
+        return int(value[:-2])
+    return int(value) * 1000
+
+
 def env_map(container):
     return {e["name"]: e for e in container.get("env", [])}
 
@@ -155,12 +167,13 @@ class K8sVPSContractTests(unittest.TestCase):
 
     def test_quota_fits_the_namespace_workloads(self):
         quota = next(d for d in self.all if d["kind"] == "ResourceQuota")["spec"]["hard"]
-        mib = lambda v: int(v[:-2]) * (1024 if v.endswith("Gi") else 1)
-        limit = lambda spec: sum(mib(c["resources"]["limits"]["memory"]) for c in spec["containers"])
-        services = sum(limit(spec) for d in self.all if d["kind"] == "Deployment" for spec in [d["spec"]["template"]["spec"]])
-        # Flux starts all migration Jobs together during a release, alongside the services.
-        jobs = sum(limit(d["spec"]["template"]["spec"]) for d in self.all if d["kind"] == "Job")
-        self.assertLessEqual(services + jobs, mib(quota["limits.memory"]))
+        # Flux starts all migration Jobs together during a release, alongside the
+        # services; a pod the quota refuses waits, so every dimension must fit.
+        specs = [spec for _, spec in pod_specs(self.all)]
+        for key in ("requests.cpu", "requests.memory", "limits.cpu", "limits.memory"):
+            kind, resource = key.split(".")
+            used = sum(quantity(c["resources"][kind][resource]) for spec in specs for c in spec["containers"])
+            self.assertLessEqual(used, quantity(quota[key]), key)
 
 
 if __name__ == "__main__":
