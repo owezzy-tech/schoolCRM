@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly SchoolCRM backup to R2
+
+[Timer]
+# 30 minutes after GG-Garage's pg-backup.timer (03:15 UTC), so the dumps don't overlap.
+OnCalendar=*-*-* 03:45:00 UTC
+RandomizedDelaySec=10m
+# Run at boot if the server was off at 03:45.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -176,6 +176,58 @@ settings, so k3s can pull without a credential.
 6. Check memory and latency under representative use, and record the release
    SHA, image tags and cutover time in Beads.
 
+## Backups
+
+A nightly job copies SchoolCRM off the host to the R2 bucket
+`schoolcrm-backups`. Backups are encrypted on the VPS before upload and can be
+decrypted only with the "SchoolCRM Backups" private key, which is held by the
+owner (password manager) and never on the VPS.
+
+| What | Where in R2 | Kept |
+|---|---|---|
+| `schoolcrm` database (`pg_dump --format=custom`) | `database/daily/<UTC time>/schoolcrm.dump.gpg` | 35 days (bucket lifecycle rule) |
+| RAG files volume (`rag-files` PVC, tar.gz) | `database/daily/<UTC time>/rag-files.tar.gz.gpg` | 35 days |
+| SHA-256 of both encrypted files | `database/daily/<UTC time>/SHA256SUMS` | 35 days |
+| Final Railway dump, 30 October 2026 | `database/2026-10-30/` | permanently |
+
+`zarf/vps/backup/schoolcrm-backup.sh` dumps the database, checks the dump
+reads back (`pg_restore --list`), archives the RAG files, encrypts both with
+the public key in `/opt/schoolcrm/backup-gpg`, uploads them with rclone and
+checks each object's size in R2. `schoolcrm-backup.timer` runs it at 03:45
+UTC, 30 minutes after GG-Garage's `pg-backup.timer`. The R2 token in
+`/opt/schoolcrm/secrets/r2.env` has Object Read & Write on `schoolcrm-backups`
+only. Install or update on the VPS as root:
+
+```sh
+install -m 0700 schoolcrm-backup.sh /opt/schoolcrm/schoolcrm-backup.sh
+install -m 0644 schoolcrm-backup.service schoolcrm-backup.timer /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now schoolcrm-backup.timer
+```
+
+Check it with `systemctl list-timers schoolcrm-backup.timer` and
+`journalctl -u schoolcrm-backup`; a successful night ends with
+`uploaded schoolcrm.dump.gpg and rag-files.tar.gz.gpg to …`. Run one now with
+`systemctl start schoolcrm-backup`.
+
+**Restore check (monthly, and before trusting a backup).** On the machine that
+holds the private key, download one night's three objects from the R2
+dashboard into a folder, then run `scripts/backup/restore-check.sh <folder>`.
+It verifies the checksums, decrypts (asks for the passphrase), restores into a
+throwaway `pgvector/pgvector:0.8.1-pg18` container and prints every table's
+row count. Compare with production, run on the VPS:
+
+```sh
+docker exec -u postgres postgres psql -d schoolcrm -At -F ' ' -c "
+  select format('%s.%s %s', schemaname, relname,
+         (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, relname), false, true, '')))[1]::text)
+  from pg_stat_user_tables order by schemaname, relname"
+```
+
+Counts written after the backup will differ; anything else is a failed check.
+Record the date and result on bead `schoolCRM-5ho.9`. To restore production
+from a backup, decrypt it the same way, copy `schoolcrm.dump` to the VPS and
+follow "First deployment: data restore order", step 2.
+
 ## Rollback
 
 - **Application:** pin Flux to the previous release, provided its images are
