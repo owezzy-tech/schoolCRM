@@ -194,7 +194,7 @@ func update403(sd apitest.SeedData) []apitest.Table {
 				Roles: []string{"SCHOOL_ADMIN"},
 			},
 			GotResp: &errs.Error{},
-			ExpResp: errs.Errorf(errs.PermissionDenied, "authorize: you are not authorized for that action, claims[[STUDENT]] rule[rule_admin_only]"),
+			ExpResp: errs.Errorf(errs.PermissionDenied, "You don't have permission to do that."),
 			CmpFunc: func(got any, exp any) string {
 				return cmp.Diff(got, exp)
 			},

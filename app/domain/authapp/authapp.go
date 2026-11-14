@@ -92,6 +92,10 @@ func (a *app) login(ctx context.Context, r *http.Request) web.Encoder {
 // returns, so it cannot reveal whether or why an application exists.
 const applicantNotVerified = "We could not verify a submitted application for that email."
 
+// permissionDenied is the only message a failed authorization returns; the
+// caller's roles and the rule they failed stay in the server logs.
+const permissionDenied = "You don't have permission to do that."
+
 func (a *app) applicantPortalToken(ctx context.Context, r *http.Request) web.Encoder {
 	var req applicantPortalTokenReq
 	if err := web.Decode(r, &req); err != nil {
@@ -500,7 +504,8 @@ func (a *app) authorize(ctx context.Context, r *http.Request) web.Encoder {
 	}
 
 	if err := a.auth.Authorize(ctx, auth.Claims, auth.UserID, auth.Rule); err != nil {
-		return errs.Errorf(errs.PermissionDenied, "authorize: you are not authorized for that action, claims[%v] rule[%v]", auth.Claims.Roles, auth.Rule)
+		cause := fmt.Errorf("claims%v: %w", auth.Claims.Roles, err)
+		return errs.Mask(errs.PermissionDenied, permissionDenied, cause)
 	}
 
 	return nil
