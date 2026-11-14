@@ -2,6 +2,11 @@
 
 This runbook documents the restore process required by the Admissions CRM release gate.
 
+> Production runs on the owezzy-db k3s node with the database on the shared
+> PostgreSQL server outside the cluster. Its nightly encrypted R2 backups and
+> monthly restore check are in `docs/vps-deployment.md` ("Backups"); the
+> in-cluster commands below apply to local and development clusters.
+
 Targets:
 
 - RPO: less than or equal to 24 hours.

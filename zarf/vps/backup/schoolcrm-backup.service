@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up SchoolCRM to R2 (/opt/schoolcrm/schoolcrm-backup.sh)
+After=docker.service k3s.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/schoolcrm/schoolcrm-backup.sh
+Nice=10
+IOSchedulingClass=idle
