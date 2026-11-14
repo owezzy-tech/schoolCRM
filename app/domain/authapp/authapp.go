@@ -54,11 +54,12 @@ func (a *app) login(ctx context.Context, r *http.Request) web.Encoder {
 
 	usr, err := a.userBus.Authenticate(ctx, *addr, req.Password)
 	if err != nil {
-		return errs.New(errs.Unauthenticated, err)
+		return errs.Mask(errs.Unauthenticated, auth.InvalidCredentials, err)
 	}
 
 	if !usr.Enabled {
-		return errs.New(errs.Unauthenticated, auth.ErrUserDisabled)
+		// Shown only after the password matched, so it reveals nothing to a guesser.
+		return errs.Mask(errs.Unauthenticated, "This account is disabled. Contact your school administrator.", auth.ErrUserDisabled)
 	}
 
 	now := time.Now().UTC()
@@ -87,6 +88,10 @@ func (a *app) login(ctx context.Context, r *http.Request) web.Encoder {
 	}
 }
 
+// applicantNotVerified is the only message a failed applicant-portal sign-in
+// returns, so it cannot reveal whether or why an application exists.
+const applicantNotVerified = "We could not verify a submitted application for that email."
+
 func (a *app) applicantPortalToken(ctx context.Context, r *http.Request) web.Encoder {
 	var req applicantPortalTokenReq
 	if err := web.Decode(r, &req); err != nil {
@@ -104,15 +109,15 @@ func (a *app) applicantPortalToken(ctx context.Context, r *http.Request) web.Enc
 
 	constituent, application, err := a.findSubmittedPortalApplication(ctx, addr.Address)
 	if err != nil {
-		return errs.New(errs.Unauthenticated, fmt.Errorf("we could not verify a submitted application for that email"))
+		return errs.Mask(errs.Unauthenticated, applicantNotVerified, err)
 	}
 
 	profile, err := a.admissionsBus.QueryApplicantProfileByConstituentID(ctx, constituent.ID)
 	if err != nil {
-		return errs.New(errs.Unauthenticated, err)
+		return errs.Mask(errs.Unauthenticated, applicantNotVerified, err)
 	}
 	if !profile.Active {
-		return errs.New(errs.Unauthenticated, fmt.Errorf("admissions applicant profile inactive"))
+		return errs.Mask(errs.Unauthenticated, applicantNotVerified, errors.New("admissions applicant profile inactive"))
 	}
 
 	now := time.Now().UTC()

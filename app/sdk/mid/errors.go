@@ -32,10 +32,15 @@ func Errors(log *logger.Logger) web.MidFunc {
 				appErr = errs.Errorf(errs.Internal, "Internal Server Error")
 			}
 
-			log.Error(ctx, "handled error during request",
+			args := []any{
 				"err", err,
 				"source_err_file", path.Base(appErr.FileName),
-				"source_err_func", path.Base(appErr.FuncName))
+				"source_err_func", path.Base(appErr.FuncName),
+			}
+			if cause := appErr.Unwrap(); cause != nil {
+				args = append(args, "cause", cause)
+			}
+			log.Error(ctx, "handled error during request", args...)
 
 			if appErr.Code == errs.InternalOnlyLog {
 				appErr = errs.Errorf(errs.Internal, "Internal Server Error")

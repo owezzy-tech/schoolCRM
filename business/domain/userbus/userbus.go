@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"sync"
 	"time"
 
 	"github.com/owezzy/schoolCRM/business/sdk/delegate"
@@ -23,6 +24,16 @@ var (
 	ErrUniqueEmail           = errors.New("email is not unique")
 	ErrAuthenticationFailure = errors.New("authentication failed")
 )
+
+// timingHash is compared against when the email is unknown, so Authenticate
+// costs one bcrypt comparison either way. Computed once, on first use.
+var timingHash = sync.OnceValue(func() []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte("schoolcrm-timing-equaliser"), bcrypt.DefaultCost)
+	if err != nil {
+		panic(fmt.Sprintf("userbus: generating timing hash: %v", err))
+	}
+	return hash
+})
 
 // Storer interface declares the behavior this package needs to persist and
 // retrieve data.
@@ -218,6 +229,9 @@ func (b *Business) QueryByEmail(ctx context.Context, email mail.Address) (User, 
 func (b *Business) Authenticate(ctx context.Context, email mail.Address, password string) (User, error) {
 	usr, err := b.QueryByEmail(ctx, email)
 	if err != nil {
+		// Spend the same bcrypt time as a wrong password so response timing
+		// does not reveal whether the email has an account.
+		_ = bcrypt.CompareHashAndPassword(timingHash(), []byte(password))
 		return User{}, fmt.Errorf("query: email[%s]: %w", email, err)
 	}
 

@@ -1,0 +1,106 @@
+# Publish a release's images. Pushing a v* tag (the release tag on main) tests
+# the tagged commit and pushes one linux/amd64 image per service to GHCR, tagged
+# with the release. Flux in the owezzy-db cluster deploys the tag itself; this
+# workflow has no access to the server.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Release tag matches package.json and the k3s images
+        run: |
+          version="v$(node -p 'require("./package.json").version')"
+          test "$version" = "$GITHUB_REF_NAME" || { echo "package.json is $version, tag is $GITHUB_REF_NAME"; exit 1; }
+          test "$(grep -c "newTag: $GITHUB_REF_NAME$" zarf/k8s/vps/release/kustomization.yaml)" = 4 \
+            || { echo "zarf/k8s/vps/release does not pin every image to $GITHUB_REF_NAME; run npm version"; exit 1; }
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Go tests
+        run: CGO_ENABLED=0 go test -count=1 ./api/services/... ./api/tooling/... ./app/... ./business/... ./foundation/...
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: api/frontends/web-admin/.nvmrc
+          cache: npm
+          cache-dependency-path: api/frontends/web-admin/package-lock.json
+
+      - name: Frontend tests
+        working-directory: api/frontends/web-admin
+        run: |
+          npm ci
+          npx ng test --watch=false
+
+      - name: k3s overlay contract
+        run: |
+          pip install --quiet pyyaml
+          python3 -m unittest discover -s scripts/tests -p test_k8s_vps_contract.py
+
+  images:
+    needs: verify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - app: schoolcrm
+            dockerfile: zarf/docker/dockerfile.schoolcrm
+            target: ""
+          - app: auth
+            dockerfile: zarf/docker/dockerfile.auth
+            target: production
+          - app: rag
+            dockerfile: zarf/docker/dockerfile.rag
+            target: ""
+          - app: web-admin
+            dockerfile: zarf/docker/dockerfile.web-admin
+            target: ""
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build date
+        id: meta
+        run: echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/owezzy-tech/schoolcrm-${{ matrix.app }}:${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.ref_name }}
+          build-args: |
+            BUILD_TAG=${{ github.ref_name }}
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}

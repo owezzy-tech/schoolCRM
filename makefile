@@ -406,6 +406,40 @@ dev-database-restart:
 	$(KUBECTL) rollout restart statefulset database --namespace=$(NAMESPACE)
 
 # ==============================================================================
+# Production on the owezzy-db k3s node (docs/vps-deployment.md, zarf/k8s/vps)
+#
+# Releases deploy themselves: pushing a v* tag runs .github/workflows/release.yml,
+# which pushes the images to GHCR, and Flux in the cluster applies that tag.
+# These targets are the one-off admin steps. kubectl talks to the API through
+# an SSH tunnel:
+#   ssh -f -N -L 16443:127.0.0.1:6443 owezzy-db
+#   export KUBECONFIG=~/.kube/owezzy-k3s.yaml
+
+VPS_KUBECTL := kubectl --namespace=schoolcrm
+
+# Namespace, quota, StorageClass and the postgres ExternalName; outside Flux's reach.
+vps-platform:
+	kustomize build zarf/k8s/vps/platform | kubectl apply -f -
+
+# Install Flux and the SchoolCRM sync objects (re-run to upgrade Flux).
+vps-flux:
+	kustomize build zarf/k8s/flux | kubectl apply --server-side -f -
+	kubectl --namespace=flux-system rollout status deployment/source-controller deployment/kustomize-controller --timeout=180s
+
+# Check for a new release now instead of at the next 5-minute poll.
+vps-reconcile:
+	$(VPS_KUBECTL) annotate --overwrite gitrepository/schoolcrm reconcile.fluxcd.io/requestedAt="$$(date +%s)"
+
+vps-tunnel:
+	kustomize build zarf/k8s/vps/cloudflared | kubectl apply -f -
+	$(VPS_KUBECTL) rollout status deployment/cloudflared --timeout=120s
+
+vps-status:
+	$(VPS_KUBECTL) get gitrepository,kustomization
+	$(VPS_KUBECTL) get pods,svc,pvc -o wide
+	$(VPS_KUBECTL) describe resourcequota schoolcrm-quota
+
+# ==============================================================================
 # Docker Compose
 
 compose-up:

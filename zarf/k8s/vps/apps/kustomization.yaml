@@ -1,0 +1,11 @@
+# The four services at the release version. Flux applies this after the
+# migration Jobs (zarf/k8s/flux/schoolcrm-sync.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../auth
+  - ../schoolcrm
+  - ../rag
+  - ../web-admin
+components:
+  - ../release

@@ -28,6 +28,13 @@ import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { AuthApiActions, AuthPageActions } from 'app/core/auth/+state';
 
+/** Result banner shown above the form: green for success, red for failure. */
+export interface SignInBanner {
+    type: Extract<FuseAlertType, 'success' | 'error'>;
+    title: string;
+    message: string;
+}
+
 @Component({
     selector: 'auth-sign-in',
     templateUrl: './sign-in.component.html',
@@ -49,10 +56,7 @@ import { AuthApiActions, AuthPageActions } from 'app/core/auth/+state';
 export class AuthSignInComponent implements OnInit {
     @ViewChild('signInNgForm') signInNgForm: NgForm;
 
-    alert: { type: FuseAlertType; message: string } = {
-        type: 'success',
-        message: '',
-    };
+    alert: SignInBanner = { type: 'success', title: '', message: '' };
     signInForm: UntypedFormGroup;
     showAlert: boolean = false;
 
@@ -76,6 +80,12 @@ export class AuthSignInComponent implements OnInit {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe(() => {
+                this.alert = {
+                    type: 'success',
+                    title: 'Signed in',
+                    message: 'Taking you to your dashboard…',
+                };
+                this.showAlert = true;
                 const redirectURL =
                     this.activatedRoute.snapshot.queryParamMap.get(
                         'redirectURL'
@@ -90,8 +100,13 @@ export class AuthSignInComponent implements OnInit {
             )
             .subscribe(({ error }) => {
                 this.signInForm.enable();
-                this.signInNgForm.resetForm();
-                this.alert = { type: 'error', message: error };
+                // Keep the email; only the password has to be typed again.
+                this.signInForm.get('password').reset('');
+                this.alert = {
+                    type: 'error',
+                    title: "Couldn't sign you in",
+                    message: error,
+                };
                 this.showAlert = true;
             });
     }

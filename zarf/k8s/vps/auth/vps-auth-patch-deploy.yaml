@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: schoolcrm-system
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: auth-keys
+          secret:
+            secretName: auth-keys
+            defaultMode: 0440
+      containers:
+        - name: auth
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: auth-keys
+              mountPath: /run/schoolcrm-keys
+              readOnly: true
+          # AUTH_DB_PASSWORD, AUTH_AUTH_ACTIVE_KID and AUTH_AUTH_ISSUER.
+          envFrom:
+            - secretRef:
+                name: auth-env
+          env:
+            # Stale base entry (read from a ConfigMap); the Secret supplies it.
+            - name: AUTH_DB_PASSWORD
+              $patch: delete
+            # Stale base name; the service reads *_DB_HOST.
+            - name: AUTH_DB_HOST_PORT
+              $patch: delete
+            - name: GOMEMLIMIT
+              value: 192MiB
+              valueFrom: null
+            - name: AUTH_DB_HOST
+              value: postgres:5432
+              valueFrom: null
+            - name: AUTH_DB_NAME
+              value: schoolcrm
+              valueFrom: null
+            - name: AUTH_DB_USER
+              value: schoolcrm
+              valueFrom: null
+            - name: AUTH_DB_DISABLE_TLS
+              value: "false"
+              valueFrom: null
+            - name: AUTH_DB_MAX_OPEN_CONNS
+              value: "10"
+              valueFrom: null
+            - name: AUTH_DB_MAX_IDLE_CONNS
+              value: "2"
+              valueFrom: null
+            - name: AUTH_AUTH_KEYS_FOLDER
+              value: /run/schoolcrm-keys
+              valueFrom: null
+            - name: AUTH_WEB_API_HOST
+              value: 0.0.0.0:6000
+              valueFrom: null
+            - name: AUTH_WEB_DEBUG_HOST
+              value: 127.0.0.1:6010
+              valueFrom: null
+            - name: AUTH_WEB_GRPC_HOST
+              value: 127.0.0.1:6001
+              valueFrom: null
+            - name: AUTH_WEB_CORS_ALLOWED_ORIGINS
+              value: https://schoolcrm.owenadirah.com
+              valueFrom: null

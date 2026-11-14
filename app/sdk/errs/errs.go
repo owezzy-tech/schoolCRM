@@ -49,29 +49,44 @@ type Error struct {
 	Message  string  `json:"message"`
 	FuncName string  `json:"-"`
 	FileName string  `json:"-"`
+
+	// cause is the internal error behind a client-safe Message. The Errors
+	// middleware logs it; it is never encoded into a response.
+	cause error
+}
+
+// Mask constructs an error whose client-visible message hides the cause. Use it
+// where the underlying error would leak internals or let a caller probe state,
+// such as whether an account exists. The cause is still logged.
+func Mask(code ErrCode, message string, cause error) *Error {
+	return newError(code, message, cause)
+}
+
+// Unwrap returns the masked internal cause, if any.
+func (e *Error) Unwrap() error {
+	return e.cause
 }
 
 // New constructs an error based on an app error.
 func New(code ErrCode, err error) *Error {
-	pc, filename, line, _ := runtime.Caller(1)
-
-	return &Error{
-		Code:     code,
-		Message:  err.Error(),
-		FuncName: runtime.FuncForPC(pc).Name(),
-		FileName: fmt.Sprintf("%s:%d", filename, line),
-	}
+	return newError(code, err.Error(), nil)
 }
 
 // Errorf constructs an error based on a error message.
 func Errorf(code ErrCode, format string, v ...any) *Error {
-	pc, filename, line, _ := runtime.Caller(1)
+	return newError(code, fmt.Sprintf(format, v...), nil)
+}
+
+// newError records the caller of the exported constructor that called it.
+func newError(code ErrCode, message string, cause error) *Error {
+	pc, filename, line, _ := runtime.Caller(2)
 
 	return &Error{
 		Code:     code,
-		Message:  fmt.Sprintf(format, v...),
+		Message:  message,
 		FuncName: runtime.FuncForPC(pc).Name(),
 		FileName: fmt.Sprintf("%s:%d", filename, line),
+		cause:    cause,
 	}
 }
 

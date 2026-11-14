@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schoolcrm
+  namespace: schoolcrm-system
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      # Never seed production data: migrations run explicitly as jobs/schoolcrm-migrate.
+      initContainers:
+        - name: init-migrate-seed
+          $patch: delete
+      containers:
+        # No Prometheus scrapes the expvar sidecar on the VPS.
+        - name: metrics
+          $patch: delete
+        - name: schoolcrm
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 448Mi
+          # SCHOOLCRM_DB_PASSWORD.
+          envFrom:
+            - secretRef:
+                name: api-env
+          env:
+            # Stale base entry (read from a ConfigMap); the Secret supplies it.
+            - name: SCHOOLCRM_DB_PASSWORD
+              $patch: delete
+            # Stale base name; the service reads *_DB_HOST.
+            - name: SCHOOLCRM_DB_HOST_PORT
+              $patch: delete
+            # Base derives GOMEMLIMIT from the limit with GOGC=off; leave GC headroom below it.
+            - name: GOMEMLIMIT
+              value: 384MiB
+              valueFrom: null
+            - name: SCHOOLCRM_DB_HOST
+              value: postgres:5432
+              valueFrom: null
+            - name: SCHOOLCRM_DB_NAME
+              value: schoolcrm
+              valueFrom: null
+            - name: SCHOOLCRM_DB_USER
+              value: schoolcrm
+              valueFrom: null
+            - name: SCHOOLCRM_DB_DISABLE_TLS
+              value: "false"
+              valueFrom: null
+            - name: SCHOOLCRM_DB_MAX_OPEN_CONNS
+              value: "10"
+              valueFrom: null
+            - name: SCHOOLCRM_DB_MAX_IDLE_CONNS
+              value: "2"
+              valueFrom: null
+            - name: SCHOOLCRM_AUTH_HOST
+              value: http://auth-service:6000
+              valueFrom: null
+            - name: SCHOOLCRM_AUTH_MECHANISM
+              value: http
+              valueFrom: null
+            - name: SCHOOLCRM_WEB_API_HOST
+              value: 0.0.0.0:3000
+              valueFrom: null
+            - name: SCHOOLCRM_WEB_DEBUG_HOST
+              value: 127.0.0.1:3010
+              valueFrom: null
+            - name: SCHOOLCRM_WEB_CORS_ALLOWED_ORIGINS
+              value: https://schoolcrm.owenadirah.com
+              valueFrom: null

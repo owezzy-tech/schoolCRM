@@ -1,3 +1,16 @@
+## [0.2.0](https://github.com/owezzy-tech/schoolCRM/compare/v0.1.0...v0.2.0) (2026-11-14)
+
+### Features
+
+* **deploy:** add k3s overlay and release targets for owezzy-db ([cf51eb9](https://github.com/owezzy-tech/schoolCRM/commit/cf51eb9ac3876bb793e188abb0901a2f45ddc005))
+* **deploy:** release to k3s through GHCR and Flux ([5bb9233](https://github.com/owezzy-tech/schoolCRM/commit/5bb923320534872ca35fbe90ab43e5cfd3086893))
+* **frontend:** show sign-in results in the alert banner ([de23762](https://github.com/owezzy-tech/schoolCRM/commit/de237623b85ff324a9a8ac6bf02921067e12d399))
+
+### Bug Fixes
+
+* **auth:** one generic message for failed sign-ins ([e15fdbe](https://github.com/owezzy-tech/schoolCRM/commit/e15fdbe4fb66e4a7be814b40812992ecb5c99d40))
+* **deploy:** let Caddy exec and give RAG time to start on k3s ([2f07a50](https://github.com/owezzy-tech/schoolCRM/commit/2f07a50d1639cc3e773d690481d18c672371607e))
+
 ## 0.1.0 (2026-11-11)
 
 ### Features

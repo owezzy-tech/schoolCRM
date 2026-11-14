@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag
+  namespace: schoolcrm-system
+spec:
+  replicas: 1
+  # One writer for the files volume (ReadWriteOnce, local-path).
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: rag-files
+          persistentVolumeClaim:
+            claimName: rag-files
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+      containers:
+        - name: rag
+          imagePullPolicy: IfNotPresent
+          command: [python, -m, infrastructure.container_entrypoint]
+          args: [uvicorn, "main:app", --host, 0.0.0.0, --port, "7000", --workers, "1", --limit-concurrency, "4"]
+          # Imports (LlamaIndex, LangGraph) take longer than the base liveness probe allows;
+          # give startup up to 3 minutes before liveness can restart the container.
+          startupProbe:
+            httpGet:
+              path: /v1/liveness
+              port: rag
+            periodSeconds: 5
+            failureThreshold: 36
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          volumeMounts:
+            - name: rag-files
+              mountPath: /service/var/files
+            - name: tmp
+              mountPath: /tmp
+          # RAG_CURRICULUM_DATABASE_URL (TLS URL to the schoolcrm database) and the
+          # provider keys: RAG_CLOUDFLARE_ACCOUNT_ID, RAG_CLOUDFLARE_API_TOKEN, RAG_DEEPSEEK_API_KEY.
+          envFrom:
+            - secretRef:
+                name: rag-env
+          env:
+            # Optional base settings from a rag-config ConfigMap that the VPS does not use.
+            - name: RAG_API_HOST
+              $patch: delete
+            - name: RAG_API_PORT
+              $patch: delete
+            - name: RAG_AUTH_REQUEST_TIMEOUT_SECONDS
+              $patch: delete
+            - name: RAG_NEO4J_URI
+              $patch: delete
+            - name: RAG_OLLAMA_BASE_URL
+              $patch: delete
+            - name: RAG_OLLAMA_MODEL
+              $patch: delete
+            - name: RAG_OLLAMA_TIMEOUT_SECONDS
+              $patch: delete
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+              valueFrom: null
+            - name: PYTHONUNBUFFERED
+              value: "1"
+              valueFrom: null
+            - name: RAG_ALLOW_ANONYMOUS
+              value: "false"
+              valueFrom: null
+            - name: RAG_AUTH_SERVICE_URL
+              value: http://auth-service:6000
+              valueFrom: null
+            - name: RAG_SCHOOL_SERVICE_URL
+              value: http://schoolcrm-service:3000
+              valueFrom: null
+            - name: RAG_FILE_STORAGE_DIR
+              value: /service/var/files
+              valueFrom: null
+            - name: RAG_CURRICULUM_EMBEDDING_PROVIDER
+              value: cloudflare
+              valueFrom: null
+            - name: RAG_GRAPH_RETRIEVER
+              value: memory
+              valueFrom: null
+            - name: RAG_ADMISSIONS_ANSWER_PROVIDER
+              value: stub
+              valueFrom: null
+            - name: RAG_LANGSMITH_ENABLED
+              value: "false"
+              valueFrom: null

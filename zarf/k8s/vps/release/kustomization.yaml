@@ -1,0 +1,19 @@
+# The release every SchoolCRM workload runs: one GHCR image per service, all at
+# the same version. `npm version` rewrites newTag from package.json
+# (scripts/release/set-image-tag.mjs); the release workflow pushes these images
+# for the matching v* tag, and Flux deploys that tag.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+images:
+  - name: auth-image
+    newName: ghcr.io/owezzy-tech/schoolcrm-auth
+    newTag: v0.2.0
+  - name: schoolcrm-image
+    newName: ghcr.io/owezzy-tech/schoolcrm-schoolcrm
+    newTag: v0.2.0
+  - name: rag-image
+    newName: ghcr.io/owezzy-tech/schoolcrm-rag
+    newTag: v0.2.0
+  - name: web-admin-image
+    newName: ghcr.io/owezzy-tech/schoolcrm-web-admin
+    newTag: v0.2.0

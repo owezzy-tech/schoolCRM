@@ -1,0 +1,82 @@
+# Flux deploys SchoolCRM releases: it watches the public repository for v* tags
+# and applies zarf/k8s/vps at the newest one. Nothing outside the cluster can
+# push to it. Applied once with `make vps-flux`; not managed by Flux itself.
+#
+# Flux acts as flux-deployer, which can change only the schoolcrm namespace.
+# platform/ (Namespace, quota, StorageClass) stays an admin step: make vps-platform.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-deployer
+  namespace: schoolcrm
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flux-deployer
+  namespace: schoolcrm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: flux-deployer
+    namespace: schoolcrm
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: schoolcrm
+  namespace: schoolcrm
+spec:
+  url: https://github.com/owezzy-tech/schoolCRM
+  interval: 5m
+  ref:
+    # Releases from 0.2.0 on carry GHCR image tags. To pin a rollback, replace
+    # semver with `tag: v<x.y.z>` (docs/vps-deployment.md, Rollback).
+    semver: ">=0.2.0"
+  ignore: |
+    /*
+    !/zarf/k8s/
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: schoolcrm-migrations
+  namespace: schoolcrm
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: schoolcrm
+  path: ./zarf/k8s/vps/jobs
+  serviceAccountName: flux-deployer
+  interval: 30m
+  retryInterval: 2m
+  # Images are pushed by the release workflow after the tag appears; pods retry
+  # the pull until they exist.
+  timeout: 20m
+  prune: true
+  # Job templates are immutable: recreate the Jobs when the release changes.
+  force: true
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: schoolcrm-apps
+  namespace: schoolcrm
+spec:
+  dependsOn:
+    - name: schoolcrm-migrations
+  sourceRef:
+    kind: GitRepository
+    name: schoolcrm
+  path: ./zarf/k8s/vps/apps
+  serviceAccountName: flux-deployer
+  interval: 30m
+  retryInterval: 2m
+  timeout: 10m
+  prune: true
+  wait: true

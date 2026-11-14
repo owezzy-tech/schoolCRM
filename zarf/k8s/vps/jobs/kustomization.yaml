@@ -1,0 +1,11 @@
+# Schema migrations at the release version. Flux applies them before the
+# services and replaces the Jobs (force) when the image tag changes, so each
+# release migrates exactly once. They never seed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: schoolcrm
+resources:
+  - ./vps-migrate-jobs.yaml
+components:
+  - ../hardened
+  - ../release
