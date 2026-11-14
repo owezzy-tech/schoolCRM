@@ -1,0 +1,121 @@
+# Go schema migrations. Never seed or migrate-seed against production data.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: schoolcrm-migrate
+  namespace: schoolcrm
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: schoolcrm-image
+          imagePullPolicy: IfNotPresent
+          command: ["./admin", "migrate"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          envFrom:
+            - secretRef:
+                name: api-env
+          env:
+            - name: GOMEMLIMIT
+              value: "192MiB"
+            - name: SCHOOLCRM_DB_HOST
+              value: "postgres:5432"
+            - name: SCHOOLCRM_DB_NAME
+              value: "schoolcrm"
+            - name: SCHOOLCRM_DB_USER
+              value: "schoolcrm"
+            - name: SCHOOLCRM_DB_DISABLE_TLS
+              value: "false"
+            - name: SCHOOLCRM_DB_MAX_OPEN_CONNS
+              value: "2"
+---
+# RAG curriculum tables (pgvector is preinstalled by the database administrator).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-curriculum-migrate
+  namespace: schoolcrm
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: rag-image
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "infrastructure.curriculum_migrate"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          envFrom:
+            - secretRef:
+                name: rag-env
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+---
+# RAG lesson-run and checkpoint tables.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-lesson-migrate
+  namespace: schoolcrm
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: rag-image
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "infrastructure.lesson_migrate"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          envFrom:
+            - secretRef:
+                name: rag-env
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: PYTHONUNBUFFERED
+              value: "1"

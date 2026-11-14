@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: schoolcrm
+resources:
+  - ../../base/rag/
+components:
+  - ../hardened
+patches:
+  - path: ./vps-rag-patch-deploy.yaml
+  - path: ./vps-rag-patch-service.yaml
+images:
+  - name: rag-image
+    newName: localhost/schoolcrm/rag
+    newTag: set-by-deploy

@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: schoolcrm
+resources:
+  - ../../base/web-admin/
+components:
+  - ../hardened
+patches:
+  # Unprivileged port: Caddy reads {$PORT}; the Service and probes follow the port name.
+  - target:
+      kind: Deployment
+      name: web-admin
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/ports/0/containerPort
+        value: 8080
+  - path: ./vps-web-admin-patch-deploy.yaml
+images:
+  - name: web-admin-image
+    newName: localhost/schoolcrm/web-admin
+    newTag: set-by-deploy
