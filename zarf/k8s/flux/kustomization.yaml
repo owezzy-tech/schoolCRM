@@ -1,0 +1,28 @@
+# Flux v2.10.0 with only the controllers SchoolCRM needs, plus the sync objects.
+# Regenerate gotk-components.yaml with:
+#   docker run --rm ghcr.io/fluxcd/flux-cli:v2.10.0 install \
+#     --components=source-controller,kustomize-controller --network-policy=true --export
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gotk-components.yaml
+  - schoolcrm-sync.yaml
+patches:
+  # The generated 1Gi limits are sized for large fleets; one small repository
+  # needs a fraction of that on the shared node.
+  - target:
+      kind: Deployment
+      name: source-controller
+      namespace: flux-system
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 256Mi
+  - target:
+      kind: Deployment
+      name: kustomize-controller
+      namespace: flux-system
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 384Mi

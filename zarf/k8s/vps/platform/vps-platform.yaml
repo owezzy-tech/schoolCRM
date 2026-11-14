@@ -22,7 +22,8 @@ spec:
     requests.cpu: "1"
     requests.memory: 1Gi
     limits.cpu: "3"
-    limits.memory: 2Gi
+    # Services (~1.5Gi) plus the three migration Jobs, which Flux starts together.
+    limits.memory: 3Gi
     persistentvolumeclaims: "2"
     requests.storage: 5Gi
 

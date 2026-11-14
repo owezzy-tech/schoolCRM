@@ -15,7 +15,8 @@
     "storybook": "npm --prefix api/frontends/web-admin run storybook",
     "build:storybook": "npm --prefix api/frontends/web-admin run build-storybook",
     "changelog": "conventional-changelog -p conventionalcommits -i CHANGELOG.md",
-    "changelog:preview": "conventional-changelog -p conventionalcommits --stdout"
+    "changelog:preview": "conventional-changelog -p conventionalcommits --stdout",
+    "version": "node scripts/release/set-image-tag.mjs && git add zarf/k8s/vps/release/kustomization.yaml"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
