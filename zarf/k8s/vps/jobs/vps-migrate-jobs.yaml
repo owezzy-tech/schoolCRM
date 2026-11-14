@@ -10,13 +10,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: migrate
           image: schoolcrm-image
@@ -63,13 +56,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: migrate
           image: rag-image
@@ -108,13 +94,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: migrate
           image: rag-image

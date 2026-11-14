@@ -5,6 +5,8 @@ kind: Kustomization
 namespace: schoolcrm
 resources:
   - ./vps-migrate-jobs.yaml
+components:
+  - ../hardened
 images:
   - name: schoolcrm-image
     newName: localhost/schoolcrm/schoolcrm

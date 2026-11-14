@@ -9,13 +9,6 @@ spec:
     type: Recreate
   template:
     spec:
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        seccompProfile:
-          type: RuntimeDefault
       # Never seed production data: migrations run explicitly as jobs/schoolcrm-migrate.
       initContainers:
         - name: init-migrate-seed
@@ -52,7 +45,6 @@ spec:
             # Base derives GOMEMLIMIT from the limit with GOGC=off; leave GC headroom below it.
             - name: GOMEMLIMIT
               value: 384MiB
-              valueFrom: null
               valueFrom: null
             - name: SCHOOLCRM_DB_HOST
               value: postgres:5432

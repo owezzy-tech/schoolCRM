@@ -1,0 +1,33 @@
+# Shared by every SchoolCRM workload overlay: the pod-level settings that
+# pod-security "restricted" requires, and the Namespace that platform/ owns.
+# Container-level securityContext stays in each patch; it differs per container.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+  # platform/ owns the Namespace (with pod-security labels); don't re-apply the base copy.
+  - target:
+      kind: Namespace
+      name: schoolcrm-system
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: schoolcrm-system
+  - target:
+      kind: (Deployment|Job)
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: any
+      spec:
+        template:
+          spec:
+            automountServiceAccountToken: false
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              seccompProfile:
+                type: RuntimeDefault

@@ -3,14 +3,9 @@ kind: Kustomization
 namespace: schoolcrm
 resources:
   - ../../base/auth/
+components:
+  - ../hardened
 patches:
-  # platform/ owns the Namespace (with pod-security labels); don't re-apply the base copy.
-  - patch: |-
-      $patch: delete
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: schoolcrm-system
   - path: ./vps-auth-patch-deploy.yaml
   - path: ./vps-auth-patch-service.yaml
 images:
