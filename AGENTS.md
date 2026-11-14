@@ -70,6 +70,16 @@ End every task, and every stop at a checkpoint, with these four sections:
 - **Not run or unfinished:** checks you skipped, work left open, and the reason for each.
 - **Questions for the reviewer:** decisions you made that need confirmation, and open risks.
 
+## Frontend Design Rules
+
+These apply to `api/frontends/web-admin`. The tokens in `src/styles/design-tokens.css` and the rules in `design-spec.md` are the source of truth.
+
+1. **Use tokens, never raw values.** Read colours, spacing, radii, shadows and type from the `--elimu-*` custom properties or the Fuse theme classes. Do not write a hex colour, a new shadow or a one-off radius.
+2. **Start from a story.** Before you build or change a component, find the story in `src/stories/` that shows the same state and follow its markup and wording.
+3. **Add a story for every new state.** Use real product wording in fixture content, never placeholder text. Add a `play` test when the component has an interaction.
+4. **Check both themes.** Look at the result in light and dark in Storybook, and run the stories' `play` tests. Report both in the handoff.
+5. **No token fits? Stop and ask.** A missing token is a design decision. Do not invent a value that looks close.
+
 ## Code Review Rules
 
 ### Authorization
